@@ -13,8 +13,8 @@
 | # | Feature | Status | Spec | Dependencies |
 |---|---------|--------|------|--------------|
 | 00 | Project scaffolding (layout, navigation, empty pages) | 📋 | [`00-scaffolding.md`](features/00-scaffolding.md) | None |
-| 01 | Authentication (Google OAuth) | 📋 | [`01-auth.md`](features/01-auth.md) | 00 |
-| 02 | Database foundation (Drizzle + Neon setup) | 📋 | [`02-database-foundation.md`](features/02-database-foundation.md) | None |
+| 01 | Authentication (Google OAuth) | ✔️ | [`01-auth.md`](features/01-auth.md) | 00 |
+| 02 | Database foundation (Drizzle + Neon setup) | ✔️ | [`02-database-foundation.md`](features/02-database-foundation.md) | None |
 | 03 | TypeScript types & shared utilities | 📋 | [`03-types-utilities.md`](features/03-types-utilities.md) | 02 |
 | 04 | App layout & navigation | 📋 | [`04-app-layout.md`](features/04-app-layout.md) | 00 |
 | 05 | Landing page & auth pages | 📋 | [`05-landing-auth-pages.md`](features/05-landing-auth-pages.md) | 04, 01 |
