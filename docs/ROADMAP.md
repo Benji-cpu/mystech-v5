@@ -12,34 +12,41 @@
 
 | # | Feature | Status | Spec | Dependencies |
 |---|---------|--------|------|--------------|
-| 00 | Project scaffolding (layout, navigation, empty pages) | 📋 | [`00-scaffolding.md`](features/00-scaffolding.md) | None |
+| 00 | Project scaffolding (layout, navigation, empty pages) | ✔️ | [`00-scaffolding.md`](features/00-scaffolding.md) | None |
 | 01 | Authentication (Google OAuth) | ✔️ | [`01-auth.md`](features/01-auth.md) | 00 |
 | 02 | Database foundation (Drizzle + Neon setup) | ✔️ | [`02-database-foundation.md`](features/02-database-foundation.md) | None |
-| 03 | TypeScript types & shared utilities | 📋 | [`03-types-utilities.md`](features/03-types-utilities.md) | 02 |
-| 04 | App layout & navigation | 📋 | [`04-app-layout.md`](features/04-app-layout.md) | 00 |
-| 05 | Landing page & auth pages | 📋 | [`05-landing-auth-pages.md`](features/05-landing-auth-pages.md) | 04, 01 |
+| 03 | TypeScript types & shared utilities | ✔️ | [`03-types-utilities.md`](features/03-types-utilities.md) | 02 |
+| 04 | App layout & navigation | ✔️ | [`04-app-layout.md`](features/04-app-layout.md) | 00 |
+| 05 | Landing page & auth pages | ✔️ | [`05-landing-auth-pages.md`](features/05-landing-auth-pages.md) | 04, 01 |
 
 ---
 
-## Phase 1: Core Deck Features
+## Phase 1a: Core Deck Features
 
 | # | Feature | Status | Spec | Dependencies |
 |---|---------|--------|------|--------------|
-| 06 | Art styles system (presets + custom + sharing) | ⬜ | [`06-art-styles.md`](features/06-art-styles.md) | 02, 01 |
-| 07 | Deck CRUD (create, list, view, edit, delete) | ⬜ | [`07-deck-crud.md`](features/07-deck-crud.md) | 02, 01, 06 |
-| 08 | Deck creation — Simple mode (one-shot) | ⬜ | [`08-deck-creation-simple.md`](features/08-deck-creation-simple.md) | 07, 06 |
-| 09 | Deck creation — Journey mode (conversation) | ⬜ | [`09-deck-creation-journey.md`](features/09-deck-creation-journey.md) | 07, 06 |
-| 10 | AI image generation for cards | ⬜ | [`10-image-generation.md`](features/10-image-generation.md) | 07, 06 |
-| 11 | Ad-hoc card management (add/edit/delete/reorder) | ⬜ | [`11-card-management.md`](features/11-card-management.md) | 07, 10 |
+| 06 | Art styles system (presets + custom + sharing) | ✔️ | [`06-art-styles.md`](features/06-art-styles.md) | 02, 01 |
+| 07+08+10 | Simple deck creation (CRUD + AI text gen + AI image gen) | ⬜ | [`07-08-10-simple-deck-creation-plan.md`](features/07-08-10-simple-deck-creation-plan.md) | 06, 02, 01 |
+
+> **Note:** Features 07, 08, and 10 are combined into a single build. Image generation uses Stability AI (not Google Imagen). See the combined plan spec for details.
 
 ---
 
-## Phase 2: Person Cards & Readings
+## Phase 1b: Advanced Deck Features
 
 | # | Feature | Status | Spec | Dependencies |
 |---|---------|--------|------|--------------|
+| 09 | Deck creation — Journey mode (conversation) | ⬜ | [`09-deck-creation-journey.md`](features/09-deck-creation-journey.md) | 07+08+10 |
+| 11 | Ad-hoc card management (add/edit/delete/reorder) | ⬜ | [`11-card-management.md`](features/11-card-management.md) | 07+08+10 |
 | 12 | Person cards with photo upload | ⬜ | [`12-person-cards.md`](features/12-person-cards.md) | 02, 01 |
-| 13 | Reading flow (spreads, card draw, animation) | ⬜ | [`13-reading-flow.md`](features/13-reading-flow.md) | 07, 12 |
+
+---
+
+## Phase 2: Readings
+
+| # | Feature | Status | Spec | Dependencies |
+|---|---------|--------|------|--------------|
+| 13 | Reading flow (spreads, card draw, animation) | ⬜ | [`13-reading-flow.md`](features/13-reading-flow.md) | 07+08+10, 12 |
 | 14 | AI reading interpretation (streaming) | ⬜ | [`14-reading-ai.md`](features/14-reading-ai.md) | 13 |
 | 15 | Reading history & sharing | ⬜ | [`15-reading-history-sharing.md`](features/15-reading-history-sharing.md) | 14 |
 
@@ -49,7 +56,7 @@
 
 | # | Feature | Status | Spec | Dependencies |
 |---|---------|--------|------|--------------|
-| 16 | Deck collaboration (invite, roles, activity log) | ⬜ | [`16-deck-collaboration.md`](features/16-deck-collaboration.md) | 07, 01 |
+| 16 | Deck collaboration (invite, roles, activity log) | ⬜ | [`16-deck-collaboration.md`](features/16-deck-collaboration.md) | 07+08+10, 01 |
 
 ---
 
@@ -79,3 +86,5 @@
 - Commit after each complete feature
 - Update status in this file as you progress
 - See `MASTER_PLAN.md` for full architectural decisions
+- **Image generation uses Stability AI** (changed from Google Imagen during planning)
+- **Vercel Blob** used for image storage

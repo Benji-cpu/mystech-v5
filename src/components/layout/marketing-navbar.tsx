@@ -12,7 +12,7 @@ const navLinks = [
   { href: "/pricing", label: "Pricing" },
 ];
 
-export function MarketingHeader() {
+export function MarketingNavbar() {
   const [open, setOpen] = useState(false);
 
   return (

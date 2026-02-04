@@ -107,3 +107,42 @@ export const ART_STYLE_PRESETS = [
     stylePrompt: 'ethereal soft glow art, pastel luminescence, dreamy light rays, gentle bokeh effects, angelic radiance, opalescent and iridescent color palette, soft focus mystical atmosphere',
   },
 ] as const;
+
+// Gradient placeholders for art style thumbnails
+export const ART_STYLE_GRADIENTS: Record<
+  string,
+  { gradient: string; icon: string }
+> = {
+  'tarot-classic': {
+    gradient: 'from-amber-900 via-yellow-700 to-amber-800',
+    icon: 'Crown',
+  },
+  'watercolor-dream': {
+    gradient: 'from-pink-300 via-purple-200 to-blue-300',
+    icon: 'Droplets',
+  },
+  celestial: {
+    gradient: 'from-indigo-900 via-violet-800 to-blue-900',
+    icon: 'Star',
+  },
+  botanical: {
+    gradient: 'from-green-800 via-emerald-600 to-green-700',
+    icon: 'Leaf',
+  },
+  'abstract-mystic': {
+    gradient: 'from-purple-900 via-fuchsia-800 to-purple-700',
+    icon: 'Hexagon',
+  },
+  'dark-gothic': {
+    gradient: 'from-gray-900 via-red-950 to-gray-900',
+    icon: 'Skull',
+  },
+  'art-nouveau': {
+    gradient: 'from-teal-800 via-amber-700 to-teal-700',
+    icon: 'Flower2',
+  },
+  'ethereal-light': {
+    gradient: 'from-sky-200 via-rose-200 to-violet-200',
+    icon: 'Sun',
+  },
+};
