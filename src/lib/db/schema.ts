@@ -7,6 +7,7 @@ import {
   jsonb,
   primaryKey,
   unique,
+  index,
 } from "drizzle-orm/pg-core";
 import { createId } from "@paralleldrive/cuid2";
 
@@ -106,3 +107,65 @@ export const artStyleShares = pgTable(
   },
   (t) => [unique().on(t.styleId, t.sharedWithUserId)]
 );
+
+// Decks
+export const decks = pgTable(
+  "deck",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    description: text("description"),
+    theme: text("theme"),
+    status: text("status").notNull().default("draft"),
+    cardCount: integer("card_count").notNull().default(0),
+    isPublic: boolean("is_public").default(false).notNull(),
+    coverImageUrl: text("cover_image_url"),
+    artStyleId: text("art_style_id").references(() => artStyles.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
+  },
+  (t) => [index("deck_user_id_idx").on(t.userId)]
+);
+
+// Cards
+export const cards = pgTable(
+  "card",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    deckId: text("deck_id")
+      .notNull()
+      .references(() => decks.id, { onDelete: "cascade" }),
+    cardNumber: integer("card_number").notNull(),
+    title: text("title").notNull(),
+    meaning: text("meaning").notNull(),
+    guidance: text("guidance").notNull(),
+    imageUrl: text("image_url"),
+    imagePrompt: text("image_prompt"),
+    imageStatus: text("image_status").notNull().default("pending"),
+    createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
+  },
+  (t) => [index("card_deck_id_idx").on(t.deckId)]
+);
+
+// Deck metadata (shared between simple + journey modes)
+export const deckMetadata = pgTable("deck_metadata", {
+  deckId: text("deck_id")
+    .primaryKey()
+    .references(() => decks.id, { onDelete: "cascade" }),
+  extractedAnchors: jsonb("extracted_anchors"),
+  conversationSummary: text("conversation_summary"),
+  generationPrompt: text("generation_prompt"),
+  draftCards: jsonb("draft_cards"),
+  isReady: boolean("is_ready").default(false).notNull(),
+  updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
+});
