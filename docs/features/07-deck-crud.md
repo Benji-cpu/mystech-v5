@@ -1,5 +1,7 @@
 # Feature 07: Deck CRUD
 
+> **Combined build**: This feature is being built together with Features 08 (Simple Mode AI Text) and 10 (AI Image Generation) on branch `feature/07-deck-crud`. See [`07-08-10-simple-deck-creation-plan.md`](07-08-10-simple-deck-creation-plan.md) for the combined implementation plan.
+
 ## Overview
 Core deck and card data management. Users can create, list, view, edit, and delete decks. Each deck contains cards with title, meaning, guidance, and optional image. This feature provides the data layer — AI-powered creation comes in features 08 and 09.
 

@@ -1,7 +1,11 @@
 # Feature 10: AI Image Generation for Cards
 
+> **Combined build**: This feature is being built together with Features 07 (Deck CRUD) and 08 (Simple Mode AI Text) on branch `feature/07-deck-crud`. See [`07-08-10-simple-deck-creation-plan.md`](07-08-10-simple-deck-creation-plan.md) for the combined implementation plan.
+>
+> **Tech change**: Image generation uses **Stability AI** (`stable-image/generate/core` endpoint) instead of Google Imagen. Images stored in **Vercel Blob** at `cards/{deckId}/{cardId}.png`.
+
 ## Overview
-Generate card artwork using Google Imagen 4 Fast. Supports single card and batch generation. Images combine the card's image prompt with the deck's art style prompt. Generated images are stored in Vercel Blob.
+Generate card artwork using ~~Google Imagen 4 Fast~~ **Stability AI stable-image/generate/core**. Supports single card and batch generation. Images combine the card's image prompt with the deck's art style prompt. Generated images are stored in Vercel Blob.
 
 ## User Stories
 - As a user, I want my cards to have beautiful AI-generated artwork

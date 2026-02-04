@@ -1,5 +1,7 @@
 # Feature 08: Deck Creation — Simple Mode (One-Shot)
 
+> **Combined build**: This feature is being built together with Features 07 (Deck CRUD) and 10 (AI Image Generation) on branch `feature/07-deck-crud`. See [`07-08-10-simple-deck-creation-plan.md`](07-08-10-simple-deck-creation-plan.md) for the combined implementation plan.
+
 ## Overview
 The quick deck creation flow. User provides a short text description, selects card count and art style, and the AI generates the entire deck at once — card definitions first, then images.
 
