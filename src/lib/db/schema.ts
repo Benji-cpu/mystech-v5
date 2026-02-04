@@ -3,7 +3,10 @@ import {
   text,
   timestamp,
   integer,
+  boolean,
+  jsonb,
   primaryKey,
+  unique,
 } from "drizzle-orm/pg-core";
 import { createId } from "@paralleldrive/cuid2";
 
@@ -63,4 +66,43 @@ export const verificationTokens = pgTable(
       columns: [vt.identifier, vt.token],
     }),
   ]
+);
+
+// Art styles
+export const artStyles = pgTable("art_style", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => createId()),
+  name: text("name").notNull(),
+  description: text("description").notNull(),
+  stylePrompt: text("style_prompt").notNull(),
+  previewImages: jsonb("preview_images").$type<string[]>().default([]),
+  isPreset: boolean("is_preset").default(false).notNull(),
+  createdBy: text("created_by").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  isPublic: boolean("is_public").default(false).notNull(),
+  shareToken: text("share_token").unique(),
+  createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
+});
+
+export const artStyleShares = pgTable(
+  "art_style_share",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    styleId: text("style_id")
+      .notNull()
+      .references(() => artStyles.id, { onDelete: "cascade" }),
+    sharedWithUserId: text("shared_with_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    accepted: boolean("accepted"),
+    createdAt: timestamp("created_at", { mode: "date" })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [unique().on(t.styleId, t.sharedWithUserId)]
 );

@@ -59,13 +59,14 @@ export type ArtStyle = {
   isPublic: boolean;
   shareToken: string | null;
   createdAt: Date;
+  updatedAt: Date;
 };
 
 export type ArtStyleShare = {
   id: string;
   styleId: string;
   sharedWithUserId: string;
-  accepted: boolean;
+  accepted: boolean | null;
   createdAt: Date;
 };
 

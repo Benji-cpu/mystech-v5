@@ -31,6 +31,7 @@ function Breadcrumb() {
     "art-styles": "Art Styles",
     settings: "Settings",
     billing: "Billing",
+    edit: "Edit",
   };
 
   return (
