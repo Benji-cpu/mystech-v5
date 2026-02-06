@@ -10,8 +10,13 @@ import {
   DECK_GENERATION_SYSTEM_PROMPT,
   buildDeckGenerationUserPrompt,
 } from "@/lib/ai/prompts/deck-generation";
+import {
+  JOURNEY_CARD_GENERATION_SYSTEM_PROMPT,
+  buildJourneyCardGenerationPrompt,
+} from "@/lib/ai/prompts/journey-card-generation";
 import { PLAN_LIMITS } from "@/lib/constants";
-import type { ApiResponse } from "@/types";
+import { eq, and } from "drizzle-orm";
+import type { ApiResponse, Anchor, DraftCard } from "@/types";
 
 const MAX_RETRIES = 2;
 
@@ -34,13 +39,31 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { title, description, cardCount, artStyleId } = body as {
+  const { mode, deckId, title, description, cardCount, artStyleId } = body as {
+    mode?: "simple" | "journey";
+    deckId?: string;
     title?: string;
     description?: string;
     cardCount?: number;
     artStyleId?: string;
   };
 
+  // Journey mode: generate draft cards for existing deck
+  if (mode === "journey" && deckId) {
+    return handleJourneyMode(user.id, deckId, cardCount || 10);
+  }
+
+  // Simple mode: original flow
+  return handleSimpleMode(user.id, title, description, cardCount, artStyleId);
+}
+
+async function handleSimpleMode(
+  userId: string,
+  title: string | undefined,
+  description: string | undefined,
+  cardCount: number | undefined,
+  artStyleId: string | undefined
+) {
   if (!title || !description || !cardCount) {
     return NextResponse.json<ApiResponse<never>>(
       { success: false, error: "title, description, and cardCount are required" },
@@ -56,7 +79,7 @@ export async function POST(request: NextRequest) {
   }
 
   // Check deck limit (excludes draft decks)
-  const deckCount = await getUserDeckCount(user.id);
+  const deckCount = await getUserDeckCount(userId);
   if (deckCount >= PLAN_LIMITS.free.maxDecks) {
     return NextResponse.json<ApiResponse<never>>(
       {
@@ -70,7 +93,6 @@ export async function POST(request: NextRequest) {
   const userPrompt = buildDeckGenerationUserPrompt(title, description, cardCount);
 
   // Generate card definitions with retries BEFORE creating deck
-  // This ensures no orphan decks are created if AI generation fails
   let generatedCards: GeneratedCard[] | undefined;
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
@@ -88,7 +110,6 @@ export async function POST(request: NextRequest) {
         error
       );
       if (attempt === MAX_RETRIES) {
-        // No deck created - user can simply retry
         return NextResponse.json<ApiResponse<never>>(
           {
             success: false,
@@ -108,11 +129,10 @@ export async function POST(request: NextRequest) {
   }
 
   // Create deck first, then cards and metadata
-  // Note: neon-http driver doesn't support transactions, using sequential inserts
   const [deck] = await db
     .insert(decks)
     .values({
-      userId: user.id,
+      userId,
       title,
       description,
       status: "generating",
@@ -141,5 +161,111 @@ export async function POST(request: NextRequest) {
   return NextResponse.json<ApiResponse<{ deckId: string }>>(
     { success: true, data: { deckId: deck.id } },
     { status: 201 }
+  );
+}
+
+async function handleJourneyMode(
+  userId: string,
+  deckId: string,
+  cardCount: number
+) {
+  // Verify deck ownership and get metadata
+  const [deck] = await db
+    .select()
+    .from(decks)
+    .where(and(eq(decks.id, deckId), eq(decks.userId, userId)))
+    .limit(1);
+
+  if (!deck) {
+    return NextResponse.json<ApiResponse<never>>(
+      { success: false, error: "Deck not found" },
+      { status: 404 }
+    );
+  }
+
+  if (deck.status !== "draft") {
+    return NextResponse.json<ApiResponse<never>>(
+      { success: false, error: "Deck is not in draft status" },
+      { status: 400 }
+    );
+  }
+
+  // Get metadata with anchors and conversation summary
+  const [metadata] = await db
+    .select()
+    .from(deckMetadata)
+    .where(eq(deckMetadata.deckId, deckId))
+    .limit(1);
+
+  const anchors = (metadata?.extractedAnchors as Anchor[]) || [];
+  const conversationSummary = metadata?.conversationSummary || "";
+
+  // Build journey-specific prompt
+  const userPrompt = buildJourneyCardGenerationPrompt(
+    deck.title,
+    deck.theme || "",
+    cardCount,
+    anchors,
+    conversationSummary
+  );
+
+  // Generate cards with retries
+  let generatedCards: GeneratedCard[] | undefined;
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const result = await generateObject({
+        model: geminiModel,
+        schema: generatedDeckSchema,
+        system: JOURNEY_CARD_GENERATION_SYSTEM_PROMPT,
+        prompt: userPrompt,
+      });
+      generatedCards = result.object.cards;
+      break;
+    } catch (error) {
+      console.error(
+        `[generate-deck-journey] Attempt ${attempt + 1}/${MAX_RETRIES + 1} failed:`,
+        error
+      );
+      if (attempt === MAX_RETRIES) {
+        return NextResponse.json<ApiResponse<never>>(
+          {
+            success: false,
+            error: "Failed to generate cards. Please try again.",
+          },
+          { status: 502 }
+        );
+      }
+    }
+  }
+
+  if (!generatedCards || generatedCards.length === 0) {
+    return NextResponse.json<ApiResponse<never>>(
+      { success: false, error: "AI returned no cards. Please try again." },
+      { status: 502 }
+    );
+  }
+
+  // Convert to draft cards format (store in metadata, not cards table)
+  const draftCards: DraftCard[] = generatedCards.map((card, i) => ({
+    cardNumber: i + 1,
+    title: card.title,
+    meaning: card.meaning,
+    guidance: card.guidance,
+    imagePrompt: card.imagePrompt,
+  }));
+
+  // Update metadata with draft cards
+  await db
+    .update(deckMetadata)
+    .set({
+      draftCards,
+      generationPrompt: userPrompt,
+      updatedAt: new Date(),
+    })
+    .where(eq(deckMetadata.deckId, deckId));
+
+  return NextResponse.json<ApiResponse<{ draftCards: DraftCard[] }>>(
+    { success: true, data: { draftCards } },
+    { status: 200 }
   );
 }

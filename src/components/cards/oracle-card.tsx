@@ -59,23 +59,23 @@ export function OracleCard({
 
         {/* Back */}
         <div className="absolute inset-0 rounded-xl overflow-hidden border border-border/50 bg-card shadow-lg [backface-visibility:hidden] [transform:rotateY(180deg)]">
-          <div className="flex flex-col h-full p-4 overflow-y-auto bg-gradient-to-b from-[#0a0118] to-[#1a0530]">
-            <h3 className="text-sm font-semibold text-[#c9a94e] mb-2">
+          <div className="flex flex-col h-full p-4 overflow-hidden bg-gradient-to-b from-[#0a0118] to-[#1a0530]">
+            <h3 className="text-sm font-semibold text-[#c9a94e] mb-2 line-clamp-1">
               {card.title}
             </h3>
-            <div className="mb-3">
+            <div className="mb-3 flex-shrink-0">
               <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
                 Meaning
               </p>
-              <p className="text-xs text-foreground/90 leading-relaxed">
+              <p className="text-xs text-foreground/90 leading-relaxed line-clamp-3">
                 {card.meaning}
               </p>
             </div>
-            <div>
+            <div className="flex-1 min-h-0">
               <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
                 Guidance
               </p>
-              <p className="text-xs text-foreground/80 leading-relaxed italic">
+              <p className="text-xs text-foreground/80 leading-relaxed italic line-clamp-4">
                 {card.guidance}
               </p>
             </div>

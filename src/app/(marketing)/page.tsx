@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { HeroSection } from "@/components/marketing/hero-section";
 import { FeatureGrid } from "@/components/marketing/feature-grid";
 import { HowItWorks } from "@/components/marketing/how-it-works";
+import { SeeItInAction } from "@/components/marketing/see-it-in-action";
 
 export default function HomePage() {
   return (
@@ -10,6 +11,7 @@ export default function HomePage() {
       <HeroSection />
       <FeatureGrid />
       <HowItWorks />
+      <SeeItInAction />
 
       {/* CTA */}
       <section className="border-t border-border/40">

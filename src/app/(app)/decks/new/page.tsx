@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { requireAuth } from "@/lib/auth/helpers";
-import { Badge } from "@/components/ui/badge";
 import { Sparkles, MessageCircle } from "lucide-react";
 
 export default async function NewDeckPage() {
@@ -32,22 +31,19 @@ export default async function NewDeckPage() {
         </Link>
 
         {/* Guided Journey */}
-        <div className="relative block rounded-xl border border-border/50 bg-card p-6 opacity-60 cursor-not-allowed">
-          <Badge
-            variant="secondary"
-            className="absolute top-4 right-4 text-[10px]"
-          >
-            Coming Soon
-          </Badge>
-          <div className="mb-3 rounded-full bg-muted p-3 w-fit">
-            <MessageCircle className="h-6 w-6 text-muted-foreground" />
+        <Link
+          href="/decks/new/journey"
+          className="group block rounded-xl border border-border/50 bg-card p-6 transition-all hover:border-purple-500/30 hover:shadow-lg"
+        >
+          <div className="mb-3 rounded-full bg-purple-500/10 p-3 w-fit">
+            <MessageCircle className="h-6 w-6 text-purple-400" />
           </div>
           <h3 className="text-lg font-semibold mb-1">Guided Journey</h3>
           <p className="text-sm text-muted-foreground">
-            We&apos;ll guide you through a conversation to craft your perfect
-            deck.
+            A wise guide will explore your theme with you through conversation,
+            crafting deeply personal cards.
           </p>
-        </div>
+        </Link>
       </div>
     </div>
   );

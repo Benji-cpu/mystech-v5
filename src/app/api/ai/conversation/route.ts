@@ -1,10 +1,10 @@
 import { NextRequest } from "next/server";
-import { streamText, generateObject } from "ai";
+import { streamText, generateObject, stepCountIs } from "ai";
 import { db } from "@/lib/db";
 import { decks, conversations, deckMetadata } from "@/lib/db/schema";
 import { getCurrentUser } from "@/lib/auth/helpers";
 import { geminiModel } from "@/lib/ai/gemini";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import {
   JOURNEY_CONVERSATION_SYSTEM_PROMPT,
   buildAnchorExtractionPrompt,
@@ -12,7 +12,7 @@ import {
 } from "@/lib/ai/prompts/conversation";
 import { extractedAnchorsSchema } from "@/lib/ai/schemas";
 import { journeyTools } from "@/lib/ai/tools/journey-tools";
-import type { ConversationMessage, Anchor, DraftCard } from "@/types";
+import type { Anchor, DraftCard } from "@/types";
 
 export const maxDuration = 60;
 
@@ -65,7 +65,6 @@ export async function POST(request: NextRequest) {
     .where(eq(deckMetadata.deckId, deckId))
     .limit(1);
 
-  const existingAnchors = (metadata?.extractedAnchors as Anchor[]) || [];
   const draftCards = (metadata?.draftCards as DraftCard[]) || [];
   const conversationSummary = metadata?.conversationSummary || "";
 
@@ -78,10 +77,6 @@ export async function POST(request: NextRequest) {
     systemPrompt += `\n\nPrevious conversation summary:\n${conversationSummary}`;
   }
 
-  // Create a data stream for custom events
-  const encoder = new TextEncoder();
-  const customDataChunks: string[] = [];
-
   const result = streamText({
     model: geminiModel,
     system: systemPrompt,
@@ -90,7 +85,7 @@ export async function POST(request: NextRequest) {
       content: m.content,
     })),
     tools: journeyTools,
-    maxSteps: 3,
+    stopWhen: stepCountIs(3),
     onFinish: async ({ text, toolCalls }) => {
       // Save the user's message and AI response to database
       const userMessage = messages[messages.length - 1];
@@ -113,18 +108,18 @@ export async function POST(request: NextRequest) {
       // Handle tool calls
       if (toolCalls) {
         for (const toolCall of toolCalls) {
+          // Skip dynamic tool calls
+          if ('dynamic' in toolCall && toolCall.dynamic) continue;
+
           if (toolCall.toolName === "restart_journey") {
-            const args = toolCall.args as { confirmed: boolean };
-            if (args.confirmed) {
+            const input = toolCall.input as { confirmed: boolean };
+            if (input.confirmed) {
               // Delete the deck and all related data
               await db.delete(decks).where(eq(decks.id, deckId));
               // The cascade will delete conversations, metadata, etc.
-              customDataChunks.push(
-                JSON.stringify({ type: "restart", redirect: "/decks/new/journey" })
-              );
             }
           } else if (toolCall.toolName === "update_card") {
-            const args = toolCall.args as {
+            const input = toolCall.input as {
               cardNumber: number;
               title: string;
               meaning: string;
@@ -134,9 +129,9 @@ export async function POST(request: NextRequest) {
 
             // Update the draft card
             const updatedCards = draftCards.map((c) => {
-              if (c.cardNumber === args.cardNumber) {
+              if (c.cardNumber === input.cardNumber) {
                 return {
-                  ...args,
+                  ...input,
                   previousVersion: {
                     title: c.title,
                     meaning: c.meaning,
@@ -152,19 +147,11 @@ export async function POST(request: NextRequest) {
               .update(deckMetadata)
               .set({ draftCards: updatedCards, updatedAt: new Date() })
               .where(eq(deckMetadata.deckId, deckId));
-
-            customDataChunks.push(
-              JSON.stringify({
-                type: "card_updated",
-                cardNumber: args.cardNumber,
-                card: args,
-              })
-            );
           }
         }
       }
 
-      // Extract anchors from the full conversation
+      // Extract anchors from the full conversation (only if not a tool call response)
       if (text && !toolCalls?.length) {
         try {
           const fullConversation = messages
@@ -179,10 +166,6 @@ export async function POST(request: NextRequest) {
 
           const newAnchors = anchorResult.object.anchors;
           const targetCards = deck[0].cardCount || 10;
-          const readinessText = buildReadinessFromAnchors(
-            newAnchors.length,
-            targetCards
-          );
           const isReady = newAnchors.length >= targetCards * 0.7;
 
           // Update metadata with new anchors
@@ -194,16 +177,6 @@ export async function POST(request: NextRequest) {
               updatedAt: new Date(),
             })
             .where(eq(deckMetadata.deckId, deckId));
-
-          customDataChunks.push(
-            JSON.stringify({
-              type: "readiness",
-              anchorsFound: newAnchors.length,
-              targetCards,
-              isReady,
-              readinessText,
-            })
-          );
         } catch (error) {
           console.error("[conversation] Anchor extraction failed:", error);
         }
@@ -211,15 +184,6 @@ export async function POST(request: NextRequest) {
     },
   });
 
-  // Return the streaming response
-  const responseStream = result.toDataStreamResponse();
-
-  // Append custom data to the stream
-  if (customDataChunks.length > 0) {
-    const customData = customDataChunks.join("\n");
-    const headers = new Headers(responseStream.headers);
-    headers.set("X-Custom-Data", Buffer.from(customData).toString("base64"));
-  }
-
-  return responseStream;
+  // Return the UI message stream response (compatible with useChat)
+  return result.toUIMessageStreamResponse();
 }

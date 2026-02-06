@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Holographic Cards — MysTech Mock Lab</title>
+  <link rel="stylesheet" href="../../shared/base.css">
+  <link rel="stylesheet" href="../../shared/controls.css">
+  <style>
+    /* === Card sizing via control === */
+    :root {
+      --ctrl-card-size: 12rem;
+      --ctrl-tilt: 15deg;
+      --ctrl-shimmer: 0.6;
+      --ctrl-foil-speed: 3s;
+      --ctrl-particles: 1;
+    }
+
+    .demo-area {
+      padding-bottom: 6rem; /* room for controls */
+    }
+
+    /* === Oracle card (holographic version) === */
+    .holo-card-wrapper {
+      width: var(--ctrl-card-size);
+      perspective: 1000px;
+      cursor: pointer;
+    }
+
+    .holo-card {
+      width: 100%;
+      aspect-ratio: 2 / 3;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 500ms var(--ease-out-expo);
+      /* Tilt applied via JS custom properties */
+      transform:
+        rotateX(var(--rotate-x, 0deg))
+        rotateY(var(--rotate-y, 0deg));
+    }
+
+    .holo-card.is-flipped {
+      transform:
+        rotateX(var(--rotate-x, 0deg))
+        rotateY(calc(180deg + var(--rotate-y, 0deg)));
+    }
+
+    .holo-card__face {
+      position: absolute;
+      inset: 0;
+      border-radius: 0.75rem;
+      overflow: hidden;
+      backface-visibility: hidden;
+      border: 1px solid var(--border-subtle);
+      background: var(--bg-card);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    }
+
+    .holo-card__back {
+      transform: rotateY(180deg);
+    }
+
+    /* Card art placeholder (gradient) */
+    .holo-card__art {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        135deg,
+        var(--bg-deep) 0%,
+        var(--purple-dark) 30%,
+        var(--bg-surface) 60%,
+        var(--bg-deep) 100%
+      );
+    }
+
+    /* Holographic shimmer overlay */
+    .holo-card__shimmer {
+      position: absolute;
+      inset: 0;
+      background: conic-gradient(
+        from var(--shimmer-angle, 0deg) at var(--shimmer-x, 50%) var(--shimmer-y, 50%),
+        var(--holo-1),
+        var(--holo-2),
+        var(--holo-3),
+        var(--holo-4),
+        var(--holo-5),
+        var(--holo-6),
+        var(--holo-1)
+      );
+      mix-blend-mode: overlay;
+      opacity: var(--ctrl-shimmer);
+      pointer-events: none;
+      transition: opacity 300ms ease;
+    }
+
+    /* Gold foil title */
+    .holo-card__title-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 2rem 0.75rem 0.75rem;
+      background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 60%, transparent 100%);
+    }
+
+    .holo-card__title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      background: linear-gradient(
+        90deg,
+        var(--gold-dim),
+        var(--gold-bright),
+        var(--gold),
+        var(--gold-bright),
+        var(--gold-dim)
+      );
+      background-size: 200% 100%;
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: gold-foil var(--ctrl-foil-speed) ease-in-out infinite;
+    }
+
+    @keyframes gold-foil {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+
+    /* Card back content */
+    .holo-card__back-content {
+      height: 100%;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      background: linear-gradient(to bottom, var(--bg-deep), var(--bg-surface));
+    }
+
+    .holo-card__back-title {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--gold);
+      margin-bottom: 0.5rem;
+    }
+
+    .holo-card__back-label {
+      font-size: 0.55rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin-bottom: 0.2rem;
+    }
+
+    .holo-card__back-text {
+      font-size: 0.7rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      margin-bottom: 0.75rem;
+    }
+
+    .holo-card__back-text--italic {
+      font-style: italic;
+      color: var(--text-muted);
+    }
+
+    /* Particle aura */
+    .holo-card__particles {
+      position: absolute;
+      inset: -20px;
+      pointer-events: none;
+      overflow: visible;
+    }
+
+    .particle {
+      position: absolute;
+      width: 3px;
+      height: 3px;
+      border-radius: 50%;
+      background: var(--gold);
+      opacity: 0;
+      animation: particle-float 4s ease-in-out infinite;
+    }
+
+    @keyframes particle-float {
+      0% {
+        opacity: 0;
+        transform: translate(0, 0) scale(0.5);
+      }
+      20% { opacity: 0.8; }
+      80% { opacity: 0.3; }
+      100% {
+        opacity: 0;
+        transform: translate(var(--dx), var(--dy)) scale(0);
+      }
+    }
+
+    /* Hint text */
+    .hint {
+      position: fixed;
+      bottom: 5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-align: center;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="mock-page">
+    <header class="mock-header">
+      <a href="../../index.html" class="mock-back-link">Mock Lab</a>
+      <h1 class="mock-title">Holographic Cards</h1>
+    </header>
+
+    <div class="demo-area" id="demoArea">
+      <!-- Cards injected by JS -->
+    </div>
+
+    <div class="hint">Move your pointer over cards to see tilt &amp; shimmer. Click to flip.</div>
+  </div>
+
+  <script src="../../shared/controls.js"></script>
+  <script>
+    // --- Sample card data ---
+    const CARDS = [
+      {
+        title: 'The Dreamer',
+        meaning: 'A time of imagination and possibility. Trust the visions that come to you in quiet moments.',
+        guidance: 'Let your mind wander freely — the answers you seek are hidden in your daydreams.',
+      },
+      {
+        title: 'The Forge',
+        meaning: 'Transformation through effort. What is being shaped may not yet be recognizable.',
+        guidance: 'Stay with the process even when it burns. You are becoming.',
+      },
+      {
+        title: 'The Starlit Path',
+        meaning: 'Guidance appears when you stop trying to see the whole road ahead.',
+        guidance: 'Take one step. Then another. The constellation reveals itself in motion.',
+      },
+    ];
+
+    // --- Build cards ---
+    const demoArea = document.getElementById('demoArea');
+
+    CARDS.forEach((cardData, index) => {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'holo-card-wrapper';
+
+      wrapper.innerHTML = `
+        <div class="holo-card" data-index="${index}">
+          <div class="holo-card__face">
+            <div class="holo-card__art"></div>
+            <div class="holo-card__shimmer"></div>
+            <div class="holo-card__title-bar">
+              <div class="holo-card__title">${cardData.title}</div>
+            </div>
+            <div class="holo-card__particles" data-particles></div>
+          </div>
+          <div class="holo-card__face holo-card__back">
+            <div class="holo-card__back-content">
+              <div class="holo-card__back-title">${cardData.title}</div>
+              <div class="holo-card__back-label">Meaning</div>
+              <div class="holo-card__back-text">${cardData.meaning}</div>
+              <div class="holo-card__back-label">Guidance</div>
+              <div class="holo-card__back-text holo-card__back-text--italic">${cardData.guidance}</div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      // --- Tilt + shimmer tracking ---
+      const card = wrapper.querySelector('.holo-card');
+      const shimmer = wrapper.querySelector('.holo-card__shimmer');
+
+      const handlePointerMove = (e) => {
+        const rect = wrapper.getBoundingClientRect();
+        const x = (e.clientX - rect.left) / rect.width;
+        const y = (e.clientY - rect.top) / rect.height;
+
+        const maxTilt = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ctrl-tilt')) || 15;
+        const rotateY = (x - 0.5) * maxTilt * 2;
+        const rotateX = (0.5 - y) * maxTilt * 2;
+
+        card.style.setProperty('--rotate-x', rotateX + 'deg');
+        card.style.setProperty('--rotate-y', rotateY + 'deg');
+
+        // Shimmer follows pointer
+        shimmer.style.setProperty('--shimmer-x', (x * 100) + '%');
+        shimmer.style.setProperty('--shimmer-y', (y * 100) + '%');
+        shimmer.style.setProperty('--shimmer-angle', (x * 360) + 'deg');
+      };
+
+      const handlePointerLeave = () => {
+        card.style.setProperty('--rotate-x', '0deg');
+        card.style.setProperty('--rotate-y', '0deg');
+        shimmer.style.setProperty('--shimmer-x', '50%');
+        shimmer.style.setProperty('--shimmer-y', '50%');
+      };
+
+      wrapper.addEventListener('pointermove', handlePointerMove);
+      wrapper.addEventListener('pointerleave', handlePointerLeave);
+
+      // Touch support
+      wrapper.addEventListener('touchmove', (e) => {
+        const touch = e.touches[0];
+        handlePointerMove({ clientX: touch.clientX, clientY: touch.clientY });
+      }, { passive: true });
+      wrapper.addEventListener('touchend', handlePointerLeave);
+
+      // Flip on click
+      wrapper.addEventListener('click', () => {
+        card.classList.toggle('is-flipped');
+      });
+
+      // --- Spawn particles ---
+      const particleContainer = wrapper.querySelector('[data-particles]');
+      function spawnParticles() {
+        // Only if enabled
+        const enabled = getComputedStyle(document.documentElement).getPropertyValue('--ctrl-particles').trim();
+        if (enabled === '0') return;
+
+        const count = 12;
+        for (let i = 0; i < count; i++) {
+          const p = document.createElement('div');
+          p.className = 'particle';
+          const angle = Math.random() * Math.PI * 2;
+          const distance = 30 + Math.random() * 40;
+          p.style.setProperty('--dx', Math.cos(angle) * distance + 'px');
+          p.style.setProperty('--dy', Math.sin(angle) * distance + 'px');
+          p.style.left = (20 + Math.random() * 60) + '%';
+          p.style.top = (20 + Math.random() * 60) + '%';
+          p.style.animationDelay = (Math.random() * 4) + 's';
+          p.style.animationDuration = (3 + Math.random() * 2) + 's';
+          const colors = ['var(--gold)', 'var(--gold-bright)', 'var(--purple-light)', 'white'];
+          p.style.background = colors[Math.floor(Math.random() * colors.length)];
+          p.style.width = (2 + Math.random() * 2) + 'px';
+          p.style.height = p.style.width;
+          particleContainer.appendChild(p);
+        }
+      }
+      spawnParticles();
+
+      demoArea.appendChild(wrapper);
+    });
+
+    // --- Controls ---
+    const controls = new MockControls('Holographic Cards');
+
+    controls.addSegmented('shimmer', 'Shimmer Intensity', [
+      { label: 'Subtle',  value: '0.3' },
+      { label: 'Medium',  value: '0.6' },
+      { label: 'Bold',    value: '1.0' },
+    ]);
+
+    controls.addSlider('tilt', 'Max Tilt Angle', {
+      min: 5, max: 30, step: 1, default: 15, unit: 'deg'
+    });
+
+    controls.addSegmented('foil-speed', 'Foil Animation Speed', [
+      { label: 'Slow',   value: '5s' },
+      { label: 'Normal', value: '3s' },
+      { label: 'Fast',   value: '1.2s' },
+    ]);
+
+    controls.addCheckbox('particles', 'Particle Aura', true, (checked) => {
+      document.querySelectorAll('.holo-card__particles').forEach(el => {
+        el.style.display = checked ? '' : 'none';
+      });
+    });
+
+    controls.addSegmented('card-size', 'Card Size', [
+      { label: 'Small',  value: '8rem' },
+      { label: 'Medium', value: '12rem' },
+      { label: 'Large',  value: '16rem' },
+    ]);
+
+    controls.render();
+  </script>
+</body>
+</html>

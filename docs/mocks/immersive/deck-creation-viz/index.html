@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Deck Forging Ceremony — MysTech Mock Lab</title>
+  <link rel="stylesheet" href="../../shared/base.css">
+  <link rel="stylesheet" href="../../shared/controls.css">
+  <style>
+    :root {
+      --ctrl-card-count: 6;
+      --ctrl-stagger: 300ms;
+      --ctrl-reveal-style: radial;
+      --ctrl-reveal-speed: 1;
+      --ctrl-reveal-overlap: 200ms;
+      --ctrl-glow: 0.5;
+    }
+
+    .demo-area {
+      flex-direction: column;
+      gap: 2rem;
+      padding-bottom: 6rem;
+    }
+
+    /* === Status text === */
+    .phase-status {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--text-muted);
+      min-height: 1.2em;
+      transition: color 400ms ease;
+    }
+
+    .phase-status.is-active {
+      color: var(--gold);
+    }
+
+    /* === Title typewriter === */
+    .forge-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      text-align: center;
+      min-height: 2em;
+      opacity: 0;
+      transition: opacity 600ms ease;
+    }
+
+    .forge-title.is-visible {
+      opacity: 1;
+    }
+
+    .forge-title .char {
+      opacity: 0;
+      display: inline-block;
+      transition: opacity 60ms ease;
+    }
+
+    .forge-title .char.is-visible {
+      opacity: 1;
+    }
+
+    /* === Card grid === */
+    .forge-grid {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 1rem;
+      max-width: 800px;
+    }
+
+    /* === Individual forging card === */
+    .forge-card {
+      width: 9rem;
+      aspect-ratio: 2 / 3;
+      border-radius: 0.75rem;
+      border: 1px solid var(--border-subtle);
+      position: relative;
+      overflow: hidden;
+      background: var(--bg-deep);
+
+      /* Phase 1 entrance */
+      opacity: 0;
+      transform: scale(0.8) translateY(20px);
+      transition: opacity 500ms var(--ease-out-expo),
+                  transform 500ms var(--ease-out-expo),
+                  box-shadow 600ms ease;
+    }
+
+    .forge-card.is-summoned {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+
+    /* Pulsing gold border during generation */
+    .forge-card.is-generating {
+      animation: gen-pulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes gen-pulse {
+      0%, 100% { border-color: var(--border-subtle); }
+      50% { border-color: var(--gold-dim); box-shadow: 0 0 12px rgba(201, 169, 78, 0.2); }
+    }
+
+    /* Card art (gradient placeholder) */
+    .forge-card__art {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        135deg,
+        var(--purple-dark) 0%,
+        var(--bg-surface) 40%,
+        var(--purple-mid) 70%,
+        var(--bg-deep) 100%
+      );
+      opacity: 0;
+    }
+
+    /* Reveal mask — applied via JS based on style */
+    .forge-card__art.reveal-radial {
+      mask-image: radial-gradient(circle at center, black var(--reveal-progress, 0%), transparent var(--reveal-progress, 0%));
+      -webkit-mask-image: radial-gradient(circle at center, black var(--reveal-progress, 0%), transparent var(--reveal-progress, 0%));
+    }
+
+    .forge-card__art.reveal-wipe {
+      mask-image: linear-gradient(to right, black var(--reveal-progress, 0%), transparent var(--reveal-progress, 0%));
+      -webkit-mask-image: linear-gradient(to right, black var(--reveal-progress, 0%), transparent var(--reveal-progress, 0%));
+    }
+
+    .forge-card__art.reveal-fade {
+      /* Simple opacity transition */
+    }
+
+    .forge-card__art.is-revealing {
+      opacity: 1;
+    }
+
+    /* Card title overlay */
+    .forge-card__title {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 1.5rem 0.6rem 0.6rem;
+      background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: var(--gold);
+      opacity: 0;
+      transform: translateY(5px);
+      transition: opacity 400ms ease, transform 400ms ease;
+    }
+
+    .forge-card.is-summoned .forge-card__title {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Phase 3: Gold glow burst */
+    .forge-card.is-complete {
+      animation: none;
+      border-color: var(--gold);
+    }
+
+    .forge-card.glow-subtle.is-complete {
+      box-shadow: 0 0 15px rgba(201, 169, 78, 0.3);
+    }
+    .forge-card.glow-normal.is-complete {
+      box-shadow: 0 0 20px rgba(201, 169, 78, 0.4), 0 0 40px rgba(201, 169, 78, 0.15);
+    }
+    .forge-card.glow-dramatic.is-complete {
+      box-shadow: 0 0 30px rgba(201, 169, 78, 0.6), 0 0 60px rgba(201, 169, 78, 0.25), 0 0 90px rgba(201, 169, 78, 0.1);
+    }
+
+    /* === Completion message === */
+    .completion-msg {
+      text-align: center;
+      opacity: 0;
+      transform: scale(0.9);
+      transition: opacity 800ms ease, transform 800ms var(--ease-spring);
+      pointer-events: none;
+    }
+
+    .completion-msg.is-visible {
+      opacity: 1;
+      transform: scale(1);
+      pointer-events: auto;
+    }
+
+    .completion-msg__text {
+      font-size: 1.3rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+    }
+
+    /* === Begin / Reset button === */
+    .forge-btn {
+      padding: 0.75rem 2rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--bg-deep);
+      background: var(--gold);
+      border: none;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      transition: all 200ms ease;
+      letter-spacing: 0.03em;
+    }
+
+    .forge-btn:hover {
+      background: var(--gold-bright);
+      box-shadow: 0 0 20px rgba(201, 169, 78, 0.3);
+    }
+
+    .forge-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .forge-btn--ghost {
+      background: transparent;
+      color: var(--gold);
+      border: 1px solid var(--gold-dim);
+    }
+    .forge-btn--ghost:hover {
+      background: rgba(201, 169, 78, 0.1);
+    }
+
+    /* Responsive */
+    @media (max-width: 640px) {
+      .forge-card {
+        width: 6rem;
+      }
+      .forge-grid {
+        gap: 0.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="mock-page">
+    <header class="mock-header">
+      <a href="../../index.html" class="mock-back-link">Mock Lab</a>
+      <h1 class="mock-title">Deck Forging Ceremony</h1>
+    </header>
+
+    <div class="demo-area">
+      <div class="phase-status" id="phaseStatus"></div>
+      <div class="forge-title" id="forgeTitle"></div>
+      <div class="forge-grid" id="forgeGrid"></div>
+
+      <div id="startArea">
+        <button class="forge-btn" id="beginBtn">Begin the Forging</button>
+      </div>
+
+      <div class="completion-msg" id="completionMsg">
+        <div class="completion-msg__text gold-text-animated">Your Deck Is Complete</div>
+        <button class="forge-btn forge-btn--ghost" id="resetBtn">Forge Again</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../../shared/controls.js"></script>
+  <script>
+    // ========== Card names pool ==========
+    const CARD_NAMES = [
+      'The Dreamer', 'The Forge', 'The Starlit Path', 'The Mirror',
+      'The Threshold', 'The Lighthouse', 'The Buried Seed', 'The Storm Eye',
+      'The Silver Thread', 'The Ember'
+    ];
+
+    // ========== Gradient palette for placeholder art ==========
+    const ART_GRADIENTS = [
+      'linear-gradient(135deg, #2d1b69, #1a0530, #7c4dff)',
+      'linear-gradient(135deg, #0a0118, #4a148c, #c9a94e)',
+      'linear-gradient(135deg, #1a0530, #b88aff, #0a0118)',
+      'linear-gradient(135deg, #4a148c, #0d0320, #c9a94e)',
+      'linear-gradient(135deg, #110525, #7c4dff, #1a0530)',
+      'linear-gradient(135deg, #0d0320, #c9a94e, #4a148c)',
+      'linear-gradient(135deg, #1a0530, #2d1b69, #b88aff)',
+      'linear-gradient(135deg, #7c4dff, #0a0118, #4a148c)',
+      'linear-gradient(135deg, #c9a94e, #1a0530, #7c4dff)',
+      'linear-gradient(135deg, #b88aff, #4a148c, #0a0118)',
+    ];
+
+    // ========== State ==========
+    let cardCount = 6;
+    let staggerDelay = 300;
+    let revealStyle = 'radial';
+    let revealSpeedMult = 1;
+    let revealOverlap = 200;
+    let glowClass = 'glow-normal';
+    let isRunning = false;
+
+    // ========== DOM refs ==========
+    const phaseStatus = document.getElementById('phaseStatus');
+    const forgeTitle = document.getElementById('forgeTitle');
+    const forgeGrid = document.getElementById('forgeGrid');
+    const beginBtn = document.getElementById('beginBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const startArea = document.getElementById('startArea');
+    const completionMsg = document.getElementById('completionMsg');
+
+    // ========== Utility ==========
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    // ========== Build cards ==========
+    function buildCards() {
+      forgeGrid.innerHTML = '';
+      const cards = [];
+      for (let i = 0; i < cardCount; i++) {
+        const el = document.createElement('div');
+        el.className = 'forge-card';
+        el.innerHTML = `
+          <div class="forge-card__art" style="background: ${ART_GRADIENTS[i % ART_GRADIENTS.length]}"></div>
+          <div class="forge-card__title">${CARD_NAMES[i % CARD_NAMES.length]}</div>
+        `;
+        forgeGrid.appendChild(el);
+        cards.push(el);
+      }
+      return cards;
+    }
+
+    // ========== Typewriter ==========
+    function typewriterTitle(text) {
+      forgeTitle.innerHTML = '';
+      forgeTitle.classList.add('is-visible');
+      const chars = text.split('');
+      chars.forEach((ch, i) => {
+        const span = document.createElement('span');
+        span.className = 'char';
+        span.textContent = ch === ' ' ? '\u00A0' : ch;
+        forgeTitle.appendChild(span);
+        setTimeout(() => span.classList.add('is-visible'), i * 50);
+      });
+    }
+
+    // ========== Phase 1: The Summoning ==========
+    async function phaseSummoning(cards) {
+      phaseStatus.textContent = 'Phase I — The Summoning';
+      phaseStatus.classList.add('is-active');
+      typewriterTitle('Your cards take form...');
+
+      for (let i = 0; i < cards.length; i++) {
+        cards[i].classList.add('is-summoned', 'is-generating');
+        await sleep(staggerDelay);
+      }
+
+      // Brief pause after all summoned
+      await sleep(600);
+    }
+
+    // ========== Phase 2: The Illumination ==========
+    async function phaseIllumination(cards) {
+      phaseStatus.textContent = 'Phase II — The Illumination';
+      typewriterTitle('Light fills each vessel...');
+
+      const baseDuration = 1200 / revealSpeedMult;
+
+      for (let i = 0; i < cards.length; i++) {
+        const art = cards[i].querySelector('.forge-card__art');
+        art.classList.add('is-revealing', 'reveal-' + revealStyle);
+        cards[i].classList.remove('is-generating');
+
+        // Animate reveal progress
+        animateReveal(art, baseDuration);
+
+        // Overlap: wait less than full duration before starting next
+        if (i < cards.length - 1) {
+          await sleep(Math.max(100, baseDuration - revealOverlap));
+        }
+      }
+
+      // Wait for last card to finish
+      await sleep(baseDuration + 200);
+    }
+
+    function animateReveal(artEl, duration) {
+      if (revealStyle === 'fade') {
+        artEl.style.transition = `opacity ${duration}ms ease`;
+        artEl.style.opacity = '1';
+        return;
+      }
+
+      const start = performance.now();
+      function tick(now) {
+        const progress = Math.min(1, (now - start) / duration);
+        const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+        const pct = eased * 120; // overshoot to 120% to ensure full fill
+        artEl.style.setProperty('--reveal-progress', pct + '%');
+        if (progress < 1) requestAnimationFrame(tick);
+      }
+      requestAnimationFrame(tick);
+    }
+
+    // ========== Phase 3: Completion ==========
+    async function phaseCompletion(cards) {
+      phaseStatus.textContent = 'Phase III — Completion';
+      typewriterTitle('The deck is whole.');
+
+      // Gold burst on all cards simultaneously
+      cards.forEach(card => {
+        card.classList.remove('is-generating');
+        card.classList.add('is-complete', glowClass);
+      });
+
+      await sleep(800);
+
+      // Show completion message
+      completionMsg.classList.add('is-visible');
+      phaseStatus.classList.remove('is-active');
+      phaseStatus.textContent = '';
+    }
+
+    // ========== Full sequence ==========
+    async function runForging() {
+      if (isRunning) return;
+      isRunning = true;
+      beginBtn.disabled = true;
+      startArea.style.display = 'none';
+      completionMsg.classList.remove('is-visible');
+      forgeTitle.classList.remove('is-visible');
+
+      const cards = buildCards();
+      await sleep(400);
+
+      await phaseSummoning(cards);
+      await phaseIllumination(cards);
+      await phaseCompletion(cards);
+
+      isRunning = false;
+    }
+
+    function reset() {
+      isRunning = false;
+      beginBtn.disabled = false;
+      startArea.style.display = '';
+      completionMsg.classList.remove('is-visible');
+      forgeTitle.classList.remove('is-visible');
+      forgeTitle.innerHTML = '';
+      phaseStatus.textContent = '';
+      phaseStatus.classList.remove('is-active');
+      forgeGrid.innerHTML = '';
+    }
+
+    // ========== Event listeners ==========
+    beginBtn.addEventListener('click', runForging);
+    resetBtn.addEventListener('click', reset);
+
+    // ========== Controls ==========
+    const controls = new MockControls('Deck Forging');
+
+    controls.addSegmented('card-count', 'Card Count', [
+      { label: '3',  value: '3' },
+      { label: '6',  value: '6' },
+      { label: '10', value: '10' },
+    ], (val) => {
+      cardCount = parseInt(val);
+      if (!isRunning) reset();
+    });
+
+    controls.addSlider('stagger', 'Stagger Delay', {
+      min: 100, max: 800, step: 50, default: 300, unit: 'ms'
+    }, (val) => {
+      staggerDelay = val;
+    });
+
+    controls.addSegmented('reveal-style', 'Reveal Style', [
+      { label: 'Radial', value: 'radial' },
+      { label: 'Wipe',   value: 'wipe' },
+      { label: 'Fade',   value: 'fade' },
+    ], (val) => {
+      revealStyle = val;
+    });
+
+    controls.addSlider('reveal-speed', 'Reveal Speed', {
+      min: 0.5, max: 3, step: 0.1, default: 1, unit: 'x'
+    }, (val) => {
+      revealSpeedMult = val;
+    });
+
+    controls.addSlider('reveal-overlap', 'Reveal Overlap', {
+      min: 0, max: 500, step: 25, default: 200, unit: 'ms'
+    }, (val) => {
+      revealOverlap = val;
+    });
+
+    controls.addSegmented('glow', 'Glow Intensity', [
+      { label: 'Subtle',   value: 'glow-subtle' },
+      { label: 'Normal',   value: 'glow-normal' },
+      { label: 'Dramatic', value: 'glow-dramatic' },
+    ], (val) => {
+      glowClass = val;
+    });
+
+    controls.render();
+  </script>
+</body>
+</html>

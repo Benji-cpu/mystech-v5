@@ -8,11 +8,15 @@ vi.mock("@/lib/auth/helpers", () => ({
   getCurrentUser: () => mockGetCurrentUser(),
 }));
 
-const mockTransaction = vi.fn();
+const mockInsert = vi.fn();
+const mockUpdate = vi.fn();
+const mockSelect = vi.fn();
 
 vi.mock("@/lib/db", () => ({
   db: {
-    transaction: (callback: (tx: unknown) => Promise<unknown>) => mockTransaction(callback),
+    insert: (...args: unknown[]) => mockInsert(...args),
+    update: (...args: unknown[]) => mockUpdate(...args),
+    select: (...args: unknown[]) => mockSelect(...args),
   },
 }));
 
@@ -45,6 +49,16 @@ vi.mock("@/lib/ai/prompts/deck-generation", () => ({
   buildDeckGenerationUserPrompt: vi.fn().mockReturnValue("user prompt"),
 }));
 
+vi.mock("@/lib/ai/prompts/journey-card-generation", () => ({
+  JOURNEY_CARD_GENERATION_SYSTEM_PROMPT: "journey system prompt",
+  buildJourneyCardGenerationPrompt: vi.fn().mockReturnValue("journey prompt"),
+}));
+
+vi.mock("drizzle-orm", () => ({
+  eq: vi.fn(),
+  and: vi.fn(),
+}));
+
 vi.mock("@/lib/constants", () => ({
   PLAN_LIMITS: { free: { maxDecks: 2 } },
 }));
@@ -62,21 +76,12 @@ function makeRequest(body: Record<string, unknown>) {
   });
 }
 
-function setupTransaction(deckId: string = "deck-1") {
-  // Create a mock transaction context that mimics Drizzle's tx object
-  const mockTx = {
-    insert: vi.fn().mockReturnValue({
-      values: vi.fn().mockReturnThis(),
-      returning: vi.fn().mockResolvedValue([{ id: deckId }]),
-    }),
-  };
-
-  // Execute the callback with the mock tx and return its result
-  mockTransaction.mockImplementation(async (callback) => {
-    return await callback(mockTx);
+function setupDbMocks(deckId: string = "deck-1") {
+  // Mock insert for decks, cards, and metadata
+  mockInsert.mockReturnValue({
+    values: vi.fn().mockReturnThis(),
+    returning: vi.fn().mockResolvedValue([{ id: deckId }]),
   });
-
-  return mockTx;
 }
 
 // --- Tests ---
@@ -151,14 +156,14 @@ describe("POST /api/ai/generate-deck", () => {
     expect(res.status).toBe(502);
     expect(json.error).toContain("Failed to generate cards");
     expect(mockGenerateObject).toHaveBeenCalledTimes(3);
-    // Verify no transaction was started (no deck created on AI failure)
-    expect(mockTransaction).not.toHaveBeenCalled();
+    // Verify no insert was called (no deck created on AI failure)
+    expect(mockInsert).not.toHaveBeenCalled();
   });
 
   it("returns 201 with deckId on success (atomic transaction)", async () => {
     mockGetCurrentUser.mockResolvedValue({ id: "user-1" });
     mockGetUserDeckCount.mockResolvedValue(0);
-    const mockTx = setupTransaction("deck-1");
+    setupDbMocks("deck-1");
 
     mockGenerateObject.mockResolvedValue({
       object: {
@@ -180,9 +185,7 @@ describe("POST /api/ai/generate-deck", () => {
     expect(res.status).toBe(201);
     expect(json.success).toBe(true);
     expect(json.data.deckId).toBe("deck-1");
-    // Verify transaction was used for atomic operation
-    expect(mockTransaction).toHaveBeenCalledTimes(1);
     // Verify all three inserts happened: deck, cards, metadata
-    expect(mockTx.insert).toHaveBeenCalledTimes(3);
+    expect(mockInsert).toHaveBeenCalledTimes(3);
   });
 });

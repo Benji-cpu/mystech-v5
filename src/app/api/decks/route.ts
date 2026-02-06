@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { decks } from "@/lib/db/schema";
+import { decks, deckMetadata } from "@/lib/db/schema";
 import { getCurrentUser } from "@/lib/auth/helpers";
 import { getUserDeckCount } from "@/lib/db/queries";
 import { PLAN_LIMITS } from "@/lib/constants";
@@ -62,11 +62,13 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { title, description, theme, artStyleId } = body as {
+  const { title, description, theme, artStyleId, cardCount, status } = body as {
     title?: string;
     description?: string;
     theme?: string;
     artStyleId?: string;
+    cardCount?: number;
+    status?: "draft" | "generating" | "completed";
   };
 
   if (!title) {
@@ -84,8 +86,17 @@ export async function POST(request: NextRequest) {
       description: description ?? null,
       theme: theme ?? null,
       artStyleId: artStyleId ?? null,
+      cardCount: cardCount ?? 0,
+      status: status ?? "draft",
     })
     .returning();
+
+  // Create metadata record for journey mode decks
+  if (status === "draft") {
+    await db.insert(deckMetadata).values({
+      deckId: created.id,
+    });
+  }
 
   const data: Deck = {
     id: created.id,

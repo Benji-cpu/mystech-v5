@@ -96,3 +96,100 @@ describe("generatedDeckSchema", () => {
     expect(result.success).toBe(false);
   });
 });
+
+// Journey mode schemas
+import { anchorSchema, extractedAnchorsSchema, cardUpdateSchema } from "./schemas";
+
+describe("anchorSchema", () => {
+  const validAnchor = {
+    theme: "transitions",
+    emotion: "bittersweet",
+    symbol: "bridge",
+  };
+
+  it("accepts a valid anchor", () => {
+    const result = anchorSchema.safeParse(validAnchor);
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects missing theme", () => {
+    const { theme, ...anchor } = validAnchor;
+    const result = anchorSchema.safeParse(anchor);
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects missing emotion", () => {
+    const { emotion, ...anchor } = validAnchor;
+    const result = anchorSchema.safeParse(anchor);
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects missing symbol", () => {
+    const { symbol, ...anchor } = validAnchor;
+    const result = anchorSchema.safeParse(anchor);
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("extractedAnchorsSchema", () => {
+  const validExtracted = {
+    anchors: [
+      { theme: "transitions", emotion: "bittersweet", symbol: "bridge" },
+      { theme: "growth", emotion: "hope", symbol: "seedling" },
+    ],
+    summary: "A discussion about life transitions and personal growth",
+    readinessAssessment: "Rich material has emerged from our exploration",
+  };
+
+  it("accepts a valid extracted anchors object", () => {
+    const result = extractedAnchorsSchema.safeParse(validExtracted);
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts an empty anchors array", () => {
+    const result = extractedAnchorsSchema.safeParse({
+      ...validExtracted,
+      anchors: [],
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects missing summary", () => {
+    const { summary, ...obj } = validExtracted;
+    const result = extractedAnchorsSchema.safeParse(obj);
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects missing readinessAssessment", () => {
+    const { readinessAssessment, ...obj } = validExtracted;
+    const result = extractedAnchorsSchema.safeParse(obj);
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("cardUpdateSchema", () => {
+  const validUpdate = {
+    cardNumber: 1,
+    title: "The Wanderer",
+    meaning: "A journey of self-discovery",
+    guidance: "Trust the path ahead",
+    imagePrompt: "A lone figure walking through a misty forest at dawn",
+  };
+
+  it("accepts a valid card update", () => {
+    const result = cardUpdateSchema.safeParse(validUpdate);
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects missing cardNumber", () => {
+    const { cardNumber, ...update } = validUpdate;
+    const result = cardUpdateSchema.safeParse(update);
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects missing title", () => {
+    const { title, ...update } = validUpdate;
+    const result = cardUpdateSchema.safeParse(update);
+    expect(result.success).toBe(false);
+  });
+});
