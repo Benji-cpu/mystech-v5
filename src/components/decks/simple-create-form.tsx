@@ -17,7 +17,8 @@ interface SimpleCreateFormProps {
   atLimit: boolean;
 }
 
-const CARD_COUNT_OPTIONS = [5, 10, 15, 20];
+// Spiritual numbers: trinity, chakras, zodiac, major arcana
+const CARD_COUNT_PRESETS = [3, 7, 12, 22];
 
 export function SimpleCreateForm({
   presets,
@@ -26,7 +27,9 @@ export function SimpleCreateForm({
 }: SimpleCreateFormProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [cardCount, setCardCount] = useState(10);
+  const [cardCount, setCardCount] = useState(3);
+  const [isCustomCount, setIsCustomCount] = useState(false);
+  const [customCountInput, setCustomCountInput] = useState("");
   const [artStyleId, setArtStyleId] = useState<string>(presets[0]?.id ?? "");
 
   const { generate, isGenerating, error } = useDeckGeneration();
@@ -97,16 +100,20 @@ export function SimpleCreateForm({
       {/* Card Count */}
       <div className="space-y-2">
         <Label>Number of Cards</Label>
-        <div className="flex gap-2">
-          {CARD_COUNT_OPTIONS.map((count) => (
+        <div className="flex flex-wrap gap-2">
+          {CARD_COUNT_PRESETS.map((count) => (
             <button
               key={count}
               type="button"
-              onClick={() => setCardCount(count)}
+              onClick={() => {
+                setCardCount(count);
+                setIsCustomCount(false);
+                setCustomCountInput("");
+              }}
               disabled={isGenerating}
               className={cn(
                 "rounded-lg px-4 py-2 text-sm font-medium transition-colors border",
-                cardCount === count
+                !isCustomCount && cardCount === count
                   ? "bg-[#c9a94e]/20 border-[#c9a94e] text-[#c9a94e]"
                   : "border-border hover:border-[#c9a94e]/30 text-muted-foreground hover:text-foreground"
               )}
@@ -114,6 +121,41 @@ export function SimpleCreateForm({
               {count}
             </button>
           ))}
+          {isCustomCount ? (
+            <Input
+              type="number"
+              min={1}
+              max={30}
+              value={customCountInput}
+              onChange={(e) => {
+                const val = e.target.value;
+                setCustomCountInput(val);
+                const num = parseInt(val, 10);
+                if (!isNaN(num) && num >= 1 && num <= 30) {
+                  setCardCount(num);
+                }
+              }}
+              onBlur={() => {
+                if (!customCountInput || parseInt(customCountInput, 10) < 1) {
+                  setIsCustomCount(false);
+                  setCardCount(3);
+                }
+              }}
+              disabled={isGenerating}
+              className="w-20"
+              autoFocus
+              placeholder="1-30"
+            />
+          ) : (
+            <button
+              type="button"
+              onClick={() => setIsCustomCount(true)}
+              disabled={isGenerating}
+              className="rounded-lg px-4 py-2 text-sm font-medium transition-colors border border-border hover:border-[#c9a94e]/30 text-muted-foreground hover:text-foreground"
+            >
+              Custom
+            </button>
+          )}
         </div>
       </div>
 

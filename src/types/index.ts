@@ -130,3 +130,41 @@ export type PaginatedResponse<T> = {
   page: number;
   pageSize: number;
 };
+
+// Journey mode types
+export type ConversationRole = 'user' | 'assistant' | 'system';
+
+export type ConversationMessage = {
+  id: string;
+  deckId: string;
+  role: ConversationRole;
+  content: string;
+  createdAt: Date;
+};
+
+export type Anchor = {
+  theme: string;
+  emotion: string;
+  symbol: string;
+};
+
+export type DraftCard = {
+  cardNumber: number;
+  title: string;
+  meaning: string;
+  guidance: string;
+  imagePrompt: string;
+  previousVersion?: {
+    title: string;
+    meaning: string;
+    guidance: string;
+    imagePrompt: string;
+  };
+};
+
+export type JourneyReadinessState = {
+  anchorsFound: number;
+  targetCards: number;
+  isReady: boolean;
+  readinessText: string;
+};

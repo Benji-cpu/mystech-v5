@@ -16,6 +16,14 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  if (!process.env.STABILITY_AI_API_KEY) {
+    console.error("[generate-image] STABILITY_AI_API_KEY is not set");
+    return NextResponse.json<ApiResponse<never>>(
+      { success: false, error: "Image service is not configured" },
+      { status: 503 }
+    );
+  }
+
   const body = await request.json();
   const { cardId } = body as { cardId?: string };
 
@@ -71,6 +79,7 @@ export async function POST(request: NextRequest) {
   );
 
   if (!result.success) {
+    console.error(`[generate-image] Failed for card ${cardId}:`, result.error);
     return NextResponse.json<ApiResponse<never>>(
       { success: false, error: result.error ?? "Image generation failed" },
       { status: 502 }

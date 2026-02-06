@@ -145,3 +145,10 @@ INDEX on deckId
 ## Open Questions
 1. Should we show decks shared with the user (via collaboration) in this list? **Default: Yes, with a "Shared" badge. But collaboration API comes in Feature 16.**
 2. Card expand — modal or separate page? **Default: Modal overlay on click. Keeps user in context of the deck view.**
+
+## Test Coverage
+
+| Test File | Type | What it covers |
+|-----------|------|----------------|
+| `src/app/api/decks/route.test.ts` | Vitest | GET returns user decks, POST creates deck, deck limit enforcement, auth checks |
+| `src/app/api/decks/[deckId]/route.test.ts` | Vitest | GET by ID with cards, PATCH updates, DELETE with blob cleanup, auth + 404 checks |

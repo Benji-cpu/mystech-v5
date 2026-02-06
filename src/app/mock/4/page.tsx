@@ -1,0 +1,324 @@
+import Link from "next/link";
+import {
+  Sparkles,
+  BookOpen,
+  Palette,
+  Share2,
+  MessageCircle,
+  Layers,
+  Eye,
+  Play,
+} from "lucide-react";
+import { MarketingNavbar } from "@/components/layout/marketing-navbar";
+
+const features = [
+  {
+    icon: Sparkles,
+    title: "Personalized Decks",
+    description:
+      "Each card is born from your experiences. No generic meanings — every symbol reflects your actual life.",
+  },
+  {
+    icon: BookOpen,
+    title: "AI-Powered Readings",
+    description:
+      "Draw cards and receive deeply personal interpretations that connect your past to your present.",
+  },
+  {
+    icon: Palette,
+    title: "Custom Art Styles",
+    description:
+      "Choose from hand-crafted visual styles or create your own. Your deck, your aesthetic.",
+  },
+  {
+    icon: Share2,
+    title: "Share & Connect",
+    description:
+      "Share readings with friends. Trade art styles with other creators. Build a community.",
+  },
+];
+
+function FeatureScreenshot({ index }: { index: number }) {
+  if (index === 0) {
+    // Deck fan of cards
+    return (
+      <div className="mt-4 aspect-video rounded-lg bg-accent/30 border border-border/30 flex items-end justify-center pb-3 overflow-hidden">
+        <div className="relative flex items-end">
+          <div className="w-8 sm:w-10 aspect-[2/3] rounded-sm bg-gradient-to-b from-primary/15 to-primary/5 border border-primary/10 -rotate-12 origin-bottom translate-x-2" />
+          <div className="w-8 sm:w-10 aspect-[2/3] rounded-sm bg-gradient-to-b from-primary/20 to-primary/5 border border-primary/15 z-10 relative -mb-0.5" />
+          <div className="w-8 sm:w-10 aspect-[2/3] rounded-sm bg-gradient-to-b from-primary/15 to-primary/5 border border-primary/10 rotate-12 origin-bottom -translate-x-2" />
+        </div>
+      </div>
+    );
+  }
+  if (index === 1) {
+    // Reading: card + flowing text
+    return (
+      <div className="mt-4 aspect-video rounded-lg bg-accent/30 border border-border/30 p-2.5 flex gap-2">
+        <div className="w-1/3 rounded-md bg-gradient-to-b from-primary/15 to-primary/5 border border-primary/10 flex items-center justify-center">
+          <Sparkles className="h-3 w-3 text-primary/25" />
+        </div>
+        <div className="flex-1 flex flex-col gap-1 justify-center">
+          <div className="h-1.5 w-3/4 rounded-full bg-primary/10" />
+          <div className="h-1 w-full rounded-full bg-muted-foreground/[0.06]" />
+          <div className="h-1 w-full rounded-full bg-muted-foreground/[0.06]" />
+          <div className="h-1 w-2/3 rounded-full bg-muted-foreground/[0.06]" />
+        </div>
+      </div>
+    );
+  }
+  if (index === 2) {
+    // Style palette bubbles
+    return (
+      <div className="mt-4 aspect-video rounded-lg bg-accent/30 border border-border/30 flex flex-col items-center justify-center gap-2">
+        <div className="flex gap-2">
+          <div className="h-6 w-6 sm:h-7 sm:w-7 rounded-full bg-gradient-to-br from-violet-400/30 to-violet-600/20" />
+          <div className="h-6 w-6 sm:h-7 sm:w-7 rounded-full bg-gradient-to-br from-amber-400/30 to-amber-600/20" />
+          <div className="h-6 w-6 sm:h-7 sm:w-7 rounded-full bg-gradient-to-br from-emerald-400/30 to-emerald-600/20" />
+          <div className="h-6 w-6 sm:h-7 sm:w-7 rounded-full bg-gradient-to-br from-rose-400/30 to-rose-600/20" />
+        </div>
+        <div className="h-1 w-16 rounded-full bg-muted-foreground/[0.06]" />
+      </div>
+    );
+  }
+  // Share connections
+  return (
+    <div className="mt-4 aspect-video rounded-lg bg-accent/30 border border-border/30 flex items-center justify-center">
+      <div className="flex flex-col items-center gap-2">
+        <div className="flex items-center gap-2">
+          <div className="h-5 w-5 rounded-full bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/10" />
+          <div className="h-px w-4 bg-primary/15" />
+          <div className="h-5 w-5 rounded-full bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/10" />
+          <div className="h-px w-4 bg-primary/15" />
+          <div className="h-5 w-5 rounded-full bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/10" />
+        </div>
+        <span className="text-[8px] text-muted-foreground/30">Share with friends</span>
+      </div>
+    </div>
+  );
+}
+
+const steps = [
+  {
+    number: 1,
+    icon: MessageCircle,
+    title: "Tell Your Story",
+    description:
+      "Share your experiences through a guided conversation with our AI mystic.",
+  },
+  {
+    number: 2,
+    icon: Layers,
+    title: "Get Your Deck",
+    description:
+      "We transform your narrative into a personalized oracle card deck with unique artwork.",
+  },
+  {
+    number: 3,
+    icon: Eye,
+    title: "Discover Insights",
+    description:
+      "Draw cards for AI-powered readings that speak directly to your journey.",
+  },
+];
+
+export default function Mock4() {
+  return (
+    <div className="min-h-screen bg-background text-foreground">
+      <MarketingNavbar />
+
+      {/* Hero — Mock 3 Calm style with 2-column layout */}
+      <section className="bg-gradient-to-b from-accent/40 via-background to-background px-4 sm:px-6 py-16 sm:py-20 lg:py-28">
+        <div className="mx-auto max-w-6xl">
+          <div className="grid gap-8 lg:grid-cols-2 lg:items-center">
+            {/* Text side */}
+            <div className="space-y-6 text-center lg:text-left">
+              {/* Badge */}
+              <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/5 px-3.5 py-1.5 text-xs font-medium text-primary">
+                <Sparkles className="h-3.5 w-3.5" />
+                AI-Powered Oracle Cards
+              </div>
+              {/* H1 with gradient text */}
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight tracking-tight">
+                Your life story,{" "}
+                <span className="bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+                  revealed in cards
+                </span>
+              </h1>
+              {/* Subtext */}
+              <p className="text-muted-foreground max-w-lg mx-auto lg:mx-0">
+                Transform your experiences into a personalized oracle deck.
+                Every card reflects your unique journey — no generic meanings,
+                just your story.
+              </p>
+              {/* Buttons — rounded-full style */}
+              <div className="flex flex-col gap-3 sm:flex-row sm:justify-center lg:justify-start">
+                <Link
+                  href="/login"
+                  className="inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-medium text-primary-foreground shadow-lg shadow-primary/20 transition-opacity hover:opacity-90"
+                >
+                  Get Started Free
+                </Link>
+                <Link
+                  href="/pricing"
+                  className="inline-flex items-center justify-center rounded-full border border-border px-6 py-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                >
+                  View Pricing
+                </Link>
+              </div>
+            </div>
+            {/* Image placeholder side */}
+            <div className="aspect-video rounded-2xl bg-gradient-to-br from-primary/10 to-accent/30 border border-border/20 flex items-center justify-center">
+              <Sparkles className="h-12 w-12 text-primary/30" />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Features — Original title + Mock 3 cards */}
+      <section className="border-t border-border/40">
+        <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
+          {/* ORIGINAL TITLE STYLE */}
+          <div className="mb-12 text-center">
+            <h2 className="text-3xl font-bold tracking-tight">
+              Everything you need for mystical insight
+            </h2>
+            <p className="mt-3 text-muted-foreground">
+              A complete platform for creating, reading, and sharing personal
+              oracle cards.
+            </p>
+          </div>
+          {/* MOCK 3 CARD STYLE */}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {features.map((feature, index) => (
+              <div
+                key={feature.title}
+                className="rounded-2xl bg-gradient-to-br from-accent/60 to-accent/20 p-5"
+              >
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+                  <feature.icon className="h-5 w-5 text-primary" />
+                </div>
+                <h3 className="mt-3 text-base font-semibold">{feature.title}</h3>
+                <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
+                  {feature.description}
+                </p>
+                <FeatureScreenshot index={index} />
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* How It Works — Original title + Mock 3 layout */}
+      <section className="border-t border-border/40">
+        <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
+          {/* ORIGINAL TITLE STYLE */}
+          <div className="mb-12 text-center">
+            <h2 className="text-3xl font-bold tracking-tight">How it works</h2>
+            <p className="mt-3 text-muted-foreground">
+              From story to spread in three simple steps.
+            </p>
+          </div>
+
+          {/* MOCK 3 DESKTOP: 3-col grid of rounded cards */}
+          <div className="hidden sm:grid sm:grid-cols-3 gap-6">
+            {steps.map((step) => (
+              <div
+                key={step.number}
+                className="rounded-2xl bg-gradient-to-br from-accent/50 to-accent/10 p-5"
+              >
+                <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-primary/30 bg-background">
+                  <span className="text-sm font-bold text-primary">
+                    {step.number}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 mt-4">
+                  <step.icon className="h-5 w-5 text-primary" />
+                  <h3 className="font-semibold">{step.title}</h3>
+                </div>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                  {step.description}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          {/* MOCK 3 MOBILE: Vertical timeline */}
+          <div className="relative sm:hidden space-y-6">
+            <div className="absolute left-[15px] top-2 bottom-2 w-px bg-gradient-to-b from-primary/40 via-primary/20 to-transparent" />
+            {steps.map((step) => (
+              <div key={step.number} className="relative flex gap-5 pl-1">
+                <div className="relative z-10 flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full border-2 border-primary/40 bg-background">
+                  <span className="text-xs font-bold text-primary">
+                    {step.number}
+                  </span>
+                </div>
+                <div className="pt-0.5">
+                  <div className="flex items-center gap-2">
+                    <step.icon className="h-4 w-4 text-primary" />
+                    <h3 className="font-semibold">{step.title}</h3>
+                  </div>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {step.description}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* See It In Action — Original title + Mock 3 gallery */}
+      <section className="border-t border-border/40">
+        <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
+          {/* ORIGINAL TITLE STYLE */}
+          <div className="mb-8 text-center">
+            <h2 className="text-3xl font-bold tracking-tight">
+              See it in action
+            </h2>
+            <p className="mt-3 text-muted-foreground">
+              Watch how easy it is to create your personalized deck.
+            </p>
+          </div>
+
+          {/* MOCK 3 VIDEO PLACEHOLDER */}
+          <div className="aspect-video rounded-2xl bg-accent/30 border border-border/40 flex items-center justify-center">
+            <div className="h-14 w-14 sm:h-16 sm:w-16 rounded-full bg-primary/20 flex items-center justify-center backdrop-blur-sm border border-primary/10">
+              <Play className="h-6 w-6 text-primary" />
+            </div>
+          </div>
+
+          {/* MOCK 3 CARD GALLERY */}
+          <div className="mt-8 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            {[1, 2, 3, 4].map((i) => (
+              <div
+                key={i}
+                className="aspect-[2/3] rounded-xl bg-gradient-to-b from-accent/60 to-accent/20 border border-border/20 flex items-center justify-center"
+              >
+                <Sparkles className="h-6 w-6 text-primary/30" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA — Mock 3 style */}
+      <section className="bg-gradient-to-b from-background via-accent/30 to-background px-4 sm:px-6 py-16 sm:py-20 text-center">
+        <div className="mx-auto max-w-2xl">
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">
+            Ready to discover your cards?
+          </h2>
+          <p className="mt-3 text-muted-foreground">
+            Start with a free account. Create your first deck in minutes.
+          </p>
+          <Link
+            href="/login"
+            className="mt-8 inline-block rounded-full bg-primary px-8 py-3 text-sm font-medium text-primary-foreground shadow-lg shadow-primary/20 transition-opacity hover:opacity-90"
+          >
+            Begin Your Journey
+          </Link>
+        </div>
+      </section>
+    </div>
+  );
+}

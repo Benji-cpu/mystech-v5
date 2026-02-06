@@ -197,3 +197,12 @@ Generate exactly {cardCount} cards with diverse, complementary meanings that tel
 1. What's the max card count? **Default: 30 cards per deck for free, 50 for pro.** Prevents abuse and controls costs.
 2. Should custom card count input be free-form or predefined options? **Default: Predefined buttons (5, 10, 15, 20) + custom input field for pro users.**
 3. What Gemini model for simple generation? **Default: Gemini 2.5 Flash for all users in simple mode (it's a one-shot call, cost is minimal).**
+
+## Test Coverage
+
+| Test File | Type | What it covers |
+|-----------|------|----------------|
+| `src/app/api/ai/generate-deck/route.test.ts` | Vitest | Auth check, validation, env var check, AI error handling with retries, successful generation |
+| `src/lib/ai/schemas.test.ts` | Vitest | Zod schema validation — valid cards accepted, missing fields rejected |
+| `src/lib/ai/prompts/deck-generation.test.ts` | Vitest | Prompt builder includes title, description, card count |
+| `e2e/deck-creation.spec.ts` | Playwright | Navigation to form, field visibility, form fill-out, card count selection |

@@ -169,3 +169,20 @@ export const deckMetadata = pgTable("deck_metadata", {
   isReady: boolean("is_ready").default(false).notNull(),
   updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
 });
+
+// Conversations (for journey mode)
+export const conversations = pgTable(
+  "conversation",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    deckId: text("deck_id")
+      .notNull()
+      .references(() => decks.id, { onDelete: "cascade" }),
+    role: text("role").notNull(), // 'user' | 'assistant' | 'system'
+    content: text("content").notNull(),
+    createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+  },
+  (t) => [index("conversation_deck_id_idx").on(t.deckId)]
+);

@@ -37,7 +37,7 @@ export function useImageGenerationProgress(
     setIsPolling(true);
     poll();
 
-    const interval = setInterval(poll, 3000);
+    const interval = setInterval(poll, 1500); // Poll every 1.5s for snappier UI updates
 
     return () => {
       clearInterval(interval);

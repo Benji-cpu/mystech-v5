@@ -13,6 +13,16 @@ export async function generateCardImage(
   artStylePrompt: string,
   deckId: string
 ): Promise<{ success: boolean; imageUrl?: string; error?: string }> {
+  // Check deck still exists before starting (outside retry loop for efficiency)
+  const [deck] = await db
+    .select({ id: decks.id })
+    .from(decks)
+    .where(eq(decks.id, deckId));
+
+  if (!deck) {
+    return { success: false, error: "Deck was deleted" };
+  }
+
   // Set status to generating
   await db
     .update(cards)
@@ -23,16 +33,6 @@ export async function generateCardImage(
 
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     try {
-      // Check deck still exists
-      const [deck] = await db
-        .select({ id: decks.id })
-        .from(decks)
-        .where(eq(decks.id, deckId));
-
-      if (!deck) {
-        return { success: false, error: "Deck was deleted" };
-      }
-
       const imageBuffer = await generateStabilityImage({
         prompt: finalPrompt,
         aspectRatio: "2:3",
@@ -64,6 +64,9 @@ export async function generateCardImage(
       }
 
       // Final failure
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      console.error(`[image-generation] Failed to generate image for card ${cardId}:`, errorMessage);
+
       await db
         .update(cards)
         .set({ imageStatus: "failed", updatedAt: new Date() })
@@ -71,7 +74,7 @@ export async function generateCardImage(
 
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: errorMessage,
       };
     }
   }

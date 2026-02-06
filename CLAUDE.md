@@ -190,6 +190,36 @@ See `/docs/MASTER_PLAN.md` for full architectural context.
 - [ ] Loading states shown
 - [ ] Mobile responsive
 - [ ] Auth protected (if applicable)
+- [ ] Unit tests for utility functions and schemas
+- [ ] API route tests for all endpoints
+- [ ] E2E tests for critical user flows
+
+---
+
+## Testing
+
+### Test Runners
+
+| Runner | Purpose | Command |
+|--------|---------|---------|
+| Vitest | Unit + integration tests | `npm test` |
+| Vitest (watch) | Dev mode with auto-rerun | `npm run test:watch` |
+| Playwright | E2E browser tests | `npm run test:e2e` |
+| Playwright (UI) | E2E with interactive UI | `npm run test:e2e:ui` |
+
+### Test Conventions
+
+- **Co-location**: Test files live next to the code they test (e.g., `route.test.ts` next to `route.ts`)
+- **Naming**: `*.test.ts` for Vitest, `*.spec.ts` for Playwright
+- **Mock helpers**: Use `src/test/mocks/db.ts` and `src/test/mocks/auth.ts` for common mocks
+- **E2E auth**: Use `e2e/helpers/auth.ts` `loginAsTestUser()` which calls the dev-only `/api/auth/test-login` route
+
+### What to Test Per Feature
+
+- **Utility functions**: Pure logic, schemas, prompt builders → Vitest unit tests
+- **API routes**: Auth checks, validation, error handling, success paths → Vitest with mocked db/auth
+- **Critical user flows**: Multi-page journeys (deck creation, readings) → Playwright E2E
+- **Skip**: ShadCN primitives, layout components, server component data-fetching wrappers
 
 ---
 
@@ -201,6 +231,10 @@ npm run build        # Production build
 npm run db:generate  # Generate Drizzle migrations
 npm run db:push      # Push schema to database
 npm run db:studio    # Open Drizzle Studio
+npm test             # Run all Vitest tests
+npm run test:watch   # Vitest in watch mode
+npm run test:e2e     # Run Playwright E2E tests
+npm run test:e2e:ui  # Playwright with interactive UI
 ```
 
 ---

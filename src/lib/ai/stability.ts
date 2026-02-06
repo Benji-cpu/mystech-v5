@@ -12,6 +12,7 @@ export async function generateStabilityImage(
 ): Promise<Buffer> {
   const apiKey = process.env.STABILITY_AI_API_KEY;
   if (!apiKey) {
+    console.error("[stability] STABILITY_AI_API_KEY is not configured");
     throw new Error("STABILITY_AI_API_KEY is not configured");
   }
 
@@ -31,6 +32,7 @@ export async function generateStabilityImage(
 
   if (!response.ok) {
     const errorText = await response.text();
+    console.error(`[stability] API error ${response.status}:`, errorText);
     throw new Error(
       `Stability AI error ${response.status}: ${errorText}`
     );

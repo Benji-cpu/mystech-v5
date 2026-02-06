@@ -129,3 +129,13 @@ No new tables. Uses existing `cards` table fields: `imageUrl`, `imagePrompt`, `i
 1. Should we use the Google Generative AI SDK or direct REST API for Imagen? **Default: Use `@google/generative-ai` SDK if it supports Imagen 4 Fast, otherwise direct REST.**
 2. Image dimensions? **Default: 1024x1536 (2:3 tarot ratio) or nearest supported size.**
 3. Should we generate a low-res preview first, then high-res? **Default: No, generate at target resolution directly. Simpler.**
+
+## Test Coverage
+
+Image generation relies on external APIs (Stability AI, Vercel Blob) and is primarily covered by E2E tests:
+
+| Test File | Type | What it covers |
+|-----------|------|----------------|
+| `e2e/deck-creation.spec.ts` | Playwright | Full deck creation flow (which triggers image generation) |
+
+Unit testing `generateCardImage()` and `generateStabilityImage()` is deferred as they make direct external API calls. Mocking at the HTTP level would provide limited value — E2E tests cover the integration.

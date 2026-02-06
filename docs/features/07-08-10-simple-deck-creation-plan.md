@@ -351,3 +351,21 @@ Reference these files for consistent patterns:
 - **Constants**: `src/lib/constants.ts` — PLAN_LIMITS for tier enforcement
 - **Auth helpers**: `src/lib/auth/helpers.ts` — `getCurrentUser()`, `requireAuth()`
 - **Components**: `src/components/art-styles/` — client component patterns with ShadCN
+
+---
+
+## Test Coverage (Combined)
+
+Tests covering the full simple deck creation flow across Features 07, 08, and 10:
+
+| Test File | Type | What it covers |
+|-----------|------|----------------|
+| `src/lib/ai/schemas.test.ts` | Vitest | Card/deck Zod schema validation |
+| `src/lib/ai/prompts/deck-generation.test.ts` | Vitest | Prompt builder correctness |
+| `src/app/api/ai/generate-deck/route.test.ts` | Vitest | AI generation route — auth, validation, env check, retries, success |
+| `src/app/api/decks/route.test.ts` | Vitest | Deck CRUD list/create |
+| `src/app/api/decks/[deckId]/route.test.ts` | Vitest | Deck CRUD get/update/delete |
+| `src/app/api/art-styles/route.test.ts` | Vitest | Art style list/create |
+| `e2e/auth.spec.ts` | Playwright | Auth redirect, login page |
+| `e2e/deck-creation.spec.ts` | Playwright | Simple deck creation form flow |
+| `e2e/art-styles.spec.ts` | Playwright | Art style picker in creation flow |

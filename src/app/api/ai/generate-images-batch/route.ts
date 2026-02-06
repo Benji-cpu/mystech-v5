@@ -8,7 +8,15 @@ import { eq, and } from "drizzle-orm";
 import { asc } from "drizzle-orm";
 import type { ApiResponse } from "@/types";
 
-const DELAY_BETWEEN_CARDS_MS = 500;
+const CONCURRENCY_LIMIT = 3; // Process 3 cards at once
+const DELAY_BETWEEN_BATCHES_MS = 500;
+
+// Helper to chunk array into batches
+function chunk<T>(arr: T[], size: number): T[][] {
+  return Array.from({ length: Math.ceil(arr.length / size) }, (_, i) =>
+    arr.slice(i * size, i * size + size)
+  );
+}
 
 export async function POST(request: NextRequest) {
   const user = await getCurrentUser();
@@ -16,6 +24,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json<ApiResponse<never>>(
       { success: false, error: "Unauthorized" },
       { status: 401 }
+    );
+  }
+
+  if (!process.env.STABILITY_AI_API_KEY) {
+    console.error("[generate-images-batch] STABILITY_AI_API_KEY is not set");
+    return NextResponse.json<ApiResponse<never>>(
+      { success: false, error: "Image service is not configured" },
+      { status: 503 }
     );
   }
 
@@ -80,30 +96,40 @@ export async function POST(request: NextRequest) {
   let processed = 0;
   let failed = 0;
 
-  // Process sequentially with delay
-  for (const card of cardsToProcess) {
-    if (!card.imagePrompt) {
-      failed++;
-      continue;
-    }
+  // Process in parallel batches for better performance
+  const batches = chunk(cardsToProcess, CONCURRENCY_LIMIT);
 
-    const result = await generateCardImage(
-      card.id,
-      card.imagePrompt,
-      artStylePrompt,
-      deckId
+  for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+    const batch = batches[batchIndex];
+
+    const results = await Promise.all(
+      batch.map((card) => {
+        if (!card.imagePrompt) {
+          return Promise.resolve({ success: false, error: "No image prompt" });
+        }
+        return generateCardImage(
+          card.id,
+          card.imagePrompt,
+          artStylePrompt,
+          deckId
+        );
+      })
     );
 
-    if (result.success) {
-      processed++;
-    } else {
-      failed++;
+    // Count results
+    for (const result of results) {
+      if (result.success) {
+        processed++;
+      } else {
+        console.error(`[generate-images-batch] Card failed:`, result.error);
+        failed++;
+      }
     }
 
-    // Delay between cards to avoid rate limiting
-    if (cardsToProcess.indexOf(card) < cardsToProcess.length - 1) {
+    // Delay between batches (not between individual cards)
+    if (batchIndex < batches.length - 1) {
       await new Promise((resolve) =>
-        setTimeout(resolve, DELAY_BETWEEN_CARDS_MS)
+        setTimeout(resolve, DELAY_BETWEEN_BATCHES_MS)
       );
     }
   }

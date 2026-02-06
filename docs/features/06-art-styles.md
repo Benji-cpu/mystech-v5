@@ -156,3 +156,10 @@ UNIQUE(styleId, sharedWithUserId)
 1. Should preview images for presets be pre-generated and stored, or generated on demand? **Default: Pre-generated and stored as static assets or in Vercel Blob. Seeded during setup.**
 2. How many preview images for custom styles? **Default: Generate 2-3 sample images when user creates custom style. This costs ~$0.04-0.06 per custom style.**
 3. Can free tier users create custom styles? **Default: Yes, but generating preview images counts against their image generation limit.**
+
+## Test Coverage
+
+| Test File | Type | What it covers |
+|-----------|------|----------------|
+| `src/app/api/art-styles/route.test.ts` | Vitest | GET returns presets + user styles, POST creates custom style, auth checks, validation |
+| `e2e/art-styles.spec.ts` | Playwright | Art style picker visibility, preset display, style selection |
