@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
-import { decks, cards, artStyles } from "@/lib/db/schema";
-import { eq, and, asc, count, ne } from "drizzle-orm";
+import { decks, cards, artStyles, readings, readingCards, conversations, deckMetadata, subscriptions, users, userProfiles, deckAdoptions, cardFeedback, livingDeckSettings } from "@/lib/db/schema";
+import { eq, and, asc, count, ne, desc, gte, gt, sql, isNotNull } from "drizzle-orm";
+import type { Deck, DeckWithOwner, DraftDeckWithPhase, JourneyPhase, DraftCard, PlanType, UserProfile, UserContextProfile, ReadingLength, CardFeedbackType, VoicePreferences, VoiceSpeed } from "@/types";
 
 export async function getDeckByIdForUser(deckId: string, userId: string) {
   const [deck] = await db
@@ -37,4 +38,827 @@ export async function getArtStyleById(artStyleId: string) {
     .from(artStyles)
     .where(eq(artStyles.id, artStyleId));
   return style ?? null;
+}
+
+// --- Journey mode queries ---
+
+export async function getConversationForDeck(deckId: string) {
+  return db
+    .select()
+    .from(conversations)
+    .where(eq(conversations.deckId, deckId))
+    .orderBy(asc(conversations.createdAt));
+}
+
+export async function getDeckMetadata(deckId: string) {
+  const [metadata] = await db
+    .select()
+    .from(deckMetadata)
+    .where(eq(deckMetadata.deckId, deckId));
+  return metadata ?? null;
+}
+
+export async function getUserDraftDecks(userId: string): Promise<DraftDeckWithPhase[]> {
+  const rows = await db
+    .select({
+      id: decks.id,
+      userId: decks.userId,
+      title: decks.title,
+      description: decks.description,
+      theme: decks.theme,
+      status: decks.status,
+      deckType: decks.deckType,
+      cardCount: decks.cardCount,
+      isPublic: decks.isPublic,
+      shareToken: decks.shareToken,
+      coverImageUrl: decks.coverImageUrl,
+      artStyleId: decks.artStyleId,
+      createdAt: decks.createdAt,
+      updatedAt: decks.updatedAt,
+      draftCards: deckMetadata.draftCards,
+    })
+    .from(decks)
+    .leftJoin(deckMetadata, eq(decks.id, deckMetadata.deckId))
+    .where(and(eq(decks.userId, userId), eq(decks.status, "draft")))
+    .orderBy(desc(decks.updatedAt));
+
+  return rows.map((row) => {
+    const hasDraftCards = Array.isArray(row.draftCards) && row.draftCards.length > 0;
+    const phase: JourneyPhase = hasDraftCards ? "review" : "chat";
+    return {
+      id: row.id,
+      userId: row.userId,
+      title: row.title,
+      description: row.description,
+      theme: row.theme,
+      status: row.status as Deck["status"],
+      deckType: (row.deckType ?? "standard") as Deck["deckType"],
+      cardCount: row.cardCount,
+      isPublic: row.isPublic,
+      shareToken: row.shareToken ?? null,
+      coverImageUrl: row.coverImageUrl,
+      artStyleId: row.artStyleId,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+      journeyPhase: phase,
+      resumeHref: `/decks/new/journey/${row.id}/${phase}`,
+    };
+  });
+}
+
+// --- Reading queries ---
+
+export async function getUserCompletedDecks(userId: string) {
+  return db
+    .select()
+    .from(decks)
+    .where(and(eq(decks.userId, userId), eq(decks.status, "completed")))
+    .orderBy(desc(decks.updatedAt));
+}
+
+export async function getReadingByIdForUser(readingId: string, userId: string) {
+  const [reading] = await db
+    .select()
+    .from(readings)
+    .where(and(eq(readings.id, readingId), eq(readings.userId, userId)));
+  return reading ?? null;
+}
+
+export async function getReadingCardsWithData(readingId: string) {
+  return db
+    .select({
+      id: readingCards.id,
+      readingId: readingCards.readingId,
+      position: readingCards.position,
+      positionName: readingCards.positionName,
+      cardId: readingCards.cardId,
+      personCardId: readingCards.personCardId,
+      createdAt: readingCards.createdAt,
+      card: {
+        id: cards.id,
+        deckId: cards.deckId,
+        cardNumber: cards.cardNumber,
+        title: cards.title,
+        meaning: cards.meaning,
+        guidance: cards.guidance,
+        imageUrl: cards.imageUrl,
+        imagePrompt: cards.imagePrompt,
+        imageStatus: cards.imageStatus,
+        createdAt: cards.createdAt,
+        updatedAt: cards.updatedAt,
+      },
+    })
+    .from(readingCards)
+    .leftJoin(cards, eq(readingCards.cardId, cards.id))
+    .where(eq(readingCards.readingId, readingId))
+    .orderBy(asc(readingCards.position));
+}
+
+export async function getUserReadingCountThisMonth(userId: string) {
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const [result] = await db
+    .select({ count: count() })
+    .from(readings)
+    .where(
+      and(
+        eq(readings.userId, userId),
+        gte(readings.createdAt, startOfMonth)
+      )
+    );
+  return result?.count ?? 0;
+}
+
+export async function getUserTotalReadingCount(userId: string) {
+  const [result] = await db
+    .select({ count: count() })
+    .from(readings)
+    .where(eq(readings.userId, userId));
+  return result?.count ?? 0;
+}
+
+export async function getUserCardCountThisMonth(userId: string) {
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const [result] = await db
+    .select({ count: count() })
+    .from(cards)
+    .innerJoin(decks, eq(cards.deckId, decks.id))
+    .where(
+      and(
+        eq(decks.userId, userId),
+        gte(cards.createdAt, startOfMonth)
+      )
+    );
+  return result?.count ?? 0;
+}
+
+export async function getUserImageCountThisMonth(userId: string) {
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const [result] = await db
+    .select({ count: count() })
+    .from(cards)
+    .innerJoin(decks, eq(cards.deckId, decks.id))
+    .where(
+      and(
+        eq(decks.userId, userId),
+        eq(cards.imageStatus, "completed"),
+        gte(cards.createdAt, startOfMonth)
+      )
+    );
+  return result?.count ?? 0;
+}
+
+export async function getUserReadingsWithDeck(userId: string, limit?: number) {
+  const query = db
+    .select({
+      id: readings.id,
+      userId: readings.userId,
+      deckId: readings.deckId,
+      spreadType: readings.spreadType,
+      question: readings.question,
+      interpretation: readings.interpretation,
+      shareToken: readings.shareToken,
+      feedback: readings.feedback,
+      createdAt: readings.createdAt,
+      updatedAt: readings.updatedAt,
+      deckTitle: decks.title,
+      deckCoverImageUrl: decks.coverImageUrl,
+    })
+    .from(readings)
+    .innerJoin(decks, eq(readings.deckId, decks.id))
+    .where(eq(readings.userId, userId))
+    .orderBy(desc(readings.createdAt));
+
+  if (limit && limit !== Infinity) {
+    return query.limit(limit);
+  }
+  return query;
+}
+
+// --- Subscription / Plan queries ---
+
+export async function getUserSubscription(userId: string) {
+  const [sub] = await db
+    .select()
+    .from(subscriptions)
+    .where(eq(subscriptions.userId, userId));
+  return sub ?? null;
+}
+
+export async function getSubscriptionByStripeCustomerId(customerId: string) {
+  const [sub] = await db
+    .select()
+    .from(subscriptions)
+    .where(eq(subscriptions.stripeCustomerId, customerId));
+  return sub ?? null;
+}
+
+export async function getUserPlan(userId: string): Promise<PlanType> {
+  // Check role first — admins bypass subscription check
+  const [user] = await db.select({ role: users.role }).from(users).where(eq(users.id, userId)).limit(1);
+  if (user?.role === "admin") return "admin";
+
+  const sub = await getUserSubscription(userId);
+  if (!sub) return "free";
+
+  // Active, past_due (grace period), or trialing all count as paid
+  if (
+    sub.plan === "pro" &&
+    (sub.status === "active" || sub.status === "past_due")
+  ) {
+    return "pro";
+  }
+
+  // Canceled but still within paid period
+  if (
+    sub.plan === "pro" &&
+    sub.status === "canceled" &&
+    sub.currentPeriodEnd &&
+    sub.currentPeriodEnd > new Date()
+  ) {
+    return "pro";
+  }
+
+  return "free";
+}
+
+// --- User profile queries ---
+
+export async function getUserProfile(userId: string): Promise<UserProfile | null> {
+  const [user] = await db
+    .select({
+      id: users.id,
+      name: users.name,
+      displayName: users.displayName,
+      email: users.email,
+      image: users.image,
+      bio: users.bio,
+      role: users.role,
+      createdAt: users.createdAt,
+    })
+    .from(users)
+    .where(eq(users.id, userId));
+  return user ?? null;
+}
+
+export async function updateUserProfile(
+  userId: string,
+  data: { displayName?: string | null; bio?: string | null }
+) {
+  const [updated] = await db
+    .update(users)
+    .set({
+      ...data,
+      updatedAt: new Date(),
+    })
+    .where(eq(users.id, userId))
+    .returning({
+      id: users.id,
+      name: users.name,
+      displayName: users.displayName,
+      email: users.email,
+      image: users.image,
+      bio: users.bio,
+      role: users.role,
+      createdAt: users.createdAt,
+    });
+  return updated ?? null;
+}
+
+export async function getAllUserImageUrls(userId: string): Promise<string[]> {
+  const cardImages = await db
+    .select({ imageUrl: cards.imageUrl })
+    .from(cards)
+    .innerJoin(decks, eq(cards.deckId, decks.id))
+    .where(eq(decks.userId, userId));
+
+  const deckCovers = await db
+    .select({ coverImageUrl: decks.coverImageUrl })
+    .from(decks)
+    .where(eq(decks.userId, userId));
+
+  const urls: string[] = [];
+  for (const row of cardImages) {
+    if (row.imageUrl) urls.push(row.imageUrl);
+  }
+  for (const row of deckCovers) {
+    if (row.coverImageUrl) urls.push(row.coverImageUrl);
+  }
+  return urls;
+}
+
+export async function deleteUser(userId: string) {
+  await db.delete(users).where(eq(users.id, userId));
+}
+
+// --- Public share lookups (no auth) ---
+
+export async function getSharedReadingByToken(token: string) {
+  const [reading] = await db
+    .select({
+      id: readings.id,
+      spreadType: readings.spreadType,
+      question: readings.question,
+      interpretation: readings.interpretation,
+      createdAt: readings.createdAt,
+      deckTitle: decks.title,
+      deckCoverImageUrl: decks.coverImageUrl,
+    })
+    .from(readings)
+    .innerJoin(decks, eq(readings.deckId, decks.id))
+    .where(eq(readings.shareToken, token));
+
+  if (!reading) return null;
+
+  const cardsData = await db
+    .select({
+      id: readingCards.id,
+      readingId: readingCards.readingId,
+      position: readingCards.position,
+      positionName: readingCards.positionName,
+      cardId: readingCards.cardId,
+      personCardId: readingCards.personCardId,
+      createdAt: readingCards.createdAt,
+      card: {
+        id: cards.id,
+        deckId: cards.deckId,
+        cardNumber: cards.cardNumber,
+        title: cards.title,
+        meaning: cards.meaning,
+        guidance: cards.guidance,
+        imageUrl: cards.imageUrl,
+        imagePrompt: cards.imagePrompt,
+        imageStatus: cards.imageStatus,
+        createdAt: cards.createdAt,
+        updatedAt: cards.updatedAt,
+      },
+    })
+    .from(readingCards)
+    .leftJoin(cards, eq(readingCards.cardId, cards.id))
+    .where(eq(readingCards.readingId, reading.id))
+    .orderBy(asc(readingCards.position));
+
+  return { ...reading, cards: cardsData };
+}
+
+export async function getSharedDeckByToken(token: string) {
+  const [deck] = await db
+    .select({
+      id: decks.id,
+      title: decks.title,
+      description: decks.description,
+      cardCount: decks.cardCount,
+      coverImageUrl: decks.coverImageUrl,
+      artStyleId: decks.artStyleId,
+      createdAt: decks.createdAt,
+    })
+    .from(decks)
+    .where(eq(decks.shareToken, token));
+
+  if (!deck) return null;
+
+  const deckCards = await db
+    .select()
+    .from(cards)
+    .where(eq(cards.deckId, deck.id))
+    .orderBy(asc(cards.cardNumber));
+
+  let artStyleName: string | null = null;
+  if (deck.artStyleId) {
+    const [style] = await db
+      .select({ name: artStyles.name })
+      .from(artStyles)
+      .where(eq(artStyles.id, deck.artStyleId));
+    artStyleName = style?.name ?? null;
+  }
+
+  return { ...deck, cards: deckCards, artStyleName };
+}
+
+export async function getSharedArtStyleByToken(token: string) {
+  const [style] = await db
+    .select()
+    .from(artStyles)
+    .where(eq(artStyles.shareToken, token));
+  return style ?? null;
+}
+
+// --- User context for AI readings ---
+
+export async function getUserReadingContext(userId: string) {
+  // Get user context profile
+  const [profile] = await db
+    .select()
+    .from(userProfiles)
+    .where(eq(userProfiles.userId, userId));
+
+  // Get last 5 readings (verbatim for rolling window)
+  const recentReadings = await db
+    .select({
+      question: readings.question,
+      spreadType: readings.spreadType,
+      feedback: readings.feedback,
+    })
+    .from(readings)
+    .where(eq(readings.userId, userId))
+    .orderBy(desc(readings.createdAt))
+    .limit(5);
+
+  // Get user's deck themes (limit 5)
+  const deckThemes = await db
+    .select({ title: decks.title, theme: decks.theme })
+    .from(decks)
+    .where(and(eq(decks.userId, userId), eq(decks.status, "completed")))
+    .orderBy(desc(decks.updatedAt))
+    .limit(5);
+
+  return {
+    contextSummary: profile?.contextSummary ?? null,
+    recentReadings: recentReadings.map((r) => ({
+      question: r.question,
+      spreadType: r.spreadType,
+      feedback: r.feedback,
+    })),
+    deckThemes: deckThemes
+      .map((d) => d.theme || d.title)
+      .filter(Boolean) as string[],
+  };
+}
+
+// --- User context profile queries ---
+
+export async function getUserContextProfile(userId: string): Promise<UserContextProfile | null> {
+  const [profile] = await db
+    .select()
+    .from(userProfiles)
+    .where(eq(userProfiles.userId, userId));
+
+  if (!profile) return null;
+
+  return {
+    userId: profile.userId,
+    lifeContext: profile.lifeContext,
+    interests: profile.interests,
+    readingPreferences: profile.readingPreferences,
+    readingLength: (profile.readingLength as ReadingLength) ?? "brief",
+    contextSummary: profile.contextSummary,
+    contextVersion: profile.contextVersion,
+    createdAt: profile.createdAt,
+    updatedAt: profile.updatedAt,
+  };
+}
+
+export async function upsertUserContextProfile(
+  userId: string,
+  data: Partial<{
+    contextSummary: string | null;
+    contextVersion: number;
+    lifeContext: string | null;
+    readingPreferences: string | null;
+  }>
+) {
+  const existing = await getUserContextProfile(userId);
+  if (existing) {
+    await db
+      .update(userProfiles)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(userProfiles.userId, userId));
+  } else {
+    await db.insert(userProfiles).values({
+      userId,
+      ...data,
+      contextVersion: data.contextVersion ?? 0,
+    });
+  }
+}
+
+export async function getReadingCountSinceVersion(userId: string, version: number) {
+  const [result] = await db
+    .select({ count: count() })
+    .from(readings)
+    .where(eq(readings.userId, userId));
+  // Count all readings - version is used as a marker for how many have been compressed
+  return (result?.count ?? 0) - version;
+}
+
+export async function getRecentReadingsForCompression(userId: string, skipCount: number) {
+  // Get readings that haven't been compressed yet (older than recent 5, newer than last compressed batch)
+  return db
+    .select({
+      question: readings.question,
+      spreadType: readings.spreadType,
+      feedback: readings.feedback,
+      deckTitle: decks.title,
+      deckTheme: decks.theme,
+    })
+    .from(readings)
+    .innerJoin(decks, eq(readings.deckId, decks.id))
+    .where(eq(readings.userId, userId))
+    .orderBy(desc(readings.createdAt))
+    .limit(20)
+    .offset(5); // Skip the 5 most recent (they're in the rolling window)
+}
+
+// --- Deck adoption queries ---
+
+export async function getPublicDecks(userId: string): Promise<DeckWithOwner[]> {
+  const rows = await db
+    .select({
+      id: decks.id,
+      userId: decks.userId,
+      title: decks.title,
+      description: decks.description,
+      theme: decks.theme,
+      status: decks.status,
+      deckType: decks.deckType,
+      cardCount: decks.cardCount,
+      isPublic: decks.isPublic,
+      shareToken: decks.shareToken,
+      coverImageUrl: decks.coverImageUrl,
+      artStyleId: decks.artStyleId,
+      createdAt: decks.createdAt,
+      updatedAt: decks.updatedAt,
+      ownerName: users.name,
+      ownerImage: users.image,
+      adoptedAt: deckAdoptions.adoptedAt,
+    })
+    .from(decks)
+    .innerJoin(users, eq(decks.userId, users.id))
+    .leftJoin(
+      deckAdoptions,
+      and(eq(deckAdoptions.deckId, decks.id), eq(deckAdoptions.userId, userId))
+    )
+    .where(
+      and(
+        eq(decks.status, "completed"),
+        isNotNull(decks.shareToken),
+        ne(decks.userId, userId)
+      )
+    )
+    .orderBy(desc(decks.updatedAt));
+
+  return rows.map((r) => ({
+    id: r.id,
+    userId: r.userId,
+    title: r.title,
+    description: r.description,
+    theme: r.theme,
+    status: r.status as Deck["status"],
+    deckType: (r.deckType ?? "standard") as Deck["deckType"],
+    cardCount: r.cardCount,
+    isPublic: r.isPublic,
+    shareToken: r.shareToken ?? null,
+    coverImageUrl: r.coverImageUrl,
+    artStyleId: r.artStyleId,
+    createdAt: r.createdAt,
+    updatedAt: r.updatedAt,
+    ownerName: r.ownerName,
+    ownerImage: r.ownerImage,
+    isAdopted: r.adoptedAt !== null,
+  }));
+}
+
+export async function getAdoptedDecks(userId: string): Promise<DeckWithOwner[]> {
+  try {
+    const rows = await db
+      .select({
+        id: decks.id,
+        userId: decks.userId,
+        title: decks.title,
+        description: decks.description,
+        theme: decks.theme,
+        status: decks.status,
+        deckType: decks.deckType,
+        cardCount: decks.cardCount,
+        isPublic: decks.isPublic,
+        shareToken: decks.shareToken,
+        coverImageUrl: decks.coverImageUrl,
+        artStyleId: decks.artStyleId,
+        createdAt: decks.createdAt,
+        updatedAt: decks.updatedAt,
+        ownerName: users.name,
+        ownerImage: users.image,
+      })
+      .from(deckAdoptions)
+      .innerJoin(decks, eq(deckAdoptions.deckId, decks.id))
+      .innerJoin(users, eq(decks.userId, users.id))
+      .where(eq(deckAdoptions.userId, userId))
+      .orderBy(desc(deckAdoptions.adoptedAt));
+
+    return rows.map((r) => ({
+      id: r.id,
+      userId: r.userId,
+      title: r.title,
+      description: r.description,
+      theme: r.theme,
+      status: r.status as Deck["status"],
+      deckType: (r.deckType ?? "standard") as Deck["deckType"],
+      cardCount: r.cardCount,
+      isPublic: r.isPublic,
+      shareToken: r.shareToken ?? null,
+      coverImageUrl: r.coverImageUrl,
+      artStyleId: r.artStyleId,
+      createdAt: r.createdAt,
+      updatedAt: r.updatedAt,
+      ownerName: r.ownerName,
+      ownerImage: r.ownerImage,
+      isAdopted: true,
+    }));
+  } catch (error: unknown) {
+    // Table may not exist yet if schema hasn't been pushed
+    if (error instanceof Error && error.message.includes("does not exist")) {
+      return [];
+    }
+    throw error;
+  }
+}
+
+export async function adoptDeck(userId: string, deckId: string) {
+  await db.insert(deckAdoptions).values({ userId, deckId }).onConflictDoNothing();
+}
+
+export async function unadoptDeck(userId: string, deckId: string) {
+  await db
+    .delete(deckAdoptions)
+    .where(and(eq(deckAdoptions.userId, userId), eq(deckAdoptions.deckId, deckId)));
+}
+
+export async function hasAdoptedDeck(userId: string, deckId: string): Promise<boolean> {
+  const [row] = await db
+    .select({ userId: deckAdoptions.userId })
+    .from(deckAdoptions)
+    .where(and(eq(deckAdoptions.userId, userId), eq(deckAdoptions.deckId, deckId)))
+    .limit(1);
+  return !!row;
+}
+
+// --- Reading length preferences ---
+
+export async function getUserReadingLength(userId: string): Promise<ReadingLength> {
+  const [profile] = await db
+    .select({ readingLength: userProfiles.readingLength })
+    .from(userProfiles)
+    .where(eq(userProfiles.userId, userId));
+  return (profile?.readingLength as ReadingLength) ?? "brief";
+}
+
+export async function upsertUserReadingLength(userId: string, readingLength: ReadingLength) {
+  const existing = await getUserContextProfile(userId);
+  if (existing) {
+    await db
+      .update(userProfiles)
+      .set({ readingLength, updatedAt: new Date() })
+      .where(eq(userProfiles.userId, userId));
+  } else {
+    await db.insert(userProfiles).values({
+      userId,
+      readingLength,
+      contextVersion: 0,
+    });
+  }
+}
+
+// --- Card feedback queries ---
+
+export async function getUserCardFeedback(userId: string, cardIds: string[]) {
+  if (cardIds.length === 0) return {};
+  const rows = await db
+    .select({
+      cardId: cardFeedback.cardId,
+      feedback: cardFeedback.feedback,
+    })
+    .from(cardFeedback)
+    .where(eq(cardFeedback.userId, userId));
+
+  const map: Record<string, CardFeedbackType> = {};
+  for (const row of rows) {
+    if (cardIds.includes(row.cardId)) {
+      map[row.cardId] = row.feedback as CardFeedbackType;
+    }
+  }
+  return map;
+}
+
+export async function getUserCardPreferences(userId: string) {
+  const rows = await db
+    .select({
+      feedback: cardFeedback.feedback,
+      title: cards.title,
+      meaning: cards.meaning,
+    })
+    .from(cardFeedback)
+    .innerJoin(cards, eq(cardFeedback.cardId, cards.id))
+    .where(eq(cardFeedback.userId, userId));
+
+  const lovedCards: { title: string; meaning: string }[] = [];
+  const dismissedCards: { title: string; meaning: string }[] = [];
+
+  for (const row of rows) {
+    const entry = { title: row.title, meaning: row.meaning };
+    if (row.feedback === "loved") {
+      lovedCards.push(entry);
+    } else if (row.feedback === "dismissed") {
+      dismissedCards.push(entry);
+    }
+  }
+
+  return { lovedCards, dismissedCards };
+}
+
+// --- Living Deck queries ---
+
+export async function getUserLivingDeck(userId: string) {
+  const [deck] = await db
+    .select()
+    .from(decks)
+    .where(and(eq(decks.userId, userId), eq(decks.deckType, "living")));
+  return deck ?? null;
+}
+
+export async function getLivingDeckSettings(deckId: string) {
+  const [settings] = await db
+    .select()
+    .from(livingDeckSettings)
+    .where(eq(livingDeckSettings.deckId, deckId));
+  return settings ?? null;
+}
+
+export async function canGenerateLivingDeckCard(deckId: string): Promise<boolean> {
+  const settings = await getLivingDeckSettings(deckId);
+  if (!settings?.lastCardGeneratedAt) return true;
+
+  const now = new Date();
+  const lastGen = new Date(settings.lastCardGeneratedAt);
+  // Compare dates (not times) — allow one card per calendar day
+  return (
+    now.getUTCFullYear() !== lastGen.getUTCFullYear() ||
+    now.getUTCMonth() !== lastGen.getUTCMonth() ||
+    now.getUTCDate() !== lastGen.getUTCDate()
+  );
+}
+
+export async function getRecentLivingDeckCards(deckId: string, limit = 10) {
+  return db
+    .select({
+      title: cards.title,
+      meaning: cards.meaning,
+    })
+    .from(cards)
+    .where(eq(cards.deckId, deckId))
+    .orderBy(desc(cards.createdAt))
+    .limit(limit);
+}
+
+// --- Voice preference queries ---
+
+export async function getVoicePreferences(userId: string): Promise<VoicePreferences> {
+  const [profile] = await db
+    .select({
+      voiceEnabled: userProfiles.voiceEnabled,
+      voiceAutoplay: userProfiles.voiceAutoplay,
+      voiceSpeed: userProfiles.voiceSpeed,
+      voiceId: userProfiles.voiceId,
+    })
+    .from(userProfiles)
+    .where(eq(userProfiles.userId, userId));
+
+  if (!profile) {
+    return { enabled: false, autoplay: true, speed: '1.0', voiceId: null };
+  }
+
+  return {
+    enabled: profile.voiceEnabled,
+    autoplay: profile.voiceAutoplay,
+    speed: (profile.voiceSpeed as VoiceSpeed) ?? '1.0',
+    voiceId: profile.voiceId,
+  };
+}
+
+export async function upsertVoicePreferences(
+  userId: string,
+  prefs: Partial<{
+    voiceEnabled: boolean;
+    voiceAutoplay: boolean;
+    voiceSpeed: string;
+    voiceId: string | null;
+  }>
+) {
+  const existing = await getUserContextProfile(userId);
+  if (existing) {
+    await db
+      .update(userProfiles)
+      .set({ ...prefs, updatedAt: new Date() })
+      .where(eq(userProfiles.userId, userId));
+  } else {
+    await db.insert(userProfiles).values({
+      userId,
+      voiceEnabled: prefs.voiceEnabled ?? false,
+      voiceAutoplay: prefs.voiceAutoplay ?? true,
+      voiceSpeed: prefs.voiceSpeed ?? '1.0',
+      voiceId: prefs.voiceId ?? null,
+      contextVersion: 0,
+    });
+  }
 }

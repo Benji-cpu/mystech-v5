@@ -1,26 +1,55 @@
-import Link from "next/link";
-import { Sparkles } from "lucide-react";
+"use client";
+
+import { useState } from "react";
+import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { toast } from "sonner";
+import { LyraSigil } from "@/components/guide/lyra-sigil";
+import { LYRA_DASHBOARD } from "@/components/guide/lyra-constants";
 
 export function UpgradeCta() {
+  const [loading, setLoading] = useState(false);
+
+  const handleUpgrade = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/stripe/checkout", { method: "POST" });
+      const data = await res.json();
+
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        toast.error(data.error || "Failed to start checkout");
+        setLoading(false);
+      }
+    } catch {
+      toast.error("Something went wrong. Please try again.");
+      setLoading(false);
+    }
+  };
+
   return (
     <Card className="border-primary/30 bg-primary/5">
       <CardContent className="flex flex-col items-center gap-4 pt-6 text-center">
-        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-          <Sparkles className="h-6 w-6 text-primary" />
-        </div>
+        <LyraSigil size="lg" state="dormant" />
         <div className="space-y-1">
           <h3 className="text-lg font-semibold">
-            Unlock the full experience
+            {LYRA_DASHBOARD.upgradeCta.title}
           </h3>
           <p className="text-sm text-muted-foreground">
-            Get unlimited decks, more readings, all spread types, and premium AI
-            models with MysTech Pro.
+            {LYRA_DASHBOARD.upgradeCta.description}
           </p>
         </div>
-        <Button asChild>
-          <Link href="/pricing">Go Pro - $4.99/mo</Link>
+        <Button onClick={handleUpgrade} disabled={loading}>
+          {loading ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              Redirecting...
+            </>
+          ) : (
+            "Go Pro - $4.99/mo"
+          )}
         </Button>
       </CardContent>
     </Card>

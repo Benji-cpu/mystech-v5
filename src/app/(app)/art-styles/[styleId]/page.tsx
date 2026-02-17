@@ -48,7 +48,7 @@ export default async function StyleDetailPage({
   const isPreset = style.isPreset;
 
   return (
-    <div className="p-6 max-w-2xl mx-auto space-y-6">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-2xl mx-auto space-y-6">
       {/* Back link */}
       <Link
         href="/art-styles"
@@ -74,7 +74,7 @@ export default async function StyleDetailPage({
       {/* Preview gallery (gradient placeholders) */}
       <section className="space-y-3">
         <h2 className="text-sm font-medium text-muted-foreground">Preview</h2>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {[0, 1, 2].map((i) => (
             <StyleThumbnail
               key={i}

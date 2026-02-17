@@ -1,0 +1,1046 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Particle Assembly — MysTech Mock Lab</title>
+  <link rel="stylesheet" href="../../shared/base.css">
+  <link rel="stylesheet" href="../../shared/controls.css">
+  <style>
+    /* ============================================
+       Particle Assembly — Card Reveal Animation
+       ============================================ */
+
+    /* --- Control defaults (overridden by MockControls) --- */
+    :root {
+      --ctrl-particle-count: 400;
+      --ctrl-attraction: 0.04;
+      --ctrl-swirl: 0.8;
+      --ctrl-glow: 0.7;
+      --ctrl-aura: 1;
+      --ctrl-palette: gold;
+      --ctrl-delay: 1.5s;
+    }
+
+    /* --- Layout --- */
+    .mock-page {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .mock-header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+    }
+
+    /* --- Full-viewport canvas --- */
+    #particle-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 1;
+    }
+
+    /* --- Card spread overlay (positioned above canvas) --- */
+    .spread-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+
+    /* --- Card positions row --- */
+    .card-spread {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 2.5rem;
+    }
+
+    .card-slot {
+      position: relative;
+      width: 120px;
+      aspect-ratio: 2 / 3;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* --- Card position label --- */
+    .card-slot__label {
+      position: absolute;
+      bottom: -1.75rem;
+      font-size: 0.7rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      white-space: nowrap;
+      opacity: 0.7;
+      transition: opacity 0.5s ease;
+    }
+
+    .card-slot.is-revealed .card-slot__label {
+      color: var(--gold-dim);
+      opacity: 1;
+    }
+
+    /* --- Trigger button --- */
+    .trigger-container {
+      margin-top: 3.5rem;
+      pointer-events: auto;
+    }
+
+    .trigger-btn {
+      position: relative;
+      padding: 0.875rem 2.5rem;
+      font-size: 0.95rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      color: var(--bg-deep);
+      background: linear-gradient(135deg, var(--gold-dim), var(--gold-bright), var(--gold));
+      border: none;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      overflow: hidden;
+      transition: all 300ms var(--ease-out-expo);
+      box-shadow: 0 0 20px rgba(201, 169, 78, 0.25), 0 4px 12px rgba(0, 0, 0, 0.4);
+    }
+
+    .trigger-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 30px rgba(201, 169, 78, 0.4), 0 8px 20px rgba(0, 0, 0, 0.5);
+    }
+
+    .trigger-btn:active {
+      transform: translateY(0);
+    }
+
+    .trigger-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    /* Shimmer sweep on the button */
+    .trigger-btn::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(
+        45deg,
+        transparent 30%,
+        rgba(255, 255, 255, 0.15) 50%,
+        transparent 70%
+      );
+      animation: btn-shimmer 3s ease-in-out infinite;
+    }
+
+    @keyframes btn-shimmer {
+      0% { transform: translateX(-100%) rotate(0deg); }
+      100% { transform: translateX(100%) rotate(0deg); }
+    }
+
+    /* --- Responsive: Mobile --- */
+    @media (max-width: 640px) {
+      .card-spread {
+        gap: 1.25rem;
+      }
+
+      .card-slot {
+        width: 80px;
+      }
+
+      .card-slot__label {
+        font-size: 0.6rem;
+        bottom: -1.5rem;
+      }
+
+      .trigger-btn {
+        padding: 0.75rem 1.75rem;
+        font-size: 0.85rem;
+      }
+
+      .trigger-container {
+        margin-top: 3rem;
+      }
+    }
+
+    @media (max-width: 380px) {
+      .card-spread {
+        gap: 0.75rem;
+      }
+
+      .card-slot {
+        width: 70px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="mock-page">
+
+    <!-- Header -->
+    <header class="mock-header">
+      <a href="../../index.html" class="mock-back-link">Mock Lab</a>
+      <h1 class="mock-title gold-text">Particle Assembly</h1>
+    </header>
+
+    <!-- Full-viewport particle canvas -->
+    <canvas id="particle-canvas"></canvas>
+
+    <!-- Card spread overlay -->
+    <div class="spread-overlay">
+      <div class="card-spread" id="card-spread">
+        <div class="card-slot" id="slot-0" data-card-name="The Wanderer">
+          <span class="card-slot__label">Past</span>
+        </div>
+        <div class="card-slot" id="slot-1" data-card-name="The Mirror">
+          <span class="card-slot__label">Present</span>
+        </div>
+        <div class="card-slot" id="slot-2" data-card-name="The Flame">
+          <span class="card-slot__label">Future</span>
+        </div>
+      </div>
+      <div class="trigger-container">
+        <button class="trigger-btn" id="begin-btn">Begin Reading</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Shared controls script -->
+  <script src="../../shared/controls.js"></script>
+
+  <script>
+    /* ============================================
+       Particle Assembly — Main Animation Script
+       ============================================ */
+
+    // -------------------------------------------
+    // 1. Configuration & State
+    // -------------------------------------------
+
+    /** Card definitions for the 3-card spread */
+    const CARDS = [
+      { name: 'The Wanderer', slot: 0, label: 'Past' },
+      { name: 'The Mirror',   slot: 1, label: 'Present' },
+      { name: 'The Flame',    slot: 2, label: 'Future' },
+    ];
+
+    /** Color palettes keyed by control value */
+    const PALETTES = {
+      gold: {
+        primary:   [201, 169, 78],
+        secondary: [226, 201, 106],
+        dim:       [138, 116, 53],
+        accent:    [255, 230, 140],
+        bg:        [100, 85, 40],
+      },
+      purple: {
+        primary:   [184, 138, 255],
+        secondary: [124, 77, 255],
+        dim:       [74, 20, 140],
+        accent:    [200, 170, 255],
+        bg:        [60, 30, 120],
+      },
+      prismatic: {
+        primary:   [255, 107, 157],  // holo-1
+        secondary: [192, 132, 252],  // holo-2
+        dim:       [103, 232, 249],  // holo-3
+        accent:    [251, 191, 36],   // holo-5
+        bg:        [163, 230, 53],   // holo-4
+      },
+    };
+
+    /** Dynamic config — updated by MockControls callbacks */
+    const config = {
+      particleCount: 400,
+      attraction: 0.04,
+      swirl: 0.8,
+      glow: 0.7,
+      aura: true,
+      palette: 'gold',
+      delay: 1.5,
+    };
+
+    /** Animation state */
+    const state = {
+      animating: false,
+      revealStarted: false,
+      cardStates: [
+        { phase: 'idle', progress: 0, revealed: false, pulseTime: Math.random() * Math.PI * 2 },
+        { phase: 'idle', progress: 0, revealed: false, pulseTime: Math.random() * Math.PI * 2 },
+        { phase: 'idle', progress: 0, revealed: false, pulseTime: Math.random() * Math.PI * 2 },
+      ],
+      /** Per-card particle arrays, populated on init/resize */
+      particleGroups: [[], [], []],
+      /** Ambient background particles */
+      ambientParticles: [],
+      /** Card slot positions in canvas coordinates */
+      cardPositions: [],
+      /** Card dimensions in canvas pixels */
+      cardWidth: 0,
+      cardHeight: 0,
+      /** Time tracking */
+      lastTime: 0,
+      time: 0,
+    };
+
+    /** Is mobile viewport? Used to cap particles */
+    const isMobile = () => window.innerWidth <= 640;
+
+    // -------------------------------------------
+    // 2. Canvas Setup
+    // -------------------------------------------
+
+    const canvas = document.getElementById('particle-canvas');
+    const ctx = canvas.getContext('2d');
+    let dpr = 1;
+
+    function resizeCanvas() {
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = window.innerWidth * dpr;
+      canvas.height = window.innerHeight * dpr;
+      canvas.style.width = window.innerWidth + 'px';
+      canvas.style.height = window.innerHeight + 'px';
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      // Recalculate card positions based on DOM slot elements
+      computeCardPositions();
+
+      // Reinitialize particles if not mid-reveal
+      if (!state.revealStarted) {
+        initAllParticles();
+      } else {
+        // Remap particle targets to new positions
+        remapParticleTargets();
+      }
+    }
+
+    /** Read DOM card slot positions and convert to canvas-space */
+    function computeCardPositions() {
+      const slots = document.querySelectorAll('.card-slot');
+      state.cardPositions = [];
+      slots.forEach((slot, i) => {
+        const rect = slot.getBoundingClientRect();
+        state.cardPositions.push({
+          cx: rect.left + rect.width / 2,
+          cy: rect.top + rect.height / 2,
+          w: rect.width,
+          h: rect.height,
+        });
+      });
+      if (state.cardPositions.length > 0) {
+        state.cardWidth = state.cardPositions[0].w;
+        state.cardHeight = state.cardPositions[0].h;
+      }
+    }
+
+    // -------------------------------------------
+    // 3. Particle Creation
+    // -------------------------------------------
+
+    /**
+     * Create a single particle for a given card group.
+     * Particles start scattered around the card position.
+     */
+    function createParticle(cardIndex) {
+      const pos = state.cardPositions[cardIndex];
+      if (!pos) return null;
+
+      // Scatter radius: spread particles in a wide area around the card
+      const scatterRadius = Math.max(state.cardWidth, state.cardHeight) * 2.5;
+      const angle = Math.random() * Math.PI * 2;
+      const dist = scatterRadius * (0.4 + Math.random() * 0.6);
+
+      // Target: random position within the card rectangle
+      const targetX = pos.cx + (Math.random() - 0.5) * pos.w * 0.9;
+      const targetY = pos.cy + (Math.random() - 0.5) * pos.h * 0.9;
+
+      return {
+        // Current position (scattered)
+        x: pos.cx + Math.cos(angle) * dist,
+        y: pos.cy + Math.sin(angle) * dist,
+        // Target position (on the card)
+        targetX: targetX,
+        targetY: targetY,
+        // Velocity
+        vx: (Math.random() - 0.5) * 0.5,
+        vy: (Math.random() - 0.5) * 0.5,
+        // Visual properties
+        size: 1 + Math.random() * 2.5,
+        alpha: 0.2 + Math.random() * 0.5,
+        baseAlpha: 0.2 + Math.random() * 0.5,
+        // Animation phase offset for variation
+        phase: Math.random() * Math.PI * 2,
+        // Whether this particle has locked into final position
+        locked: false,
+        // Lock time (for stagger effect)
+        lockDelay: Math.random(),
+        // Color variation index (for prismatic palette)
+        colorIndex: Math.floor(Math.random() * 5),
+      };
+    }
+
+    /** Create an ambient background particle */
+    function createAmbientParticle() {
+      return {
+        x: Math.random() * window.innerWidth,
+        y: Math.random() * window.innerHeight,
+        vx: (Math.random() - 0.5) * 0.3,
+        vy: (Math.random() - 0.5) * 0.3 - 0.1,
+        size: 0.5 + Math.random() * 1.5,
+        alpha: 0.05 + Math.random() * 0.15,
+        phase: Math.random() * Math.PI * 2,
+      };
+    }
+
+    /** Initialize all particle groups from scratch */
+    function initAllParticles() {
+      const count = getEffectiveParticleCount();
+
+      for (let i = 0; i < 3; i++) {
+        state.particleGroups[i] = [];
+        for (let j = 0; j < count; j++) {
+          const p = createParticle(i);
+          if (p) state.particleGroups[i].push(p);
+        }
+      }
+
+      // Ambient particles (about 60 for atmosphere)
+      state.ambientParticles = [];
+      const ambientCount = isMobile() ? 30 : 60;
+      for (let j = 0; j < ambientCount; j++) {
+        state.ambientParticles.push(createAmbientParticle());
+      }
+    }
+
+    /** Remap existing particle targets when canvas resizes mid-animation */
+    function remapParticleTargets() {
+      for (let i = 0; i < 3; i++) {
+        const pos = state.cardPositions[i];
+        if (!pos) continue;
+        state.particleGroups[i].forEach(p => {
+          p.targetX = pos.cx + (Math.random() - 0.5) * pos.w * 0.9;
+          p.targetY = pos.cy + (Math.random() - 0.5) * pos.h * 0.9;
+        });
+      }
+    }
+
+    /** Get effective particle count based on device and control */
+    function getEffectiveParticleCount() {
+      const maxMobile = 300;
+      const count = config.particleCount;
+      return isMobile() ? Math.min(count, maxMobile) : count;
+    }
+
+    // -------------------------------------------
+    // 4. Color Helpers
+    // -------------------------------------------
+
+    /** Get the current palette colors */
+    function getPalette() {
+      return PALETTES[config.palette] || PALETTES.gold;
+    }
+
+    /** Get a color string from an [r,g,b] array with alpha */
+    function rgba(color, alpha) {
+      return 'rgba(' + color[0] + ',' + color[1] + ',' + color[2] + ',' + alpha + ')';
+    }
+
+    /** Get particle color — for prismatic, varies per particle */
+    function getParticleColor(particle) {
+      const pal = getPalette();
+      if (config.palette === 'prismatic') {
+        const colors = [pal.primary, pal.secondary, pal.dim, pal.accent, pal.bg];
+        return colors[particle.colorIndex % colors.length];
+      }
+      // For gold/purple: blend primary and secondary based on phase
+      const t = (Math.sin(particle.phase + state.time * 2) + 1) * 0.5;
+      return [
+        Math.round(pal.primary[0] + (pal.secondary[0] - pal.primary[0]) * t),
+        Math.round(pal.primary[1] + (pal.secondary[1] - pal.primary[1]) * t),
+        Math.round(pal.primary[2] + (pal.secondary[2] - pal.primary[2]) * t),
+      ];
+    }
+
+    // -------------------------------------------
+    // 5. Physics & Animation Update
+    // -------------------------------------------
+
+    /**
+     * Update a single card's particle group based on its current phase.
+     * Phases: 'idle' -> 'assembling' -> 'pulse' -> 'revealed'
+     */
+    function updateCardParticles(cardIndex, dt) {
+      const cardState = state.cardStates[cardIndex];
+      const particles = state.particleGroups[cardIndex];
+      const pos = state.cardPositions[cardIndex];
+      if (!pos || !particles.length) return;
+
+      switch (cardState.phase) {
+
+        // ----- IDLE: particles drift lazily around the card center -----
+        case 'idle': {
+          cardState.pulseTime += dt;
+          particles.forEach(p => {
+            // Gentle random drift
+            p.vx += (Math.random() - 0.5) * 0.02;
+            p.vy += (Math.random() - 0.5) * 0.02;
+
+            // Weak pull toward scatter center (prevents drifting offscreen)
+            const dx = pos.cx - p.x;
+            const dy = pos.cy - p.y;
+            const distSq = dx * dx + dy * dy;
+            const dist = Math.sqrt(distSq) + 0.01;
+            const maxDist = state.cardWidth * 2.5;
+            if (dist > maxDist * 0.5) {
+              p.vx += dx / dist * 0.008;
+              p.vy += dy / dist * 0.008;
+            }
+
+            // Damping
+            p.vx *= 0.995;
+            p.vy *= 0.995;
+
+            p.x += p.vx;
+            p.y += p.vy;
+
+            // Pulsing alpha
+            p.alpha = p.baseAlpha * (0.5 + 0.5 * Math.sin(state.time * 1.5 + p.phase));
+          });
+          break;
+        }
+
+        // ----- ASSEMBLING: particles accelerate toward their target positions -----
+        case 'assembling': {
+          cardState.progress += dt * 0.45; // Takes roughly 2.2 seconds
+          const progress = Math.min(cardState.progress, 1);
+
+          particles.forEach(p => {
+            if (p.locked) return;
+
+            const dx = p.targetX - p.x;
+            const dy = p.targetY - p.y;
+            const dist = Math.sqrt(dx * dx + dy * dy) + 0.01;
+
+            // Ease-in attraction: starts slow, accelerates
+            const easedProgress = progress * progress;
+            const attractionForce = config.attraction * (1 + easedProgress * 4);
+
+            // Attraction toward target
+            p.vx += (dx / dist) * attractionForce * dist * 0.01;
+            p.vy += (dy / dist) * attractionForce * dist * 0.01;
+
+            // Swirl: perpendicular force component (creates orbital motion)
+            const swirlStrength = config.swirl * (1 - progress) * 0.015;
+            p.vx += (-dy / dist) * swirlStrength * dist * 0.01;
+            p.vy += (dx / dist) * swirlStrength * dist * 0.01;
+
+            // Damping increases as particles converge
+            const damping = 0.92 + progress * 0.06;
+            p.vx *= damping;
+            p.vy *= damping;
+
+            p.x += p.vx;
+            p.y += p.vy;
+
+            // Alpha brightens as particles converge
+            p.alpha = Math.min(1, p.baseAlpha + progress * 0.6);
+
+            // Size pulses larger during convergence
+            p.size = (1 + Math.random() * 2.5) * (1 + (1 - Math.abs(progress - 0.6) / 0.6) * 0.5);
+
+            // Lock particles when close enough to target and progress is high enough
+            if (dist < 3 && progress > 0.5 + p.lockDelay * 0.4) {
+              p.locked = true;
+              p.x = p.targetX;
+              p.y = p.targetY;
+              p.vx = 0;
+              p.vy = 0;
+              p.alpha = 1;
+            }
+          });
+
+          // Check if assembly is complete (enough particles locked or progress full)
+          const lockedCount = particles.filter(p => p.locked).length;
+          if (progress >= 1 || lockedCount / particles.length > 0.9) {
+            // Snap all remaining particles
+            particles.forEach(p => {
+              if (!p.locked) {
+                p.locked = true;
+                p.x = p.targetX;
+                p.y = p.targetY;
+                p.vx = 0;
+                p.vy = 0;
+                p.alpha = 1;
+              }
+            });
+            cardState.phase = 'pulse';
+            cardState.progress = 0;
+          }
+          break;
+        }
+
+        // ----- PULSE: brief flash of light rippling outward -----
+        case 'pulse': {
+          cardState.progress += dt * 2.5;
+          if (cardState.progress >= 1) {
+            cardState.phase = 'revealed';
+            cardState.revealed = true;
+            cardState.progress = 0;
+            // Mark DOM slot as revealed
+            document.getElementById('slot-' + cardIndex).classList.add('is-revealed');
+          }
+          break;
+        }
+
+        // ----- REVEALED: card is solid, aura particles drift at edges -----
+        case 'revealed': {
+          if (!config.aura) break;
+
+          particles.forEach(p => {
+            // Only a fraction of particles become aura
+            if (p.lockDelay > 0.7) {
+              // Aura drift: gentle movement near card edges
+              p.locked = false;
+              const edgeX = pos.cx + (Math.random() > 0.5 ? 1 : -1) * (pos.w * 0.5 + Math.random() * 8);
+              const edgeY = pos.cy + (Math.random() - 0.5) * pos.h * 1.1;
+
+              const dx = edgeX - p.x;
+              const dy = edgeY - p.y;
+              const dist = Math.sqrt(dx * dx + dy * dy) + 0.01;
+
+              p.vx += dx * 0.002;
+              p.vy += dy * 0.002;
+              p.vx += (Math.random() - 0.5) * 0.05;
+              p.vy += (Math.random() - 0.5) * 0.05;
+              p.vx *= 0.97;
+              p.vy *= 0.97;
+              p.x += p.vx;
+              p.y += p.vy;
+              p.alpha = 0.15 + 0.15 * Math.sin(state.time * 2 + p.phase);
+              p.size = 1 + Math.random() * 1.5;
+            }
+          });
+          break;
+        }
+      }
+    }
+
+    /** Update ambient background particles */
+    function updateAmbientParticles(dt) {
+      state.ambientParticles.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy + Math.sin(state.time + p.phase) * 0.05;
+
+        // Wrap around screen edges
+        if (p.x < -10) p.x = window.innerWidth + 10;
+        if (p.x > window.innerWidth + 10) p.x = -10;
+        if (p.y < -10) p.y = window.innerHeight + 10;
+        if (p.y > window.innerHeight + 10) p.y = -10;
+
+        p.alpha = 0.05 + 0.08 * Math.sin(state.time * 0.8 + p.phase);
+      });
+    }
+
+    // -------------------------------------------
+    // 6. Rendering
+    // -------------------------------------------
+
+    /** Clear the canvas with the deep background */
+    function clearCanvas() {
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.fillStyle = '#0a0118';
+      ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
+    }
+
+    /** Draw ambient background particles */
+    function drawAmbientParticles() {
+      const pal = getPalette();
+      ctx.globalCompositeOperation = 'lighter';
+      state.ambientParticles.forEach(p => {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fillStyle = rgba(pal.dim, p.alpha);
+        ctx.fill();
+      });
+    }
+
+    /** Draw the soft pulsing glow at unrevealed card positions */
+    function drawCardGlows() {
+      ctx.globalCompositeOperation = 'lighter';
+      const pal = getPalette();
+
+      state.cardStates.forEach((cs, i) => {
+        if (cs.phase !== 'idle') return;
+        const pos = state.cardPositions[i];
+        if (!pos) return;
+
+        const pulseAlpha = 0.04 + 0.03 * Math.sin(state.time * 1.2 + cs.pulseTime);
+        const glowRadius = Math.max(pos.w, pos.h) * 0.8;
+
+        const grad = ctx.createRadialGradient(pos.cx, pos.cy, 0, pos.cx, pos.cy, glowRadius);
+        grad.addColorStop(0, rgba(pal.primary, pulseAlpha * config.glow));
+        grad.addColorStop(0.5, rgba(pal.dim, pulseAlpha * 0.5 * config.glow));
+        grad.addColorStop(1, rgba(pal.dim, 0));
+
+        ctx.fillStyle = grad;
+        ctx.fillRect(pos.cx - glowRadius, pos.cy - glowRadius, glowRadius * 2, glowRadius * 2);
+      });
+    }
+
+    /** Draw particles for all card groups */
+    function drawCardParticles() {
+      for (let i = 0; i < 3; i++) {
+        const cardState = state.cardStates[i];
+        const particles = state.particleGroups[i];
+        const pos = state.cardPositions[i];
+        if (!pos) continue;
+
+        // Use additive blending during assembly for the converge glow effect
+        const isConverging = cardState.phase === 'assembling' || cardState.phase === 'pulse';
+        ctx.globalCompositeOperation = isConverging ? 'lighter' : 'lighter';
+
+        particles.forEach(p => {
+          // In revealed phase, only draw aura particles
+          if (cardState.phase === 'revealed' && p.locked) return;
+
+          const color = getParticleColor(p);
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fillStyle = rgba(color, p.alpha * config.glow);
+          ctx.fill();
+
+          // Extra glow for brighter particles during convergence
+          if (isConverging && p.alpha > 0.5) {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size * 2.5, 0, Math.PI * 2);
+            ctx.fillStyle = rgba(color, p.alpha * 0.15 * config.glow);
+            ctx.fill();
+          }
+        });
+      }
+    }
+
+    /** Draw the pulse ripple effect during the 'pulse' phase */
+    function drawPulseEffect() {
+      const pal = getPalette();
+
+      state.cardStates.forEach((cs, i) => {
+        if (cs.phase !== 'pulse') return;
+        const pos = state.cardPositions[i];
+        if (!pos) return;
+
+        const progress = cs.progress;
+        const maxRadius = Math.max(pos.w, pos.h) * 1.5;
+        const radius = maxRadius * progress;
+        const alpha = (1 - progress) * 0.6 * config.glow;
+
+        ctx.globalCompositeOperation = 'lighter';
+
+        // Outer ripple ring
+        ctx.beginPath();
+        ctx.arc(pos.cx, pos.cy, radius, 0, Math.PI * 2);
+        ctx.strokeStyle = rgba(pal.accent, alpha);
+        ctx.lineWidth = 3 * (1 - progress);
+        ctx.stroke();
+
+        // Inner bright flash
+        const innerAlpha = (1 - progress) * 0.4 * config.glow;
+        const innerGrad = ctx.createRadialGradient(pos.cx, pos.cy, 0, pos.cx, pos.cy, radius * 0.6);
+        innerGrad.addColorStop(0, rgba(pal.accent, innerAlpha));
+        innerGrad.addColorStop(1, rgba(pal.primary, 0));
+        ctx.fillStyle = innerGrad;
+        ctx.fillRect(pos.cx - radius, pos.cy - radius, radius * 2, radius * 2);
+      });
+    }
+
+    /** Draw the resolved card placeholder (gradient rectangle with card name) */
+    function drawRevealedCards() {
+      ctx.globalCompositeOperation = 'source-over';
+      const pal = getPalette();
+
+      state.cardStates.forEach((cs, i) => {
+        if (!cs.revealed) return;
+        const pos = state.cardPositions[i];
+        if (!pos) return;
+        const card = CARDS[i];
+
+        const x = pos.cx - pos.w / 2;
+        const y = pos.cy - pos.h / 2;
+        const w = pos.w;
+        const h = pos.h;
+        const r = 8; // border radius
+
+        // Card background gradient
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.lineTo(x + w - r, y);
+        ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+        ctx.lineTo(x + w, y + h - r);
+        ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+        ctx.lineTo(x + r, y + h);
+        ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+        ctx.lineTo(x, y + r);
+        ctx.quadraticCurveTo(x, y, x + r, y);
+        ctx.closePath();
+
+        // Fill with mystical gradient
+        const cardGrad = ctx.createLinearGradient(x, y, x + w, y + h);
+        cardGrad.addColorStop(0, '#0d0224');
+        cardGrad.addColorStop(0.3, rgba(pal.dim, 0.3));
+        cardGrad.addColorStop(0.7, '#1a0530');
+        cardGrad.addColorStop(1, '#0d0224');
+        ctx.fillStyle = cardGrad;
+        ctx.fill();
+
+        // Border glow
+        ctx.strokeStyle = rgba(pal.primary, 0.5);
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        // Inner border
+        ctx.strokeStyle = rgba(pal.dim, 0.2);
+        ctx.lineWidth = 0.5;
+        ctx.stroke();
+
+        // Decorative inner frame
+        const inset = 8;
+        const innerX = x + inset;
+        const innerY = y + inset;
+        const innerW = w - inset * 2;
+        const innerH = h - inset * 2;
+        const innerR = 4;
+
+        ctx.beginPath();
+        ctx.moveTo(innerX + innerR, innerY);
+        ctx.lineTo(innerX + innerW - innerR, innerY);
+        ctx.quadraticCurveTo(innerX + innerW, innerY, innerX + innerW, innerY + innerR);
+        ctx.lineTo(innerX + innerW, innerY + innerH - innerR);
+        ctx.quadraticCurveTo(innerX + innerW, innerY + innerH, innerX + innerW - innerR, innerY + innerH);
+        ctx.lineTo(innerX + innerR, innerY + innerH);
+        ctx.quadraticCurveTo(innerX, innerY + innerH, innerX, innerY + innerH - innerR);
+        ctx.lineTo(innerX, innerY + innerR);
+        ctx.quadraticCurveTo(innerX, innerY, innerX + innerR, innerY);
+        ctx.closePath();
+        ctx.strokeStyle = rgba(pal.primary, 0.15);
+        ctx.lineWidth = 0.5;
+        ctx.stroke();
+
+        // Small decorative symbol in the center-top area
+        const symbolY = pos.cy - h * 0.12;
+        ctx.font = (isMobile() ? '16' : '24') + 'px serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = rgba(pal.primary, 0.5);
+        const symbols = ['\u2726', '\u2727', '\u2736']; // decorative stars
+        ctx.fillText(symbols[i], pos.cx, symbolY);
+
+        // Card name text
+        const nameY = pos.cy + h * 0.15;
+        ctx.font = 'bold ' + (isMobile() ? '9' : '13') + 'px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = rgba(pal.accent, 0.9);
+        ctx.fillText(card.name, pos.cx, nameY);
+
+        // Subtle horizontal divider above the name
+        const divY = nameY - (isMobile() ? 10 : 16);
+        ctx.beginPath();
+        ctx.moveTo(pos.cx - w * 0.25, divY);
+        ctx.lineTo(pos.cx + w * 0.25, divY);
+        ctx.strokeStyle = rgba(pal.primary, 0.25);
+        ctx.lineWidth = 0.5;
+        ctx.stroke();
+
+        ctx.restore();
+      });
+    }
+
+    // -------------------------------------------
+    // 7. Main Animation Loop
+    // -------------------------------------------
+
+    function animate(timestamp) {
+      if (!state.lastTime) state.lastTime = timestamp;
+      const dt = Math.min((timestamp - state.lastTime) / 1000, 0.05); // Cap delta at 50ms
+      state.lastTime = timestamp;
+      state.time += dt;
+
+      // Update
+      for (let i = 0; i < 3; i++) {
+        updateCardParticles(i, dt);
+      }
+      updateAmbientParticles(dt);
+
+      // Render
+      clearCanvas();
+      drawAmbientParticles();
+      drawCardGlows();
+      drawCardParticles();
+      drawPulseEffect();
+      drawRevealedCards();
+
+      requestAnimationFrame(animate);
+    }
+
+    // -------------------------------------------
+    // 8. Reveal Trigger
+    // -------------------------------------------
+
+    function beginReading() {
+      if (state.revealStarted) return;
+      state.revealStarted = true;
+
+      const btn = document.getElementById('begin-btn');
+      btn.disabled = true;
+      btn.textContent = 'Reading...';
+
+      // Trigger cards sequentially with configurable delay
+      const delayMs = config.delay * 1000;
+
+      for (let i = 0; i < 3; i++) {
+        setTimeout(() => {
+          state.cardStates[i].phase = 'assembling';
+          state.cardStates[i].progress = 0;
+        }, i * delayMs);
+      }
+
+      // Update button text after all cards revealed
+      setTimeout(() => {
+        btn.textContent = 'Reading Complete';
+      }, 2 * delayMs + 3000);
+    }
+
+    /** Reset all cards to idle state for re-triggering */
+    function resetReading() {
+      state.revealStarted = false;
+      state.cardStates.forEach((cs) => {
+        cs.phase = 'idle';
+        cs.progress = 0;
+        cs.revealed = false;
+        cs.pulseTime = Math.random() * Math.PI * 2;
+      });
+
+      document.querySelectorAll('.card-slot').forEach(slot => {
+        slot.classList.remove('is-revealed');
+      });
+
+      const btn = document.getElementById('begin-btn');
+      btn.disabled = false;
+      btn.textContent = 'Begin Reading';
+
+      initAllParticles();
+    }
+
+    // -------------------------------------------
+    // 9. MockControls Setup
+    // -------------------------------------------
+
+    const controls = new MockControls('Particle Assembly');
+
+    controls.addSlider('particle-count', 'Particle Count', {
+      min: 200, max: 800, step: 50, default: 400
+    }, function(val) {
+      config.particleCount = val;
+      // Only reinitialize if not mid-reveal
+      if (!state.revealStarted) {
+        initAllParticles();
+      }
+    });
+
+    controls.addSlider('attraction', 'Attraction Strength', {
+      min: 0.01, max: 0.1, step: 0.01, default: 0.04
+    }, function(val) {
+      config.attraction = val;
+    });
+
+    controls.addSlider('swirl', 'Swirl Amount', {
+      min: 0, max: 2, step: 0.1, default: 0.8
+    }, function(val) {
+      config.swirl = val;
+    });
+
+    controls.addSlider('glow', 'Glow Intensity', {
+      min: 0.3, max: 1, step: 0.1, default: 0.7
+    }, function(val) {
+      config.glow = val;
+    });
+
+    controls.addCheckbox('aura', 'Post-reveal Aura', true, function(checked) {
+      config.aura = checked;
+    });
+
+    controls.addSegmented('palette', 'Color Palette', [
+      { label: 'Gold', value: 'gold' },
+      { label: 'Purple', value: 'purple' },
+      { label: 'Prismatic', value: 'prismatic' },
+    ], function(val) {
+      config.palette = val;
+    });
+
+    controls.addSlider('delay', 'Card Delay', {
+      min: 0.5, max: 3, step: 0.25, default: 1.5, unit: 's'
+    }, function(val) {
+      config.delay = val;
+    });
+
+    controls.render();
+
+    // -------------------------------------------
+    // 10. Initialization
+    // -------------------------------------------
+
+    // Button event
+    document.getElementById('begin-btn').addEventListener('click', function() {
+      if (state.revealStarted) {
+        resetReading();
+      } else {
+        beginReading();
+      }
+    });
+
+    // Handle resize
+    let resizeTimeout;
+    window.addEventListener('resize', function() {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(resizeCanvas, 100);
+    });
+
+    // Initial setup
+    resizeCanvas();
+    requestAnimationFrame(animate);
+
+    // Allow re-reading by clicking the button again after completion
+    setInterval(function() {
+      const allRevealed = state.cardStates.every(cs => cs.revealed);
+      if (allRevealed) {
+        const btn = document.getElementById('begin-btn');
+        if (btn.textContent === 'Reading Complete') {
+          btn.disabled = false;
+          btn.textContent = 'Read Again';
+        }
+      }
+    }, 500);
+  </script>
+</body>
+</html>

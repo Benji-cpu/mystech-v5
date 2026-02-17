@@ -2,18 +2,19 @@ import Link from "next/link";
 import { Plus, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { LYRA_DASHBOARD } from "@/components/guide/lyra-constants";
 
 const actions = [
   {
     icon: Plus,
     title: "Create New Deck",
-    description: "Build a personalized oracle deck from your experiences.",
+    description: LYRA_DASHBOARD.quickActions.createDeck,
     href: "/decks/new",
   },
   {
     icon: BookOpen,
     title: "Start a Reading",
-    description: "Draw cards and receive AI-powered insights.",
+    description: LYRA_DASHBOARD.quickActions.startReading,
     href: "/readings/new",
   },
 ];
@@ -25,7 +26,7 @@ export function QuickActions() {
         <Button
           key={action.title}
           variant="outline"
-          className="h-auto p-0"
+          className="h-auto p-0 whitespace-normal"
           asChild
         >
           <Link href={action.href}>

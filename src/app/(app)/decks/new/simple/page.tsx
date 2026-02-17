@@ -1,8 +1,6 @@
 import { db } from "@/lib/db";
 import { artStyles, artStyleShares } from "@/lib/db/schema";
 import { requireAuth } from "@/lib/auth/helpers";
-import { getUserDeckCount } from "@/lib/db/queries";
-import { PLAN_LIMITS } from "@/lib/constants";
 import { eq, or, and } from "drizzle-orm";
 import { SimpleCreateForm } from "@/components/decks/simple-create-form";
 import type { ArtStyle } from "@/types";
@@ -10,8 +8,8 @@ import type { ArtStyle } from "@/types";
 export default async function SimpleCreatePage() {
   const user = await requireAuth();
 
-  const deckCount = await getUserDeckCount(user.id!);
-  const atLimit = deckCount >= PLAN_LIMITS.free.maxDecks;
+  // No deck limit — credits constrain card creation
+  const atLimit = false;
 
   // Get all available art styles (presets + user's own + accepted shares)
   const ownStyles = await db
@@ -55,7 +53,7 @@ export default async function SimpleCreatePage() {
   const custom = styles.filter((s) => !s.isPreset);
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="max-w-2xl mx-auto p-4 sm:p-6 lg:p-8">
       <SimpleCreateForm
         presets={presets}
         customStyles={custom}

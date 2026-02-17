@@ -9,7 +9,7 @@ export function GoogleSignInButton() {
 
   function handleClick() {
     setIsLoading(true);
-    signIn("google", { callbackUrl: "/dashboard" });
+    signIn("google", { callbackUrl: "/home" });
   }
 
   return (

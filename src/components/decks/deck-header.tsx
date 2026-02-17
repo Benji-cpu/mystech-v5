@@ -3,14 +3,19 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Pencil } from "lucide-react";
 import { DeleteDeckButton } from "./delete-deck-button";
+import { ShareButton } from "@/components/shared/share-button";
+import { AdoptDeckButton } from "@/components/shared/adopt-deck-button";
 import type { Deck } from "@/types";
 
 interface DeckHeaderProps {
   deck: Deck;
   artStyleName?: string;
+  shareToken?: string | null;
+  isAdopter?: boolean;
+  ownerName?: string | null;
 }
 
-export function DeckHeader({ deck, artStyleName }: DeckHeaderProps) {
+export function DeckHeader({ deck, artStyleName, shareToken, isAdopter, ownerName }: DeckHeaderProps) {
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
       <div className="space-y-1">
@@ -35,17 +40,40 @@ export function DeckHeader({ deck, artStyleName }: DeckHeaderProps) {
               <span>{artStyleName}</span>
             </>
           )}
+          {isAdopter && ownerName && (
+            <>
+              <span>&middot;</span>
+              <span>by {ownerName}</span>
+            </>
+          )}
         </div>
       </div>
 
       <div className="flex items-center gap-2">
-        <Button variant="outline" size="sm" asChild>
-          <Link href={`/decks/${deck.id}/edit`}>
-            <Pencil className="h-4 w-4 mr-1" />
-            Edit
-          </Link>
-        </Button>
-        <DeleteDeckButton deckId={deck.id} deckTitle={deck.title} />
+        {isAdopter ? (
+          <AdoptDeckButton
+            deckId={deck.id}
+            isAdopted
+          />
+        ) : (
+          <>
+            {deck.status === "completed" && (
+              <ShareButton
+                shareEndpoint={`/api/decks/${deck.id}/share`}
+                revokeEndpoint={`/api/decks/${deck.id}/share`}
+                contentType="deck"
+                existingShareToken={shareToken}
+              />
+            )}
+            <Button variant="outline" size="sm" asChild>
+              <Link href={`/decks/${deck.id}/edit`}>
+                <Pencil className="h-4 w-4 mr-1" />
+                Edit
+              </Link>
+            </Button>
+            <DeleteDeckButton deckId={deck.id} deckTitle={deck.title} />
+          </>
+        )}
       </div>
     </div>
   );

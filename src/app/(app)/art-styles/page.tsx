@@ -6,6 +6,7 @@ import { requireAuth } from "@/lib/auth/helpers";
 import { eq, or, and } from "drizzle-orm";
 import { Button } from "@/components/ui/button";
 import { StyleCard } from "@/components/art-styles/style-card";
+import { PageHeader } from "@/components/layout/page-header";
 import type { ArtStyle } from "@/types";
 
 function toArtStyle(s: typeof artStyles.$inferSelect): ArtStyle {
@@ -52,25 +53,20 @@ export default async function ArtStylesPage() {
   const shared = sharedRows.map((r) => toArtStyle(r.style));
 
   return (
-    <div className="p-6 space-y-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Palette className="h-6 w-6 text-[#c9a94e]" />
-            Art Styles
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Choose a visual style for your oracle card artwork
-          </p>
-        </div>
-        <Button asChild>
-          <Link href="/art-styles/new">
-            <Plus className="h-4 w-4" />
-            Create Custom
-          </Link>
-        </Button>
-      </div>
+    <div className="p-4 sm:p-6 lg:p-8 space-y-8">
+      <PageHeader
+        icon={Palette}
+        title="Art Styles"
+        subtitle="Choose a visual style for your oracle card artwork"
+        action={
+          <Button asChild>
+            <Link href="/art-styles/new">
+              <Plus className="h-4 w-4" />
+              Create Custom
+            </Link>
+          </Button>
+        }
+      />
 
       {/* Presets */}
       <section>

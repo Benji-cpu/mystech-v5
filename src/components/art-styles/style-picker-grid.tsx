@@ -24,7 +24,7 @@ export function StylePickerGrid({
   const allStyles = [...presets, ...customStyles];
 
   return (
-    <div className="grid grid-cols-3 gap-3">
+    <div className="grid grid-cols-3 gap-2 sm:gap-3">
       {allStyles.map((style) => (
         <button
           key={style.id}

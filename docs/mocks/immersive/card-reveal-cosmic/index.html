@@ -1,0 +1,1060 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cosmic Emergence — MysTech Mock Lab</title>
+  <link rel="stylesheet" href="../../shared/base.css">
+  <link rel="stylesheet" href="../../shared/controls.css">
+  <style>
+    /* ============================================
+       Mock 3: Cosmic Emergence (Ethereal)
+       Constellation mapping + nebula aesthetics
+       Slowest, most contemplative card reveal
+       ============================================ */
+
+    :root {
+      /* Control defaults (overridden by MockControls) */
+      --ctrl-star-density: 150;
+      --ctrl-constellation: simple;
+      --ctrl-nebula-palette: aurora;
+      --ctrl-reveal-speed: 1;
+      --ctrl-parallax: 15;
+      --ctrl-twinkle: 1.5;
+      --ctrl-delay: 2s;
+
+      /* Aurora nebula palette (default) */
+      --nebula-color-1: rgba(0, 210, 190, 0.35);   /* teal */
+      --nebula-color-2: rgba(124, 77, 255, 0.30);   /* purple */
+      --nebula-color-3: rgba(201, 169, 78, 0.25);   /* gold */
+    }
+
+    body {
+      overflow: hidden;
+    }
+
+    /* ---- Full-viewport starfield canvas ---- */
+    .cosmic-canvas {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+    }
+
+    /* ---- Constellation SVG overlay ---- */
+    .constellation-layer {
+      position: fixed;
+      inset: 0;
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    /* ---- Spread area: centered 3-card layout ---- */
+    .spread-area {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 5;
+      pointer-events: none;
+    }
+
+    .spread-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 2.5rem;
+    }
+
+    /* ---- Card slot (contains nebula + card layers) ---- */
+    .card-slot {
+      position: relative;
+      width: 120px;
+      aspect-ratio: 2 / 3;
+      pointer-events: auto;
+    }
+
+    /* Card label below each slot */
+    .card-label {
+      text-align: center;
+      margin-top: 0.75rem;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-muted);
+      transition: color 1.5s ease;
+    }
+
+    .card-slot.revealed .card-label {
+      color: var(--gold-dim);
+    }
+
+    /* Pre-reveal: soft pulsing glow placeholder */
+    .card-placeholder {
+      position: absolute;
+      inset: 0;
+      border-radius: 0.75rem;
+      border: 1px solid rgba(184, 138, 255, 0.15);
+      background: radial-gradient(ellipse at center, rgba(124, 77, 255, 0.06) 0%, transparent 70%);
+      animation: placeholder-pulse 3.5s ease-in-out infinite;
+      transition: opacity 1s ease;
+    }
+
+    .card-slot.revealing .card-placeholder,
+    .card-slot.revealed .card-placeholder {
+      opacity: 0;
+    }
+
+    @keyframes placeholder-pulse {
+      0%, 100% {
+        box-shadow: 0 0 15px rgba(124, 77, 255, 0.08), 0 0 30px rgba(201, 169, 78, 0.04);
+        border-color: rgba(184, 138, 255, 0.12);
+      }
+      50% {
+        box-shadow: 0 0 25px rgba(124, 77, 255, 0.15), 0 0 50px rgba(201, 169, 78, 0.08);
+        border-color: rgba(184, 138, 255, 0.25);
+      }
+    }
+
+    /* ---- Nebula bloom (layered radial gradients) ---- */
+    .card-nebula {
+      position: absolute;
+      inset: -30%;
+      border-radius: 50%;
+      opacity: 0;
+      transform: scale(0.3);
+      filter: blur(12px);
+      mix-blend-mode: screen;
+      background:
+        radial-gradient(ellipse at 40% 35%, var(--nebula-color-1) 0%, transparent 60%),
+        radial-gradient(ellipse at 60% 65%, var(--nebula-color-2) 0%, transparent 55%),
+        radial-gradient(ellipse at 50% 50%, var(--nebula-color-3) 0%, transparent 50%);
+      transition: none;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .card-slot.nebula-bloom .card-nebula {
+      animation: nebula-bloom-in 2.5s var(--ease-out-expo) forwards,
+                 nebula-hue-drift 8s ease-in-out 2.5s infinite alternate;
+    }
+
+    .card-slot.revealed .card-nebula {
+      opacity: 0.3;
+      transform: scale(0.8);
+      filter: blur(18px);
+      transition: opacity 2s ease 0.5s, transform 2s ease 0.5s, filter 2s ease 0.5s;
+    }
+
+    @keyframes nebula-bloom-in {
+      0% {
+        opacity: 0;
+        transform: scale(0.3);
+        filter: blur(20px);
+      }
+      40% {
+        opacity: 0.7;
+        transform: scale(1.1);
+        filter: blur(10px);
+      }
+      100% {
+        opacity: 0.55;
+        transform: scale(1);
+        filter: blur(12px);
+      }
+    }
+
+    @keyframes nebula-hue-drift {
+      0% { filter: blur(12px) hue-rotate(0deg); }
+      100% { filter: blur(14px) hue-rotate(30deg); }
+    }
+
+    /* ---- The revealed card face ---- */
+    .card-face {
+      position: absolute;
+      inset: 0;
+      border-radius: 0.75rem;
+      overflow: hidden;
+      opacity: 0;
+      transform: scale(0.96);
+      z-index: 3;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 0.75rem;
+      border: 1px solid rgba(201, 169, 78, 0.25);
+      box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+      transition: opacity 1.8s ease, transform 1.5s var(--ease-out-expo);
+    }
+
+    .card-slot.revealed .card-face {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    /* Card gradient backgrounds (unique per card) */
+    .card-face--wanderer {
+      background: linear-gradient(160deg,
+        #0d1b2a 0%,
+        #1b2838 25%,
+        #2a1a3e 55%,
+        #1a0530 80%,
+        #0a0118 100%
+      );
+    }
+    .card-face--mirror {
+      background: linear-gradient(160deg,
+        #0a0118 0%,
+        #1a0530 25%,
+        #2d1b69 50%,
+        #4a148c 75%,
+        #1a0530 100%
+      );
+    }
+    .card-face--flame {
+      background: linear-gradient(160deg,
+        #1a0a00 0%,
+        #2d1600 20%,
+        #3d1a00 45%,
+        #2a1a3e 70%,
+        #0a0118 100%
+      );
+    }
+
+    /* Card art area (abstract geometric patterns) */
+    .card-art {
+      position: absolute;
+      inset: 0;
+      opacity: 0.4;
+      pointer-events: none;
+    }
+
+    .card-art--wanderer {
+      background:
+        radial-gradient(circle at 50% 30%, rgba(0, 180, 180, 0.3) 0%, transparent 40%),
+        radial-gradient(circle at 30% 70%, rgba(184, 138, 255, 0.2) 0%, transparent 35%),
+        radial-gradient(circle at 70% 50%, rgba(201, 169, 78, 0.15) 0%, transparent 30%);
+    }
+
+    .card-art--mirror {
+      background:
+        radial-gradient(circle at 50% 50%, rgba(184, 138, 255, 0.35) 0%, transparent 35%),
+        radial-gradient(circle at 25% 25%, rgba(124, 77, 255, 0.2) 0%, transparent 40%),
+        radial-gradient(circle at 75% 75%, rgba(124, 77, 255, 0.2) 0%, transparent 40%);
+    }
+
+    .card-art--flame {
+      background:
+        radial-gradient(circle at 50% 60%, rgba(255, 140, 50, 0.3) 0%, transparent 35%),
+        radial-gradient(circle at 50% 35%, rgba(201, 169, 78, 0.3) 0%, transparent 30%),
+        radial-gradient(circle at 50% 80%, rgba(200, 60, 20, 0.15) 0%, transparent 40%);
+    }
+
+    .card-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--gold);
+      text-align: center;
+      text-shadow: 0 1px 8px rgba(0, 0, 0, 0.6);
+      position: relative;
+      z-index: 2;
+    }
+
+    .card-subtitle {
+      font-size: 0.6rem;
+      color: var(--text-secondary);
+      text-align: center;
+      margin-top: 0.15rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      position: relative;
+      z-index: 2;
+    }
+
+    /* ---- "Begin Reading" button ---- */
+    .begin-btn-wrap {
+      margin-top: 2.5rem;
+      pointer-events: auto;
+    }
+
+    .begin-btn {
+      padding: 0.7rem 2rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      color: var(--bg-deep);
+      background: linear-gradient(135deg, var(--gold-dim), var(--gold-bright), var(--gold));
+      background-size: 200% 100%;
+      border: none;
+      border-radius: 2rem;
+      cursor: pointer;
+      transition: all 300ms ease;
+      box-shadow: 0 2px 15px rgba(201, 169, 78, 0.25);
+      animation: gold-shimmer 3s ease-in-out infinite;
+    }
+
+    .begin-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 25px rgba(201, 169, 78, 0.4);
+    }
+
+    .begin-btn:active {
+      transform: translateY(0);
+    }
+
+    .begin-btn:disabled {
+      opacity: 0.4;
+      cursor: default;
+      transform: none;
+      box-shadow: none;
+    }
+
+    /* ---- "Reset" button (appears after reveal) ---- */
+    .reset-btn {
+      padding: 0.5rem 1.5rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      letter-spacing: 0.05em;
+      color: var(--text-secondary);
+      background: transparent;
+      border: 1px solid var(--border-subtle);
+      border-radius: 2rem;
+      cursor: pointer;
+      transition: all 250ms ease;
+      margin-top: 1rem;
+      pointer-events: auto;
+      opacity: 0;
+      transition: opacity 0.6s ease;
+    }
+
+    .reset-btn.visible {
+      opacity: 1;
+    }
+
+    .reset-btn:hover {
+      color: var(--gold);
+      border-color: var(--border-accent);
+    }
+
+    /* ---- Header & controls z-index ---- */
+    .mock-header { z-index: 100; }
+    .mock-controls { z-index: 200; }
+
+    /* ---- Responsive: mobile ---- */
+    @media (max-width: 640px) {
+      .card-slot {
+        width: 80px;
+      }
+
+      .spread-row {
+        gap: 1.25rem;
+      }
+
+      .card-title {
+        font-size: 0.65rem;
+      }
+
+      .card-subtitle {
+        font-size: 0.5rem;
+      }
+
+      .card-label {
+        font-size: 0.55rem;
+      }
+
+      .begin-btn {
+        padding: 0.6rem 1.5rem;
+        font-size: 0.75rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ============================================
+       Header
+       ============================================ -->
+  <header class="mock-header">
+    <a href="../../index.html" class="mock-back-link">Mock Lab</a>
+    <h1 class="mock-title">Cosmic Emergence</h1>
+  </header>
+
+  <!-- ============================================
+       Starfield canvas (3 depth layers)
+       ============================================ -->
+  <canvas id="starfieldCanvas" class="cosmic-canvas"></canvas>
+
+  <!-- ============================================
+       Constellation SVG overlay (drawn during reveal)
+       ============================================ -->
+  <svg id="constellationSvg" class="constellation-layer" xmlns="http://www.w3.org/2000/svg"></svg>
+
+  <!-- ============================================
+       Card spread area
+       ============================================ -->
+  <div class="spread-area">
+    <div class="spread-row">
+
+      <!-- Card 1: The Wanderer (Past) -->
+      <div class="card-slot-wrap">
+        <div class="card-slot" id="card-0" data-index="0">
+          <div class="card-placeholder"></div>
+          <div class="card-nebula"></div>
+          <div class="card-face card-face--wanderer">
+            <div class="card-art card-art--wanderer"></div>
+            <div class="card-title">The Wanderer</div>
+            <div class="card-subtitle">Journey begun</div>
+          </div>
+        </div>
+        <div class="card-label">Past</div>
+      </div>
+
+      <!-- Card 2: The Mirror (Present) -->
+      <div class="card-slot-wrap">
+        <div class="card-slot" id="card-1" data-index="1">
+          <div class="card-placeholder"></div>
+          <div class="card-nebula"></div>
+          <div class="card-face card-face--mirror">
+            <div class="card-art card-art--mirror"></div>
+            <div class="card-title">The Mirror</div>
+            <div class="card-subtitle">Reflection clear</div>
+          </div>
+        </div>
+        <div class="card-label">Present</div>
+      </div>
+
+      <!-- Card 3: The Flame (Future) -->
+      <div class="card-slot-wrap">
+        <div class="card-slot" id="card-2" data-index="2">
+          <div class="card-placeholder"></div>
+          <div class="card-nebula"></div>
+          <div class="card-face card-face--flame">
+            <div class="card-art card-art--flame"></div>
+            <div class="card-title">The Flame</div>
+            <div class="card-subtitle">Spark ignites</div>
+          </div>
+        </div>
+        <div class="card-label">Future</div>
+      </div>
+
+    </div>
+
+    <!-- Begin Reading button -->
+    <div class="begin-btn-wrap">
+      <button class="begin-btn" id="beginBtn">Begin Reading</button>
+      <div style="text-align: center;">
+        <button class="reset-btn" id="resetBtn">Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================
+       Scripts
+       ============================================ -->
+  <script src="../../shared/controls.js"></script>
+  <script>
+    /* ================================================
+       COSMIC EMERGENCE — Card Reveal Animation
+       ================================================
+       Architecture:
+       1. StarfieldEngine  — manages 3-layer parallax starfield on <canvas>
+       2. ConstellationDrawer — draws animated constellation outlines via SVG
+       3. RevealSequencer  — orchestrates the multi-phase card reveal
+       4. MockControls     — interactive parameter panel
+       ================================================ */
+
+    // ===================================================================
+    // Utility: detect mobile for reduced effects
+    // ===================================================================
+    const IS_MOBILE = window.innerWidth <= 640;
+
+    // ===================================================================
+    // 1. STARFIELD ENGINE
+    //    3-layer parallax star field rendered on a single canvas.
+    //    Each star: { x, y, depth(0-2), size, baseAlpha, phase, twinkleSpeed }
+    // ===================================================================
+
+    class StarfieldEngine {
+      constructor(canvas) {
+        this.canvas = canvas;
+        this.ctx = canvas.getContext('2d');
+        this.stars = [];
+        this.mouseX = 0;
+        this.mouseY = 0;
+        this.targetMouseX = 0;
+        this.targetMouseY = 0;
+        this.width = 0;
+        this.height = 0;
+
+        /* Configurable parameters (updated by controls) */
+        this.starCount = IS_MOBILE ? 80 : 150;
+        this.parallaxIntensity = IS_MOBILE ? 3 : 15;
+        this.twinkleRate = 1.5;
+
+        this._resize();
+        this._initStars();
+        this._bindEvents();
+      }
+
+      /* ---- Resize handler ---- */
+      _resize() {
+        const dpr = window.devicePixelRatio || 1;
+        this.width = window.innerWidth;
+        this.height = window.innerHeight;
+        this.canvas.width = this.width * dpr;
+        this.canvas.height = this.height * dpr;
+        this.canvas.style.width = this.width + 'px';
+        this.canvas.style.height = this.height + 'px';
+        this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+
+      /* ---- Create initial star array ---- */
+      _initStars() {
+        this.stars = [];
+        for (let i = 0; i < this.starCount; i++) {
+          this.stars.push(this._createStar());
+        }
+      }
+
+      _createStar() {
+        const depth = Math.floor(Math.random() * 3); // 0 = far, 1 = mid, 2 = near
+        const sizeRange = [
+          [0.3, 0.8],  // far: tiny
+          [0.6, 1.4],  // mid
+          [1.2, 2.2],  // near: larger
+        ][depth];
+        return {
+          x: Math.random() * this.width,
+          y: Math.random() * this.height,
+          depth,
+          size: sizeRange[0] + Math.random() * (sizeRange[1] - sizeRange[0]),
+          baseAlpha: 0.25 + Math.random() * 0.65,
+          phase: Math.random() * Math.PI * 2,
+          twinkleSpeed: 0.4 + Math.random() * 2.0,
+          /* Highlight state: stars near a revealing card brighten */
+          highlight: 0,
+        };
+      }
+
+      /* ---- Event bindings ---- */
+      _bindEvents() {
+        window.addEventListener('resize', () => {
+          this._resize();
+          /* Redistribute stars that are now out of bounds */
+          for (const s of this.stars) {
+            if (s.x > this.width) s.x = Math.random() * this.width;
+            if (s.y > this.height) s.y = Math.random() * this.height;
+          }
+        });
+
+        if (!IS_MOBILE) {
+          window.addEventListener('mousemove', (e) => {
+            /* Normalize to -1..1 from center */
+            this.targetMouseX = (e.clientX / this.width - 0.5) * 2;
+            this.targetMouseY = (e.clientY / this.height - 0.5) * 2;
+          });
+        }
+      }
+
+      /* ---- Set star count (from control) ---- */
+      setStarCount(count) {
+        this.starCount = IS_MOBILE ? Math.min(count, 100) : count;
+        while (this.stars.length < this.starCount) this.stars.push(this._createStar());
+        while (this.stars.length > this.starCount) this.stars.pop();
+      }
+
+      /* ---- Highlight stars near a world-space point ---- */
+      highlightNear(wx, wy, radius, intensity) {
+        for (const s of this.stars) {
+          const dx = s.x - wx;
+          const dy = s.y - wy;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < radius) {
+            const factor = 1 - (dist / radius);
+            s.highlight = Math.max(s.highlight, factor * intensity);
+          }
+        }
+      }
+
+      /* ---- Decay highlights each frame ---- */
+      _decayHighlights(dt) {
+        for (const s of this.stars) {
+          if (s.highlight > 0) {
+            s.highlight = Math.max(0, s.highlight - dt * 0.3);
+          }
+        }
+      }
+
+      /* ---- Main render (called each frame) ---- */
+      render(time) {
+        const dt = 1 / 60; // approximate
+        const t = time * 0.001;
+
+        /* Smooth mouse interpolation */
+        this.mouseX += (this.targetMouseX - this.mouseX) * 0.05;
+        this.mouseY += (this.targetMouseY - this.mouseY) * 0.05;
+
+        this._decayHighlights(dt);
+
+        const ctx = this.ctx;
+        const dpr = window.devicePixelRatio || 1;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.clearRect(0, 0, this.width, this.height);
+
+        const parallaxScale = this.parallaxIntensity;
+
+        for (const star of this.stars) {
+          /* Parallax offset per depth layer */
+          const depthFactor = (star.depth + 1) / 3; // 0.33, 0.66, 1.0
+          const px = this.mouseX * parallaxScale * depthFactor;
+          const py = this.mouseY * parallaxScale * depthFactor;
+          const sx = star.x + px;
+          const sy = star.y + py;
+
+          /* Twinkle */
+          const twinkle = 0.5 + 0.5 * Math.sin(t * star.twinkleSpeed * this.twinkleRate + star.phase);
+          let alpha = star.baseAlpha * twinkle;
+
+          /* Highlight boost */
+          if (star.highlight > 0) {
+            alpha = Math.min(1, alpha + star.highlight * 0.8);
+          }
+
+          /* Draw star */
+          ctx.beginPath();
+          const drawSize = star.size + star.highlight * 1.5;
+          ctx.arc(sx, sy, drawSize, 0, Math.PI * 2);
+
+          /* Color: white normally, slight gold/purple tint when highlighted */
+          if (star.highlight > 0.1) {
+            const h = star.highlight;
+            const r = Math.round(255 + (201 - 255) * h);
+            const g = Math.round(255 + (169 - 255) * h);
+            const b = Math.round(255 + (78 - 255) * h);
+            ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
+          } else {
+            ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+          }
+          ctx.fill();
+
+          /* Glow halo for highlighted / large stars */
+          if (star.highlight > 0.2 || (star.depth === 2 && alpha > 0.7)) {
+            ctx.beginPath();
+            ctx.arc(sx, sy, drawSize * 3, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(201, 169, 78, ${alpha * 0.08 + star.highlight * 0.12})`;
+            ctx.fill();
+          }
+        }
+      }
+    }
+
+    // ===================================================================
+    // 2. CONSTELLATION DRAWER
+    //    Draws animated luminous lines tracing the card outline,
+    //    creating a constellation pattern around each card position.
+    //    Uses SVG with stroke-dashoffset animation.
+    // ===================================================================
+
+    class ConstellationDrawer {
+      constructor(svgEl) {
+        this.svg = svgEl;
+        this.groups = []; // one group per card
+        this.style = 'simple'; // 'simple' or 'ornate'
+      }
+
+      /* ---- Generate constellation points around a card rect ---- */
+      _generatePoints(cx, cy, w, h) {
+        const points = [];
+        const hw = w / 2;
+        const hh = h / 2;
+
+        if (this.style === 'simple') {
+          /* Simple: 8-12 points roughly following the card outline */
+          const numPoints = 10;
+          for (let i = 0; i < numPoints; i++) {
+            const angle = (i / numPoints) * Math.PI * 2 - Math.PI / 2;
+            const rx = hw + 8 + Math.random() * 15;
+            const ry = hh + 8 + Math.random() * 15;
+            points.push({
+              x: cx + Math.cos(angle) * rx,
+              y: cy + Math.sin(angle) * ry,
+            });
+          }
+        } else {
+          /* Ornate: more points, tighter to outline + decorative flourishes */
+          const numPoints = 18;
+          for (let i = 0; i < numPoints; i++) {
+            const angle = (i / numPoints) * Math.PI * 2 - Math.PI / 2;
+            const wobble = Math.sin(i * 1.7) * 8;
+            const rx = hw + 5 + wobble + Math.random() * 10;
+            const ry = hh + 5 + wobble + Math.random() * 10;
+            points.push({
+              x: cx + Math.cos(angle) * rx,
+              y: cy + Math.sin(angle) * ry,
+            });
+          }
+          /* Add a few interior accent points */
+          for (let i = 0; i < 4; i++) {
+            points.push({
+              x: cx + (Math.random() - 0.5) * w * 0.5,
+              y: cy + (Math.random() - 0.5) * h * 0.5,
+              interior: true,
+            });
+          }
+        }
+        return points;
+      }
+
+      /* ---- Build SVG path from points (connect sequentially + close) ---- */
+      _buildPath(points) {
+        const outline = points.filter(p => !p.interior);
+        let d = `M ${outline[0].x} ${outline[0].y}`;
+        for (let i = 1; i < outline.length; i++) {
+          d += ` L ${outline[i].x} ${outline[i].y}`;
+        }
+        d += ' Z';
+
+        /* For ornate: add interior cross-lines */
+        const interior = points.filter(p => p.interior);
+        if (interior.length > 0) {
+          for (const ip of interior) {
+            /* Connect to 2 nearest outline points */
+            const sorted = [...outline].sort((a, b) => {
+              const da = Math.hypot(a.x - ip.x, a.y - ip.y);
+              const db = Math.hypot(b.x - ip.x, b.y - ip.y);
+              return da - db;
+            });
+            d += ` M ${sorted[0].x} ${sorted[0].y} L ${ip.x} ${ip.y}`;
+            d += ` M ${sorted[1].x} ${sorted[1].y} L ${ip.x} ${ip.y}`;
+          }
+        }
+
+        return { d, points };
+      }
+
+      /* ---- Draw constellation for a card (returns promise that resolves when done) ---- */
+      draw(cx, cy, w, h, speedMultiplier) {
+        return new Promise((resolve) => {
+          const points = this._generatePoints(cx, cy, w, h);
+          const { d } = this._buildPath(points);
+
+          /* Create SVG group */
+          const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+
+          /* The constellation path */
+          const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+          path.setAttribute('d', d);
+          path.setAttribute('fill', 'none');
+          path.setAttribute('stroke', 'rgba(201, 169, 78, 0.6)');
+          path.setAttribute('stroke-width', this.style === 'ornate' ? '0.8' : '1');
+          path.setAttribute('stroke-linecap', 'round');
+
+          /* Measure path length for dash animation */
+          g.appendChild(path);
+          this.svg.appendChild(g);
+
+          const pathLength = path.getTotalLength();
+          path.style.strokeDasharray = pathLength;
+          path.style.strokeDashoffset = pathLength;
+
+          /* Draw speed: base ~1.5s, modified by speedMultiplier */
+          const drawDuration = 1500 / speedMultiplier;
+          path.style.transition = `stroke-dashoffset ${drawDuration}ms cubic-bezier(0.25, 0.1, 0.25, 1)`;
+
+          /* Star dots at constellation points */
+          const outlinePoints = points.filter(p => !p.interior);
+          for (const pt of outlinePoints) {
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('cx', pt.x);
+            circle.setAttribute('cy', pt.y);
+            circle.setAttribute('r', this.style === 'ornate' ? '1.8' : '2.2');
+            circle.setAttribute('fill', 'rgba(226, 201, 106, 0.8)');
+            circle.style.opacity = '0';
+            circle.style.transition = `opacity ${400 / speedMultiplier}ms ease`;
+            g.appendChild(circle);
+          }
+
+          /* Interior dots for ornate */
+          const interiorPoints = points.filter(p => p.interior);
+          for (const pt of interiorPoints) {
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('cx', pt.x);
+            circle.setAttribute('cy', pt.y);
+            circle.setAttribute('r', '1.5');
+            circle.setAttribute('fill', 'rgba(184, 138, 255, 0.7)');
+            circle.style.opacity = '0';
+            circle.style.transition = `opacity ${400 / speedMultiplier}ms ease`;
+            g.appendChild(circle);
+          }
+
+          this.groups.push(g);
+
+          /* Trigger animation */
+          requestAnimationFrame(() => {
+            /* Animate the path drawing */
+            path.style.strokeDashoffset = '0';
+
+            /* Stagger dot appearances */
+            const allCircles = g.querySelectorAll('circle');
+            allCircles.forEach((c, i) => {
+              setTimeout(() => {
+                c.style.opacity = '1';
+              }, (drawDuration / allCircles.length) * i);
+            });
+
+            /* Add pulse animation to the outline after drawing completes */
+            setTimeout(() => {
+              path.style.animation = `constellation-pulse ${2000 / speedMultiplier}ms ease-in-out 2`;
+              path.style.strokeDashoffset = '0'; /* keep it drawn */
+            }, drawDuration);
+
+            /* Resolve after draw + 1 pulse cycle */
+            setTimeout(resolve, drawDuration + (1200 / speedMultiplier));
+          });
+        });
+      }
+
+      /* ---- Fade out constellation for a card (soften after reveal) ---- */
+      soften(index) {
+        const g = this.groups[index];
+        if (!g) return;
+        g.style.transition = 'opacity 2s ease';
+        g.style.opacity = '0.2';
+      }
+
+      /* ---- Clear all constellations ---- */
+      clear() {
+        for (const g of this.groups) {
+          g.remove();
+        }
+        this.groups = [];
+      }
+    }
+
+    /* Add constellation-pulse keyframes dynamically */
+    const pulseStyle = document.createElement('style');
+    pulseStyle.textContent = `
+      @keyframes constellation-pulse {
+        0%, 100% { stroke-opacity: 0.6; filter: drop-shadow(0 0 2px rgba(201, 169, 78, 0.3)); }
+        50% { stroke-opacity: 1; filter: drop-shadow(0 0 8px rgba(201, 169, 78, 0.6)); }
+      }
+    `;
+    document.head.appendChild(pulseStyle);
+
+    // ===================================================================
+    // 3. REVEAL SEQUENCER
+    //    Orchestrates the multi-phase reveal for each card:
+    //    Phase 1: Stars brighten near card position
+    //    Phase 2: Constellation traces the outline
+    //    Phase 3: Constellation pulses
+    //    Phase 4: Nebula blooms within the boundary
+    //    Phase 5: Card image fades in
+    //    Phase 6: Nebula softens to atmospheric frame
+    // ===================================================================
+
+    class RevealSequencer {
+      constructor(starfield, constellation) {
+        this.starfield = starfield;
+        this.constellation = constellation;
+        this.cards = Array.from(document.querySelectorAll('.card-slot'));
+        this.isRevealing = false;
+        this.revealComplete = false;
+        this.speedMultiplier = 1;
+        this.cardDelay = 2; // seconds between cards
+      }
+
+      /* ---- Get card center in viewport coordinates ---- */
+      _getCardCenter(cardEl) {
+        const rect = cardEl.getBoundingClientRect();
+        return {
+          x: rect.left + rect.width / 2,
+          y: rect.top + rect.height / 2,
+          w: rect.width,
+          h: rect.height,
+        };
+      }
+
+      /* ---- Reveal a single card through all phases ---- */
+      async _revealCard(index) {
+        const cardEl = this.cards[index];
+        const { x, y, w, h } = this._getCardCenter(cardEl);
+        const speed = this.speedMultiplier;
+
+        /* Phase 1: Stars brighten near the card (over ~800ms) */
+        cardEl.classList.add('revealing');
+        const brightenDuration = 800 / speed;
+        const brightenStart = performance.now();
+        const brightenLoop = () => {
+          const elapsed = performance.now() - brightenStart;
+          const progress = Math.min(1, elapsed / brightenDuration);
+          this.starfield.highlightNear(x, y, Math.max(w, h) * 1.5, progress * 0.9);
+          if (progress < 1) requestAnimationFrame(brightenLoop);
+        };
+        brightenLoop();
+        await this._wait(brightenDuration);
+
+        /* Phase 2-3: Draw constellation (includes pulse) */
+        await this.constellation.draw(x, y, w, h, speed);
+
+        /* Phase 4: Nebula bloom */
+        cardEl.classList.add('nebula-bloom');
+        await this._wait(1200 / speed);
+
+        /* Phase 5: Card face fades in */
+        cardEl.classList.add('revealed');
+        await this._wait(1000 / speed);
+
+        /* Phase 6: Soften constellation + nebula */
+        this.constellation.soften(index);
+        /* Nebula softening is handled by CSS transition on .revealed */
+      }
+
+      /* ---- Run the full sequenced reveal ---- */
+      async run() {
+        if (this.isRevealing) return;
+        this.isRevealing = true;
+
+        document.getElementById('beginBtn').disabled = true;
+
+        for (let i = 0; i < this.cards.length; i++) {
+          await this._revealCard(i);
+
+          /* Delay between cards (except after last) */
+          if (i < this.cards.length - 1) {
+            await this._wait(this.cardDelay * 1000 / this.speedMultiplier);
+          }
+        }
+
+        this.isRevealing = false;
+        this.revealComplete = true;
+        document.getElementById('resetBtn').classList.add('visible');
+      }
+
+      /* ---- Reset all cards to unrevealed state ---- */
+      reset() {
+        this.revealComplete = false;
+        this.isRevealing = false;
+        this.constellation.clear();
+
+        for (const card of this.cards) {
+          card.classList.remove('revealing', 'nebula-bloom', 'revealed');
+        }
+
+        document.getElementById('beginBtn').disabled = false;
+        document.getElementById('resetBtn').classList.remove('visible');
+      }
+
+      /* ---- Promise-based wait ---- */
+      _wait(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+      }
+    }
+
+    // ===================================================================
+    // 4. INITIALIZATION
+    // ===================================================================
+
+    /* Create engines */
+    const starfield = new StarfieldEngine(document.getElementById('starfieldCanvas'));
+    const constellation = new ConstellationDrawer(document.getElementById('constellationSvg'));
+    const sequencer = new RevealSequencer(starfield, constellation);
+
+    /* ---- Animation loop ---- */
+    function animate(time) {
+      starfield.render(time);
+      requestAnimationFrame(animate);
+    }
+    requestAnimationFrame(animate);
+
+    /* ---- Button handlers ---- */
+    document.getElementById('beginBtn').addEventListener('click', () => {
+      sequencer.run();
+    });
+
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      sequencer.reset();
+    });
+
+    // ===================================================================
+    // 5. NEBULA PALETTE HELPER
+    //    Updates CSS custom properties for different nebula color schemes.
+    // ===================================================================
+
+    function setNebulaPalette(palette) {
+      const root = document.documentElement.style;
+      switch (palette) {
+        case 'aurora':
+          root.setProperty('--nebula-color-1', 'rgba(0, 210, 190, 0.35)');
+          root.setProperty('--nebula-color-2', 'rgba(124, 77, 255, 0.30)');
+          root.setProperty('--nebula-color-3', 'rgba(201, 169, 78, 0.25)');
+          break;
+        case 'gold':
+          root.setProperty('--nebula-color-1', 'rgba(201, 169, 78, 0.35)');
+          root.setProperty('--nebula-color-2', 'rgba(226, 201, 106, 0.30)');
+          root.setProperty('--nebula-color-3', 'rgba(138, 116, 53, 0.25)');
+          break;
+        case 'blue':
+          root.setProperty('--nebula-color-1', 'rgba(60, 130, 246, 0.35)');
+          root.setProperty('--nebula-color-2', 'rgba(100, 180, 255, 0.30)');
+          root.setProperty('--nebula-color-3', 'rgba(140, 200, 255, 0.20)');
+          break;
+      }
+    }
+
+    // ===================================================================
+    // 6. MOCK CONTROLS
+    // ===================================================================
+
+    const controls = new MockControls('Cosmic Emergence');
+
+    controls.addSlider('star-density', 'Star Density', {
+      min: 50, max: 300, step: 25, default: IS_MOBILE ? 80 : 150
+    }, (val) => {
+      starfield.setStarCount(val);
+    });
+
+    controls.addSegmented('constellation', 'Constellation Style', [
+      { label: 'Simple', value: 'simple' },
+      { label: 'Ornate', value: 'ornate' },
+    ], (val) => {
+      constellation.style = val;
+    });
+
+    controls.addSegmented('nebula-palette', 'Nebula Colors', [
+      { label: 'Aurora', value: 'aurora' },
+      { label: 'Gold', value: 'gold' },
+      { label: 'Cool Blue', value: 'blue' },
+    ], (val) => {
+      setNebulaPalette(val);
+    });
+
+    controls.addSlider('reveal-speed', 'Reveal Speed', {
+      min: 0.5, max: 2, step: 0.25, default: 1
+    }, (val) => {
+      sequencer.speedMultiplier = val;
+    });
+
+    controls.addSlider('parallax', 'Parallax Intensity', {
+      min: 0, max: 30, step: 5, default: IS_MOBILE ? 3 : 15
+    }, (val) => {
+      starfield.parallaxIntensity = val;
+    });
+
+    controls.addSlider('twinkle', 'Twinkle Rate', {
+      min: 0.5, max: 3, step: 0.25, default: 1.5
+    }, (val) => {
+      starfield.twinkleRate = val;
+    });
+
+    controls.addSlider('delay', 'Card Delay', {
+      min: 0.5, max: 3, step: 0.25, default: 2, unit: 's'
+    }, (val) => {
+      sequencer.cardDelay = val;
+    });
+
+    controls.render();
+
+  </script>
+</body>
+</html>

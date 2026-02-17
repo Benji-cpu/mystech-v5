@@ -111,7 +111,7 @@ describe("GET /api/decks/[deckId]", () => {
   });
 
   it("returns 404 when deck not found", async () => {
-    mockGetCurrentUser.mockResolvedValue({ id: "user-1" });
+    mockGetCurrentUser.mockResolvedValue({ id: "user-1", role: "user" });
     mockGetDeckByIdForUser.mockResolvedValue(null);
 
     const res = await GET(makeRequest("GET"), makeParams("nonexistent"));
@@ -122,7 +122,7 @@ describe("GET /api/decks/[deckId]", () => {
   });
 
   it("returns deck with cards on success", async () => {
-    mockGetCurrentUser.mockResolvedValue({ id: "user-1" });
+    mockGetCurrentUser.mockResolvedValue({ id: "user-1", role: "user" });
     mockGetDeckByIdForUser.mockResolvedValue(TEST_DECK);
     mockGetCardsForDeck.mockResolvedValue(TEST_CARDS);
 
@@ -153,7 +153,7 @@ describe("PATCH /api/decks/[deckId]", () => {
   });
 
   it("returns 404 when deck not found", async () => {
-    mockGetCurrentUser.mockResolvedValue({ id: "user-1" });
+    mockGetCurrentUser.mockResolvedValue({ id: "user-1", role: "user" });
     mockGetDeckByIdForUser.mockResolvedValue(null);
 
     const res = await PATCH(
@@ -166,7 +166,7 @@ describe("PATCH /api/decks/[deckId]", () => {
   });
 
   it("returns updated deck on success", async () => {
-    mockGetCurrentUser.mockResolvedValue({ id: "user-1" });
+    mockGetCurrentUser.mockResolvedValue({ id: "user-1", role: "user" });
     mockGetDeckByIdForUser.mockResolvedValue(TEST_DECK);
     mockUpdateReturning.mockResolvedValue([
       { ...TEST_DECK, title: "Updated Title" },
@@ -197,7 +197,7 @@ describe("DELETE /api/decks/[deckId]", () => {
   });
 
   it("returns 404 when deck not found", async () => {
-    mockGetCurrentUser.mockResolvedValue({ id: "user-1" });
+    mockGetCurrentUser.mockResolvedValue({ id: "user-1", role: "user" });
     mockGetDeckByIdForUser.mockResolvedValue(null);
 
     const res = await DELETE(makeRequest("DELETE"), makeParams("nonexistent"));
@@ -207,7 +207,7 @@ describe("DELETE /api/decks/[deckId]", () => {
   });
 
   it("deletes deck and cleans up blob images", async () => {
-    mockGetCurrentUser.mockResolvedValue({ id: "user-1" });
+    mockGetCurrentUser.mockResolvedValue({ id: "user-1", role: "user" });
     mockGetDeckByIdForUser.mockResolvedValue(TEST_DECK);
     mockGetCardsForDeck.mockResolvedValue(TEST_CARDS);
     mockDel.mockResolvedValue(undefined);
@@ -224,7 +224,7 @@ describe("DELETE /api/decks/[deckId]", () => {
   });
 
   it("still deletes deck if blob cleanup fails", async () => {
-    mockGetCurrentUser.mockResolvedValue({ id: "user-1" });
+    mockGetCurrentUser.mockResolvedValue({ id: "user-1", role: "user" });
     mockGetDeckByIdForUser.mockResolvedValue(TEST_DECK);
     mockGetCardsForDeck.mockResolvedValue(TEST_CARDS);
     mockDel.mockRejectedValue(new Error("Blob error"));

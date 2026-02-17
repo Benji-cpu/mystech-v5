@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { decks } from "@/lib/db/schema";
 import { getCurrentUser } from "@/lib/auth/helpers";
-import { getUserDeckCount } from "@/lib/db/queries";
-import { PLAN_LIMITS } from "@/lib/constants";
 import { eq, desc } from "drizzle-orm";
 import type { ApiResponse, Deck } from "@/types";
 
@@ -29,8 +27,10 @@ export async function GET() {
     description: d.description,
     theme: d.theme,
     status: d.status as Deck["status"],
+    deckType: (d.deckType ?? "standard") as Deck["deckType"],
     cardCount: d.cardCount,
     isPublic: d.isPublic,
+    shareToken: d.shareToken ?? null,
     coverImageUrl: d.coverImageUrl,
     artStyleId: d.artStyleId,
     createdAt: d.createdAt,
@@ -49,24 +49,14 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Check deck limit (free tier)
-  const deckCount = await getUserDeckCount(user.id);
-  if (deckCount >= PLAN_LIMITS.free.maxDecks) {
-    return NextResponse.json<ApiResponse<never>>(
-      {
-        success: false,
-        error: "Deck limit reached. Upgrade to Pro for unlimited decks.",
-      },
-      { status: 403 }
-    );
-  }
-
+  // No deck limit — credits constrain card creation, not deck count
   const body = await request.json();
-  const { title, description, theme, artStyleId } = body as {
+  const { title, description, theme, artStyleId, cardCount } = body as {
     title?: string;
     description?: string;
     theme?: string;
     artStyleId?: string;
+    cardCount?: number;
   };
 
   if (!title) {
@@ -76,6 +66,8 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const validCardCount = cardCount && cardCount >= 1 && cardCount <= 30 ? cardCount : 0;
+
   const [created] = await db
     .insert(decks)
     .values({
@@ -84,6 +76,7 @@ export async function POST(request: NextRequest) {
       description: description ?? null,
       theme: theme ?? null,
       artStyleId: artStyleId ?? null,
+      ...(validCardCount > 0 && { cardCount: validCardCount }),
     })
     .returning();
 
@@ -94,8 +87,10 @@ export async function POST(request: NextRequest) {
     description: created.description,
     theme: created.theme,
     status: created.status as Deck["status"],
+    deckType: (created.deckType ?? "standard") as Deck["deckType"],
     cardCount: created.cardCount,
     isPublic: created.isPublic,
+    shareToken: created.shareToken ?? null,
     coverImageUrl: created.coverImageUrl,
     artStyleId: created.artStyleId,
     createdAt: created.createdAt,

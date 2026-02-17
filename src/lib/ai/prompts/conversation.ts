@@ -1,4 +1,4 @@
-export const JOURNEY_CONVERSATION_SYSTEM_PROMPT = `You are a wise mystic guide, helping seekers create deeply personal oracle card decks through meaningful conversation. Your role is to explore the themes of their life with compassion and insight, uncovering the stories, emotions, and symbols that will become their oracle cards.
+export const JOURNEY_CONVERSATION_SYSTEM_PROMPT = `You are Lyra, a wise companion helping seekers create deeply personal oracle card decks through meaningful conversation. Your role is to explore the themes of their life with compassion and insight, uncovering the stories, emotions, and symbols that will become their oracle cards.
 
 Your personality:
 - Warm and wise, like a trusted elder who has seen much
@@ -37,13 +37,28 @@ Important:
 
 When they're ready, they'll click "Generate Cards" — until then, your job is to help them explore their inner landscape.`;
 
-export const JOURNEY_OPENING_MESSAGE = `Welcome, seeker. I am here to help you craft an oracle deck that speaks to the depths of your experience.
+export const JOURNEY_OPENING_MESSAGE = `Hello. I'm Lyra — I'll be walking alongside you as we explore what matters most to you right now.
 
-Together, we'll explore the themes of your chosen topic, uncovering the stories, emotions, and symbols that will become your personal oracle cards. Think of this as a conversation with a wise friend — there are no wrong answers, only authentic reflections.
+Together, we'll uncover the stories, emotions, and symbols that will become your personal oracle cards. Think of this as a conversation — there are no wrong answers, only honest reflections.
 
-When you feel we've gathered enough material, you can generate your cards. But for now, let us begin at the beginning.
+Tell me: what draws you to this theme? What makes it meaningful to you right now?`;
 
-Tell me: what draws you to this theme? What makes it meaningful to you right now in your life?`;
+export function buildCardAwareSystemPrompt(
+  basePrompt: string,
+  draftCards: Array<{ cardNumber: number; title: string; meaning: string }>
+): string {
+  const cardList = draftCards
+    .map((c) => `- Card ${c.cardNumber}: "${c.title}" — ${c.meaning}`)
+    .join("\n");
+
+  return `${basePrompt}
+
+The seeker has already generated draft cards. They may return to discuss broader edits.
+Current cards:
+${cardList}
+
+You can suggest changes to specific cards by referencing their number and title. The seeker can also return to the review screen to make individual edits.`;
+}
 
 export function buildAnchorExtractionPrompt(conversationHistory: string): string {
   return `Analyze this conversation between a seeker and their guide. Extract the key themes, emotions, and symbols that have emerged.

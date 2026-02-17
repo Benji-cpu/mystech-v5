@@ -24,7 +24,10 @@ export function buildJourneyCardGenerationPrompt(
   theme: string,
   cardCount: number,
   anchors: { theme: string; emotion: string; symbol: string }[],
-  conversationSummary: string
+  conversationSummary: string,
+  artStyleName?: string,
+  artStyleDescription?: string,
+  preferences?: { lovedCards: { title: string; meaning: string }[]; dismissedCards: { title: string; meaning: string }[] }
 ): string {
   const anchorsList = anchors
     .map(
@@ -33,14 +36,32 @@ export function buildJourneyCardGenerationPrompt(
     )
     .join("\n");
 
-  return `Create ${cardCount} oracle cards for "${title}" — a deck about: ${theme}
+  const artStyleContext = artStyleName
+    ? `\nArt Style: ${artStyleName}\nStyle: ${artStyleDescription}\n`
+    : '';
 
+  let preferencesContext = '';
+  if (preferences && (preferences.lovedCards.length > 0 || preferences.dismissedCards.length > 0)) {
+    const parts: string[] = [];
+    if (preferences.lovedCards.length > 0) {
+      const loved = preferences.lovedCards.slice(0, 10).map(c => `"${c.title}"`).join(', ');
+      parts.push(`The seeker resonates with cards like: ${loved}.`);
+    }
+    if (preferences.dismissedCards.length > 0) {
+      const dismissed = preferences.dismissedCards.slice(0, 5).map(c => `"${c.title}"`).join(', ');
+      parts.push(`They don't connect with cards like: ${dismissed}.`);
+    }
+    preferencesContext = `\n${parts.join(' ')} Let these patterns inform tone and themes.\n`;
+  }
+
+  return `Create ${cardCount} oracle cards for "${title}" — a deck about: ${theme}
+${artStyleContext}
 CONVERSATION SUMMARY:
 ${conversationSummary}
 
 EXTRACTED ANCHORS (themes, emotions, symbols from their story):
 ${anchorsList}
-
+${preferencesContext}
 Generate exactly ${cardCount} cards that:
 1. Draw directly from these anchors and the conversation
 2. Feel personally meaningful, not generic
@@ -49,7 +70,12 @@ Generate exactly ${cardCount} cards that:
 
 Number the cards sequentially from 1 to ${cardCount}.
 
-Each card's imagePrompt should describe a vivid visual scene that captures something specific from their story — a symbol, moment, or feeling they shared. Focus on concrete visual elements the seeker would recognize as theirs.`;
+Each card's imagePrompt should:
+- Describe a symbolic scene for an oracle card (2-3 sentences)
+- Capture something specific from their story — a symbol, moment, or feeling they shared
+- Focus on concrete visual subjects the seeker would recognize as theirs
+- Complement the "${artStyleName || 'mystical'}" aesthetic in imagery choices
+- Describe ONLY the subject and composition — do NOT describe art technique or style`;
 }
 
 export function buildCardEditPrompt(
@@ -85,7 +111,8 @@ export function buildCardRegenerationPrompt(
   theme: string,
   anchors: { theme: string; emotion: string; symbol: string }[],
   existingCards: { cardNumber: number; title: string }[],
-  conversationSummary?: string
+  conversationSummary?: string,
+  preferences?: { lovedCards: { title: string; meaning: string }[]; dismissedCards: { title: string; meaning: string }[] }
 ): string {
   const otherCards = existingCards
     .filter((c) => c.cardNumber !== cardNumber)
@@ -100,6 +127,20 @@ export function buildCardRegenerationPrompt(
     )
     .join("\n");
 
+  let preferencesContext = '';
+  if (preferences && (preferences.lovedCards.length > 0 || preferences.dismissedCards.length > 0)) {
+    const parts: string[] = [];
+    if (preferences.lovedCards.length > 0) {
+      const loved = preferences.lovedCards.slice(0, 10).map(c => `"${c.title}"`).join(', ');
+      parts.push(`The seeker resonates with cards like: ${loved}.`);
+    }
+    if (preferences.dismissedCards.length > 0) {
+      const dismissed = preferences.dismissedCards.slice(0, 5).map(c => `"${c.title}"`).join(', ');
+      parts.push(`They don't connect with cards like: ${dismissed}.`);
+    }
+    preferencesContext = `\n${parts.join(' ')} Let these patterns inform tone and themes.\n`;
+  }
+
   return `Generate a NEW oracle card #${cardNumber} for the deck "${title}" (theme: ${theme}).
 
 This card is being regenerated — the seeker wants a fresh take.
@@ -111,7 +152,7 @@ ${relevantAnchors}
 
 EXISTING CARDS IN DECK (avoid duplicating these themes):
 ${otherCards}
-
+${preferencesContext}
 Create a card that:
 - Feels fresh and distinct from what came before
 - Draws from the seeker's story and anchors

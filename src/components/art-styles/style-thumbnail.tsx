@@ -14,7 +14,7 @@ import {
   Palette,
 } from "lucide-react";
 
-const ICON_MAP: Record<string, React.ElementType> = {
+const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   Crown,
   Droplets,
   Star,
@@ -59,9 +59,10 @@ export function StyleThumbnail({
     : Palette;
 
   return (
-    <button
-      type="button"
+    <div
       onClick={onClick}
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
       className={cn(
         "relative overflow-hidden rounded-lg transition-all",
         sizeClasses[size],
@@ -89,6 +90,6 @@ export function StyleThumbnail({
           />
         </div>
       )}
-    </button>
+    </div>
   );
 }

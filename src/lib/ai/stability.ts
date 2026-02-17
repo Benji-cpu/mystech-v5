@@ -3,6 +3,8 @@ const STABILITY_API_URL =
 
 interface StabilityOptions {
   prompt: string;
+  negativePrompt?: string;
+  stylePreset?: string;
   aspectRatio?: string;
   outputFormat?: "png" | "jpeg" | "webp";
 }
@@ -18,6 +20,12 @@ export async function generateStabilityImage(
 
   const formData = new FormData();
   formData.append("prompt", options.prompt);
+  if (options.negativePrompt) {
+    formData.append("negative_prompt", options.negativePrompt);
+  }
+  if (options.stylePreset) {
+    formData.append("style_preset", options.stylePreset);
+  }
   formData.append("aspect_ratio", options.aspectRatio ?? "2:3");
   formData.append("output_format", options.outputFormat ?? "png");
 

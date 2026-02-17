@@ -1,0 +1,222 @@
+/* ============================================
+   MysTech Mock Lab — Controls Panel Styles
+   ============================================
+   Styling for the MockControls interactive panel
+   that appears in all standalone mocks.
+   ============================================ */
+
+/* --- Panel Container --- */
+.controls-panel {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 200;
+  background: rgba(10, 1, 24, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid var(--border-subtle, rgba(201, 169, 78, 0.15));
+  transform: translateY(calc(100% - 2.5rem));
+  transition: transform 400ms var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1));
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.controls-panel.is-open {
+  transform: translateY(0);
+}
+
+/* --- Toggle Tab --- */
+.controls-panel__toggle {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  height: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: none;
+  border: none;
+  color: var(--text-muted, #685880);
+  font-family: inherit;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+  transition: color 300ms ease;
+}
+
+.controls-panel__toggle:hover {
+  color: var(--gold, #c9a94e);
+}
+
+.controls-panel__toggle-icon {
+  display: inline-block;
+  transition: transform 300ms ease;
+  font-size: 0.6rem;
+}
+
+.controls-panel.is-open .controls-panel__toggle-icon {
+  transform: rotate(180deg);
+}
+
+/* --- Controls Grid --- */
+.controls-panel__body {
+  padding: 3rem 1.5rem 1.5rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1rem 1.5rem;
+}
+
+/* --- Individual Control --- */
+.control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.control-group__label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted, #685880);
+}
+
+.control-group__value {
+  font-size: 0.6rem;
+  color: var(--text-secondary, #a090b8);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Slider --- */
+.control-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+
+.control-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  background: var(--gold, #c9a94e);
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 0 8px rgba(201, 169, 78, 0.4);
+  transition: box-shadow 200ms ease;
+}
+
+.control-slider::-webkit-slider-thumb:hover {
+  box-shadow: 0 0 14px rgba(201, 169, 78, 0.6);
+}
+
+.control-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  background: var(--gold, #c9a94e);
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 0 8px rgba(201, 169, 78, 0.4);
+}
+
+/* --- Checkbox --- */
+.control-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.control-checkbox input[type="checkbox"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border: 1px solid var(--border-subtle, rgba(201, 169, 78, 0.15));
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.04);
+  cursor: pointer;
+  position: relative;
+  transition: all 200ms ease;
+}
+
+.control-checkbox input[type="checkbox"]:checked {
+  background: var(--gold, #c9a94e);
+  border-color: var(--gold, #c9a94e);
+}
+
+.control-checkbox input[type="checkbox"]:checked::after {
+  content: '\2713';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 10px;
+  color: var(--bg-deep, #0a0118);
+  font-weight: bold;
+}
+
+.control-checkbox__label {
+  font-size: 0.7rem;
+  color: var(--text-secondary, #a090b8);
+}
+
+/* --- Segmented Control --- */
+.control-segmented {
+  display: flex;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 6px;
+  padding: 2px;
+  gap: 2px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.control-segmented__option {
+  flex: 1;
+  padding: 0.3rem 0.5rem;
+  font-size: 0.6rem;
+  text-align: center;
+  color: var(--text-muted, #685880);
+  background: none;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 200ms ease;
+  white-space: nowrap;
+}
+
+.control-segmented__option:hover {
+  color: var(--text-secondary, #a090b8);
+}
+
+.control-segmented__option.is-active {
+  background: rgba(201, 169, 78, 0.15);
+  color: var(--gold, #c9a94e);
+  font-weight: 500;
+}
+
+/* --- Mobile --- */
+@media (max-width: 640px) {
+  .controls-panel__body {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem 1rem;
+    padding: 3rem 1rem 1rem;
+  }
+}
+
+@media (max-width: 400px) {
+  .controls-panel__body {
+    grid-template-columns: 1fr;
+  }
+}

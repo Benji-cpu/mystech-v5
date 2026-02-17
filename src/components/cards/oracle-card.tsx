@@ -9,7 +9,7 @@ import type { Card } from "@/types";
 interface OracleCardProps {
   card: Card;
   onRetryImage?: () => void;
-  size?: "sm" | "md" | "lg";
+  size?: "sm" | "md" | "lg" | "fill";
   onClick?: () => void;
 }
 
@@ -17,6 +17,7 @@ const sizeClasses = {
   sm: "w-32",
   md: "w-48",
   lg: "w-64",
+  fill: "w-full",
 };
 
 export function OracleCard({

@@ -57,4 +57,27 @@ describe("buildDeckGenerationUserPrompt", () => {
     );
     expect(result).toContain("1 to 12");
   });
+
+  it("includes art style context when provided", () => {
+    const result = buildDeckGenerationUserPrompt(
+      "Test Deck",
+      "Description",
+      5,
+      "Watercolor Dream",
+      "Soft watercolor washes with delicate, flowing brushstrokes."
+    );
+    expect(result).toContain("Art Style: Watercolor Dream");
+    expect(result).toContain("Soft watercolor washes");
+    expect(result).toContain('Complement the "Watercolor Dream" aesthetic');
+  });
+
+  it("uses mystical as default when no art style provided", () => {
+    const result = buildDeckGenerationUserPrompt(
+      "Test Deck",
+      "Description",
+      5
+    );
+    expect(result).toContain('"mystical"');
+    expect(result).not.toContain("Art Style:");
+  });
 });

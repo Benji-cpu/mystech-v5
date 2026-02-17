@@ -12,7 +12,7 @@ export const generatedCardSchema = z.object({
   imagePrompt: z
     .string()
     .describe(
-      "Detailed visual description for AI image generation, focusing on scene, mood, and key visual elements"
+      "Concise visual scene description (2-3 sentences) for oracle card image generation. Describe subjects, symbols, and composition only — NOT art style or technique."
     ),
 });
 

@@ -3,6 +3,7 @@ import { cards, decks } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { put } from "@vercel/blob";
 import { generateStabilityImage } from "./stability";
+import { ORACLE_CARD_BASE_PROMPT, ORACLE_CARD_NEGATIVE_PROMPT } from "./prompts/image-base-prompt";
 
 const MAX_RETRIES = 3;
 const BACKOFF_BASE_MS = 1000;
@@ -11,7 +12,8 @@ export async function generateCardImage(
   cardId: string,
   imagePrompt: string,
   artStylePrompt: string,
-  deckId: string
+  deckId: string,
+  stabilityPreset?: string
 ): Promise<{ success: boolean; imageUrl?: string; error?: string }> {
   // Check deck still exists before starting (outside retry loop for efficiency)
   const [deck] = await db
@@ -29,12 +31,16 @@ export async function generateCardImage(
     .set({ imageStatus: "generating", updatedAt: new Date() })
     .where(eq(cards.id, cardId));
 
-  const finalPrompt = `${imagePrompt}, ${artStylePrompt}`;
+  const finalPrompt = [ORACLE_CARD_BASE_PROMPT, imagePrompt, artStylePrompt]
+    .filter(s => s.length > 0)
+    .join(', ');
 
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     try {
       const imageBuffer = await generateStabilityImage({
         prompt: finalPrompt,
+        negativePrompt: ORACLE_CARD_NEGATIVE_PROMPT,
+        stylePreset: stabilityPreset,
         aspectRatio: "2:3",
         outputFormat: "png",
       });
@@ -43,6 +49,7 @@ export async function generateCardImage(
       const blob = await put(`cards/${deckId}/${cardId}.png`, imageBuffer, {
         access: "public",
         contentType: "image/png",
+        allowOverwrite: true,
       });
 
       // Update card with image URL

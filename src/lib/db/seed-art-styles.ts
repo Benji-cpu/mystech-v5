@@ -21,7 +21,14 @@ async function seed() {
         isPreset: true,
         isPublic: true,
       })
-      .onConflictDoNothing();
+      .onConflictDoUpdate({
+        target: artStyles.id,
+        set: {
+          stylePrompt: preset.stylePrompt,
+          description: preset.description,
+          updatedAt: new Date(),
+        },
+      });
   }
 
   console.log(`Seeded ${ART_STYLE_PRESETS.length} art style presets.`);

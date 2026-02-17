@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Emissive Materialize — MysTech Mock Lab</title>
+  <link rel="stylesheet" href="../../shared/base.css">
+  <link rel="stylesheet" href="../../shared/controls.css">
+  <style>
+    /* ============================================
+       Emissive Materialize — Ritualistic Card Reveal
+       Perlin noise-driven wave that writes cards
+       into existence with magical fire.
+       ============================================ */
+
+    .demo-area {
+      flex-direction: column;
+      gap: 1.5rem;
+      padding-bottom: 6rem;
+      position: relative;
+    }
+
+    /* --- Canvas fills the demo area --- */
+    .reveal-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* --- Spread labels (rendered on canvas, but also in overlay) --- */
+    .spread-labels {
+      position: absolute;
+      bottom: 7rem;
+      left: 0;
+      right: 0;
+      display: flex;
+      justify-content: center;
+      gap: 4rem;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    .spread-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-muted);
+      opacity: 0;
+      transition: opacity 800ms ease;
+    }
+
+    .spread-label.is-visible {
+      opacity: 1;
+    }
+
+    /* --- Begin Reading button --- */
+    .begin-btn {
+      position: absolute;
+      bottom: 2.5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      padding: 0.75rem 2rem;
+      background: linear-gradient(135deg, var(--gold-dim), var(--gold));
+      color: var(--bg-deep);
+      font-weight: 600;
+      font-size: 0.9rem;
+      border: none;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      letter-spacing: 0.05em;
+      transition: all 300ms var(--ease-out-expo);
+      box-shadow: 0 4px 20px rgba(201, 169, 78, 0.3);
+    }
+
+    .begin-btn:hover {
+      background: linear-gradient(135deg, var(--gold), var(--gold-bright));
+      box-shadow: 0 4px 30px rgba(201, 169, 78, 0.5);
+      transform: translateX(-50%) translateY(-2px);
+    }
+
+    .begin-btn:active {
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .begin-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      transform: translateX(-50%);
+    }
+
+    /* --- Responsive --- */
+    @media (max-width: 640px) {
+      .spread-labels {
+        gap: 1.5rem;
+        bottom: 6rem;
+      }
+      .spread-label {
+        font-size: 0.6rem;
+      }
+      .begin-btn {
+        bottom: 2rem;
+        padding: 0.6rem 1.5rem;
+        font-size: 0.8rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="mock-page">
+    <!-- Header -->
+    <header class="mock-header">
+      <a href="../../index.html" class="mock-back-link">Mock Lab</a>
+      <h1 class="mock-title gold-text">Emissive Materialize</h1>
+    </header>
+
+    <!-- Demo area with canvas -->
+    <main class="demo-area" id="demoArea">
+      <canvas class="reveal-canvas" id="revealCanvas"></canvas>
+
+      <!-- Position labels -->
+      <div class="spread-labels" id="spreadLabels">
+        <span class="spread-label" data-idx="0">Past</span>
+        <span class="spread-label" data-idx="1">Present</span>
+        <span class="spread-label" data-idx="2">Future</span>
+      </div>
+
+      <!-- Begin Reading button -->
+      <button class="begin-btn" id="beginBtn">Begin Reading</button>
+    </main>
+  </div>
+
+  <script src="../../shared/controls.js"></script>
+  <script>
+    /* ============================================
+       Emissive Materialize — Main Script
+       ============================================ */
+
+    // -----------------------------------------------
+    // 1. PERLIN NOISE (Classic 2D implementation)
+    // -----------------------------------------------
+    const PerlinNoise = (() => {
+      // Permutation table (doubled for overflow)
+      const perm = new Uint8Array(512);
+      const grad3 = [
+        [1,1,0],[-1,1,0],[1,-1,0],[-1,-1,0],
+        [1,0,1],[-1,0,1],[1,0,-1],[-1,0,-1],
+        [0,1,1],[0,-1,1],[0,1,-1],[0,-1,-1]
+      ];
+
+      // Seed the permutation table
+      function seed(s) {
+        const p = new Uint8Array(256);
+        for (let i = 0; i < 256; i++) p[i] = i;
+        // Fisher-Yates shuffle with simple LCG
+        let state = s || 42;
+        for (let i = 255; i > 0; i--) {
+          state = (state * 1664525 + 1013904223) & 0xFFFFFFFF;
+          const j = ((state >>> 0) % (i + 1));
+          [p[i], p[j]] = [p[j], p[i]];
+        }
+        for (let i = 0; i < 512; i++) perm[i] = p[i & 255];
+      }
+
+      function fade(t) {
+        return t * t * t * (t * (t * 6 - 15) + 10);
+      }
+
+      function lerp(a, b, t) {
+        return a + t * (b - a);
+      }
+
+      function dot3(g, x, y) {
+        return g[0] * x + g[1] * y;
+      }
+
+      /**
+       * 2D Perlin noise, returns value in approximately [-1, 1]
+       */
+      function noise2D(x, y) {
+        const X = Math.floor(x) & 255;
+        const Y = Math.floor(y) & 255;
+        const xf = x - Math.floor(x);
+        const yf = y - Math.floor(y);
+        const u = fade(xf);
+        const v = fade(yf);
+
+        const aa = perm[perm[X] + Y] % 12;
+        const ab = perm[perm[X] + Y + 1] % 12;
+        const ba = perm[perm[X + 1] + Y] % 12;
+        const bb = perm[perm[X + 1] + Y + 1] % 12;
+
+        const x1 = lerp(dot3(grad3[aa], xf, yf), dot3(grad3[ba], xf - 1, yf), u);
+        const x2 = lerp(dot3(grad3[ab], xf, yf - 1), dot3(grad3[bb], xf - 1, yf - 1), u);
+
+        return lerp(x1, x2, v);
+      }
+
+      // Initialize with default seed
+      seed(42);
+
+      return { noise2D, seed };
+    })();
+
+    // -----------------------------------------------
+    // 2. CONFIGURATION & STATE
+    // -----------------------------------------------
+    const canvas = document.getElementById('revealCanvas');
+    const ctx = canvas.getContext('2d');
+    const beginBtn = document.getElementById('beginBtn');
+    const spreadLabels = document.getElementById('spreadLabels');
+    const demoArea = document.getElementById('demoArea');
+
+    // Card data
+    const CARDS = [
+      { name: 'The Wanderer', gradient: ['#4a148c', '#7c4dff', '#b88aff'] },
+      { name: 'The Mirror',   gradient: ['#1a237e', '#5c6bc0', '#9fa8da'] },
+      { name: 'The Flame',    gradient: ['#bf360c', '#ff6d00', '#ffab40'] },
+    ];
+
+    // Control values (updated by MockControls callbacks)
+    const ctrl = {
+      speed: 1.5,
+      pattern: 'radial',
+      edgeColor: 'gold',
+      embers: 20,
+      charge: 0.6,
+      noiseScale: 0.015,
+      delay: 1.5,
+    };
+
+    // Edge color presets
+    const EDGE_COLORS = {
+      gold:  { r: 226, g: 201, b: 106, hex: '#e2c96a', glow: 'rgba(226, 201, 106, ' },
+      blue:  { r: 100, g: 180, b: 255, hex: '#64b4ff', glow: 'rgba(100, 180, 255, ' },
+      green: { r: 100, g: 255, b: 150, hex: '#64ff96', glow: 'rgba(100, 255, 150, ' },
+    };
+
+    // Animation state
+    let animState = 'idle'; // 'idle' | 'revealing' | 'done'
+    let revealStartTime = 0;
+    let currentCardIdx = -1;
+    let cardStates = []; // per-card state
+    let ambientParticles = [];
+    let embers = [];
+    let isMobile = false;
+
+    // Card layout (computed on resize)
+    let cardPositions = []; // [{x, y, w, h}]
+    let cardCanvases = [];  // offscreen card images
+
+    // -----------------------------------------------
+    // 3. CARD IMAGE GENERATION (offscreen canvas)
+    // -----------------------------------------------
+    function createCardImage(card, w, h) {
+      const offscreen = document.createElement('canvas');
+      offscreen.width = w;
+      offscreen.height = h;
+      const octx = offscreen.getContext('2d');
+
+      // Background gradient
+      const grad = octx.createLinearGradient(0, 0, w, h);
+      grad.addColorStop(0, card.gradient[0]);
+      grad.addColorStop(0.5, card.gradient[1]);
+      grad.addColorStop(1, card.gradient[2]);
+      octx.fillStyle = grad;
+
+      // Rounded rect
+      const r = Math.min(w, h) * 0.06;
+      octx.beginPath();
+      octx.moveTo(r, 0);
+      octx.lineTo(w - r, 0);
+      octx.quadraticCurveTo(w, 0, w, r);
+      octx.lineTo(w, h - r);
+      octx.quadraticCurveTo(w, h, w - r, h);
+      octx.lineTo(r, h);
+      octx.quadraticCurveTo(0, h, 0, h - r);
+      octx.lineTo(0, r);
+      octx.quadraticCurveTo(0, 0, r, 0);
+      octx.closePath();
+      octx.fill();
+
+      // Inner border
+      octx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+      octx.lineWidth = 1;
+      octx.stroke();
+
+      // Decorative inner frame
+      const inset = w * 0.08;
+      octx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+      octx.lineWidth = 0.5;
+      octx.strokeRect(inset, inset, w - inset * 2, h - inset * 2);
+
+      // Card name
+      const fontSize = Math.max(10, w * 0.11);
+      octx.font = `600 ${fontSize}px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`;
+      octx.textAlign = 'center';
+      octx.textBaseline = 'middle';
+      octx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+      octx.fillText(card.name, w / 2, h * 0.85);
+
+      // Decorative symbol in center
+      const symbolSize = w * 0.22;
+      octx.font = `300 ${symbolSize}px serif`;
+      octx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+      // Simple geometric symbol
+      const symbols = ['\u2727', '\u2726', '\u2738']; // decorative stars
+      const idx = CARDS.indexOf(card);
+      octx.fillText(symbols[idx] || '\u2727', w / 2, h * 0.4);
+
+      // Top ornament line
+      octx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+      octx.lineWidth = 1;
+      octx.beginPath();
+      octx.moveTo(w * 0.3, h * 0.12);
+      octx.lineTo(w * 0.7, h * 0.12);
+      octx.stroke();
+
+      return offscreen;
+    }
+
+    // -----------------------------------------------
+    // 4. LAYOUT COMPUTATION
+    // -----------------------------------------------
+    function computeLayout() {
+      const dpr = window.devicePixelRatio || 1;
+      const rect = demoArea.getBoundingClientRect();
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      canvas.style.width = rect.width + 'px';
+      canvas.style.height = rect.height + 'px';
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      isMobile = rect.width < 640;
+      const cardW = isMobile ? 80 : 120;
+      const cardH = cardW * 1.5; // 2:3 ratio
+      const gap = isMobile ? cardW * 0.5 : cardW * 0.7;
+      const totalW = cardW * 3 + gap * 2;
+      const startX = (rect.width - totalW) / 2;
+      const centerY = (rect.height - 80) / 2; // offset for button at bottom
+
+      cardPositions = CARDS.map((_, i) => ({
+        x: startX + i * (cardW + gap),
+        y: centerY - cardH / 2,
+        w: cardW,
+        h: cardH,
+        cx: startX + i * (cardW + gap) + cardW / 2,
+        cy: centerY,
+      }));
+
+      // Update spread label positions
+      const labels = spreadLabels.querySelectorAll('.spread-label');
+      labels.forEach((label, i) => {
+        const pos = cardPositions[i];
+        if (pos) {
+          label.style.position = 'absolute';
+          label.style.left = pos.cx + 'px';
+          label.style.transform = 'translateX(-50%)';
+          label.style.bottom = '';
+          label.style.top = (pos.y + pos.h + 12) + 'px';
+        }
+      });
+      // Reset the container to be absolute for positioning children
+      spreadLabels.style.position = 'absolute';
+      spreadLabels.style.top = '0';
+      spreadLabels.style.bottom = '';
+      spreadLabels.style.display = 'block';
+
+      // Regenerate card images at correct size
+      cardCanvases = CARDS.map((card, i) => {
+        const p = cardPositions[i];
+        return createCardImage(card, Math.round(p.w * dpr) / dpr, Math.round(p.h * dpr) / dpr);
+      });
+
+      // Initialize ambient particles
+      initAmbientParticles(rect.width, rect.height);
+    }
+
+    // -----------------------------------------------
+    // 5. AMBIENT PARTICLES (pre-reveal atmosphere)
+    // -----------------------------------------------
+    function initAmbientParticles(w, h) {
+      ambientParticles = [];
+      const count = isMobile ? 30 : 60;
+      for (let i = 0; i < count; i++) {
+        ambientParticles.push({
+          x: Math.random() * w,
+          y: Math.random() * h,
+          vx: (Math.random() - 0.5) * 0.3,
+          vy: -Math.random() * 0.4 - 0.1,
+          size: Math.random() * 1.5 + 0.5,
+          alpha: Math.random() * 0.3 + 0.05,
+          phase: Math.random() * Math.PI * 2,
+        });
+      }
+    }
+
+    function updateAmbientParticles(dt, w, h) {
+      ambientParticles.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.phase += dt * 1.5;
+        p.alpha = (Math.sin(p.phase) * 0.15 + 0.15);
+
+        // Wrap around
+        if (p.y < -10) { p.y = h + 10; p.x = Math.random() * w; }
+        if (p.x < -10) p.x = w + 10;
+        if (p.x > w + 10) p.x = -10;
+      });
+    }
+
+    function drawAmbientParticles() {
+      ambientParticles.forEach(p => {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(184, 138, 255, ${p.alpha})`;
+        ctx.fill();
+      });
+    }
+
+    // -----------------------------------------------
+    // 6. EMBER PARTICLES (spawn from reveal edge)
+    // -----------------------------------------------
+    function spawnEmber(x, y, color) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = Math.random() * 60 + 20;
+      embers.push({
+        x, y,
+        vx: Math.cos(angle) * speed * (0.5 + Math.random()),
+        vy: Math.sin(angle) * speed - Math.random() * 40 - 20, // bias upward
+        life: 1.0,
+        decay: Math.random() * 1.5 + 1.0,
+        size: Math.random() * 2.5 + 1,
+        color,
+      });
+    }
+
+    function updateEmbers(dt) {
+      for (let i = embers.length - 1; i >= 0; i--) {
+        const e = embers[i];
+        e.x += e.vx * dt;
+        e.y += e.vy * dt;
+        e.vy += 30 * dt; // slight gravity
+        e.life -= e.decay * dt;
+        e.size *= (1 - 0.5 * dt); // shrink
+        if (e.life <= 0 || e.size < 0.2) {
+          embers.splice(i, 1);
+        }
+      }
+    }
+
+    function drawEmbers() {
+      embers.forEach(e => {
+        const alpha = Math.max(0, e.life);
+        ctx.beginPath();
+        ctx.arc(e.x, e.y, e.size, 0, Math.PI * 2);
+        ctx.fillStyle = e.color.glow + alpha + ')';
+        ctx.fill();
+        // Glow
+        if (alpha > 0.3) {
+          ctx.beginPath();
+          ctx.arc(e.x, e.y, e.size * 3, 0, Math.PI * 2);
+          ctx.fillStyle = e.color.glow + (alpha * 0.2) + ')';
+          ctx.fill();
+        }
+      });
+    }
+
+    // -----------------------------------------------
+    // 7. WAVE PATTERN FUNCTIONS
+    // -----------------------------------------------
+    /**
+     * Given a pixel position within a card and the card center,
+     * returns a base distance value [0, 1] for the wave front.
+     * Different patterns produce different sweep directions.
+     */
+    function getWaveDistance(px, py, cardW, cardH, pattern) {
+      const cx = cardW / 2;
+      const cy = cardH / 2;
+      const nx = px / cardW;  // normalized [0,1]
+      const ny = py / cardH;
+
+      switch (pattern) {
+        case 'radial': {
+          // Distance from center, normalized to [0,1]
+          const dx = (px - cx) / (cardW * 0.5);
+          const dy = (py - cy) / (cardH * 0.5);
+          return Math.sqrt(dx * dx + dy * dy) / Math.SQRT2;
+        }
+        case 'diagonal': {
+          // Sweep from top-left to bottom-right
+          return (nx + ny) / 2;
+        }
+        case 'spiral': {
+          // Angle + distance from center create a spiral
+          const dx = px - cx;
+          const dy = py - cy;
+          const dist = Math.sqrt(dx * dx + dy * dy) / (Math.max(cardW, cardH) * 0.5);
+          const angle = (Math.atan2(dy, dx) + Math.PI) / (Math.PI * 2); // [0,1]
+          return (dist * 0.6 + angle * 0.4) % 1.0;
+        }
+        default:
+          return 0;
+      }
+    }
+
+    // -----------------------------------------------
+    // 8. CARD REVEAL RENDERING (noise threshold mask)
+    // -----------------------------------------------
+    /**
+     * Draw a single card at a given reveal progress [0, 1].
+     * progress=0: fully hidden, progress=1: fully revealed
+     */
+    function drawCardReveal(cardIdx, progress) {
+      const pos = cardPositions[cardIdx];
+      const cardImg = cardCanvases[cardIdx];
+      if (!pos || !cardImg) return;
+
+      const { x, y, w, h } = pos;
+      const edgeCol = EDGE_COLORS[ctrl.edgeColor] || EDGE_COLORS.gold;
+      const noiseScale = ctrl.noiseScale;
+
+      // The threshold sweeps from 1.0 (nothing visible) to 0.0 (everything visible)
+      // We add some overshoot so the sweep fully completes
+      const threshold = 1.0 - progress * 1.15;
+
+      // Create a temporary canvas for the masked card
+      const tmpCanvas = document.createElement('canvas');
+      tmpCanvas.width = Math.ceil(w);
+      tmpCanvas.height = Math.ceil(h);
+      const tmpCtx = tmpCanvas.getContext('2d');
+
+      // Draw the card image
+      tmpCtx.drawImage(cardImg, 0, 0, w, h);
+
+      // Get image data for pixel manipulation
+      const imgData = tmpCtx.getImageData(0, 0, Math.ceil(w), Math.ceil(h));
+      const data = imgData.data;
+
+      // Sample step for performance (every N pixels)
+      const step = isMobile ? 3 : 2;
+      let edgePixels = []; // collect edge pixels for ember spawning
+
+      for (let py = 0; py < Math.ceil(h); py += step) {
+        for (let px = 0; px < Math.ceil(w); px += step) {
+          // Get base wave distance
+          const waveDist = getWaveDistance(px, py, w, h, ctrl.pattern);
+
+          // Add Perlin noise for organic edges
+          const noiseVal = PerlinNoise.noise2D(
+            px * noiseScale + cardIdx * 100,
+            py * noiseScale + cardIdx * 100
+          ) * 0.5 + 0.5; // remap to [0, 1]
+
+          // Combined value: wave distance modulated by noise
+          const combined = waveDist * 0.65 + noiseVal * 0.35;
+
+          // Determine visibility
+          const isVisible = combined < (1.0 - threshold);
+
+          // Edge detection: pixels close to the threshold boundary
+          const edgeDist = Math.abs(combined - (1.0 - threshold));
+          const isEdge = edgeDist < 0.06 && isVisible;
+          const isNearEdge = edgeDist < 0.12 && isVisible;
+
+          // Apply to the pixel block
+          for (let dy = 0; dy < step && py + dy < Math.ceil(h); dy++) {
+            for (let dx = 0; dx < step && px + dx < Math.ceil(w); dx++) {
+              const idx = ((py + dy) * Math.ceil(w) + (px + dx)) * 4;
+
+              if (!isVisible) {
+                // Transparent
+                data[idx + 3] = 0;
+              } else if (isEdge) {
+                // Bright emissive edge glow
+                const intensity = 1.0 - (edgeDist / 0.06);
+                const glow = intensity * intensity;
+                data[idx]     = Math.min(255, data[idx] * 0.3 + edgeCol.r * 0.7 * glow + 255 * glow * 0.3);
+                data[idx + 1] = Math.min(255, data[idx + 1] * 0.3 + edgeCol.g * 0.7 * glow + 255 * glow * 0.3);
+                data[idx + 2] = Math.min(255, data[idx + 2] * 0.3 + edgeCol.b * 0.7 * glow + 255 * glow * 0.3);
+                data[idx + 3] = 255;
+              } else if (isNearEdge) {
+                // Subtle warm glow near the edge
+                const warmth = 1.0 - (edgeDist / 0.12);
+                data[idx]     = Math.min(255, data[idx] + edgeCol.r * warmth * 0.15);
+                data[idx + 1] = Math.min(255, data[idx + 1] + edgeCol.g * warmth * 0.1);
+                data[idx + 2] = Math.min(255, data[idx + 2] + edgeCol.b * warmth * 0.1);
+              }
+              // Else: keep original pixel (fully revealed area)
+            }
+          }
+
+          // Collect edge pixels for embers
+          if (isEdge && Math.random() < 0.02) {
+            edgePixels.push({ x: x + px, y: y + py });
+          }
+        }
+      }
+
+      tmpCtx.putImageData(imgData, 0, 0);
+
+      // Draw the masked card onto main canvas
+      ctx.drawImage(tmpCanvas, x, y, w, h);
+
+      // Draw outer glow around the revealed area (soft halo)
+      if (progress > 0.05 && progress < 0.98) {
+        ctx.save();
+        const glowAlpha = Math.sin(progress * Math.PI) * 0.25;
+        ctx.shadowColor = edgeCol.glow + glowAlpha + ')';
+        ctx.shadowBlur = 20;
+        ctx.globalAlpha = 0.3;
+        ctx.drawImage(tmpCanvas, x, y, w, h);
+        ctx.restore();
+      }
+
+      // Spawn embers from edge pixels
+      const maxEmbers = isMobile ? Math.floor(ctrl.embers * 0.5) : ctrl.embers;
+      const emberBudget = Math.min(edgePixels.length, Math.ceil(maxEmbers * 0.15));
+      for (let i = 0; i < emberBudget; i++) {
+        const ep = edgePixels[Math.floor(Math.random() * edgePixels.length)];
+        spawnEmber(ep.x, ep.y, edgeCol);
+      }
+    }
+
+    // -----------------------------------------------
+    // 9. CHARGING PULSE EFFECT (between cards)
+    // -----------------------------------------------
+    function drawChargingPulse(cardIdx, chargeProgress) {
+      const pos = cardPositions[cardIdx];
+      if (!pos) return;
+
+      const edgeCol = EDGE_COLORS[ctrl.edgeColor] || EDGE_COLORS.gold;
+      const pulse = Math.sin(chargeProgress * Math.PI);
+      const radius = 15 + pulse * 25;
+      const alpha = pulse * 0.6;
+
+      // Central glow
+      const grad = ctx.createRadialGradient(
+        pos.cx, pos.cy, 0,
+        pos.cx, pos.cy, radius
+      );
+      grad.addColorStop(0, edgeCol.glow + alpha + ')');
+      grad.addColorStop(0.4, edgeCol.glow + (alpha * 0.5) + ')');
+      grad.addColorStop(1, edgeCol.glow + '0)');
+
+      ctx.beginPath();
+      ctx.arc(pos.cx, pos.cy, radius, 0, Math.PI * 2);
+      ctx.fillStyle = grad;
+      ctx.fill();
+
+      // Orbiting sparks during charge
+      const sparkCount = 4;
+      for (let i = 0; i < sparkCount; i++) {
+        const angle = (chargeProgress * Math.PI * 4) + (i / sparkCount) * Math.PI * 2;
+        const orbitR = 8 + pulse * 12;
+        const sx = pos.cx + Math.cos(angle) * orbitR;
+        const sy = pos.cy + Math.sin(angle) * orbitR;
+        const sparkAlpha = pulse * 0.8;
+
+        ctx.beginPath();
+        ctx.arc(sx, sy, 1.5, 0, Math.PI * 2);
+        ctx.fillStyle = edgeCol.glow + sparkAlpha + ')';
+        ctx.fill();
+      }
+    }
+
+    // -----------------------------------------------
+    // 10. PRE-REVEAL CARD GHOST (faint pulsing glow)
+    // -----------------------------------------------
+    function drawCardGhost(cardIdx, time) {
+      const pos = cardPositions[cardIdx];
+      if (!pos) return;
+
+      const pulse = Math.sin(time * 1.5 + cardIdx * 1.2) * 0.5 + 0.5;
+      const alpha = 0.03 + pulse * 0.04;
+
+      // Faint card outline
+      ctx.strokeStyle = `rgba(184, 138, 255, ${alpha})`;
+      ctx.lineWidth = 1;
+      const r = pos.w * 0.06;
+      roundRect(ctx, pos.x, pos.y, pos.w, pos.h, r);
+      ctx.stroke();
+
+      // Central glow point
+      const glowAlpha = 0.05 + pulse * 0.08;
+      const grad = ctx.createRadialGradient(
+        pos.cx, pos.cy, 0,
+        pos.cx, pos.cy, pos.w * 0.4
+      );
+      grad.addColorStop(0, `rgba(184, 138, 255, ${glowAlpha})`);
+      grad.addColorStop(1, 'rgba(184, 138, 255, 0)');
+      ctx.beginPath();
+      ctx.arc(pos.cx, pos.cy, pos.w * 0.4, 0, Math.PI * 2);
+      ctx.fillStyle = grad;
+      ctx.fill();
+    }
+
+    /** Helper: draw a rounded rectangle path */
+    function roundRect(ctx, x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+      ctx.lineTo(x + w, y + h - r);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      ctx.lineTo(x + r, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.closePath();
+    }
+
+    // -----------------------------------------------
+    // 11. FULLY REVEALED CARD (static draw)
+    // -----------------------------------------------
+    function drawRevealedCard(cardIdx) {
+      const pos = cardPositions[cardIdx];
+      const cardImg = cardCanvases[cardIdx];
+      if (!pos || !cardImg) return;
+
+      // Subtle glow behind card
+      ctx.save();
+      const edgeCol = EDGE_COLORS[ctrl.edgeColor] || EDGE_COLORS.gold;
+      ctx.shadowColor = edgeCol.glow + '0.15)';
+      ctx.shadowBlur = 25;
+      ctx.drawImage(cardImg, pos.x, pos.y, pos.w, pos.h);
+      ctx.restore();
+    }
+
+    // -----------------------------------------------
+    // 12. MAIN ANIMATION LOOP
+    // -----------------------------------------------
+    let lastTime = 0;
+
+    function animate(timestamp) {
+      const dt = Math.min((timestamp - lastTime) / 1000, 0.05); // cap delta
+      lastTime = timestamp;
+
+      const rect = demoArea.getBoundingClientRect();
+      const w = rect.width;
+      const h = rect.height;
+      const time = timestamp / 1000;
+
+      // Clear canvas
+      ctx.clearRect(0, 0, w, h);
+
+      // Draw ambient particles always
+      updateAmbientParticles(dt, w, h);
+      drawAmbientParticles();
+
+      if (animState === 'idle') {
+        // Draw ghost outlines for all cards
+        CARDS.forEach((_, i) => drawCardGhost(i, time));
+      }
+      else if (animState === 'revealing') {
+        const elapsed = time - revealStartTime;
+        const revealDuration = 1.0 / ctrl.speed; // seconds per card reveal
+        const chargeDuration = ctrl.charge;
+        const delayBetween = ctrl.delay;
+
+        // For each card, compute its phase
+        for (let i = 0; i < CARDS.length; i++) {
+          // Time offset for this card: previous cards' reveal + charge + delay
+          const cardStartTime = i * (revealDuration + chargeDuration + delayBetween);
+          const cardElapsed = elapsed - cardStartTime;
+
+          if (cardElapsed < 0) {
+            // Not yet started — draw ghost
+            drawCardGhost(i, time);
+          }
+          else if (cardElapsed < chargeDuration) {
+            // Charging phase
+            drawCardGhost(i, time);
+            const chargeProgress = cardElapsed / chargeDuration;
+            drawChargingPulse(i, chargeProgress);
+          }
+          else if (cardElapsed < chargeDuration + revealDuration) {
+            // Reveal phase
+            const revealElapsed = cardElapsed - chargeDuration;
+            const progress = Math.min(1.0, revealElapsed / revealDuration);
+            // Ease-in-out for smoother feel
+            const easedProgress = progress < 0.5
+              ? 2 * progress * progress
+              : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+            drawCardReveal(i, easedProgress);
+            currentCardIdx = i;
+          }
+          else {
+            // Fully revealed
+            drawRevealedCard(i);
+
+            // Show label when card finishes revealing
+            const label = spreadLabels.querySelector(`[data-idx="${i}"]`);
+            if (label && !label.classList.contains('is-visible')) {
+              label.classList.add('is-visible');
+            }
+          }
+        }
+
+        // Check if all cards are done
+        const totalDuration = CARDS.length * (revealDuration + chargeDuration + delayBetween) - delayBetween;
+        if (elapsed > totalDuration + revealDuration) {
+          animState = 'done';
+          beginBtn.textContent = 'Replay';
+          beginBtn.disabled = false;
+        }
+      }
+      else if (animState === 'done') {
+        // Draw all cards fully revealed with subtle idle glow
+        CARDS.forEach((_, i) => drawRevealedCard(i));
+      }
+
+      // Update and draw embers
+      updateEmbers(dt);
+      drawEmbers();
+
+      requestAnimationFrame(animate);
+    }
+
+    // -----------------------------------------------
+    // 13. BEGIN / REPLAY HANDLER
+    // -----------------------------------------------
+    function startReveal() {
+      animState = 'revealing';
+      revealStartTime = lastTime / 1000;
+      currentCardIdx = 0;
+      embers = [];
+      beginBtn.disabled = true;
+      beginBtn.textContent = 'Revealing...';
+
+      // Hide labels
+      spreadLabels.querySelectorAll('.spread-label').forEach(l => {
+        l.classList.remove('is-visible');
+      });
+    }
+
+    beginBtn.addEventListener('click', () => {
+      if (animState === 'done') {
+        // Reset for replay
+        animState = 'idle';
+        embers = [];
+        spreadLabels.querySelectorAll('.spread-label').forEach(l => {
+          l.classList.remove('is-visible');
+        });
+        // Small delay before restarting
+        setTimeout(startReveal, 300);
+      } else {
+        startReveal();
+      }
+    });
+
+    // -----------------------------------------------
+    // 14. MOCK CONTROLS
+    // -----------------------------------------------
+    const controls = new MockControls('Emissive Materialize');
+
+    controls.addSlider('speed', 'Wave Speed', {
+      min: 0.5, max: 3, step: 0.25, default: 1.5
+    }, (val) => { ctrl.speed = val; });
+
+    controls.addSegmented('pattern', 'Wave Pattern', [
+      { label: 'Radial',   value: 'radial' },
+      { label: 'Diagonal', value: 'diagonal' },
+      { label: 'Spiral',   value: 'spiral' },
+    ], (val) => { ctrl.pattern = val; });
+
+    controls.addSegmented('edge-color', 'Edge Glow', [
+      { label: 'Gold Fire', value: 'gold' },
+      { label: 'Blue',      value: 'blue' },
+      { label: 'Green',     value: 'green' },
+    ], (val) => { ctrl.edgeColor = val; });
+
+    controls.addSlider('embers', 'Ember Count', {
+      min: 0, max: 50, step: 5, default: 20
+    }, (val) => { ctrl.embers = val; });
+
+    controls.addSlider('charge', 'Charge Duration', {
+      min: 0.3, max: 1.5, step: 0.1, default: 0.6, unit: 's'
+    }, (val) => { ctrl.charge = val; });
+
+    controls.addSlider('noise-scale', 'Noise Scale', {
+      min: 0.005, max: 0.03, step: 0.005, default: 0.015
+    }, (val) => { ctrl.noiseScale = val; });
+
+    controls.addSlider('delay', 'Card Delay', {
+      min: 0.5, max: 3, step: 0.25, default: 1.5, unit: 's'
+    }, (val) => { ctrl.delay = val; });
+
+    controls.render();
+
+    // -----------------------------------------------
+    // 15. INITIALIZATION
+    // -----------------------------------------------
+    function init() {
+      computeLayout();
+      lastTime = performance.now();
+      requestAnimationFrame(animate);
+    }
+
+    // Resize handler (debounced)
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        computeLayout();
+      }, 150);
+    });
+
+    // Start
+    init();
+  </script>
+</body>
+</html>

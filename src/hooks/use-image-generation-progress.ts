@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 
 interface ImageStatusCounts {
   pending: number;
@@ -10,15 +10,21 @@ interface ImageStatusCounts {
   total: number;
 }
 
+// Safety limit: stop polling after 5 minutes (200 polls × 1.5s)
+const MAX_POLL_COUNT = 200;
+
 export function useImageGenerationProgress(
   deckId: string | null,
   enabled: boolean = true
 ) {
   const [status, setStatus] = useState<ImageStatusCounts | null>(null);
   const [isPolling, setIsPolling] = useState(false);
+  const pollCountRef = useRef(0);
 
   const poll = useCallback(async () => {
     if (!deckId) return;
+    if (pollCountRef.current >= MAX_POLL_COUNT) return;
+    pollCountRef.current++;
     try {
       const res = await fetch(`/api/decks/${deckId}/image-status`);
       if (!res.ok) return;
@@ -34,10 +40,19 @@ export function useImageGenerationProgress(
   useEffect(() => {
     if (!deckId || !enabled) return;
 
+    // Reset poll count when polling restarts (e.g., new retry)
+    pollCountRef.current = 0;
     setIsPolling(true);
     poll();
 
-    const interval = setInterval(poll, 1500); // Poll every 1.5s for snappier UI updates
+    const interval = setInterval(() => {
+      if (pollCountRef.current >= MAX_POLL_COUNT) {
+        clearInterval(interval);
+        setIsPolling(false);
+        return;
+      }
+      poll();
+    }, 1500);
 
     return () => {
       clearInterval(interval);

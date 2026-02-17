@@ -8,7 +8,9 @@ import { Label } from "@/components/ui/label";
 import { StylePickerGrid } from "@/components/art-styles/style-picker-grid";
 import { useDeckGeneration } from "@/hooks/use-deck-generation";
 import { cn } from "@/lib/utils";
-import { Sparkles, Loader2, AlertCircle } from "lucide-react";
+import { AlertCircle } from "lucide-react";
+import { LyraSigil } from "@/components/guide/lyra-sigil";
+import { LYRA_SIMPLE_CREATE } from "@/components/guide/lyra-constants";
 import type { ArtStyle } from "@/types";
 
 interface SimpleCreateFormProps {
@@ -56,9 +58,12 @@ export function SimpleCreateForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Quick Create a Deck</h1>
+        <div className="flex items-center gap-2">
+          <LyraSigil size="sm" state="attentive" />
+          <h1 className="text-2xl font-bold">{LYRA_SIMPLE_CREATE.pageTitle}</h1>
+        </div>
         <p className="text-muted-foreground mt-1">
-          Describe your deck theme and we&apos;ll generate it for you.
+          {LYRA_SIMPLE_CREATE.pageSubtitle}
         </p>
       </div>
 
@@ -172,7 +177,7 @@ export function SimpleCreateForm({
 
       {/* Credit Preview */}
       <div className="text-sm text-muted-foreground">
-        This will use {cardCount} card credits and {cardCount} image credits.
+        {LYRA_SIMPLE_CREATE.creditPreview(cardCount)}
       </div>
 
       {/* Error */}
@@ -191,13 +196,13 @@ export function SimpleCreateForm({
       >
         {isGenerating ? (
           <>
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            Generating...
+            <LyraSigil size="sm" state="speaking" />
+            <span className="ml-2">{LYRA_SIMPLE_CREATE.generatingButton}</span>
           </>
         ) : (
           <>
-            <Sparkles className="h-4 w-4 mr-2" />
-            Generate My Deck
+            <LyraSigil size="sm" state="attentive" />
+            <span className="ml-2">{LYRA_SIMPLE_CREATE.submitButton}</span>
           </>
         )}
       </Button>

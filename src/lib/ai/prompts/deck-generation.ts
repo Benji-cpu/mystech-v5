@@ -13,13 +13,38 @@ Write in the voice of a wise, compassionate guide. The meanings should feel pers
 export function buildDeckGenerationUserPrompt(
   title: string,
   description: string,
-  cardCount: number
+  cardCount: number,
+  artStyleName?: string,
+  artStyleDescription?: string,
+  preferences?: { lovedCards: { title: string; meaning: string }[]; dismissedCards: { title: string; meaning: string }[] }
 ): string {
+  const artStyleContext = artStyleName
+    ? `\nArt Style: ${artStyleName}\nStyle: ${artStyleDescription}\n`
+    : '';
+
+  let preferencesContext = '';
+  if (preferences && (preferences.lovedCards.length > 0 || preferences.dismissedCards.length > 0)) {
+    const parts: string[] = [];
+    if (preferences.lovedCards.length > 0) {
+      const loved = preferences.lovedCards.slice(0, 10).map(c => `"${c.title}"`).join(', ');
+      parts.push(`The seeker resonates with cards like: ${loved}.`);
+    }
+    if (preferences.dismissedCards.length > 0) {
+      const dismissed = preferences.dismissedCards.slice(0, 5).map(c => `"${c.title}"`).join(', ');
+      parts.push(`They don't connect with cards like: ${dismissed}.`);
+    }
+    preferencesContext = `\n${parts.join(' ')} Let these patterns inform tone and themes.\n`;
+  }
+
   return `Create ${cardCount} oracle cards for a deck called "${title}".
 
 Theme: ${description}
-
+${artStyleContext}${preferencesContext}
 Generate exactly ${cardCount} cards with diverse, complementary meanings that tell a complete story. Number them sequentially from 1 to ${cardCount}.
 
-Each card's imagePrompt should describe a vivid, self-contained visual scene suitable for a tarot-sized card illustration. Focus on concrete visual elements rather than abstract concepts.`;
+Each card's imagePrompt should:
+- Describe a symbolic scene for an oracle card (2-3 sentences)
+- Focus on concrete visual subjects — figures, objects, nature, symbols
+- Complement the "${artStyleName || 'mystical'}" aesthetic in imagery choices
+- Describe ONLY the subject and composition — do NOT describe art technique or style`;
 }

@@ -8,11 +8,13 @@ export default auth;
 export const config = {
   matcher: [
     "/dashboard/:path*",
+    "/home",
+    "/profile/:path*",
     "/decks/:path*",
     "/readings/:path*",
-    "/person-cards/:path*",
-    "/art-styles/:path*",
+    "/explore/:path*",
     "/settings/:path*",
+    "/admin/:path*",
     "/login",
   ],
 };

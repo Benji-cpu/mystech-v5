@@ -1,0 +1,1214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Elemental Convergence — MysTech Mock Lab</title>
+  <link rel="stylesheet" href="../../shared/base.css">
+  <link rel="stylesheet" href="../../shared/controls.css">
+  <style>
+    /* ============================================
+       Mock 5: Elemental Convergence
+       Magical/Theatrical card reveal with
+       elemental energy streams + vortex effects
+       ============================================ */
+
+    /* --- CSS custom property defaults (overridden by MockControls) --- */
+    :root {
+      --ctrl-streams: 4;
+      --ctrl-trail-length: 30;
+      --ctrl-spiral: 1.5;
+      --ctrl-flash: 0.7;
+      --ctrl-shake: 1;
+      --ctrl-vortex-time: 1.5s;
+      --ctrl-colors: elements;
+      --ctrl-residual: 1.5s;
+      --ctrl-delay: 1.5s;
+
+      /* Elemental palette */
+      --elem-gold: #c9a94e;
+      --elem-purple: #b88aff;
+      --elem-teal: #67e8f9;
+      --elem-crimson: #ff6b9d;
+    }
+
+    /* --- Layout overrides --- */
+    .demo-area {
+      flex-direction: column;
+      gap: 2rem;
+      padding-bottom: 6rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* --- Full-viewport canvas behind everything --- */
+    #streamCanvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* --- Content layered above canvas --- */
+    .content-layer {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2rem;
+      flex: 1;
+      justify-content: center;
+      padding: 2rem;
+      min-height: calc(100vh - 60px);
+    }
+
+    /* --- Reading label --- */
+    .reading-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      color: var(--text-muted);
+      opacity: 0;
+      transition: opacity 600ms ease;
+    }
+
+    .reading-label.is-visible {
+      opacity: 1;
+    }
+
+    /* --- Card spread (3-card layout) --- */
+    .card-spread {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 2.5rem;
+    }
+
+    .card-slot {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    /* --- Individual card --- */
+    .spread-card {
+      width: 120px;
+      aspect-ratio: 2 / 3;
+      border-radius: 0.75rem;
+      border: 1px solid var(--border-subtle);
+      position: relative;
+      overflow: hidden;
+      background: var(--bg-deep);
+      transition: border-color 600ms ease, box-shadow 600ms ease;
+    }
+
+    /* Faint placeholder glow before reveal */
+    .spread-card::before {
+      content: '';
+      position: absolute;
+      inset: -2px;
+      border-radius: 0.85rem;
+      background: radial-gradient(
+        circle at center,
+        rgba(201, 169, 78, 0.06) 0%,
+        transparent 70%
+      );
+      pointer-events: none;
+      opacity: 1;
+      transition: opacity 400ms ease;
+    }
+
+    .spread-card.is-revealed::before {
+      opacity: 0;
+    }
+
+    /* Card back pattern (mystical crosshatch) */
+    .card-back {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 50% 50%, rgba(124, 77, 255, 0.08) 0%, transparent 60%),
+        linear-gradient(135deg, transparent 40%, rgba(201, 169, 78, 0.04) 50%, transparent 60%),
+        linear-gradient(225deg, transparent 40%, rgba(201, 169, 78, 0.04) 50%, transparent 60%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 400ms ease;
+    }
+
+    .card-back__symbol {
+      width: 36px;
+      height: 36px;
+      border: 1px solid rgba(201, 169, 78, 0.15);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+      color: rgba(201, 169, 78, 0.2);
+    }
+
+    .spread-card.is-revealed .card-back {
+      opacity: 0;
+    }
+
+    /* Card face (art + title) */
+    .card-face {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transform: scale(1.05);
+      transition: opacity 500ms ease, transform 500ms var(--ease-out-expo);
+    }
+
+    .spread-card.is-revealed .card-face {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    .card-face__art {
+      position: absolute;
+      inset: 0;
+    }
+
+    .card-face__title-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 1.5rem 0.6rem 0.6rem;
+      background: linear-gradient(to top, rgba(0, 0, 0, 0.85), transparent);
+      text-align: center;
+    }
+
+    .card-face__name {
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: var(--gold);
+      letter-spacing: 0.03em;
+    }
+
+    /* Card revealed state glow */
+    .spread-card.is-revealed {
+      border-color: var(--gold);
+    }
+
+    .spread-card.glow-active {
+      box-shadow:
+        0 0 20px rgba(201, 169, 78, 0.4),
+        0 0 40px rgba(201, 169, 78, 0.15),
+        0 0 60px rgba(201, 169, 78, 0.05);
+    }
+
+    /* --- Position labels --- */
+    .slot-label {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--text-muted);
+      transition: color 500ms ease;
+    }
+
+    .card-slot.is-active .slot-label {
+      color: var(--gold);
+    }
+
+    /* --- Begin button --- */
+    .begin-btn {
+      padding: 0.75rem 2rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--bg-deep);
+      background: var(--gold);
+      border: none;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      transition: all 200ms ease;
+      letter-spacing: 0.03em;
+      position: relative;
+      z-index: 1;
+    }
+
+    .begin-btn:hover {
+      background: var(--gold-bright);
+      box-shadow: 0 0 20px rgba(201, 169, 78, 0.3);
+    }
+
+    .begin-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .begin-btn--ghost {
+      background: transparent;
+      color: var(--gold);
+      border: 1px solid var(--gold-dim);
+    }
+
+    .begin-btn--ghost:hover {
+      background: rgba(201, 169, 78, 0.1);
+    }
+
+    /* --- Status line --- */
+    .status-line {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      min-height: 1.4em;
+      text-align: center;
+      transition: color 400ms ease, opacity 400ms ease;
+    }
+
+    .status-line.is-active {
+      color: var(--gold-dim);
+    }
+
+    /* --- Flash overlay (CSS, not canvas) --- */
+    .flash-overlay {
+      position: fixed;
+      inset: 0;
+      background: white;
+      pointer-events: none;
+      opacity: 0;
+      z-index: 10;
+      transition: none;
+    }
+
+    /* --- Screen shake applied to body --- */
+    .is-shaking {
+      animation: screen-shake 200ms ease-out;
+    }
+
+    .is-shaking-subtle {
+      animation: screen-shake-subtle 200ms ease-out;
+    }
+
+    .is-shaking-dramatic {
+      animation: screen-shake-dramatic 200ms ease-out;
+    }
+
+    @keyframes screen-shake-subtle {
+      0%, 100% { transform: translate(0, 0); }
+      20% { transform: translate(-1px, 1px); }
+      40% { transform: translate(1px, -1px); }
+      60% { transform: translate(-1px, 0); }
+      80% { transform: translate(1px, 1px); }
+    }
+
+    @keyframes screen-shake {
+      0%, 100% { transform: translate(0, 0); }
+      20% { transform: translate(-3px, 2px); }
+      40% { transform: translate(3px, -2px); }
+      60% { transform: translate(-2px, 1px); }
+      80% { transform: translate(2px, -1px); }
+    }
+
+    @keyframes screen-shake-dramatic {
+      0%, 100% { transform: translate(0, 0); }
+      10% { transform: translate(-5px, 3px); }
+      20% { transform: translate(5px, -4px); }
+      30% { transform: translate(-4px, 5px); }
+      40% { transform: translate(4px, -3px); }
+      50% { transform: translate(-3px, 4px); }
+      60% { transform: translate(3px, -2px); }
+      70% { transform: translate(-2px, 3px); }
+      80% { transform: translate(2px, -2px); }
+      90% { transform: translate(-1px, 1px); }
+    }
+
+    /* --- Completion area --- */
+    .completion-area {
+      text-align: center;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 800ms ease, transform 800ms var(--ease-spring);
+      pointer-events: none;
+    }
+
+    .completion-area.is-visible {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+
+    .completion-area__text {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+    }
+
+    /* --- Responsive --- */
+    @media (max-width: 640px) {
+      .card-spread {
+        gap: 1rem;
+      }
+
+      .spread-card {
+        width: 80px;
+      }
+
+      .card-back__symbol {
+        width: 28px;
+        height: 28px;
+        font-size: 0.7rem;
+      }
+
+      .card-face__name {
+        font-size: 0.55rem;
+      }
+
+      .slot-label {
+        font-size: 0.55rem;
+      }
+
+      .content-layer {
+        padding: 1rem;
+        gap: 1.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="mock-page">
+    <header class="mock-header">
+      <a href="../../index.html" class="mock-back-link">Mock Lab</a>
+      <h1 class="mock-title">Elemental Convergence</h1>
+    </header>
+
+    <!-- Full viewport canvas for particle streams -->
+    <canvas id="streamCanvas"></canvas>
+
+    <!-- Flash overlay for reveal burst -->
+    <div class="flash-overlay" id="flashOverlay"></div>
+
+    <!-- Main content layered above canvas -->
+    <div class="content-layer">
+      <div class="reading-label" id="readingLabel">Three-Card Spread</div>
+
+      <div class="status-line" id="statusLine"></div>
+
+      <!-- 3-card spread: Past | Present | Future -->
+      <div class="card-spread" id="cardSpread">
+        <div class="card-slot" data-index="0">
+          <div class="spread-card" id="card0">
+            <div class="card-back">
+              <div class="card-back__symbol">&#10022;</div>
+            </div>
+            <div class="card-face">
+              <div class="card-face__art" style="background: linear-gradient(135deg, #2d1b69, #1a0530 40%, #c9a94e 80%, #4a148c)"></div>
+              <div class="card-face__title-bar">
+                <div class="card-face__name">The Wanderer</div>
+              </div>
+            </div>
+          </div>
+          <span class="slot-label">Past</span>
+        </div>
+
+        <div class="card-slot" data-index="1">
+          <div class="spread-card" id="card1">
+            <div class="card-back">
+              <div class="card-back__symbol">&#10022;</div>
+            </div>
+            <div class="card-face">
+              <div class="card-face__art" style="background: linear-gradient(135deg, #0a0118, #7c4dff 40%, #b88aff 70%, #1a0530)"></div>
+              <div class="card-face__title-bar">
+                <div class="card-face__name">The Mirror</div>
+              </div>
+            </div>
+          </div>
+          <span class="slot-label">Present</span>
+        </div>
+
+        <div class="card-slot" data-index="2">
+          <div class="spread-card" id="card2">
+            <div class="card-back">
+              <div class="card-back__symbol">&#10022;</div>
+            </div>
+            <div class="card-face">
+              <div class="card-face__art" style="background: linear-gradient(135deg, #4a148c, #ff6b9d 30%, #c9a94e 60%, #0a0118)"></div>
+              <div class="card-face__title-bar">
+                <div class="card-face__name">The Flame</div>
+              </div>
+            </div>
+          </div>
+          <span class="slot-label">Future</span>
+        </div>
+      </div>
+
+      <!-- Action buttons -->
+      <div id="startArea">
+        <button class="begin-btn" id="beginBtn">Begin Reading</button>
+      </div>
+
+      <div class="completion-area" id="completionArea">
+        <div class="completion-area__text gold-text-animated">The elements have spoken</div>
+        <button class="begin-btn begin-btn--ghost" id="resetBtn">Read Again</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../../shared/controls.js"></script>
+  <script>
+    /* ============================================================
+       Elemental Convergence — Particle Stream Card Reveal
+       ============================================================
+       Four elemental energy streams arc from viewport corners
+       toward each card position, spiral into a vortex, then
+       flash-reveal the card with residual glowing particles.
+       ============================================================ */
+
+    // ========== Configuration (updated by MockControls) ==========
+    let cfg = {
+      streamCount: 4,
+      trailLength: 30,
+      spiralTightness: 1.5,
+      flashIntensity: 0.7,
+      shakeLevel: 1,         // 0 = none, 1 = subtle, 2 = dramatic
+      vortexDuration: 1.5,   // seconds
+      colorMode: 'elements', // 'elements' or 'gold'
+      residualDuration: 1.5, // seconds
+      cardDelay: 1.5,        // seconds between cards
+    };
+
+    // ========== Elemental color palettes ==========
+    const ELEMENT_COLORS = [
+      { r: 201, g: 169, b: 78 },  // gold
+      { r: 184, g: 138, b: 255 }, // purple
+      { r: 103, g: 232, b: 249 }, // teal
+      { r: 255, g: 107, b: 157 }, // crimson
+    ];
+
+    const GOLD_COLORS = [
+      { r: 201, g: 169, b: 78 },
+      { r: 226, g: 201, b: 106 },
+      { r: 138, g: 116, b: 53 },
+      { r: 201, g: 169, b: 78 },
+    ];
+
+    // ========== Canvas setup ==========
+    const canvas = document.getElementById('streamCanvas');
+    const ctx = canvas.getContext('2d');
+    let W, H;
+    let dpr = Math.min(window.devicePixelRatio || 1, 2);
+    let isMobile = window.innerWidth <= 640;
+
+    function resizeCanvas() {
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      isMobile = window.innerWidth <= 640;
+      W = window.innerWidth;
+      H = window.innerHeight;
+      canvas.width = W * dpr;
+      canvas.height = H * dpr;
+      canvas.style.width = W + 'px';
+      canvas.style.height = H + 'px';
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    // ========== DOM refs ==========
+    const flashOverlay = document.getElementById('flashOverlay');
+    const readingLabel = document.getElementById('readingLabel');
+    const statusLine = document.getElementById('statusLine');
+    const beginBtn = document.getElementById('beginBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const startArea = document.getElementById('startArea');
+    const completionArea = document.getElementById('completionArea');
+    const cards = [
+      document.getElementById('card0'),
+      document.getElementById('card1'),
+      document.getElementById('card2'),
+    ];
+    const cardSlots = document.querySelectorAll('.card-slot');
+
+    // ========== Utility ==========
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    function lerp(a, b, t) {
+      return a + (b - a) * t;
+    }
+
+    function clamp(v, min, max) {
+      return Math.max(min, Math.min(max, v));
+    }
+
+    /** Get the center position of a card element in viewport coordinates. */
+    function getCardCenter(cardEl) {
+      const rect = cardEl.getBoundingClientRect();
+      return {
+        x: rect.left + rect.width / 2,
+        y: rect.top + rect.height / 2,
+      };
+    }
+
+    /** Get the four corner origins for streams (slightly outside viewport). */
+    function getCornerOrigins() {
+      const pad = 50;
+      return [
+        { x: -pad, y: -pad },                // top-left
+        { x: W + pad, y: -pad },             // top-right
+        { x: W + pad, y: H + pad },          // bottom-right
+        { x: -pad, y: H + pad },             // bottom-left
+      ];
+    }
+
+    /** Select which corner origins to use based on stream count. */
+    function getStreamOrigins() {
+      const corners = getCornerOrigins();
+      if (cfg.streamCount === 2) {
+        return [corners[0], corners[2]]; // diagonal pair
+      }
+      return corners;
+    }
+
+    /** Get color palette based on mode. */
+    function getColors() {
+      return cfg.colorMode === 'gold' ? GOLD_COLORS : ELEMENT_COLORS;
+    }
+
+    // ========== Particle Stream System ==========
+
+    /**
+     * A single energy stream: a lead particle followed by trailing particles.
+     * In approach phase: follows a bezier curve from origin to target.
+     * In vortex phase: orbits the target with shrinking radius.
+     */
+    class EnergyStream {
+      /**
+       * @param {object} origin - {x, y} start position
+       * @param {object} target - {x, y} card center
+       * @param {object} color  - {r, g, b}
+       * @param {number} trailLen - number of trail particles
+       */
+      constructor(origin, target, color, trailLen) {
+        this.origin = { ...origin };
+        this.target = { ...target };
+        this.color = color;
+        this.trailLen = trailLen;
+
+        // Position history for the trail
+        this.history = [];
+        this.pos = { x: origin.x, y: origin.y };
+
+        // Bezier control points (randomized arc)
+        this.cp1 = {
+          x: lerp(origin.x, target.x, 0.3) + (Math.random() - 0.5) * W * 0.4,
+          y: lerp(origin.y, target.y, 0.3) + (Math.random() - 0.5) * H * 0.3,
+        };
+        this.cp2 = {
+          x: lerp(origin.x, target.x, 0.7) + (Math.random() - 0.5) * W * 0.3,
+          y: lerp(origin.y, target.y, 0.7) + (Math.random() - 0.5) * H * 0.2,
+        };
+
+        // Phase management
+        this.phase = 'approach'; // 'approach' | 'vortex' | 'converge' | 'done'
+        this.t = 0;             // parametric position along bezier (0..1)
+        this.approachSpeed = 0.008 + Math.random() * 0.004;
+
+        // Vortex state
+        this.vortexAngle = Math.random() * Math.PI * 2;
+        this.vortexRadius = 80 + Math.random() * 40;
+        this.vortexStartRadius = this.vortexRadius;
+        this.vortexTime = 0;
+        this.vortexAngularSpeed = 3 + Math.random() * 2;
+
+        // Alive flag
+        this.alive = true;
+      }
+
+      /** Evaluate cubic bezier at parameter t. */
+      bezier(t) {
+        const u = 1 - t;
+        return {
+          x: u*u*u * this.origin.x + 3*u*u*t * this.cp1.x + 3*u*t*t * this.cp2.x + t*t*t * this.target.x,
+          y: u*u*u * this.origin.y + 3*u*u*t * this.cp1.y + 3*u*t*t * this.cp2.y + t*t*t * this.target.y,
+        };
+      }
+
+      /** Update stream position. dt in seconds. */
+      update(dt) {
+        if (!this.alive) return;
+
+        if (this.phase === 'approach') {
+          // Move along bezier
+          this.t += this.approachSpeed * (60 * dt);
+          if (this.t >= 1) {
+            this.t = 1;
+            this.phase = 'vortex';
+          }
+          const p = this.bezier(this.t);
+          this.pos.x = p.x;
+          this.pos.y = p.y;
+
+        } else if (this.phase === 'vortex') {
+          // Orbit around target with shrinking radius
+          const vortexDur = cfg.vortexDuration;
+          this.vortexTime += dt;
+          const progress = clamp(this.vortexTime / vortexDur, 0, 1);
+
+          // Ease-in-out for radius shrink
+          const easedProgress = progress < 0.5
+            ? 2 * progress * progress
+            : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+
+          this.vortexRadius = this.vortexStartRadius * (1 - easedProgress);
+
+          // Angular speed increases as radius decreases (conservation of angular momentum feel)
+          const speedMult = 1 + easedProgress * cfg.spiralTightness * 2;
+          this.vortexAngle += this.vortexAngularSpeed * speedMult * dt;
+
+          this.pos.x = this.target.x + Math.cos(this.vortexAngle) * this.vortexRadius;
+          this.pos.y = this.target.y + Math.sin(this.vortexAngle) * this.vortexRadius;
+
+          if (progress >= 1) {
+            this.phase = 'converge';
+          }
+
+        } else if (this.phase === 'converge') {
+          // Snap to target
+          this.pos.x = this.target.x;
+          this.pos.y = this.target.y;
+          this.alive = false;
+        }
+
+        // Record position history
+        this.history.unshift({ x: this.pos.x, y: this.pos.y });
+        if (this.history.length > this.trailLen) {
+          this.history.length = this.trailLen;
+        }
+      }
+
+      /** Draw the stream trail on canvas. */
+      draw(ctx) {
+        if (this.history.length < 2) return;
+
+        const { r, g, b } = this.color;
+
+        // Draw trail as series of circles with decreasing opacity and size
+        for (let i = 0; i < this.history.length; i++) {
+          const p = this.history[i];
+          const alpha = (1 - i / this.history.length) * 0.8;
+          const radius = lerp(isMobile ? 2 : 3, 0.5, i / this.history.length);
+
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
+          ctx.fill();
+        }
+
+        // Bright glow at lead particle
+        if (this.alive && this.history.length > 0) {
+          const lead = this.history[0];
+          const glowRadius = isMobile ? 8 : 12;
+          const gradient = ctx.createRadialGradient(lead.x, lead.y, 0, lead.x, lead.y, glowRadius);
+          gradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0.6)`);
+          gradient.addColorStop(0.5, `rgba(${r}, ${g}, ${b}, 0.15)`);
+          gradient.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
+          ctx.beginPath();
+          ctx.arc(lead.x, lead.y, glowRadius, 0, Math.PI * 2);
+          ctx.fillStyle = gradient;
+          ctx.fill();
+        }
+      }
+
+      /** Check if all trail particles have faded (stream fully done). */
+      isFullyDone() {
+        return !this.alive && this.history.length <= 1;
+      }
+    }
+
+    // ========== Residual Glow Particles ==========
+
+    /**
+     * Soft glowing particles that orbit a revealed card,
+     * slowly dissipating over time.
+     */
+    class ResidualParticle {
+      constructor(center, color, duration) {
+        this.center = { ...center };
+        this.color = color;
+        this.lifetime = duration;
+        this.age = 0;
+        this.angle = Math.random() * Math.PI * 2;
+        this.radius = 30 + Math.random() * 50;
+        this.angularSpeed = (0.3 + Math.random() * 0.5) * (Math.random() < 0.5 ? 1 : -1);
+        this.size = 1.5 + Math.random() * 2;
+        this.alive = true;
+      }
+
+      update(dt) {
+        if (!this.alive) return;
+        this.age += dt;
+        if (this.age >= this.lifetime) {
+          this.alive = false;
+          return;
+        }
+        this.angle += this.angularSpeed * dt;
+        // Slowly expand radius
+        this.radius += 3 * dt;
+      }
+
+      draw(ctx) {
+        if (!this.alive) return;
+        const { r, g, b } = this.color;
+        const progress = this.age / this.lifetime;
+        const alpha = (1 - progress) * 0.5;
+
+        const x = this.center.x + Math.cos(this.angle) * this.radius;
+        const y = this.center.y + Math.sin(this.angle) * this.radius;
+
+        // Soft glow
+        const glowR = this.size * 3;
+        const gradient = ctx.createRadialGradient(x, y, 0, x, y, glowR);
+        gradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${alpha})`);
+        gradient.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
+        ctx.beginPath();
+        ctx.arc(x, y, glowR, 0, Math.PI * 2);
+        ctx.fillStyle = gradient;
+        ctx.fill();
+
+        // Core
+        ctx.beginPath();
+        ctx.arc(x, y, this.size * (1 - progress * 0.5), 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha * 1.5})`;
+        ctx.fill();
+      }
+    }
+
+    // ========== Ambient Drifting Particles ==========
+
+    /**
+     * Faint particles that drift across the screen in the pre-reveal
+     * atmosphere, creating a sense of latent energy.
+     */
+    class AmbientParticle {
+      constructor() {
+        this.reset();
+      }
+
+      reset() {
+        this.x = Math.random() * W;
+        this.y = Math.random() * H;
+        const colors = getColors();
+        this.color = colors[Math.floor(Math.random() * colors.length)];
+        this.size = 0.5 + Math.random() * 1.5;
+        this.vx = (Math.random() - 0.5) * 15;
+        this.vy = (Math.random() - 0.5) * 15;
+        this.alpha = 0.05 + Math.random() * 0.15;
+        this.life = 3 + Math.random() * 5;
+        this.age = 0;
+      }
+
+      update(dt) {
+        this.age += dt;
+        if (this.age >= this.life) {
+          this.reset();
+          return;
+        }
+        this.x += this.vx * dt;
+        this.y += this.vy * dt;
+
+        // Wrap around
+        if (this.x < -20) this.x = W + 20;
+        if (this.x > W + 20) this.x = -20;
+        if (this.y < -20) this.y = H + 20;
+        if (this.y > H + 20) this.y = -20;
+      }
+
+      draw(ctx) {
+        const progress = this.age / this.life;
+        // Fade in and out
+        const fadeMult = progress < 0.2
+          ? progress / 0.2
+          : progress > 0.8
+            ? (1 - progress) / 0.2
+            : 1;
+        const { r, g, b } = this.color;
+        const a = this.alpha * fadeMult;
+
+        const glowR = this.size * 4;
+        const gradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, glowR);
+        gradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${a})`);
+        gradient.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, glowR, 0, Math.PI * 2);
+        ctx.fillStyle = gradient;
+        ctx.fill();
+      }
+    }
+
+    // ========== Card Position Glow ==========
+
+    /**
+     * Draws a soft glow at each unrevealed card position.
+     */
+    function drawCardGlow(ctx, center, intensity) {
+      if (intensity <= 0) return;
+      const r = isMobile ? 40 : 60;
+      const gradient = ctx.createRadialGradient(center.x, center.y, 0, center.x, center.y, r);
+      gradient.addColorStop(0, `rgba(201, 169, 78, ${0.06 * intensity})`);
+      gradient.addColorStop(0.6, `rgba(124, 77, 255, ${0.03 * intensity})`);
+      gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.beginPath();
+      ctx.arc(center.x, center.y, r, 0, Math.PI * 2);
+      ctx.fillStyle = gradient;
+      ctx.fill();
+    }
+
+    // ========== Main Animation State ==========
+
+    let activeStreams = [];
+    let residualParticles = [];
+    let ambientParticles = [];
+    let cardGlowIntensity = [1, 1, 1]; // per card, fades to 0 on reveal
+    let revealedCards = [false, false, false];
+    let isRunning = false;
+    let animFrameId = null;
+    let lastTime = 0;
+
+    // Initialize ambient particles
+    const AMBIENT_COUNT = isMobile ? 20 : 40;
+    function initAmbient() {
+      ambientParticles = [];
+      for (let i = 0; i < AMBIENT_COUNT; i++) {
+        ambientParticles.push(new AmbientParticle());
+      }
+    }
+    initAmbient();
+
+    // ========== Render Loop ==========
+
+    function animate(timestamp) {
+      animFrameId = requestAnimationFrame(animate);
+
+      const dt = lastTime ? Math.min((timestamp - lastTime) / 1000, 0.05) : 0.016;
+      lastTime = timestamp;
+
+      // Clear canvas
+      ctx.clearRect(0, 0, W, H);
+
+      // Draw ambient particles
+      for (const p of ambientParticles) {
+        p.update(dt);
+        p.draw(ctx);
+      }
+
+      // Draw card position glows
+      for (let i = 0; i < cards.length; i++) {
+        if (cardGlowIntensity[i] > 0) {
+          const center = getCardCenter(cards[i]);
+          drawCardGlow(ctx, center, cardGlowIntensity[i]);
+        }
+      }
+
+      // Update and draw energy streams
+      for (let i = activeStreams.length - 1; i >= 0; i--) {
+        const stream = activeStreams[i];
+        stream.update(dt);
+        stream.draw(ctx);
+
+        // Fade out trail for dead streams
+        if (!stream.alive) {
+          stream.history.shift();
+          if (stream.isFullyDone()) {
+            activeStreams.splice(i, 1);
+          }
+        }
+      }
+
+      // Update and draw residual particles
+      for (let i = residualParticles.length - 1; i >= 0; i--) {
+        const rp = residualParticles[i];
+        rp.update(dt);
+        if (!rp.alive) {
+          residualParticles.splice(i, 1);
+        } else {
+          rp.draw(ctx);
+        }
+      }
+    }
+
+    // Start the animation loop
+    animFrameId = requestAnimationFrame(animate);
+
+    // ========== Reveal Sequence ==========
+
+    /**
+     * Trigger the flash effect at a given intensity (0..1).
+     */
+    function triggerFlash(intensity) {
+      flashOverlay.style.opacity = intensity;
+      flashOverlay.style.transition = 'none';
+      // Force reflow
+      flashOverlay.offsetHeight;
+      flashOverlay.style.transition = 'opacity 300ms ease-out';
+      flashOverlay.style.opacity = '0';
+    }
+
+    /**
+     * Trigger screen shake at the configured level.
+     */
+    function triggerShake() {
+      const level = cfg.shakeLevel;
+      if (level === 0) return;
+
+      const shakeClass = level === 2 ? 'is-shaking-dramatic' : 'is-shaking-subtle';
+      document.body.classList.add(shakeClass);
+      setTimeout(() => {
+        document.body.classList.remove(shakeClass);
+      }, 250);
+    }
+
+    /**
+     * Spawn residual glow particles around a card position.
+     */
+    function spawnResiduals(cardIndex) {
+      const center = getCardCenter(cards[cardIndex]);
+      const colors = getColors();
+      const count = isMobile ? 8 : 16;
+      const duration = cfg.residualDuration;
+
+      for (let i = 0; i < count; i++) {
+        const color = colors[i % colors.length];
+        residualParticles.push(new ResidualParticle(center, color, duration));
+      }
+    }
+
+    /**
+     * Launch energy streams toward a specific card.
+     * Returns a Promise that resolves when all streams have converged.
+     */
+    function launchStreamsToCard(cardIndex) {
+      return new Promise((resolve) => {
+        const target = getCardCenter(cards[cardIndex]);
+        const origins = getStreamOrigins();
+        const colors = getColors();
+        const trailLen = isMobile ? Math.floor(cfg.trailLength * 0.6) : cfg.trailLength;
+
+        const streams = [];
+        for (let i = 0; i < origins.length; i++) {
+          const stream = new EnergyStream(
+            origins[i],
+            target,
+            colors[i % colors.length],
+            trailLen
+          );
+          streams.push(stream);
+          activeStreams.push(stream);
+        }
+
+        // Poll until all streams from this batch are done
+        const checkInterval = setInterval(() => {
+          const allConverged = streams.every(s => s.phase === 'converge' || !s.alive);
+          if (allConverged) {
+            clearInterval(checkInterval);
+            resolve();
+          }
+        }, 50);
+      });
+    }
+
+    /**
+     * Reveal a single card with all effects.
+     */
+    async function revealCard(cardIndex) {
+      const slot = cardSlots[cardIndex];
+      const cardEl = cards[cardIndex];
+      const cardNames = ['The Wanderer', 'The Mirror', 'The Flame'];
+      const posLabels = ['Past', 'Present', 'Future'];
+
+      // Update status
+      statusLine.textContent = `Drawing ${posLabels[cardIndex]}...`;
+      statusLine.classList.add('is-active');
+      slot.classList.add('is-active');
+
+      // Launch streams toward this card
+      await launchStreamsToCard(cardIndex);
+
+      // --- Convergence moment ---
+      // Flash
+      triggerFlash(cfg.flashIntensity);
+
+      // Shake
+      triggerShake();
+
+      // Reveal the card
+      cardEl.classList.add('is-revealed');
+      cardEl.classList.add('glow-active');
+      revealedCards[cardIndex] = true;
+
+      // Fade out card position glow
+      cardGlowIntensity[cardIndex] = 0;
+
+      // Spawn residual glow
+      spawnResiduals(cardIndex);
+
+      // Update status with card name
+      statusLine.textContent = `${cardNames[cardIndex]}`;
+
+      // Wait a beat for the card to be appreciated
+      await sleep(400);
+
+      // Remove active state from slot (keep revealed)
+      slot.classList.remove('is-active');
+
+      // Gradually fade glow (remove glow-active after residual duration)
+      setTimeout(() => {
+        cardEl.classList.remove('glow-active');
+      }, cfg.residualDuration * 1000);
+    }
+
+    /**
+     * Full reading sequence: reveal all three cards in order.
+     */
+    async function runReading() {
+      if (isRunning) return;
+      isRunning = true;
+      beginBtn.disabled = true;
+      startArea.style.display = 'none';
+      completionArea.classList.remove('is-visible');
+      readingLabel.classList.add('is-visible');
+
+      statusLine.textContent = 'The elements gather...';
+      statusLine.classList.add('is-active');
+
+      // Brief atmospheric pause
+      await sleep(800);
+
+      // Reveal each card with delay between them
+      for (let i = 0; i < cards.length; i++) {
+        await revealCard(i);
+
+        // Delay between cards (except after last)
+        if (i < cards.length - 1) {
+          statusLine.textContent = 'Redirecting energies...';
+          await sleep(cfg.cardDelay * 1000);
+        }
+      }
+
+      // All cards revealed
+      statusLine.textContent = '';
+      statusLine.classList.remove('is-active');
+
+      await sleep(600);
+
+      // Show completion
+      completionArea.classList.add('is-visible');
+      isRunning = false;
+    }
+
+    /**
+     * Reset the reading to initial state.
+     */
+    function resetReading() {
+      isRunning = false;
+      beginBtn.disabled = false;
+      startArea.style.display = '';
+      completionArea.classList.remove('is-visible');
+      readingLabel.classList.remove('is-visible');
+      statusLine.textContent = '';
+      statusLine.classList.remove('is-active');
+
+      // Reset cards
+      for (let i = 0; i < cards.length; i++) {
+        cards[i].classList.remove('is-revealed', 'glow-active');
+        cardSlots[i].classList.remove('is-active');
+        cardGlowIntensity[i] = 1;
+        revealedCards[i] = false;
+      }
+
+      // Clear active streams and residuals
+      activeStreams = [];
+      residualParticles = [];
+
+      // Reinit ambient
+      initAmbient();
+    }
+
+    // ========== Event Listeners ==========
+    beginBtn.addEventListener('click', runReading);
+    resetBtn.addEventListener('click', resetReading);
+
+    // Handle window resize: update ambient count
+    window.addEventListener('resize', () => {
+      const newMobile = window.innerWidth <= 640;
+      if (newMobile !== isMobile) {
+        isMobile = newMobile;
+        initAmbient();
+      }
+    });
+
+    // ========== MockControls ==========
+    const controls = new MockControls('Elemental Convergence');
+
+    controls.addSegmented('streams', 'Stream Count', [
+      { label: '2', value: '2' },
+      { label: '4', value: '4' },
+    ], (val) => {
+      cfg.streamCount = parseInt(val);
+    });
+
+    controls.addSlider('trail-length', 'Trail Length', {
+      min: 10, max: 50, step: 5, default: 30
+    }, (val) => {
+      cfg.trailLength = val;
+    });
+
+    controls.addSlider('spiral', 'Spiral Tightness', {
+      min: 0.5, max: 3, step: 0.25, default: 1.5
+    }, (val) => {
+      cfg.spiralTightness = val;
+    });
+
+    controls.addSlider('flash', 'Flash Intensity', {
+      min: 0.3, max: 1, step: 0.1, default: 0.7
+    }, (val) => {
+      cfg.flashIntensity = val;
+    });
+
+    controls.addSegmented('shake', 'Screen Shake', [
+      { label: 'None', value: '0' },
+      { label: 'Subtle', value: '1' },
+      { label: 'Dramatic', value: '2' },
+    ], (val) => {
+      cfg.shakeLevel = parseInt(val);
+    });
+
+    controls.addSlider('vortex-time', 'Vortex Duration', {
+      min: 0.5, max: 3, step: 0.25, default: 1.5, unit: 's'
+    }, (val) => {
+      cfg.vortexDuration = val;
+    });
+
+    controls.addSegmented('colors', 'Stream Colors', [
+      { label: 'Elements', value: 'elements' },
+      { label: 'Gold', value: 'gold' },
+    ], (val) => {
+      cfg.colorMode = val;
+      // Reinit ambient particles with new colors
+      initAmbient();
+    });
+
+    controls.addSlider('residual', 'Residual Glow', {
+      min: 0.5, max: 3, step: 0.25, default: 1.5, unit: 's'
+    }, (val) => {
+      cfg.residualDuration = val;
+    });
+
+    controls.addSlider('delay', 'Card Delay', {
+      min: 0.5, max: 3, step: 0.25, default: 1.5, unit: 's'
+    }, (val) => {
+      cfg.cardDelay = val;
+    });
+
+    controls.render();
+  </script>
+</body>
+</html>

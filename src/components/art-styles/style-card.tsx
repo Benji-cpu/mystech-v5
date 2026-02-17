@@ -49,7 +49,7 @@ export function StyleCard({
 
   return (
     <Link
-      href={`/art-styles/${style.id}`}
+      href={`/explore/styles/${style.id}`}
       className="group block rounded-lg p-3 transition-colors hover:bg-accent/50"
     >
       {content}

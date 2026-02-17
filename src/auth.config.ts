@@ -16,12 +16,19 @@ export default {
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
       const isOnApp = nextUrl.pathname.startsWith("/dashboard") ||
+        nextUrl.pathname.startsWith("/home") ||
+        nextUrl.pathname.startsWith("/profile") ||
         nextUrl.pathname.startsWith("/decks") ||
         nextUrl.pathname.startsWith("/readings") ||
-        nextUrl.pathname.startsWith("/person-cards") ||
-        nextUrl.pathname.startsWith("/art-styles") ||
+        nextUrl.pathname.startsWith("/explore") ||
         nextUrl.pathname.startsWith("/settings");
+      const isOnAdmin = nextUrl.pathname.startsWith("/admin");
       const isOnLogin = nextUrl.pathname === "/login";
+
+      if (isOnAdmin) {
+        if (isLoggedIn) return true;
+        return false;
+      }
 
       if (isOnApp) {
         if (isLoggedIn) return true;
@@ -29,7 +36,7 @@ export default {
       }
 
       if (isOnLogin && isLoggedIn) {
-        return Response.redirect(new URL("/dashboard", nextUrl));
+        return Response.redirect(new URL("/home", nextUrl));
       }
 
       return true;

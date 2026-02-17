@@ -3,11 +3,10 @@ import { NextRequest } from "next/server";
 
 // --- Hoisted state (accessible inside vi.mock factories) ---
 
-const { mockGetCurrentUser, mockSelectResult, mockInsertResult, mockGetUserDeckCount } = vi.hoisted(() => ({
+const { mockGetCurrentUser, mockSelectResult, mockInsertResult } = vi.hoisted(() => ({
   mockGetCurrentUser: vi.fn(),
   mockSelectResult: [] as unknown[],
   mockInsertResult: [] as unknown[],
-  mockGetUserDeckCount: vi.fn(),
 }));
 
 // --- Mocks ---
@@ -35,14 +34,6 @@ vi.mock("@/lib/db", () => ({
 
 vi.mock("@/lib/db/schema", () => ({
   decks: { userId: "user_id", updatedAt: "updated_at" },
-}));
-
-vi.mock("@/lib/db/queries", () => ({
-  getUserDeckCount: () => mockGetUserDeckCount(),
-}));
-
-vi.mock("@/lib/constants", () => ({
-  PLAN_LIMITS: { free: { maxDecks: 2 } },
 }));
 
 vi.mock("drizzle-orm", () => ({
@@ -82,7 +73,7 @@ describe("GET /api/decks", () => {
   });
 
   it("returns user decks on success", async () => {
-    mockGetCurrentUser.mockResolvedValue({ id: "user-1" });
+    mockGetCurrentUser.mockResolvedValue({ id: "user-1", role: "user" });
     mockSelectResult.push({
       id: "deck-1",
       userId: "user-1",
@@ -124,20 +115,8 @@ describe("POST /api/decks", () => {
     expect(json.success).toBe(false);
   });
 
-  it("returns 403 when deck limit reached", async () => {
-    mockGetCurrentUser.mockResolvedValue({ id: "user-1" });
-    mockGetUserDeckCount.mockResolvedValue(2);
-
-    const res = await POST(makePostRequest({ title: "Test" }));
-    const json = await res.json();
-
-    expect(res.status).toBe(403);
-    expect(json.error).toContain("Deck limit");
-  });
-
   it("returns 400 when title is missing", async () => {
-    mockGetCurrentUser.mockResolvedValue({ id: "user-1" });
-    mockGetUserDeckCount.mockResolvedValue(0);
+    mockGetCurrentUser.mockResolvedValue({ id: "user-1", role: "user" });
 
     const res = await POST(makePostRequest({}));
     const json = await res.json();
@@ -146,9 +125,8 @@ describe("POST /api/decks", () => {
     expect(json.error).toContain("Title is required");
   });
 
-  it("returns 201 on successful creation", async () => {
-    mockGetCurrentUser.mockResolvedValue({ id: "user-1" });
-    mockGetUserDeckCount.mockResolvedValue(0);
+  it("allows deck creation without deck limit (credits constrain)", async () => {
+    mockGetCurrentUser.mockResolvedValue({ id: "user-1", role: "user" });
     mockInsertResult.push({
       id: "deck-new",
       userId: "user-1",

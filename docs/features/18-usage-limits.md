@@ -1,178 +1,142 @@
 # Feature 18: Usage Tracking & Limit Enforcement
 
 ## Overview
-Track usage of billable resources (card creations, readings, image generations) per billing period. Enforce limits based on the user's plan (free/pro). Show remaining credits in the UI and prompt upgrades when limits are reached.
+Credit-based usage tracking system that enforces limits based on user plan (free/pro/admin). Uses a single "credits" currency for card creation and image generation, with separate daily reading allowances.
 
-## User Stories
-- As a user, I want to see how many credits I have remaining
-- As a free user, I want to know when I've hit a limit
-- As a free user, I want to be prompted to upgrade when I can't create more
-- As a pro user, I want to see my usage but rarely be blocked
+## Credit Model
 
-## Requirements
+### Single Currency: "Credits"
+| Action | Cost |
+|--------|------|
+| Create new card (text + image bundled) | 1 credit |
+| Regenerate card image (refresh) | 1 credit |
+| Regenerate card text only | Free |
+| Perform a reading | Not credit-based (daily limit) |
 
-### Must Have
-- [ ] Usage tracking table: cards_created, readings_performed, images_generated per period
-- [ ] Usage check function called before every billable operation
-- [ ] Limit enforcement returning clear error when exceeded
-- [ ] Usage indicator component in sidebar showing remaining credits
-- [ ] Upgrade prompt component shown when limit reached
-- [ ] Automatic period reset (monthly, aligned with subscription billing)
+### Tier Limits
+| Resource | Free | Pro ($4.99/mo) | Admin |
+|----------|------|-----------------|-------|
+| Credits | 11 **lifetime** (one-time) | 50/month (resets monthly) | Unlimited |
+| Readings | 1/day | 5/day | Unlimited |
+| Max decks | No limit | No limit | No limit |
+| Spread types | single, three_card | All | All |
+| AI model | Standard (Gemini 2.0 Flash-Lite) | Master Oracle (Gemini 2.5 Flash) | Master Oracle |
+| First reading ever | Free (doesn't count toward daily limit) | N/A | N/A |
 
-### Nice to Have
-- [ ] Usage history (see past months)
-- [ ] Usage alerts when approaching limits (80% threshold)
-- [ ] Admin dashboard for usage overview
-
-## UI/UX
-
-### Usage Indicator (Sidebar Widget)
-```
-┌─────────────────────┐
-│ Credits Remaining    │
-│ 🃏 Cards:   3 / 10  │
-│ 🔮 Readings: 2 / 5  │
-│ 🖼 Images:  1 / 5   │
-│                     │
-│ Resets Feb 15       │
-└─────────────────────┘
-```
-- Color coded: green (>50%), yellow (20-50%), red (<20%)
-- Compact mode for collapsed sidebar: just progress rings
-
-### Upgrade Prompt (shown when limit hit)
-```
-┌────────────────────────────────────────────┐
-│ ⚡ You've used all your free readings      │
-│                                            │
-│ Upgrade to Pro for:                        │
-│ • 50 readings per month                   │
-│ • All spread types                        │
-│ • And much more...                        │
-│                                            │
-│ Only $4.99/month                           │
-│                                            │
-│ [✨ Upgrade to Pro]    [Maybe Later]       │
-└────────────────────────────────────────────┘
-```
-
-### Limit Warning (approaching limit)
-- Toast notification: "You have 1 reading remaining this month"
-- Non-blocking, just informational
+### Free Tier Strategy
+11 credits covers the intended onboarding funnel:
+- 3 credits → Simple deck (3 cards) → First reading (free, doesn't count)
+- 7 credits → Journey deck (7 cards) → Second reading (1st daily reading)
+- 1 credit → One image refresh
+- After that: daily readings only, no more card creation without upgrading
 
 ## Data Model
 
-### New Table
-
+### `usage_tracking` Table
 ```
 usage_tracking
 ├── id                  text (PK, cuid)
-├── userId              text (FK → users)
+├── userId              text (FK → users, cascade delete)
 ├── periodStart         timestamp (not null)
 ├── periodEnd           timestamp (not null)
-├── cardsCreated        integer (default 0)
-├── readingsPerformed   integer (default 0)
-├── imagesGenerated     integer (default 0)
+├── creditsUsed         integer (default 0)
+├── createdAt           timestamp (default now)
 ├── updatedAt           timestamp (default now)
-└── createdAt           timestamp (default now)
 UNIQUE(userId, periodStart)
 INDEX on userId
 ```
 
-### Period Alignment
-- For Pro users: period aligns with Stripe billing cycle (currentPeriodStart/End)
-- For Free users: calendar month (1st to last day)
+**Period logic:**
+- **Free users:** Single lifetime record. `periodStart` = 2020-01-01, `periodEnd` = 2099-12-31
+- **Pro users:** Monthly records. Calendar month period (later: aligned to Stripe billing)
+- **Admin:** No record needed (unlimited)
 
-## Usage Check Logic
+## Implementation
 
-```typescript
-async function checkUsage(userId: string, resource: 'cards' | 'readings' | 'images', count: number = 1): Promise<{ allowed: boolean; remaining: number; limit: number }> {
-  const plan = await getUserPlan(userId);
-  const limits = PLAN_LIMITS[plan];
-  const usage = await getCurrentPeriodUsage(userId);
+### Core Utilities (`src/lib/usage/`)
+- `plans.ts` — `getUserPlanFromRole(role)`: admin → "admin", else → "free" (pluggable for Stripe pro detection)
+- `usage.ts` — `getOrCreateUsageRecord()`, `checkCredits()`, `incrementCredits()`, `checkDailyReadings()`, `isFirstReadingEver()`
+- `stubs.ts` — Future feature limit placeholders (person cards, collaboration, reading history)
+- `index.ts` — Barrel exports
 
-  const current = usage[resourceField(resource)];
-  const limit = limits[limitField(resource)];
-  const remaining = limit - current;
+### API Endpoint
+- `GET /api/usage` — Returns plan, credits (used/limit/remaining), daily readings, period info
 
-  return {
-    allowed: remaining >= count,
-    remaining: Math.max(0, remaining),
-    limit,
-  };
-}
-```
+### Limit Enforcement
+| Route | Resource | Enforcement |
+|-------|----------|-------------|
+| `/api/ai/generate-deck` | credits (N cards) | Check upfront, increment after creation |
+| `/api/decks/[deckId]/confirm` | credits (kept cards) | Check upfront, increment after insert |
+| `/api/ai/generate-image` | credits (1 regen) | Check 1, increment after success |
+| `/api/ai/generate-images-batch` | credits (N images) | Check N upfront, block if insufficient |
+| `/api/readings` | daily readings | Check daily limit (with first-reading exemption) |
+| `/api/decks` | — | No deck limit (credits-only constraint) |
 
-### Where Limits Are Checked
-| Operation | Resource | Where |
-|-----------|----------|-------|
-| Create deck (simple mode) | cards + images | `/api/ai/generate-deck` |
-| Create deck (journey mode) | cards | `/api/decks/[deckId]/confirm` |
-| Generate images | images | `/api/ai/generate-image`, `/api/ai/generate-images-batch` |
-| Add card (manual or AI) | cards | `/api/decks/[deckId]/cards`, `/api/ai/suggest-card` |
-| Perform reading | readings | `/api/readings` |
-| Create custom art style previews | images | `/api/art-styles` (if generating previews) |
+### UI Components
+- `UsageMeter` — Reusable color-coded progress bar (green >50%, yellow 20-50%, red <20%)
+- `UsageIndicator` — Sidebar widget showing credits + daily readings
+- `UpgradePrompt` — AlertDialog with resource-specific messaging + Pro benefits
+- `useUsage` hook — Client-side usage data fetching + credit warning
 
-### Additional Non-Usage Limits
-| Limit | Free | Pro | Check Location |
-|-------|------|-----|----------------|
-| Max decks | 2 | ∞ | `/api/decks` POST |
-| Max person cards | 5 | 50 | `/api/person-cards` POST |
-| Spread types | three_card only | all | `/api/readings` POST |
-| Reading history | last 10 | ∞ | `/api/readings` GET |
-| Collaboration edit access | view only | full | Card edit routes |
+### 80% Warning Toast
+After successful billable operations, checks remaining credits. If <=20% remaining, shows a toast once per browser session via `sessionStorage`.
 
-## Components to Build
+## Files
 
-| Component | Path | Description |
-|-----------|------|-------------|
-| UsageIndicator | `src/components/shared/usage-indicator.tsx` | Sidebar credit display |
-| UpgradePrompt | `src/components/shared/upgrade-prompt.tsx` | Modal/card shown at limit |
-| UsageMeter | `src/components/shared/usage-meter.tsx` | Progress bar for billing page |
+### New
+| File | Purpose |
+|------|---------|
+| `src/lib/usage/plans.ts` | Central `getUserPlanFromRole()` |
+| `src/lib/usage/usage.ts` | checkCredits, incrementCredits, checkDailyReadings |
+| `src/lib/usage/stubs.ts` | Future feature limit stubs |
+| `src/lib/usage/index.ts` | Barrel exports |
+| `src/lib/usage/plans.test.ts` | Plan detection tests |
+| `src/lib/usage/usage.test.ts` | Usage utility tests |
+| `src/app/api/usage/route.ts` | GET /api/usage endpoint |
+| `src/app/api/usage/route.test.ts` | API endpoint tests |
+| `src/components/shared/usage-meter.tsx` | Reusable progress bar |
+| `src/components/shared/usage-indicator.tsx` | Sidebar credit widget |
+| `src/components/shared/upgrade-prompt.tsx` | Limit-reached modal |
+| `src/hooks/use-usage.ts` | Client-side usage hook |
 
-## API Routes
-
-| Method | Route | Description |
-|--------|-------|-------------|
-| GET | `/api/usage` | Get current period usage + limits |
-
-## Files to Create/Modify
-
-| File | Action | Description |
-|------|--------|-------------|
-| `src/lib/stripe/usage.ts` | Create | Usage check + increment functions |
-| `src/lib/stripe/plans.ts` | Modify | Add limit constants (if not already) |
-| `src/components/shared/usage-indicator.tsx` | Create | Sidebar widget |
-| `src/components/shared/upgrade-prompt.tsx` | Create | Limit-reached modal |
-| `src/components/shared/usage-meter.tsx` | Create | Progress bar |
-| `src/app/api/usage/route.ts` | Create | Usage endpoint |
-
-## Edge Cases
-| Scenario | Handling |
-|----------|----------|
-| User creates deck with 10 cards but only has 8 card credits left | Block operation: "You need 10 credits but have 8 remaining" |
-| User upgrades mid-month | Usage counters persist, new limits apply immediately |
-| User downgrades mid-month | Existing usage preserved, new (lower) limits apply |
-| Usage period changes (Pro billing date changes) | Align with new Stripe period |
-| Concurrent requests both checking limits | Race condition possible — use DB transaction for check+increment |
-| Usage record doesn't exist for current period | Create one with zero counts |
+### Modified
+| File | Change |
+|------|--------|
+| `src/lib/constants.ts` | Restructured to credit model |
+| `src/lib/db/schema.ts` | Added `usageTracking` table |
+| `src/types/index.ts` | Updated types for credit model |
+| `src/app/api/decks/route.ts` | Removed deck limit check |
+| `src/app/api/ai/generate-deck/route.ts` | Credit check + increment |
+| `src/app/api/decks/[deckId]/confirm/route.ts` | Credit check + increment |
+| `src/app/api/ai/generate-image/route.ts` | Credit check + increment |
+| `src/app/api/ai/generate-images-batch/route.ts` | Credit check + increment |
+| `src/app/api/readings/route.ts` | Daily reading limit + first-reading exemption |
+| `src/components/layout/app-sidebar.tsx` | Added UsageIndicator |
+| `src/app/(app)/dashboard/page.tsx` | Centralized credit data |
+| `src/components/dashboard/dashboard-stats.tsx` | Credits + daily readings |
+| `src/app/(app)/settings/billing/page.tsx` | Real usage display |
+| `src/components/billing/billing-page-client.tsx` | Credit model UI |
+| `src/components/marketing/pricing-cards.tsx` | Updated features list |
+| `src/app/(app)/decks/new/simple/page.tsx` | Removed deck limit check |
+| `src/app/(app)/decks/new/journey/page.tsx` | Removed deck limit check |
 
 ## Testing Checklist
-- [ ] Usage indicator shows in sidebar with correct values
-- [ ] Usage updates after creating cards/readings/images
-- [ ] Free tier blocked from exceeding card limit
-- [ ] Free tier blocked from exceeding reading limit
-- [ ] Free tier blocked from exceeding image limit
-- [ ] Free tier limited to 2 decks
-- [ ] Free tier limited to 3-card spread
-- [ ] Upgrade prompt displays when limit hit
-- [ ] Upgrade prompt links to Stripe checkout
-- [ ] Pro tier has higher limits
-- [ ] Usage resets at start of new billing period
-- [ ] Billing page shows usage meters with correct values
-- [ ] Warning toast at 80% usage
+- [x] Usage indicator shows in sidebar with correct values
+- [x] Usage updates after creating cards/readings/images
+- [x] Free tier blocked from exceeding credit limit
+- [x] Free tier blocked when daily reading limit reached
+- [x] Free tier limited to single and three_card spreads
+- [x] First reading ever is free (doesn't count toward daily limit)
+- [x] Upgrade prompt displays when limit hit
+- [x] Admin bypass — unlimited everything
+- [x] Sidebar indicator — credits meter + readings today visible
+- [x] Billing page — shows credits, daily readings, plan info, upgrade CTA
+- [x] 80% warning toast (once per session)
+- [x] No deck limit (credits constrain card creation)
+- [x] Unit tests pass for usage utilities
+- [x] API route tests pass with credit model
 
-## Open Questions
-1. Should usage increment atomically (in same DB transaction as the create operation)? **Default: Yes — use a transaction so usage is only incremented if the operation succeeds.**
-2. Should we show usage in the header or sidebar? **Default: Sidebar, below navigation links. Compact format.**
-3. What happens if Stripe webhook is delayed and we can't determine the billing period? **Default: Fall back to calendar month.**
+## Future Considerations (NOT in this feature)
+- **Feature 17:** Stripe billing, Pro plan detection, credit boosters
+- **Feature 21:** Life Deck concept
+- **Pro period alignment:** When Stripe is added, pro credits reset with billing cycle

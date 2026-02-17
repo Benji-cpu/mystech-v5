@@ -3,23 +3,24 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  LayoutDashboard,
+  Home,
   Layers,
+  Sprout,
   BookOpen,
-  Users,
-  Palette,
-  Settings,
+  Compass,
   Sparkles,
+  User,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { UsageIndicator } from "@/components/shared/usage-indicator";
 
 const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/home", label: "Home", icon: Home },
   { href: "/decks", label: "My Decks", icon: Layers },
+  { href: "/decks/living", label: "Living Deck", icon: Sprout },
   { href: "/readings", label: "Readings", icon: BookOpen },
-  { href: "/person-cards", label: "Person Cards", icon: Users },
-  { href: "/art-styles", label: "Art Styles", icon: Palette },
-  { href: "/settings", label: "Settings", icon: Settings },
+  { href: "/explore", label: "Explore", icon: Compass },
+  { href: "/profile", label: "Profile", icon: User },
 ];
 
 interface AppSidebarProps {
@@ -57,6 +58,9 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
           );
         })}
       </nav>
+      <div className="mt-auto">
+        <UsageIndicator />
+      </div>
     </aside>
   );
 }

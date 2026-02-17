@@ -109,7 +109,7 @@ describe("GET /api/art-styles", () => {
   });
 
   it("returns presets and user styles", async () => {
-    mockGetCurrentUser.mockResolvedValue({ id: "user-1" });
+    mockGetCurrentUser.mockResolvedValue({ id: "user-1", role: "user" });
     mockOwnStyles.push(PRESET_STYLE);
 
     const res = await GET();
@@ -141,7 +141,7 @@ describe("POST /api/art-styles", () => {
   });
 
   it("returns 400 when name is missing", async () => {
-    mockGetCurrentUser.mockResolvedValue({ id: "user-1" });
+    mockGetCurrentUser.mockResolvedValue({ id: "user-1", role: "user" });
 
     const res = await POST(makePostRequest({ description: "My style" }));
     const json = await res.json();
@@ -151,7 +151,7 @@ describe("POST /api/art-styles", () => {
   });
 
   it("returns 400 when description is missing", async () => {
-    mockGetCurrentUser.mockResolvedValue({ id: "user-1" });
+    mockGetCurrentUser.mockResolvedValue({ id: "user-1", role: "user" });
 
     const res = await POST(makePostRequest({ name: "Custom" }));
     const json = await res.json();
@@ -161,7 +161,7 @@ describe("POST /api/art-styles", () => {
   });
 
   it("returns 201 on successful creation", async () => {
-    mockGetCurrentUser.mockResolvedValue({ id: "user-1" });
+    mockGetCurrentUser.mockResolvedValue({ id: "user-1", role: "user" });
     mockInsertResult.push({
       id: "custom-1",
       name: "Custom Style",

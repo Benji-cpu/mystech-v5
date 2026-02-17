@@ -8,11 +8,11 @@ vi.mock("@/lib/auth/helpers", () => ({
   getCurrentUser: () => mockGetCurrentUser(),
 }));
 
-const mockTransaction = vi.fn();
+const mockInsert = vi.fn();
 
 vi.mock("@/lib/db", () => ({
   db: {
-    transaction: (callback: (tx: unknown) => Promise<unknown>) => mockTransaction(callback),
+    insert: (...args: unknown[]) => mockInsert(...args),
   },
 }));
 
@@ -22,9 +22,20 @@ vi.mock("@/lib/db/schema", () => ({
   deckMetadata: {},
 }));
 
-const mockGetUserDeckCount = vi.fn();
+const mockGetArtStyleById = vi.fn();
+const mockGetUserPlan = vi.fn().mockResolvedValue("free");
 vi.mock("@/lib/db/queries", () => ({
-  getUserDeckCount: () => mockGetUserDeckCount(),
+  getArtStyleById: (...args: unknown[]) => mockGetArtStyleById(...args),
+  getUserPlan: () => mockGetUserPlan(),
+  getUserCardPreferences: vi.fn(() => ({ lovedCards: [], dismissedCards: [] })),
+}));
+
+const mockCheckCredits = vi.fn();
+const mockIncrementCredits = vi.fn();
+vi.mock("@/lib/usage", () => ({
+  getUserPlanFromRole: (role: string) => role === "admin" ? "admin" : "free",
+  checkCredits: (...args: unknown[]) => mockCheckCredits(...args),
+  incrementCredits: (...args: unknown[]) => mockIncrementCredits(...args),
 }));
 
 const mockGenerateObject = vi.fn();
@@ -34,6 +45,7 @@ vi.mock("ai", () => ({
 
 vi.mock("@/lib/ai/gemini", () => ({
   geminiModel: "mock-model",
+  geminiProModel: "mock-pro-model",
 }));
 
 vi.mock("@/lib/ai/schemas", () => ({
@@ -45,8 +57,12 @@ vi.mock("@/lib/ai/prompts/deck-generation", () => ({
   buildDeckGenerationUserPrompt: vi.fn().mockReturnValue("user prompt"),
 }));
 
-vi.mock("@/lib/constants", () => ({
-  PLAN_LIMITS: { free: { maxDecks: 2 } },
+vi.mock("@/lib/ai/logging", () => ({
+  logGeneration: vi.fn(),
+}));
+
+vi.mock("@/lib/ai/prompts/resolve", () => ({
+  resolvePrompt: vi.fn().mockResolvedValue("resolved system prompt"),
 }));
 
 // Import route handler after mocks are set up
@@ -62,21 +78,12 @@ function makeRequest(body: Record<string, unknown>) {
   });
 }
 
-function setupTransaction(deckId: string = "deck-1") {
-  // Create a mock transaction context that mimics Drizzle's tx object
-  const mockTx = {
-    insert: vi.fn().mockReturnValue({
-      values: vi.fn().mockReturnThis(),
+function setupInsertMock(deckId: string = "deck-1") {
+  mockInsert.mockReturnValue({
+    values: vi.fn().mockReturnValue({
       returning: vi.fn().mockResolvedValue([{ id: deckId }]),
     }),
-  };
-
-  // Execute the callback with the mock tx and return its result
-  mockTransaction.mockImplementation(async (callback) => {
-    return await callback(mockTx);
   });
-
-  return mockTx;
 }
 
 // --- Tests ---
@@ -85,6 +92,9 @@ describe("POST /api/ai/generate-deck", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.stubEnv("GOOGLE_GENERATIVE_AI_API_KEY", "test-key");
+    // Default: credits available
+    mockCheckCredits.mockResolvedValue({ allowed: true, remaining: 11, limit: 11, current: 0 });
+    mockIncrementCredits.mockResolvedValue(undefined);
   });
 
   it("returns 401 when not authenticated", async () => {
@@ -99,7 +109,7 @@ describe("POST /api/ai/generate-deck", () => {
   });
 
   it("returns 503 when API key is missing", async () => {
-    mockGetCurrentUser.mockResolvedValue({ id: "user-1" });
+    mockGetCurrentUser.mockResolvedValue({ id: "user-1", role: "user" });
     vi.stubEnv("GOOGLE_GENERATIVE_AI_API_KEY", "");
 
     const res = await POST(makeRequest({ title: "Test", description: "Desc", cardCount: 5 }));
@@ -110,7 +120,7 @@ describe("POST /api/ai/generate-deck", () => {
   });
 
   it("returns 400 when required fields are missing", async () => {
-    mockGetCurrentUser.mockResolvedValue({ id: "user-1" });
+    mockGetCurrentUser.mockResolvedValue({ id: "user-1", role: "user" });
 
     const res = await POST(makeRequest({ title: "Test" }));
     const json = await res.json();
@@ -120,7 +130,7 @@ describe("POST /api/ai/generate-deck", () => {
   });
 
   it("returns 400 when cardCount is out of range", async () => {
-    mockGetCurrentUser.mockResolvedValue({ id: "user-1" });
+    mockGetCurrentUser.mockResolvedValue({ id: "user-1", role: "user" });
 
     const res = await POST(makeRequest({ title: "Test", description: "Desc", cardCount: 50 }));
     const json = await res.json();
@@ -129,20 +139,20 @@ describe("POST /api/ai/generate-deck", () => {
     expect(json.error).toContain("between 1 and 30");
   });
 
-  it("returns 403 when deck limit is reached", async () => {
-    mockGetCurrentUser.mockResolvedValue({ id: "user-1" });
-    mockGetUserDeckCount.mockResolvedValue(2);
+  it("returns 403 when insufficient credits", async () => {
+    mockGetCurrentUser.mockResolvedValue({ id: "user-1", role: "user" });
+    mockCheckCredits.mockResolvedValue({ allowed: false, remaining: 2, limit: 11, current: 9 });
 
     const res = await POST(makeRequest({ title: "Test", description: "Desc", cardCount: 5 }));
     const json = await res.json();
 
     expect(res.status).toBe(403);
-    expect(json.error).toContain("Deck limit reached");
+    expect(json.error).toContain("5 credits");
+    expect(json.error).toContain("2 remaining");
   });
 
   it("returns 502 when AI generation fails after retries (no deck created)", async () => {
-    mockGetCurrentUser.mockResolvedValue({ id: "user-1" });
-    mockGetUserDeckCount.mockResolvedValue(0);
+    mockGetCurrentUser.mockResolvedValue({ id: "user-1", role: "user" });
     mockGenerateObject.mockRejectedValue(new Error("AI unavailable"));
 
     const res = await POST(makeRequest({ title: "Test", description: "Desc", cardCount: 3 }));
@@ -151,14 +161,13 @@ describe("POST /api/ai/generate-deck", () => {
     expect(res.status).toBe(502);
     expect(json.error).toContain("Failed to generate cards");
     expect(mockGenerateObject).toHaveBeenCalledTimes(3);
-    // Verify no transaction was started (no deck created on AI failure)
-    expect(mockTransaction).not.toHaveBeenCalled();
+    expect(mockInsert).not.toHaveBeenCalled();
   });
 
-  it("returns 201 with deckId on success (atomic transaction)", async () => {
-    mockGetCurrentUser.mockResolvedValue({ id: "user-1" });
-    mockGetUserDeckCount.mockResolvedValue(0);
-    const mockTx = setupTransaction("deck-1");
+  it("returns 201 with deckId on success and increments credits", async () => {
+    mockGetCurrentUser.mockResolvedValue({ id: "user-1", role: "user" });
+    mockGetArtStyleById.mockResolvedValue(null);
+    setupInsertMock("deck-1");
 
     mockGenerateObject.mockResolvedValue({
       object: {
@@ -180,9 +189,7 @@ describe("POST /api/ai/generate-deck", () => {
     expect(res.status).toBe(201);
     expect(json.success).toBe(true);
     expect(json.data.deckId).toBe("deck-1");
-    // Verify transaction was used for atomic operation
-    expect(mockTransaction).toHaveBeenCalledTimes(1);
-    // Verify all three inserts happened: deck, cards, metadata
-    expect(mockTx.insert).toHaveBeenCalledTimes(3);
+    // Verify credit increment was called with 1 card
+    expect(mockIncrementCredits).toHaveBeenCalledWith("user-1", "free", 1);
   });
 });

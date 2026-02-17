@@ -1,17 +1,15 @@
-import { Layers, BookOpen, CreditCard, Image } from "lucide-react";
+import { Layers, BookOpen, Coins } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { PLAN_LIMITS } from "@/lib/constants";
 import type { PlanType } from "@/types";
 
 interface DashboardStatsProps {
   deckCount: number;
-  readingCount: number;
-  usage: {
-    cardsCreated: number;
-    readingsPerformed: number;
-    imagesGenerated: number;
-  };
   plan: PlanType;
+  creditsUsed: number;
+  creditsLimit: number;
+  readingsToday: number;
+  readingsPerDay: number;
+  isLifetimeCredits: boolean;
 }
 
 function formatLimit(value: number): string {
@@ -20,41 +18,42 @@ function formatLimit(value: number): string {
 
 export function DashboardStats({
   deckCount,
-  readingCount,
-  usage,
   plan,
+  creditsUsed,
+  creditsLimit,
+  readingsToday,
+  readingsPerDay,
+  isLifetimeCredits,
 }: DashboardStatsProps) {
-  const limits = PLAN_LIMITS[plan];
+  const creditsRemaining = Math.max(0, creditsLimit - creditsUsed);
 
   const stats = [
     {
       icon: Layers,
       value: deckCount,
       label: "Decks",
-      sublabel: `${deckCount} of ${formatLimit(limits.maxDecks)}`,
+      sublabel: "No limit",
+    },
+    {
+      icon: Coins,
+      value: plan === "admin" ? "\u221E" : creditsRemaining,
+      label: "Credits Remaining",
+      sublabel: plan === "admin"
+        ? "Unlimited"
+        : `${creditsUsed} of ${formatLimit(creditsLimit)} used${isLifetimeCredits ? " (lifetime)" : ""}`,
     },
     {
       icon: BookOpen,
-      value: usage.readingsPerformed,
-      label: "Readings This Month",
-      sublabel: `${usage.readingsPerformed} of ${formatLimit(limits.readingsPerMonth)}`,
-    },
-    {
-      icon: CreditCard,
-      value: usage.cardsCreated,
-      label: "Cards This Month",
-      sublabel: `${usage.cardsCreated} of ${formatLimit(limits.cardsPerMonth)}`,
-    },
-    {
-      icon: Image,
-      value: usage.imagesGenerated,
-      label: "Images This Month",
-      sublabel: `${usage.imagesGenerated} of ${formatLimit(limits.imagesPerMonth)}`,
+      value: plan === "admin" ? "\u221E" : readingsToday,
+      label: "Readings Today",
+      sublabel: plan === "admin"
+        ? "Unlimited"
+        : `${readingsToday} of ${formatLimit(readingsPerDay)} per day`,
     },
   ];
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {stats.map((stat) => (
         <Card key={stat.label} className="border-border/50">
           <CardContent className="flex items-center gap-4 pt-6">

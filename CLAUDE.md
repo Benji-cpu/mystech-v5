@@ -18,6 +18,8 @@ A Next.js web app where users create personalized oracle card decks based on lif
 | AI Text | Google Gemini 2.5 Flash |
 | AI Images | Google Imagen 4 Fast |
 | AI SDK | Vercel AI SDK |
+| Animation | Framer Motion + GSAP + React Spring |
+| 3D/Shaders | React Three Fiber + Three.js |
 | Payments | Stripe |
 | File Storage | Vercel Blob |
 | Deployment | Vercel |
@@ -32,6 +34,43 @@ These decisions were made during planning and should be followed throughout impl
 - **UI Theme**: Mystical/dark — deep purples (#0a0118), gold accents (#c9a94e), subtle star particles
 - **Dark mode**: Default. Light mode supported via toggle
 - **Card style**: Tarot-inspired proportions with art style customization
+- **Glass morphism**: Card surfaces use `bg-white/5 backdrop-blur-xl border border-white/10`
+
+### Immersive UI (Progressive Enhancement)
+- **Keep Next.js routing** — all pages have real URLs. Deep links, back button, and sharing work normally
+- **Layer transitions on top** — Framer Motion `AnimatePresence` in layout for page transitions
+- **Shared layout animations** — `layoutId` lets elements morph between pages (e.g., deck card → deck detail)
+- **Persistent background** — Ambient particle/gradient layer in app layout, never unmounts, responds to current route
+- **Intra-page flows** — Reading ceremony and deck creation are single-page wizards with internal state transitions
+- **Spring physics always** — Never use linear/ease durations for animation
+- Full architecture details: @docs/architecture/immersive-ui.md
+
+### Mobile-First Development
+- **This is non-negotiable** — every component, page, and flow MUST work at 390px before any desktop enhancement
+- **Design for 390px first**, then enhance for tablet/desktop
+- All layouts must use `dvh` units and responsive flex/grid — no fixed pixel widths
+- Card sizes calculated dynamically from viewport via hooks (never fixed Tailwind size classes in flows)
+- Touch targets: minimum 44x44px
+- Test every flow in Chrome DevTools mobile simulator before desktop
+- Reduce particle counts and animation complexity on mobile (check `isMobile` from responsive hooks)
+- Scrollable content within zones is allowed (e.g., interpretation text), but the zone structure itself must fit in one viewport
+- Everything visible in one viewport — no scrolling required to complete a flow step
+
+### Persistent Shell Pattern (Flow Architecture)
+- **This is the mandatory architecture for ALL multi-step flows** — there are no exceptions
+- **Every multi-step flow uses a single persistent component** that stays mounted from start to finish
+- When building any new flow, start with the shell structure first, then add content to zones
+- The shell contains **zones** (card zone, text/UI zone, status zone) whose flex proportions animate based on the current phase
+- Phase transitions cause zones to **resize** (e.g., card zone shrinks from `flex-1` to `flex-none`, text zone grows from `h-0` to `flex-1`), not swap
+- **Nothing unmounts during a flow** — use conditional visibility (`opacity-0 h-0 overflow-hidden`) and Framer Motion `layout` animations instead of `AnimatePresence mode="wait"` between phases
+- **One component, changing contents** — transitions show different content inside the same container, never swap the container itself. The container morphs (size, shape, position) while its contents animate in/out within it
+- If you find yourself writing `AnimatePresence mode="wait"` between phases, STOP and refactor to zones
+- `AnimatePresence` is reserved for elements that truly enter/exit (toast notifications, modals), NOT for phase transitions within a flow
+- Sub-components within zones can change, but the zone containers themselves stay mounted
+- State machine (`useReducer`) drives what's visible and how zones are proportioned
+- Reference implementation: `src/app/mock/reading/ceremony/page.tsx`
+- Anti-pattern: `{phase === "A" ? <ComponentA /> : <ComponentB />}` — this unmounts A and mounts B
+- Correct pattern: One shell with zones that animate their `flex`, `height`, `opacity` based on phase
 
 ### Authentication
 - **Google OAuth only** — no email magic links for MVP
@@ -66,6 +105,14 @@ These decisions were made during planning and should be followed throughout impl
 ## Project Structure
 
 ```
+.claude/
+├── rules/                  # Auto-loaded coding rules (scoped by file path)
+├── skills/                 # On-demand workflow guides (invocable via /skill-name)
+│   ├── immersive-transitions/  # Page transition & animation patterns
+│   ├── reading-experience/     # Reading ceremony flow
+│   └── component-patterns/     # Component structure templates
+└── agents/                 # Subagent definitions for parallel work
+
 src/
 ├── app/
 │   ├── (marketing)/        # Public pages (landing, pricing)
@@ -74,19 +121,21 @@ src/
 │   │   ├── dashboard/
 │   │   ├── decks/
 │   │   ├── readings/
-│   │   ├── person-cards/
 │   │   ├── art-styles/
 │   │   └── settings/
+│   ├── (admin)/            # Admin panel
 │   ├── api/                # API routes
-│   └── shared/             # Public shared content (readings)
+│   ├── shared/             # Public shared content (readings, decks)
+│   └── mock/               # Design prototypes & animation experiments
 ├── components/
 │   ├── ui/                 # ShadCN primitives
 │   ├── layout/             # App shell (sidebar, header)
 │   ├── cards/              # Card display components
 │   ├── decks/              # Deck-related components
 │   ├── readings/           # Reading flow components
-│   ├── chat/               # AI conversation UI
 │   ├── art-styles/         # Art style picker + preview
+│   ├── transitions/        # Animation demos (framer/, css/, gsap/, spring/, creative/)
+│   ├── lab/                # 3D experiments (Three.js, shaders)
 │   └── shared/             # Reusable (usage indicator, upgrade prompt)
 ├── lib/
 │   ├── db/                 # Drizzle client + schema (built incrementally)
@@ -96,6 +145,12 @@ src/
 │   └── stripe/             # Billing utilities
 ├── hooks/                  # React hooks
 └── types/                  # TypeScript types
+
+docs/
+├── features/               # Feature specs (one per feature)
+├── architecture/           # Architecture decision records
+│   └── immersive-ui.md     # Immersive UI vision & approach
+└── mocks/                  # Standalone HTML animation prototypes
 ```
 
 ---
@@ -283,3 +338,23 @@ When handling uncertainty:
 2. Document it in the spec's "Open Questions" section
 3. Flag it in your completion report
 4. Do NOT stop for every question — use judgment
+
+---
+
+## Claude Code Configuration
+
+### Skills (invoke via `/skill-name`)
+- `/immersive-transitions` — Page transition patterns, shared layout animations, background system
+- `/reading-experience` — Reading ceremony flow (draw, reveal, interpretation)
+- `/component-patterns` — Component structure templates, glass morphism, design system
+
+### Rules (auto-loaded when editing matching files)
+- `.claude/rules/animation.md` — Animation rules (loads when editing transitions/, readings/, lab/)
+- `.claude/rules/components.md` — Component conventions (loads when editing any component)
+
+### Agents (for parallel work delegation)
+- `animation-specialist` — Framer Motion animations, card reveals, visual effects
+- `ui-builder` — React components, pages, layouts
+
+### Detailed Architecture
+- @docs/architecture/immersive-ui.md — Full immersive UI vision and technical approach
