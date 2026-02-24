@@ -1,16 +1,41 @@
 "use client";
 
-import { useState } from "react";
+import { useReducer, useEffect, useRef, useCallback, useMemo } from "react";
+import { motion } from "framer-motion";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import { ArrowLeft, ArrowRight, RotateCcw } from "lucide-react";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+
 import { LyraSigil } from "@/components/guide/lyra-sigil";
-import { LYRA_READING_FLOW } from "@/components/guide/lyra-constants";
+import { LyraNarration } from "@/components/guide/lyra-narration";
+import { useImmersive } from "@/components/immersive/immersive-provider";
+import { useCardReveal } from "@/hooks/use-card-reveal";
+import { useVoicePreferences } from "@/hooks/use-voice-preferences";
+import { useTextToSpeech } from "@/hooks/use-text-to-speech";
+import { getCardNarration } from "@/components/guide/lyra-constants";
+
 import { DeckSelector } from "./deck-selector";
 import { SpreadSelector } from "./spread-selector";
 import { IntentionInput } from "./intention-input";
-import { CardDrawScene } from "./card-draw-scene";
-import { toast } from "sonner";
-import type { Deck, PlanType, SpreadType, Card } from "@/types";
+import { SpreadLayout } from "./spread-layout";
+import { ReadingInterpretation } from "./reading-interpretation";
+import { CompactCardStrip } from "./compact-card-strip";
+
+import {
+  readingFlowReducer,
+  initialReadingFlowState,
+  getZoneProportions,
+  isSetupPhase,
+  isCardPhase as isCardPhaseCheck,
+} from "./reading-flow-state";
+
+import { SPRINGS, READING_NARRATION, MOOD_MAP } from "./reading-flow-theme";
+
+import type { Deck, PlanType, Card } from "@/types";
+
+// ── Props ──────────────────────────────────────────────────────────────
 
 interface ReadingFlowProps {
   decks: Deck[];
@@ -19,209 +44,507 @@ interface ReadingFlowProps {
   userRole?: string;
 }
 
-type Step = "deck" | "spread" | "intention" | "draw";
+// ── Step dots for setup phases ─────────────────────────────────────────
+
+const SETUP_LABELS = ["Deck", "Spread", "Intention"] as const;
+const SETUP_PHASES = ["deck", "spread", "intention"] as const;
+
+// ── Component ──────────────────────────────────────────────────────────
 
 export function ReadingFlow({ decks, userPlan, userRole }: ReadingFlowProps) {
-  const [step, setStep] = useState<Step>("deck");
-  const [selectedDeckId, setSelectedDeckId] = useState<string | null>(null);
-  const [selectedSpread, setSelectedSpread] = useState<SpreadType | null>(null);
-  const [question, setQuestion] = useState("");
-  const [isCreating, setIsCreating] = useState(false);
-  const [readingId, setReadingId] = useState<string | null>(null);
-  const [drawnCards, setDrawnCards] = useState<
-    { card: Card; positionName: string }[]
-  >([]);
+  const [state, dispatch] = useReducer(
+    readingFlowReducer,
+    initialReadingFlowState
+  );
+  const { setMoodPreset } = useImmersive();
+  const router = useRouter();
 
+  const { phase, selectedDeckId, selectedSpread, question, readingId, drawnCards, error } = state;
+  const zones = getZoneProportions(phase);
   const selectedDeck = decks.find((d) => d.id === selectedDeckId) ?? null;
+  const setupIndex = SETUP_PHASES.indexOf(phase as typeof SETUP_PHASES[number]);
+  const isInterpreting = phase === "interpreting" || phase === "complete";
+  const cardPhase = isCardPhaseCheck(phase);
 
-  const canProceed = (() => {
-    switch (step) {
-      case "deck":
-        return !!selectedDeckId;
-      case "spread":
-        return !!selectedSpread;
-      case "intention":
-        return true; // question is optional
-      default:
-        return false;
-    }
-  })();
+  // ── Mood shifts ────────────────────────────────────────────────────────
 
-  const steps: Step[] = ["deck", "spread", "intention", "draw"];
-  const currentIndex = steps.indexOf(step);
+  useEffect(() => {
+    setMoodPreset(MOOD_MAP[phase]);
+  }, [phase, setMoodPreset]);
 
-  const goBack = () => {
-    if (currentIndex > 0) {
-      setStep(steps[currentIndex - 1]);
-    }
-  };
+  // ── Narration text per phase ───────────────────────────────────────────
 
-  const goNext = async () => {
-    if (step === "intention") {
-      // Create the reading via API
-      await createReading();
-    } else if (currentIndex < steps.length - 1) {
-      setStep(steps[currentIndex + 1]);
-    }
-  };
+  useEffect(() => {
+    dispatch({ type: "SET_NARRATION", text: READING_NARRATION[phase] });
+  }, [phase]);
 
-  const createReading = async () => {
-    if (!selectedDeckId || !selectedSpread) return;
-    setIsCreating(true);
+  // ── Card reveal hook ───────────────────────────────────────────────────
 
-    try {
-      const res = await fetch("/api/readings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          deckId: selectedDeckId,
-          spreadType: selectedSpread,
-          question: question.trim() || undefined,
-        }),
-      });
+  const onAllRevealed = useCallback(() => {
+    // Pause 1 second then transition to interpreting
+    setTimeout(() => {
+      dispatch({ type: "CARDS_REVEALED" });
+    }, 1000);
+  }, []);
 
-      const data = await res.json();
+  const { cardStates, isRevealing, allRevealed, startReveal, reset: resetReveal } = useCardReveal({
+    cardCount: drawnCards.length || 1,
+    revealDuration: 2000,
+    delayBetween: 1500,
+    onAllRevealed,
+  });
 
-      if (!data.success) {
-        toast.error(data.error || "Failed to create reading");
-        setIsCreating(false);
-        return;
+  // ── Voice narration ────────────────────────────────────────────────────
+
+  const { preferences: voicePrefs } = useVoicePreferences();
+  const tts = useTextToSpeech({
+    voiceId: voicePrefs.voiceId ?? undefined,
+    speed: voicePrefs.speed,
+    enabled: voicePrefs.enabled,
+  });
+
+  // Pre-fetch card narration audio
+  const preFetchTriggered = useRef(false);
+  const preFetchedAudioRef = useRef<string[]>([]);
+
+  useEffect(() => {
+    if (phase !== "drawing" || !voicePrefs.enabled || preFetchTriggered.current || drawnCards.length === 0) return;
+    preFetchTriggered.current = true;
+
+    const narrations = drawnCards.map(({ card, positionName }) =>
+      getCardNarration(positionName, card.title)
+    );
+
+    fetch("/api/voice/tts-batch", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        texts: narrations,
+        voiceId: voicePrefs.voiceId,
+        speed: voicePrefs.speed,
+      }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.audio) {
+          preFetchedAudioRef.current = data.audio;
+        }
+      })
+      .catch(() => {/* Pre-fetch failed silently */});
+  }, [phase, voicePrefs.enabled, voicePrefs.voiceId, voicePrefs.speed, drawnCards]);
+
+  // Play card narration on reveal
+  const lastPlayedRef = useRef(-1);
+  useEffect(() => {
+    if (!voicePrefs.enabled || preFetchedAudioRef.current.length === 0) return;
+
+    const revealingIdx = cardStates.findIndex((s) => s === "revealing");
+    if (revealingIdx >= 0 && revealingIdx > lastPlayedRef.current) {
+      lastPlayedRef.current = revealingIdx;
+      if (drawnCards[revealingIdx]) {
+        const narration = getCardNarration(
+          drawnCards[revealingIdx].positionName,
+          drawnCards[revealingIdx].card.title
+        );
+        tts.speak(narration);
       }
-
-      setReadingId(data.data.reading.id);
-      setDrawnCards(
-        data.data.cards.map(
-          (rc: { card: Card; positionName: string }) => ({
-            card: rc.card,
-            positionName: rc.positionName,
-          })
-        )
-      );
-      setStep("draw");
-    } catch {
-      toast.error("Something went wrong. Please try again.");
-    } finally {
-      setIsCreating(false);
     }
-  };
+  }, [cardStates, voicePrefs.enabled, drawnCards, tts]);
 
-  const stepLabels: Record<Step, string> = {
-    deck: "Select Deck",
-    spread: "Choose Spread",
-    intention: "Set Intention",
-    draw: "Draw Cards",
-  };
+  // Update narration during card reveal
+  const revealingIndex = cardStates.findIndex((s) => s === "revealing");
+  const cardNarration = useMemo(() => {
+    if (revealingIndex >= 0 && drawnCards[revealingIndex]) {
+      const { card, positionName } = drawnCards[revealingIndex];
+      return getCardNarration(positionName, card.title);
+    }
+    return null;
+  }, [revealingIndex, drawnCards]);
+
+  useEffect(() => {
+    if (cardNarration && phase === "drawing") {
+      dispatch({ type: "SET_NARRATION", text: cardNarration });
+    }
+  }, [cardNarration, phase]);
+
+  // ── API: Create reading ────────────────────────────────────────────────
+
+  const createReadingTriggered = useRef(false);
+  useEffect(() => {
+    if (phase !== "creating" || createReadingTriggered.current) return;
+    if (!selectedDeckId || !selectedSpread) return;
+    createReadingTriggered.current = true;
+
+    fetch("/api/readings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        deckId: selectedDeckId,
+        spreadType: selectedSpread,
+        question: question.trim() || undefined,
+      }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (!data.success) {
+          dispatch({
+            type: "CREATION_ERROR",
+            error: data.error || "Failed to create reading",
+          });
+          toast.error(data.error || "Failed to create reading");
+          return;
+        }
+
+        dispatch({
+          type: "CREATION_SUCCESS",
+          readingId: data.data.reading.id,
+          cards: data.data.cards.map(
+            (rc: { card: Card; positionName: string }) => ({
+              card: rc.card,
+              positionName: rc.positionName,
+            })
+          ),
+        });
+      })
+      .catch(() => {
+        dispatch({
+          type: "CREATION_ERROR",
+          error: "Something went wrong. Please try again.",
+        });
+        toast.error("Something went wrong. Please try again.");
+      });
+  }, [phase, selectedDeckId, selectedSpread, question]);
+
+  // ── Start card reveal when entering drawing phase ──────────────────────
+
+  const revealStarted = useRef(false);
+  useEffect(() => {
+    if (phase === "drawing" && drawnCards.length > 0 && !revealStarted.current) {
+      revealStarted.current = true;
+      // Reset re-initializes cardStates with correct length, then start reveal
+      resetReveal();
+      setTimeout(() => startReveal(), 400);
+    }
+  }, [phase, drawnCards.length, startReveal, resetReveal]);
+
+  // ── Action handlers ────────────────────────────────────────────────────
+
+  const handleRetry = useCallback(() => {
+    createReadingTriggered.current = false;
+    dispatch({ type: "START_CREATING" });
+  }, []);
+
+  // ── Render ─────────────────────────────────────────────────────────────
 
   return (
-    <div className="max-w-2xl mx-auto">
-      {/* Step indicator */}
-      {step !== "draw" && (
-        <div className="flex items-center justify-center gap-2 mb-8">
-          {steps.slice(0, 3).map((s, i) => (
-            <div key={s} className="flex items-center gap-2">
-              <div className="w-8 h-8 flex items-center justify-center">
-                <LyraSigil
-                  size="sm"
-                  state={
-                    i < currentIndex
-                      ? "attentive"
-                      : i === currentIndex
-                        ? "speaking"
-                        : "dormant"
-                  }
-                />
-              </div>
-              <span
-                className={`text-xs hidden sm:inline ${
-                  i <= currentIndex
-                    ? "text-foreground"
-                    : "text-muted-foreground"
-                }`}
-              >
-                {stepLabels[s]}
-              </span>
-              {i < 2 && (
+    <div className="fixed inset-0 z-20 bg-[#0a0118]/80 backdrop-blur-sm">
+      <div className="h-[100dvh] flex flex-col overflow-hidden">
+        {/* ── HEADER ZONE — always mounted ── */}
+        <motion.div
+          layout
+          className="min-h-0 flex flex-col items-center justify-center px-4 pt-2"
+          animate={{
+            flex: zones.header,
+            opacity: zones.header > 0 ? 1 : 0,
+          }}
+          transition={SPRINGS.zone}
+        >
+          <LyraSigil
+            size={phase === "creating" ? "lg" : "md"}
+            state={
+              isRevealing || phase === "creating"
+                ? "speaking"
+                : isSetupPhase(phase)
+                  ? "attentive"
+                  : "dormant"
+            }
+          />
+
+          {/* Narration */}
+          <div className="mt-2 max-w-sm text-center">
+            <LyraNarration
+              text={state.narrationText}
+              speed={18}
+              className="text-center"
+            />
+          </div>
+
+          {/* Step dots — visible during setup phases */}
+          <div
+            className={cn(
+              "flex items-center gap-2 mt-2 transition-opacity duration-300",
+              isSetupPhase(phase) ? "opacity-100" : "opacity-0 h-0 overflow-hidden"
+            )}
+          >
+            {SETUP_LABELS.map((label, i) => (
+              <div key={label} className="flex items-center gap-1.5">
                 <div
-                  className={`w-8 h-px ${
-                    i < currentIndex ? "bg-primary" : "bg-border"
-                  }`}
+                  className={cn(
+                    "w-2 h-2 rounded-full transition-colors",
+                    i < setupIndex
+                      ? "bg-primary"
+                      : i === setupIndex
+                        ? "bg-primary/70 ring-2 ring-primary/30"
+                        : "bg-white/15"
+                  )}
                 />
+                <span
+                  className={cn(
+                    "text-[10px] uppercase tracking-wider hidden sm:inline",
+                    i <= setupIndex ? "text-white/60" : "text-white/25"
+                  )}
+                >
+                  {label}
+                </span>
+                {i < SETUP_LABELS.length - 1 && (
+                  <div
+                    className={cn(
+                      "w-6 h-px",
+                      i < setupIndex ? "bg-primary/50" : "bg-white/10"
+                    )}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* ── CONTENT ZONE — always mounted ── */}
+        <motion.div
+          layout
+          className="min-h-0 overflow-hidden"
+          animate={{ flex: zones.content }}
+          transition={SPRINGS.zone}
+        >
+          {/* Deck selector — always in DOM */}
+          <div
+            className={cn(
+              "transition-opacity duration-300",
+              phase === "deck"
+                ? "h-full opacity-100 overflow-y-auto px-4"
+                : "h-0 opacity-0 pointer-events-none overflow-hidden"
+            )}
+          >
+            <DeckSelector
+              decks={decks}
+              selectedDeckId={selectedDeckId}
+              onSelect={(deckId) => dispatch({ type: "SELECT_DECK", deckId })}
+            />
+          </div>
+
+          {/* Spread selector — always in DOM */}
+          <div
+            className={cn(
+              "transition-opacity duration-300",
+              phase === "spread"
+                ? "h-full opacity-100 overflow-y-auto px-4"
+                : "h-0 opacity-0 pointer-events-none overflow-hidden"
+            )}
+          >
+            {selectedDeck && (
+              <SpreadSelector
+                selectedSpread={selectedSpread}
+                onSelect={(spread) =>
+                  dispatch({ type: "SELECT_SPREAD", spread })
+                }
+                deckCardCount={selectedDeck.cardCount}
+                userPlan={userPlan}
+                userRole={userRole}
+              />
+            )}
+          </div>
+
+          {/* Intention input — always in DOM */}
+          <div
+            className={cn(
+              "transition-opacity duration-300",
+              phase === "intention"
+                ? "h-full opacity-100 overflow-y-auto px-4"
+                : "h-0 opacity-0 pointer-events-none overflow-hidden"
+            )}
+          >
+            <IntentionInput
+              question={question}
+              onChange={(q) => dispatch({ type: "SET_QUESTION", question: q })}
+            />
+          </div>
+
+          {/* Creating state — loading */}
+          <div
+            className={cn(
+              "flex flex-col items-center justify-center gap-4 transition-opacity duration-300",
+              phase === "creating"
+                ? "h-full opacity-100"
+                : "h-0 opacity-0 pointer-events-none overflow-hidden"
+            )}
+          >
+            <motion.div
+              animate={{ rotate: [0, 360] }}
+              transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+              className="w-16 h-16 border-2 border-primary/20 border-t-primary/60 rounded-full"
+            />
+          </div>
+
+          {/* Card phases (drawing / interpreting / complete) — always in DOM */}
+          <div
+            className={cn(
+              "flex flex-col transition-opacity duration-300",
+              cardPhase
+                ? "h-full opacity-100"
+                : "h-0 opacity-0 pointer-events-none overflow-hidden"
+            )}
+          >
+            {/* Card spread — full during drawing, shrinks during interpreting */}
+            <motion.div
+              layout
+              className="min-h-0 flex items-center justify-center overflow-hidden"
+              animate={{
+                flex: phase === "drawing" ? 1 : 0,
+                opacity: phase === "drawing" ? 1 : 0,
+              }}
+              transition={SPRINGS.zone}
+            >
+              {selectedSpread && drawnCards.length > 0 && (
+                <div className="py-2">
+                  <SpreadLayout
+                    spreadType={selectedSpread}
+                    cards={drawnCards}
+                    cardStates={cardStates}
+                  />
+                </div>
+              )}
+            </motion.div>
+
+            {/* Compact card strip — appears during interpreting */}
+            <motion.div
+              layout
+              className="shrink-0 overflow-hidden"
+              animate={{
+                height: isInterpreting ? "auto" : 0,
+                opacity: isInterpreting ? 1 : 0,
+              }}
+              transition={SPRINGS.zone}
+            >
+              {drawnCards.length > 0 && (
+                <CompactCardStrip cards={drawnCards} className="justify-center" />
+              )}
+            </motion.div>
+
+            {/* Interpretation — grows from nothing */}
+            <motion.div
+              layout
+              className="min-h-0 overflow-y-auto px-4"
+              animate={{
+                flex: isInterpreting ? 1 : 0,
+                opacity: isInterpreting ? 1 : 0,
+              }}
+              transition={SPRINGS.zone}
+            >
+              {readingId && isInterpreting && (
+                <div className="max-w-xl mx-auto pb-4">
+                  <ReadingInterpretation
+                    readingId={readingId}
+                    existingInterpretation={null}
+                  />
+                </div>
+              )}
+            </motion.div>
+          </div>
+        </motion.div>
+
+        {/* ── ACTION ZONE — always mounted ── */}
+        <motion.div
+          layout
+          className="min-h-0 flex items-center justify-center px-4 py-2"
+          animate={{
+            flex: zones.action,
+            opacity: zones.action > 0 ? 1 : 0,
+          }}
+          transition={SPRINGS.zone}
+        >
+          {/* Setup phases — Back / Next */}
+          {isSetupPhase(phase) && (
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  if (setupIndex === 0) {
+                    router.back();
+                  } else {
+                    dispatch({ type: "GO_BACK" });
+                  }
+                }}
+                className="gap-2 min-h-[44px] text-white/60 hover:text-white/80"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Back
+              </Button>
+
+              {phase === "intention" ? (
+                <Button
+                  onClick={() => dispatch({ type: "START_CREATING" })}
+                  className="gap-2 min-h-[44px] bg-amber-500/10 border border-amber-500/20 text-amber-200 hover:bg-amber-500/20"
+                >
+                  <LyraSigil size="sm" state="attentive" />
+                  Draw the Cards
+                </Button>
+              ) : (
+                /* deck and spread phases auto-advance on select, but show a subtle hint */
+                <div className="text-xs text-white/30">
+                  {phase === "deck" ? "Tap a deck to continue" : "Tap a spread to continue"}
+                </div>
               )}
             </div>
-          ))}
-        </div>
-      )}
+          )}
 
-      {/* Step content */}
-      <div className="min-h-[300px]">
-        {step === "deck" && (
-          <DeckSelector
-            decks={decks}
-            selectedDeckId={selectedDeckId}
-            onSelect={setSelectedDeckId}
-          />
-        )}
+          {/* Creating — show error retry */}
+          {phase === "creating" && error && (
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={SPRINGS.snappy}
+            >
+              <Button
+                onClick={handleRetry}
+                className="gap-2 min-h-[44px] bg-amber-500/10 border border-amber-500/20 text-amber-200 hover:bg-amber-500/20"
+              >
+                <RotateCcw className="h-4 w-4" />
+                Retry
+              </Button>
+            </motion.div>
+          )}
 
-        {step === "spread" && selectedDeck && (
-          <SpreadSelector
-            selectedSpread={selectedSpread}
-            onSelect={setSelectedSpread}
-            deckCardCount={selectedDeck.cardCount}
-            userPlan={userPlan}
-            userRole={userRole}
-          />
-        )}
-
-        {step === "intention" && (
-          <IntentionInput question={question} onChange={setQuestion} />
-        )}
-
-        {step === "draw" && selectedSpread && drawnCards.length > 0 && readingId && (
-          <CardDrawScene
-            spreadType={selectedSpread}
-            cards={drawnCards}
-            readingId={readingId}
-          />
-        )}
+          {/* Complete — view reading */}
+          {phase === "complete" && readingId && (
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ ...SPRINGS.snappy, delay: 1 }}
+              className="flex flex-col items-center gap-2"
+            >
+              <Button
+                onClick={() => router.push(`/readings/${readingId}`)}
+                className="gap-2 min-h-[44px] bg-amber-500/10 border border-amber-500/20 text-amber-200 hover:bg-amber-500/20"
+              >
+                View Full Reading
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  createReadingTriggered.current = false;
+                  revealStarted.current = false;
+                  preFetchTriggered.current = false;
+                  lastPlayedRef.current = -1;
+                  dispatch({ type: "RESET" });
+                }}
+                className="text-white/40 hover:text-white/60 min-h-[44px] text-sm"
+              >
+                Start a New Reading
+              </Button>
+            </motion.div>
+          )}
+        </motion.div>
       </div>
-
-      {/* Navigation buttons */}
-      {step !== "draw" && (
-        <div className="flex items-center justify-between mt-8 pt-6 border-t border-border/50">
-          <Button
-            variant="ghost"
-            onClick={goBack}
-            disabled={currentIndex === 0}
-            className="gap-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back
-          </Button>
-
-          <Button
-            onClick={goNext}
-            disabled={!canProceed || isCreating}
-            className="gap-2"
-          >
-            {isCreating ? (
-              <>
-                <LyraSigil size="sm" state="speaking" />
-                {LYRA_READING_FLOW.drawingButton}
-              </>
-            ) : step === "intention" ? (
-              <>
-                <LyraSigil size="sm" state="attentive" />
-                {LYRA_READING_FLOW.drawButton}
-              </>
-            ) : (
-              <>
-                Next
-                <ArrowRight className="h-4 w-4" />
-              </>
-            )}
-          </Button>
-        </div>
-      )}
     </div>
   );
 }

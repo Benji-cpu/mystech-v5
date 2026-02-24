@@ -28,9 +28,5 @@ export default async function NewReadingPage() {
     updatedAt: d.updatedAt,
   }));
 
-  return (
-    <div className="p-4 sm:p-6 lg:p-8">
-      <ReadingFlow decks={decks} userPlan={plan} userRole={user.role ?? "user"} />
-    </div>
-  );
+  return <ReadingFlow decks={decks} userPlan={plan} userRole={user.role ?? "user"} />;
 }
