@@ -10,7 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import { usePathname } from "next/navigation";
-import { getMoodForRoute, type Mood } from "./mood-config";
+import { getMoodForRoute, moodPresets, type Mood, type MoodPresetName } from "./mood-config";
 import { getNavContext } from "./nav-context";
 import { detectPerformanceTier, tierConfigs, type PerformanceTier, type TierConfig } from "./performance";
 
@@ -28,6 +28,7 @@ type ImmersiveAction =
   | { type: "TOGGLE_ORB" }
   | { type: "CLOSE_ORB" }
   | { type: "SET_NAV_CONTEXT"; section: string | null; depth: number; backTarget: string | null; backLabel: string | null; mood: Mood }
+  | { type: "SET_MOOD"; mood: Mood }
   | { type: "SET_PERFORMANCE_TIER"; tier: PerformanceTier };
 
 function reducer(state: ImmersiveState, action: ImmersiveAction): ImmersiveState {
@@ -46,6 +47,8 @@ function reducer(state: ImmersiveState, action: ImmersiveAction): ImmersiveState
         mood: action.mood,
         isOrbExpanded: false,
       };
+    case "SET_MOOD":
+      return { ...state, mood: action.mood };
     case "SET_PERFORMANCE_TIER":
       return { ...state, performanceTier: action.tier };
     default:
@@ -57,6 +60,8 @@ interface ImmersiveContextValue {
   state: ImmersiveState;
   toggleOrb: () => void;
   closeOrb: () => void;
+  setMood: (mood: Mood) => void;
+  setMoodPreset: (name: MoodPresetName) => void;
   tierConfig: TierConfig;
 }
 
@@ -108,12 +113,17 @@ export function ImmersiveProvider({ children }: { children: ReactNode }) {
 
   const toggleOrb = useCallback(() => dispatch({ type: "TOGGLE_ORB" }), []);
   const closeOrb = useCallback(() => dispatch({ type: "CLOSE_ORB" }), []);
+  const setMood = useCallback((mood: Mood) => dispatch({ type: "SET_MOOD", mood }), []);
+  const setMoodPreset = useCallback((name: MoodPresetName) => {
+    const preset = moodPresets[name];
+    if (preset) dispatch({ type: "SET_MOOD", mood: preset });
+  }, []);
 
   const tierConfig = useMemo(() => tierConfigs[state.performanceTier], [state.performanceTier]);
 
   const value = useMemo<ImmersiveContextValue>(
-    () => ({ state, toggleOrb, closeOrb, tierConfig }),
-    [state, toggleOrb, closeOrb, tierConfig]
+    () => ({ state, toggleOrb, closeOrb, setMood, setMoodPreset, tierConfig }),
+    [state, toggleOrb, closeOrb, setMood, setMoodPreset, tierConfig]
   );
 
   return (
@@ -121,4 +131,10 @@ export function ImmersiveProvider({ children }: { children: ReactNode }) {
       {children}
     </ImmersiveContext.Provider>
   );
+}
+
+/** Convenience hook for flow components that need to shift background mood */
+export function useMood() {
+  const { state, setMood, setMoodPreset } = useImmersive();
+  return { mood: state.mood, setMood, setMoodPreset };
 }
