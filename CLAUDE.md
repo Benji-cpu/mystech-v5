@@ -9,10 +9,10 @@ A Next.js web app where users create personalized oracle card decks based on lif
 
 | Layer | Technology |
 |-------|------------|
-| Framework | Next.js 14+ (App Router) |
+| Framework | Next.js 16 (App Router) |
 | Language | TypeScript |
-| Styling | Tailwind CSS + ShadCN/UI |
-| Auth | NextAuth.js (Google OAuth) |
+| Styling | Tailwind CSS v4 + ShadCN/UI |
+| Auth | NextAuth.js v5 beta (Google OAuth) |
 | Database | PostgreSQL (Neon serverless) |
 | ORM | Drizzle ORM |
 | AI Text | Google Gemini 2.5 Flash |
@@ -119,9 +119,12 @@ src/
 │   ├── (auth)/             # Login pages
 │   ├── (app)/              # Authenticated app pages
 │   │   ├── dashboard/
+│   │   ├── home/
 │   │   ├── decks/
 │   │   ├── readings/
 │   │   ├── art-styles/
+│   │   ├── explore/        # Public deck discovery (with styles/ sub-routes)
+│   │   ├── profile/
 │   │   └── settings/
 │   ├── (admin)/            # Admin panel
 │   ├── api/                # API routes
@@ -130,10 +133,22 @@ src/
 ├── components/
 │   ├── ui/                 # ShadCN primitives
 │   ├── layout/             # App shell (sidebar, header)
+│   ├── admin/              # Admin panel components (prompt FAB tool)
+│   ├── auth/               # OAuth buttons (google-sign-in-button)
+│   ├── billing/            # Stripe billing UI
 │   ├── cards/              # Card display components
+│   ├── dashboard/          # Dashboard widgets (stats, quick-actions, upgrade-cta)
 │   ├── decks/              # Deck-related components
+│   ├── explore/            # Public deck discovery
+│   ├── guide/              # Lyra onboarding AI guide
+│   ├── home/               # Home page navigation (radio-nav)
+│   ├── immersive/          # Persistent background, page transitions, ambient effects
+│   ├── marketing/          # Landing page sections (hero, pricing, features)
+│   ├── mock/               # Mock/prototype components
 │   ├── readings/           # Reading flow components
 │   ├── art-styles/         # Art style picker + preview
+│   ├── settings/           # Settings page components
+│   ├── voice/              # TTS/STT controls
 │   ├── transitions/        # Animation demos (framer/, css/, gsap/, spring/, creative/)
 │   ├── lab/                # 3D experiments (Three.js, shaders)
 │   └── shared/             # Reusable (usage indicator, upgrade prompt)
@@ -142,14 +157,23 @@ src/
 │   ├── auth/               # NextAuth config
 │   ├── ai/                 # Gemini + Imagen clients
 │   │   └── prompts/        # AI prompt templates
-│   └── stripe/             # Billing utilities
+│   ├── stripe/             # Billing utilities
+│   ├── usage/              # Usage tracking and plan limits
+│   └── voice/              # TTS/STT backend (providers, audio queue, sentence buffer)
 ├── hooks/                  # React hooks
+├── test/                   # Test infrastructure (setup, mocks/)
 └── types/                  # TypeScript types
+
+e2e/                        # Playwright E2E tests
+scripts/                    # Build/dev scripts
+public/                     # Static assets
 
 docs/
 ├── features/               # Feature specs (one per feature)
 ├── architecture/           # Architecture decision records
-│   └── immersive-ui.md     # Immersive UI vision & approach
+│   ├── immersive-ui.md     # Immersive UI vision & approach
+│   └── radio-nav-and-profile.md  # Radio nav & profile architecture
+├── ai-prompts.md           # AI prompt documentation
 └── mocks/                  # Standalone HTML animation prototypes
 ```
 
@@ -355,6 +379,7 @@ When handling uncertainty:
 ### Agents (for parallel work delegation)
 - `animation-specialist` — Framer Motion animations, card reveals, visual effects
 - `ui-builder` — React components, pages, layouts
+- `full-app-mocker` — Creates complete full-app UI mock prototypes under /app/mock/full/
 
 ### Detailed Architecture
 - @docs/architecture/immersive-ui.md — Full immersive UI vision and technical approach
