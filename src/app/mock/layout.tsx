@@ -15,31 +15,21 @@ const tabs = [
     exact: true,
   },
   {
-    href: "/mock/reading",
-    label: "Reading",
+    href: "/mock/approved",
+    label: "Approved",
     icon: (
       <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
     ),
     exact: false,
   },
   {
-    href: "/mock/creation",
-    label: "Creation",
+    href: "/mock/transitions",
+    label: "Transitions",
     icon: (
       <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-      </svg>
-    ),
-    exact: false,
-  },
-  {
-    href: "/mock/effects",
-    label: "Effects",
-    icon: (
-      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" />
       </svg>
     ),
     exact: false,
@@ -48,11 +38,17 @@ const tabs = [
 
 // Pages where the tab bar should be hidden (immersive experiences)
 const IMMERSIVE_ROUTES = [
-  "/mock/reading/ceremony",
-  "/mock/reading/materialization",
-  "/mock/creation/simple",
-  "/mock/creation/journey",
-  "/mock/creation/forging",
+  "/mock/approved/ceremony",
+  "/mock/approved/background-moods",
+  "/mock/approved/v1",
+  "/mock/approved/lyra-journey",
+  "/mock/approved/card-morph",
+  "/mock/full/v",
+  "/mock/transitions/v",
+  "/mock/lyra/v",
+  "/mock/lyra/integrated",
+  "/mock/navigation",
+  "/mock/reading/ceremony-v2",
 ];
 
 export default function MockLayout({ children }: { children: React.ReactNode }) {
