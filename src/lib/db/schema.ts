@@ -8,6 +8,7 @@ import {
   primaryKey,
   unique,
   index,
+  date,
 } from "drizzle-orm/pg-core";
 import { createId } from "@paralleldrive/cuid2";
 
@@ -156,6 +157,7 @@ export const cards = pgTable(
     imageUrl: text("image_url"),
     imagePrompt: text("image_prompt"),
     imageStatus: text("image_status").notNull().default("pending"),
+    chronicleEntryId: text("chronicle_entry_id"), // FK added after chronicleEntries is defined
     createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
   },
@@ -219,6 +221,94 @@ export const livingDeckSettings = pgTable("living_deck_settings", {
     .references(() => decks.id, { onDelete: "cascade" }),
   generationMode: text("generation_mode").notNull().default("manual"), // "manual" | "auto"
   lastCardGeneratedAt: timestamp("last_card_generated_at", { mode: "date" }),
+  createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
+});
+
+// Chronicle settings (evolves from livingDeckSettings, adds gamification + streak tracking)
+export const chronicleSettings = pgTable("chronicle_settings", {
+  deckId: text("deck_id")
+    .primaryKey()
+    .references(() => decks.id, { onDelete: "cascade" }),
+  chronicleEnabled: boolean("chronicle_enabled").default(true).notNull(),
+  generationMode: text("generation_mode").notNull().default("manual"), // "manual" | "auto"
+  lastCardGeneratedAt: timestamp("last_card_generated_at", { mode: "date" }),
+  streakCount: integer("streak_count").notNull().default(0),
+  longestStreak: integer("longest_streak").notNull().default(0),
+  totalEntries: integer("total_entries").notNull().default(0),
+  lastEntryDate: date("last_entry_date", { mode: "string" }), // 'YYYY-MM-DD'
+  badgesEarned: jsonb("badges_earned")
+    .$type<{ id: string; earnedAt: string }[]>()
+    .default([]),
+  interests: jsonb("interests").$type<{
+    spiritual: string[];
+    lifeDomains: string[];
+  }>(),
+  createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
+});
+
+// Chronicle entries — daily check-in records
+export const chronicleEntries = pgTable(
+  "chronicle_entry",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    deckId: text("deck_id")
+      .notNull()
+      .references(() => decks.id, { onDelete: "cascade" }),
+    cardId: text("card_id").references(() => cards.id, {
+      onDelete: "set null",
+    }),
+    entryDate: date("entry_date", { mode: "string" }).notNull(), // 'YYYY-MM-DD'
+    conversation: jsonb("conversation")
+      .$type<{ role: string; content: string; timestamp: string }[]>()
+      .default([]),
+    mood: text("mood"),
+    themes: jsonb("themes").$type<string[]>().default([]),
+    miniReading: text("mini_reading"),
+    status: text("status").notNull().default("in_progress"), // 'in_progress' | 'completed' | 'abandoned'
+    createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+    completedAt: timestamp("completed_at", { mode: "date" }),
+  },
+  (t) => [
+    unique().on(t.userId, t.entryDate),
+    index("chronicle_entry_user_id_idx").on(t.userId),
+    index("chronicle_entry_deck_id_idx").on(t.deckId),
+  ]
+);
+
+// Chronicle knowledge — accumulated user understanding
+export const chronicleKnowledge = pgTable("chronicle_knowledge", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  themes: jsonb("themes")
+    .$type<Record<string, { count: number; lastSeen: string }>>()
+    .default({}),
+  lifeAreas: jsonb("life_areas")
+    .$type<Record<string, { count: number; lastSeen: string }>>()
+    .default({}),
+  recurringSymbols: jsonb("recurring_symbols")
+    .$type<{ symbol: string; count: number; lastSeen: string }[]>()
+    .default([]),
+  keyEvents: jsonb("key_events")
+    .$type<{ event: string; date: string; themes: string[] }[]>()
+    .default([]),
+  emotionalPatterns: jsonb("emotional_patterns")
+    .$type<{ pattern: string; frequency: number; lastSeen: string }[]>()
+    .default([]),
+  personalityNotes: text("personality_notes"),
+  interests: jsonb("interests").$type<{
+    spiritual: string[];
+    lifeDomains: string[];
+  }>(),
+  summary: text("summary"), // compressed <500 tokens
+  version: integer("version").notNull().default(0),
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
 });
@@ -366,6 +456,60 @@ export const userProfiles = pgTable("user_profile", {
   contextVersion: integer("context_version").default(0).notNull(),
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
+});
+
+// Astrology profiles (1:1 with users)
+export const astrologyProfiles = pgTable("astrology_profile", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+
+  // Raw birth data
+  birthDate: timestamp("birth_date", { mode: "date" }).notNull(),
+  birthTimeKnown: boolean("birth_time_known").default(false).notNull(),
+  birthHour: integer("birth_hour"), // 0-23, null if unknown
+  birthMinute: integer("birth_minute"), // 0-59, null if unknown
+  birthLatitude: text("birth_latitude"), // decimal string
+  birthLongitude: text("birth_longitude"), // decimal string
+  birthLocationName: text("birth_location_name"),
+
+  // Calculated Big Three
+  sunSign: text("sun_sign").notNull(),
+  moonSign: text("moon_sign"), // null if no birth time
+  risingSign: text("rising_sign"), // null if no birth time + location
+
+  // Extended (JSONB)
+  planetaryPositions: jsonb("planetary_positions"),
+  elementBalance: jsonb("element_balance"),
+
+  // Spiritual interests (from onboarding)
+  spiritualInterests: jsonb("spiritual_interests").$type<string[]>(),
+
+  createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
+});
+
+// Reading astrology snapshot (1:1 with readings, captures celestial state at reading time)
+export const readingAstrology = pgTable("reading_astrology", {
+  readingId: text("reading_id")
+    .primaryKey()
+    .references(() => readings.id, { onDelete: "cascade" }),
+
+  moonPhase: text("moon_phase").notNull(),
+  moonSign: text("moon_sign"),
+  cardAssociations: jsonb("card_associations").$type<
+    {
+      cardTitle: string;
+      positionName: string;
+      rulingSign: string;
+      rulingPlanet: string;
+      elementHarmony: "aligned" | "complementary" | "challenging";
+      relevantPlacement: "sun" | "moon" | "rising" | "general";
+      astroNote: string;
+    }[]
+  >(),
+
+  createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
 });
 
 // Generation logs (admin)

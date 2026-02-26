@@ -10,8 +10,10 @@ export type VoicePreferences = {
 
 // Deck types
 export type DeckStatus = 'draft' | 'generating' | 'completed';
-export type DeckType = 'standard' | 'living';
-export type LivingDeckGenerationMode = 'manual' | 'auto';
+export type DeckType = 'standard' | 'living' | 'chronicle';
+export type ChronicleGenerationMode = 'manual' | 'auto';
+/** @deprecated Use ChronicleGenerationMode instead */
+export type LivingDeckGenerationMode = ChronicleGenerationMode;
 
 export type Deck = {
   id: string;
@@ -240,4 +242,162 @@ export type PromptEntry = {
 export type DraftDeckWithPhase = Deck & {
   journeyPhase: JourneyPhase;
   resumeHref: string;
+};
+
+// Astrology types
+export type AstrologyProfile = {
+  userId: string;
+  birthDate: Date;
+  birthTimeKnown: boolean;
+  birthHour: number | null;
+  birthMinute: number | null;
+  birthLatitude: string | null;
+  birthLongitude: string | null;
+  birthLocationName: string | null;
+  sunSign: string;
+  moonSign: string | null;
+  risingSign: string | null;
+  planetaryPositions: Record<string, string> | null;
+  elementBalance: { fire: number; earth: number; air: number; water: number } | null;
+  spiritualInterests: string[] | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type ReadingAstrology = {
+  readingId: string;
+  moonPhase: string;
+  moonSign: string | null;
+  cardAssociations: {
+    cardTitle: string;
+    positionName: string;
+    rulingSign: string;
+    rulingPlanet: string;
+    elementHarmony: "aligned" | "complementary" | "challenging";
+    relevantPlacement: "sun" | "moon" | "rising" | "general";
+    astroNote: string;
+  }[] | null;
+  createdAt: Date;
+};
+
+export type AstrologicalReadingContext = {
+  sunSign: string;
+  moonSign: string | null;
+  risingSign: string | null;
+  elementBalance: { fire: number; earth: number; air: number; water: number } | null;
+  currentMoonPhase: string;
+  currentMoonSign: string;
+};
+
+// Chronicle types
+export type ChroniclePhase =
+  | 'idle'
+  | 'greeting'
+  | 'dialogue'
+  | 'reflecting'
+  | 'card_forging'
+  | 'card_reveal'
+  | 'reading'
+  | 'complete';
+
+export type ChronicleEntryStatus = 'in_progress' | 'completed' | 'abandoned';
+
+export type ChronicleConversationMessage = {
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: string;
+};
+
+export type ChronicleEntry = {
+  id: string;
+  userId: string;
+  deckId: string;
+  cardId: string | null;
+  entryDate: string; // 'YYYY-MM-DD'
+  conversation: ChronicleConversationMessage[];
+  mood: string | null;
+  themes: string[];
+  miniReading: string | null;
+  status: ChronicleEntryStatus;
+  createdAt: Date;
+  completedAt: Date | null;
+};
+
+export type ChronicleSettings = {
+  deckId: string;
+  chronicleEnabled: boolean;
+  generationMode: ChronicleGenerationMode;
+  lastCardGeneratedAt: Date | null;
+  streakCount: number;
+  longestStreak: number;
+  totalEntries: number;
+  lastEntryDate: string | null; // 'YYYY-MM-DD'
+  badgesEarned: ChronicleBadge[];
+  interests: ChronicleInterests | null;
+};
+
+export type ChronicleInterests = {
+  spiritual: string[];
+  lifeDomains: string[];
+};
+
+export type ChronicleBadge = {
+  id: string;
+  earnedAt: string;
+};
+
+export type ChronicleKnowledge = {
+  userId: string;
+  themes: Record<string, { count: number; lastSeen: string }>;
+  lifeAreas: Record<string, { count: number; lastSeen: string }>;
+  recurringSymbols: { symbol: string; count: number; lastSeen: string }[];
+  keyEvents: { event: string; date: string; themes: string[] }[];
+  emotionalPatterns: { pattern: string; frequency: number; lastSeen: string }[];
+  personalityNotes: string | null;
+  interests: ChronicleInterests | null;
+  summary: string | null;
+  version: number;
+};
+
+export type ChronicleBadgeDefinition = {
+  id: string;
+  name: string;
+  threshold: number; // streak days required
+  lyraMessage: string;
+};
+
+// Activity feed types
+export type CelestialEventType =
+  | "new_moon" | "first_quarter" | "full_moon" | "last_quarter"
+  | "spring_equinox" | "summer_solstice" | "autumn_equinox" | "winter_solstice"
+  | "lunar_eclipse" | "solar_eclipse"
+  | "retrograde_start" | "retrograde_end";
+
+export type TransitAspect = "conjunction" | "opposition" | "trine" | "square" | "sextile";
+
+export type ActivityItem = {
+  id: string;          // composite: `${type}-${sourceId}`
+  timestamp: Date;
+} & (
+  | { type: "deck_created"; deckId: string; deckTitle: string }
+  | { type: "deck_completed"; deckId: string; deckTitle: string; coverImageUrl: string | null }
+  | { type: "reading_performed"; readingId: string; spreadType: SpreadType; question: string | null; deckTitle: string }
+  | { type: "chronicle_entry"; entryId: string; mood: string | null; themes: string[]; cardTitle: string | null }
+  | { type: "badge_earned"; badgeId: string; badgeName: string; badgeEmoji: string }
+  | { type: "astrology_setup"; sunSign: string }
+  | { type: "deck_adopted"; deckId: string; deckTitle: string; ownerName: string | null }
+  | { type: "celestial_event"; eventType: CelestialEventType; title: string; description: string; zodiacSign?: string; planet?: string }
+  | { type: "personal_transit"; transitPlanet: string; natalPlanet: string; aspect: TransitAspect; title: string; description: string; significance: "major" | "minor" }
+);
+
+export type ActivityItemWithTemporal = ActivityItem & { isFuture: boolean };
+
+export type ChronicleDashboardStatus = {
+  hasChronicle: boolean;
+  completedToday: boolean;
+  todayCard: Card | null;
+  streakCount: number;
+  totalCards: number;
+  badges: ChronicleBadge[];
+  deckId: string | null;
 };

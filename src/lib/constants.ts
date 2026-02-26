@@ -73,6 +73,41 @@ export const SPREAD_POSITIONS: Record<
   ],
 };
 
+// Spread layout positions (percentage-based for desktop absolute positioning)
+// Matches CeremonySpreadLayout positioning for visual consistency
+export const SPREAD_LAYOUT_POSITIONS: Record<
+  SpreadType,
+  { x: number; y: number; rotation?: number }[]
+> = {
+  single: [
+    { x: 50, y: 50 },
+  ],
+  three_card: [
+    { x: 20, y: 50 },
+    { x: 50, y: 50 },
+    { x: 80, y: 50 },
+  ],
+  five_card: [
+    { x: 50, y: 50 },   // 0: Situation (center)
+    { x: 50, y: 15 },   // 1: Challenge (top)
+    { x: 50, y: 85 },   // 2: Foundation (bottom)
+    { x: 15, y: 50 },   // 3: Recent Past (left)
+    { x: 85, y: 50 },   // 4: Near Future (right)
+  ],
+  celtic_cross: [
+    { x: 30, y: 50 },                 // 0: Present
+    { x: 30, y: 50, rotation: 90 },   // 1: Challenge (crossing)
+    { x: 30, y: 80 },                 // 2: Foundation
+    { x: 15, y: 50 },                 // 3: Recent Past
+    { x: 30, y: 20 },                 // 4: Best Outcome
+    { x: 45, y: 50 },                 // 5: Near Future
+    { x: 75, y: 85 },                 // 6: Self
+    { x: 75, y: 62 },                 // 7: Environment
+    { x: 75, y: 38 },                 // 8: Hopes & Fears
+    { x: 75, y: 15 },                 // 9: Final Outcome
+  ],
+};
+
 // Art style presets
 export const ART_STYLE_PRESETS = [
   {

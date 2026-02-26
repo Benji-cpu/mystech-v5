@@ -1,7 +1,8 @@
 import { db } from "@/lib/db";
-import { decks, cards, artStyles, readings, readingCards, conversations, deckMetadata, subscriptions, users, userProfiles, deckAdoptions, cardFeedback, livingDeckSettings } from "@/lib/db/schema";
+import { decks, cards, artStyles, readings, readingCards, conversations, deckMetadata, subscriptions, users, userProfiles, deckAdoptions, cardFeedback, livingDeckSettings, chronicleSettings, chronicleEntries, chronicleKnowledge, astrologyProfiles } from "@/lib/db/schema";
 import { eq, and, asc, count, ne, desc, gte, gt, sql, isNotNull } from "drizzle-orm";
-import type { Deck, DeckWithOwner, DraftDeckWithPhase, JourneyPhase, DraftCard, PlanType, UserProfile, UserContextProfile, ReadingLength, CardFeedbackType, VoicePreferences, VoiceSpeed } from "@/types";
+import type { Deck, DeckWithOwner, DraftDeckWithPhase, JourneyPhase, DraftCard, PlanType, UserProfile, UserContextProfile, ReadingLength, CardFeedbackType, VoicePreferences, VoiceSpeed, ChronicleEntry, ChronicleSettings, ChronicleKnowledge, ChronicleInterests, ChronicleBadge, AstrologyProfile, ActivityItem } from "@/types";
+import { getBadgeById } from "@/lib/chronicle/badges";
 
 export async function getDeckByIdForUser(deckId: string, userId: string) {
   const [deck] = await db
@@ -448,34 +449,35 @@ export async function getSharedArtStyleByToken(token: string) {
 // --- User context for AI readings ---
 
 export async function getUserReadingContext(userId: string) {
-  // Get user context profile
-  const [profile] = await db
-    .select()
-    .from(userProfiles)
-    .where(eq(userProfiles.userId, userId));
+  // Run all three queries in parallel instead of sequentially
+  const [profileResult, recentReadings, deckThemes] = await Promise.all([
+    // Get user context profile
+    db.select().from(userProfiles).where(eq(userProfiles.userId, userId)),
+    // Get last 5 readings (verbatim for rolling window)
+    db
+      .select({
+        question: readings.question,
+        spreadType: readings.spreadType,
+        feedback: readings.feedback,
+      })
+      .from(readings)
+      .where(eq(readings.userId, userId))
+      .orderBy(desc(readings.createdAt))
+      .limit(5),
+    // Get user's deck themes (limit 5)
+    db
+      .select({ title: decks.title, theme: decks.theme })
+      .from(decks)
+      .where(and(eq(decks.userId, userId), eq(decks.status, "completed")))
+      .orderBy(desc(decks.updatedAt))
+      .limit(5),
+  ]);
 
-  // Get last 5 readings (verbatim for rolling window)
-  const recentReadings = await db
-    .select({
-      question: readings.question,
-      spreadType: readings.spreadType,
-      feedback: readings.feedback,
-    })
-    .from(readings)
-    .where(eq(readings.userId, userId))
-    .orderBy(desc(readings.createdAt))
-    .limit(5);
-
-  // Get user's deck themes (limit 5)
-  const deckThemes = await db
-    .select({ title: decks.title, theme: decks.theme })
-    .from(decks)
-    .where(and(eq(decks.userId, userId), eq(decks.status, "completed")))
-    .orderBy(desc(decks.updatedAt))
-    .limit(5);
+  const profile = profileResult[0];
 
   return {
     contextSummary: profile?.contextSummary ?? null,
+    readingLength: (profile?.readingLength as ReadingLength) ?? "brief",
     recentReadings: recentReadings.map((r) => ({
       question: r.question,
       spreadType: r.spreadType,
@@ -767,7 +769,7 @@ export async function getUserCardPreferences(userId: string) {
   return { lovedCards, dismissedCards };
 }
 
-// --- Living Deck queries ---
+// --- Living Deck queries (DEPRECATED — kept for backward compat with old /api/decks/living routes) ---
 
 export async function getUserLivingDeck(userId: string) {
   const [deck] = await db
@@ -861,4 +863,465 @@ export async function upsertVoicePreferences(
       contextVersion: 0,
     });
   }
+}
+
+// --- Chronicle queries ---
+
+export async function getUserChronicleDeck(userId: string) {
+  const [deck] = await db
+    .select()
+    .from(decks)
+    .where(and(eq(decks.userId, userId), eq(decks.deckType, "chronicle")));
+  return deck ?? null;
+}
+
+export async function getChronicleSettings(deckId: string): Promise<ChronicleSettings | null> {
+  const [settings] = await db
+    .select()
+    .from(chronicleSettings)
+    .where(eq(chronicleSettings.deckId, deckId));
+  if (!settings) return null;
+  return {
+    deckId: settings.deckId,
+    chronicleEnabled: settings.chronicleEnabled,
+    generationMode: settings.generationMode as ChronicleSettings["generationMode"],
+    lastCardGeneratedAt: settings.lastCardGeneratedAt,
+    streakCount: settings.streakCount,
+    longestStreak: settings.longestStreak,
+    totalEntries: settings.totalEntries,
+    lastEntryDate: settings.lastEntryDate,
+    badgesEarned: (settings.badgesEarned ?? []) as ChronicleBadge[],
+    interests: settings.interests as ChronicleInterests | null,
+  };
+}
+
+export async function getTodayChronicleEntry(userId: string): Promise<ChronicleEntry | null> {
+  const today = new Date().toISOString().split("T")[0]; // 'YYYY-MM-DD' UTC
+  const [entry] = await db
+    .select()
+    .from(chronicleEntries)
+    .where(
+      and(eq(chronicleEntries.userId, userId), eq(chronicleEntries.entryDate, today))
+    );
+  if (!entry) return null;
+  return {
+    id: entry.id,
+    userId: entry.userId,
+    deckId: entry.deckId,
+    cardId: entry.cardId,
+    entryDate: entry.entryDate,
+    conversation: (entry.conversation ?? []) as ChronicleEntry["conversation"],
+    mood: entry.mood,
+    themes: (entry.themes ?? []) as string[],
+    miniReading: entry.miniReading,
+    status: entry.status as ChronicleEntry["status"],
+    createdAt: entry.createdAt,
+    completedAt: entry.completedAt,
+  };
+}
+
+export async function getChronicleEntry(entryId: string): Promise<ChronicleEntry | null> {
+  const [entry] = await db
+    .select()
+    .from(chronicleEntries)
+    .where(eq(chronicleEntries.id, entryId));
+  if (!entry) return null;
+  return {
+    id: entry.id,
+    userId: entry.userId,
+    deckId: entry.deckId,
+    cardId: entry.cardId,
+    entryDate: entry.entryDate,
+    conversation: (entry.conversation ?? []) as ChronicleEntry["conversation"],
+    mood: entry.mood,
+    themes: (entry.themes ?? []) as string[],
+    miniReading: entry.miniReading,
+    status: entry.status as ChronicleEntry["status"],
+    createdAt: entry.createdAt,
+    completedAt: entry.completedAt,
+  };
+}
+
+export async function getChronicleEntries(userId: string, limit?: number) {
+  const query = db
+    .select({
+      id: chronicleEntries.id,
+      entryDate: chronicleEntries.entryDate,
+      mood: chronicleEntries.mood,
+      themes: chronicleEntries.themes,
+      status: chronicleEntries.status,
+      cardId: chronicleEntries.cardId,
+      createdAt: chronicleEntries.createdAt,
+      completedAt: chronicleEntries.completedAt,
+      cardTitle: cards.title,
+      cardImageUrl: cards.imageUrl,
+      cardMeaning: cards.meaning,
+      cardGuidance: cards.guidance,
+      cardImageStatus: cards.imageStatus,
+    })
+    .from(chronicleEntries)
+    .leftJoin(cards, eq(chronicleEntries.cardId, cards.id))
+    .where(eq(chronicleEntries.userId, userId))
+    .orderBy(desc(chronicleEntries.entryDate));
+
+  if (limit && limit !== Infinity) {
+    return query.limit(limit);
+  }
+  return query;
+}
+
+export async function getRecentChronicleEntries(userId: string, limit = 5) {
+  return db
+    .select()
+    .from(chronicleEntries)
+    .where(
+      and(
+        eq(chronicleEntries.userId, userId),
+        eq(chronicleEntries.status, "completed")
+      )
+    )
+    .orderBy(desc(chronicleEntries.entryDate))
+    .limit(limit);
+}
+
+export async function getChronicleKnowledge(userId: string): Promise<ChronicleKnowledge | null> {
+  const [knowledge] = await db
+    .select()
+    .from(chronicleKnowledge)
+    .where(eq(chronicleKnowledge.userId, userId));
+  if (!knowledge) return null;
+  return {
+    userId: knowledge.userId,
+    themes: (knowledge.themes ?? {}) as ChronicleKnowledge["themes"],
+    lifeAreas: (knowledge.lifeAreas ?? {}) as ChronicleKnowledge["lifeAreas"],
+    recurringSymbols: (knowledge.recurringSymbols ?? []) as ChronicleKnowledge["recurringSymbols"],
+    keyEvents: (knowledge.keyEvents ?? []) as ChronicleKnowledge["keyEvents"],
+    emotionalPatterns: (knowledge.emotionalPatterns ?? []) as ChronicleKnowledge["emotionalPatterns"],
+    personalityNotes: knowledge.personalityNotes,
+    interests: knowledge.interests as ChronicleInterests | null,
+    summary: knowledge.summary,
+    version: knowledge.version,
+  };
+}
+
+export async function upsertChronicleKnowledge(
+  userId: string,
+  data: Partial<Omit<ChronicleKnowledge, "userId">>
+) {
+  const existing = await getChronicleKnowledge(userId);
+  if (existing) {
+    await db
+      .update(chronicleKnowledge)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(chronicleKnowledge.userId, userId));
+  } else {
+    await db.insert(chronicleKnowledge).values({
+      userId,
+      themes: data.themes ?? {},
+      lifeAreas: data.lifeAreas ?? {},
+      recurringSymbols: data.recurringSymbols ?? [],
+      keyEvents: data.keyEvents ?? [],
+      emotionalPatterns: data.emotionalPatterns ?? [],
+      personalityNotes: data.personalityNotes ?? null,
+      interests: data.interests ?? null,
+      summary: data.summary ?? null,
+      version: data.version ?? 0,
+    });
+  }
+}
+
+export async function getRecentChronicleCards(deckId: string, limit = 10) {
+  return db
+    .select({
+      title: cards.title,
+      meaning: cards.meaning,
+      createdAt: cards.createdAt,
+    })
+    .from(cards)
+    .where(eq(cards.deckId, deckId))
+    .orderBy(desc(cards.createdAt))
+    .limit(limit);
+}
+
+export async function getTodayChronicleCard(userId: string) {
+  const today = new Date().toISOString().split("T")[0];
+  const [entry] = await db
+    .select({
+      cardId: chronicleEntries.cardId,
+      cardTitle: cards.title,
+      cardMeaning: cards.meaning,
+      cardGuidance: cards.guidance,
+      cardImageUrl: cards.imageUrl,
+      cardImageStatus: cards.imageStatus,
+    })
+    .from(chronicleEntries)
+    .leftJoin(cards, eq(chronicleEntries.cardId, cards.id))
+    .where(
+      and(
+        eq(chronicleEntries.userId, userId),
+        eq(chronicleEntries.entryDate, today),
+        isNotNull(chronicleEntries.cardId)
+      )
+    );
+  if (!entry?.cardId) return null;
+  return {
+    id: entry.cardId,
+    title: entry.cardTitle!,
+    meaning: entry.cardMeaning!,
+    guidance: entry.cardGuidance!,
+    imageUrl: entry.cardImageUrl,
+    imageStatus: entry.cardImageStatus!,
+  };
+}
+
+export async function updateChronicleStreak(deckId: string) {
+  const settings = await getChronicleSettings(deckId);
+  if (!settings) return;
+
+  const today = new Date().toISOString().split("T")[0];
+  const yesterday = new Date(Date.now() - 86400000).toISOString().split("T")[0];
+
+  let newStreak = settings.streakCount;
+
+  if (settings.lastEntryDate === today) {
+    // Already updated today
+    return settings;
+  } else if (settings.lastEntryDate === yesterday) {
+    // Consecutive day — increment streak
+    newStreak = settings.streakCount + 1;
+  } else if (!settings.lastEntryDate) {
+    // First entry ever
+    newStreak = 1;
+  } else {
+    // Missed day(s) — reset streak
+    newStreak = 1;
+  }
+
+  const longestStreak = Math.max(settings.longestStreak, newStreak);
+
+  await db
+    .update(chronicleSettings)
+    .set({
+      streakCount: newStreak,
+      longestStreak,
+      lastEntryDate: today,
+      totalEntries: settings.totalEntries + 1,
+      updatedAt: new Date(),
+    })
+    .where(eq(chronicleSettings.deckId, deckId));
+
+  return {
+    ...settings,
+    streakCount: newStreak,
+    longestStreak,
+    lastEntryDate: today,
+    totalEntries: settings.totalEntries + 1,
+  };
+}
+
+export async function getChronicleCompletedEntryCount(userId: string) {
+  const [result] = await db
+    .select({ count: count() })
+    .from(chronicleEntries)
+    .where(
+      and(
+        eq(chronicleEntries.userId, userId),
+        eq(chronicleEntries.status, "completed")
+      )
+    );
+  return result?.count ?? 0;
+}
+
+// --- Astrology profile queries ---
+
+export async function getAstrologyProfile(userId: string): Promise<AstrologyProfile | null> {
+  const [profile] = await db
+    .select()
+    .from(astrologyProfiles)
+    .where(eq(astrologyProfiles.userId, userId));
+  return (profile as AstrologyProfile) ?? null;
+}
+
+// --- Activity feed ---
+
+export async function getUserActivityFeed(userId: string, limit = 15): Promise<ActivityItem[]> {
+  const [deckRows, readingRows, chronicleRows, chronicleSettingsRows, astroRow, adoptionRows] = await Promise.all([
+    // 1. Decks (non-draft)
+    db
+      .select({
+        id: decks.id,
+        title: decks.title,
+        status: decks.status,
+        coverImageUrl: decks.coverImageUrl,
+        createdAt: decks.createdAt,
+        updatedAt: decks.updatedAt,
+      })
+      .from(decks)
+      .where(and(eq(decks.userId, userId), ne(decks.status, "draft")))
+      .orderBy(desc(decks.createdAt))
+      .limit(limit),
+
+    // 2. Readings
+    db
+      .select({
+        id: readings.id,
+        spreadType: readings.spreadType,
+        question: readings.question,
+        createdAt: readings.createdAt,
+        deckTitle: decks.title,
+      })
+      .from(readings)
+      .innerJoin(decks, eq(readings.deckId, decks.id))
+      .where(eq(readings.userId, userId))
+      .orderBy(desc(readings.createdAt))
+      .limit(limit),
+
+    // 3. Chronicle entries (completed)
+    db
+      .select({
+        id: chronicleEntries.id,
+        mood: chronicleEntries.mood,
+        themes: chronicleEntries.themes,
+        completedAt: chronicleEntries.completedAt,
+        createdAt: chronicleEntries.createdAt,
+        cardTitle: cards.title,
+      })
+      .from(chronicleEntries)
+      .leftJoin(cards, eq(chronicleEntries.cardId, cards.id))
+      .where(
+        and(
+          eq(chronicleEntries.userId, userId),
+          eq(chronicleEntries.status, "completed")
+        )
+      )
+      .orderBy(desc(chronicleEntries.completedAt))
+      .limit(limit),
+
+    // 4. Chronicle settings (for badges)
+    db
+      .select({
+        badgesEarned: chronicleSettings.badgesEarned,
+      })
+      .from(chronicleSettings)
+      .innerJoin(decks, eq(chronicleSettings.deckId, decks.id))
+      .where(eq(decks.userId, userId)),
+
+    // 5. Astrology profile
+    db
+      .select({
+        sunSign: astrologyProfiles.sunSign,
+        createdAt: astrologyProfiles.createdAt,
+      })
+      .from(astrologyProfiles)
+      .where(eq(astrologyProfiles.userId, userId))
+      .limit(1),
+
+    // 6. Deck adoptions
+    db
+      .select({
+        deckId: deckAdoptions.deckId,
+        adoptedAt: deckAdoptions.adoptedAt,
+        deckTitle: decks.title,
+        ownerName: users.name,
+      })
+      .from(deckAdoptions)
+      .innerJoin(decks, eq(deckAdoptions.deckId, decks.id))
+      .innerJoin(users, eq(decks.userId, users.id))
+      .where(eq(deckAdoptions.userId, userId))
+      .orderBy(desc(deckAdoptions.adoptedAt))
+      .limit(limit),
+  ]);
+
+  const items: ActivityItem[] = [];
+
+  // Process decks
+  for (const row of deckRows) {
+    items.push({
+      id: `deck_created-${row.id}`,
+      timestamp: row.createdAt,
+      type: "deck_created",
+      deckId: row.id,
+      deckTitle: row.title,
+    });
+    if (row.status === "completed") {
+      items.push({
+        id: `deck_completed-${row.id}`,
+        timestamp: row.updatedAt,
+        type: "deck_completed",
+        deckId: row.id,
+        deckTitle: row.title,
+        coverImageUrl: row.coverImageUrl,
+      });
+    }
+  }
+
+  // Process readings
+  for (const row of readingRows) {
+    items.push({
+      id: `reading-${row.id}`,
+      timestamp: row.createdAt,
+      type: "reading_performed",
+      readingId: row.id,
+      spreadType: row.spreadType as import("@/types").SpreadType,
+      question: row.question,
+      deckTitle: row.deckTitle,
+    });
+  }
+
+  // Process chronicle entries
+  for (const row of chronicleRows) {
+    items.push({
+      id: `chronicle-${row.id}`,
+      timestamp: row.completedAt ?? row.createdAt,
+      type: "chronicle_entry",
+      entryId: row.id,
+      mood: row.mood,
+      themes: (row.themes ?? []) as string[],
+      cardTitle: row.cardTitle,
+    });
+  }
+
+  // Process badges
+  for (const settingsRow of chronicleSettingsRows) {
+    const badges = (settingsRow.badgesEarned ?? []) as ChronicleBadge[];
+    for (const badge of badges) {
+      const def = getBadgeById(badge.id);
+      if (def) {
+        items.push({
+          id: `badge-${badge.id}`,
+          timestamp: new Date(badge.earnedAt),
+          type: "badge_earned",
+          badgeId: badge.id,
+          badgeName: def.label,
+          badgeEmoji: def.emoji,
+        });
+      }
+    }
+  }
+
+  // Process astrology
+  if (astroRow.length > 0) {
+    items.push({
+      id: `astrology-${userId}`,
+      timestamp: astroRow[0].createdAt,
+      type: "astrology_setup",
+      sunSign: astroRow[0].sunSign,
+    });
+  }
+
+  // Process adoptions
+  for (const row of adoptionRows) {
+    items.push({
+      id: `adoption-${row.deckId}`,
+      timestamp: row.adoptedAt,
+      type: "deck_adopted",
+      deckId: row.deckId,
+      deckTitle: row.deckTitle,
+      ownerName: row.ownerName,
+    });
+  }
+
+  // Sort by timestamp DESC and limit
+  items.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+  return items.slice(0, limit);
 }
