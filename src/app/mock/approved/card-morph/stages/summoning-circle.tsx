@@ -232,30 +232,29 @@ export function SummoningCircle({ morphed, className }: StageContentProps) {
         })}
 
         {/* Central card — materialises on activation */}
-        <div
-          className="absolute inset-0 flex items-center justify-center pointer-events-none"
-        >
+        {morphed && (
           <div
-            style={{
-              width: "28%",
-              aspectRatio: "2 / 3",
-              opacity: morphed ? 1 : 0,
-              transform: morphed ? "scale(1) translateY(0)" : "scale(0.6) translateY(12px)",
-              transition: "opacity 0.6s ease 0.3s, transform 0.6s cubic-bezier(0.2,0,0,1) 0.3s",
-              borderRadius: "6px",
-              overflow: "hidden",
-              boxShadow: "0 0 24px rgba(201,169,78,0.5), 0 0 60px rgba(201,169,78,0.2)",
-              border: "1px solid rgba(201,169,78,0.5)",
-            }}
+            className="absolute inset-0 flex items-center justify-center pointer-events-none"
           >
-            <img
-              src="/mock/cards/the-oracle.png"
-              alt="The Oracle"
-              className="w-full h-full object-cover"
-              style={{ filter: "brightness(1.05)" }}
-            />
+            <div
+              style={{
+                width: "28%",
+                aspectRatio: "2 / 3",
+                borderRadius: "6px",
+                overflow: "hidden",
+                boxShadow: "0 0 24px rgba(201,169,78,0.5), 0 0 60px rgba(201,169,78,0.2)",
+                border: "1px solid rgba(201,169,78,0.5)",
+              }}
+            >
+              <img
+                src="/mock/cards/the-oracle.png"
+                alt="The Oracle"
+                className="w-full h-full object-cover"
+                style={{ filter: "brightness(1.05)" }}
+              />
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Ambient radial glow */}
         <div

@@ -1,18 +1,57 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { motion, useAnimationControls } from "framer-motion";
 import type { TechniqueProps } from "../types";
 
 /**
- * Technique 1: Spring Property
+ * Technique: Spring Property
  * Single element morphs borderRadius/size/color via spring physics.
- * Circle → card rectangle. Baseline morph.
+ *
+ * stageTransition: squish to scaleX/Y 0 → call onMidpoint → spring back
+ * morphed toggle: morph shape from circle to card rectangle
  */
-export function SpringProperty({ morphed, onMorphComplete, children }: TechniqueProps) {
+export function SpringProperty({
+  morphed,
+  onMorphComplete,
+  stageTransition,
+  children,
+}: TechniqueProps) {
   const controls = useAnimationControls();
+  const prevStageKeyRef = useRef<string | null>(null);
 
+  // Handle stageTransition
   useEffect(() => {
+    if (!stageTransition) {
+      prevStageKeyRef.current = null;
+      return;
+    }
+    if (stageTransition.key === prevStageKeyRef.current) return;
+    prevStageKeyRef.current = stageTransition.key;
+
+    const run = async () => {
+      await controls.start(
+        { scaleX: 0, scaleY: 0 },
+        { type: "spring", stiffness: 300, damping: 25 },
+      );
+
+      stageTransition.onMidpoint();
+
+      await controls.start(
+        { scaleX: morphed ? 1 : 0.7, scaleY: morphed ? 1 : 0.7 },
+        { type: "spring", stiffness: 200, damping: 22 },
+      );
+
+      onMorphComplete?.();
+    };
+
+    run();
+  }, [stageTransition?.key]);
+
+  // Handle morphed toggle (card reveal)
+  useEffect(() => {
+    if (stageTransition) return;
+
     controls
       .start({
         borderRadius: morphed ? 16 : "50%",
@@ -26,7 +65,7 @@ export function SpringProperty({ morphed, onMorphComplete, children }: Technique
           : "0 0 60px rgba(201,169,78,0.4), inset 0 0 40px rgba(201,169,78,0.2)",
       })
       .then(() => onMorphComplete?.());
-  }, [morphed, controls, onMorphComplete]);
+  }, [morphed]);
 
   return (
     <div className="w-full h-full flex items-center justify-center">
@@ -49,42 +88,7 @@ export function SpringProperty({ morphed, onMorphComplete, children }: Technique
             "0 0 60px rgba(201,169,78,0.4), inset 0 0 40px rgba(201,169,78,0.2)",
         }}
       >
-        {children || (
-          <>
-            {/* State A: Oracle circle content */}
-            <motion.div
-              className="absolute inset-0 flex flex-col items-center justify-center gap-3"
-              animate={{ opacity: morphed ? 0 : 1 }}
-              transition={{ duration: 0.3 }}
-            >
-              <span className="text-4xl">✦</span>
-              <p className="text-white/80 font-medium text-sm">Ask the Oracle</p>
-              <div className="w-3/4 h-8 rounded-full bg-white/15 border border-white/20" />
-            </motion.div>
-
-            {/* State B: Card content */}
-            <motion.div
-              className="absolute inset-0 flex flex-col items-center justify-center gap-3"
-              animate={{ opacity: morphed ? 1 : 0 }}
-              transition={{ duration: 0.3, delay: morphed ? 0.2 : 0 }}
-            >
-              <div className="absolute inset-2 border border-[#c9a94e]/40 rounded-xl pointer-events-none" />
-              {/* Corner accents */}
-              <div className="absolute top-3 left-3 w-4 h-4 border-t border-l border-[#c9a94e]/60" />
-              <div className="absolute top-3 right-3 w-4 h-4 border-t border-r border-[#c9a94e]/60" />
-              <div className="absolute bottom-3 left-3 w-4 h-4 border-b border-l border-[#c9a94e]/60" />
-              <div className="absolute bottom-3 right-3 w-4 h-4 border-b border-r border-[#c9a94e]/60" />
-              <img
-                src="/mock/cards/the-oracle.png"
-                alt="The Oracle"
-                className="w-32 h-32 object-cover rounded-lg"
-              />
-              <p className="text-[#c9a94e] font-semibold text-base tracking-wider">
-                THE ORACLE
-              </p>
-            </motion.div>
-          </>
-        )}
+        {children}
       </motion.div>
     </div>
   );

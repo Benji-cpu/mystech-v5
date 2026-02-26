@@ -177,34 +177,29 @@ export function RuneStone({ morphed, className }: StageContentProps) {
         />
 
         {/* Inner warm glow — only visible when morphed */}
-        <ellipse
-          cx="140"
-          cy="190"
-          rx="80"
-          ry="110"
-          fill="none"
-          stroke="rgba(201,169,78,0.15)"
-          strokeWidth="40"
-          filter="url(#warmGlow)"
-          style={{
-            opacity: morphed ? 1 : 0,
-            transition: "opacity 0.8s ease 0.2s",
-          }}
-          className={morphed ? "stone-inner-glow" : ""}
-        />
+        {morphed && (
+          <ellipse
+            cx="140"
+            cy="190"
+            rx="80"
+            ry="110"
+            fill="none"
+            stroke="rgba(201,169,78,0.15)"
+            strokeWidth="40"
+            filter="url(#warmGlow)"
+            className="stone-inner-glow"
+          />
+        )}
 
-        {/* Card image embedded via foreignObject — fades in with revealed state */}
-        <foreignObject
-          x="70"
-          y="100"
-          width="140"
-          height="170"
-          clipPath="url(#cardImageClip)"
-          style={{
-            opacity: morphed ? 1 : 0,
-            transition: "opacity 0.7s ease 0.5s",
-          }}
-        >
+        {/* Card image embedded via foreignObject */}
+        {morphed && (
+          <foreignObject
+            x="70"
+            y="100"
+            width="140"
+            height="170"
+            clipPath="url(#cardImageClip)"
+          >
           <div
             style={{
               width: "100%",
@@ -236,66 +231,61 @@ export function RuneStone({ morphed, className }: StageContentProps) {
               }}
             />
           </div>
-        </foreignObject>
+          </foreignObject>
+        )}
 
         {/* Rune paths — each animates from full dashoffset to 0 when morphed */}
-        {runeData.map((rune, i) => {
+        {morphed && runeData.map((rune, i) => {
           const delay = `${0.1 + i * 0.08}s`;
           return (
             <path
               key={i}
               d={rune.d}
-              stroke={morphed ? "#c9a94e" : "transparent"}
+              stroke="#c9a94e"
               strokeWidth="1.8"
               strokeLinecap="round"
               strokeLinejoin="round"
               fill="none"
-              filter={morphed ? "url(#runeGlow)" : undefined}
+              filter="url(#runeGlow)"
               style={{
                 strokeDasharray: rune.len,
-                strokeDashoffset: morphed ? 0 : rune.len,
-                transition: morphed
-                  ? `stroke-dashoffset 0.8s ease-out ${delay}, stroke 0.1s ease ${delay}, opacity 0.1s ease ${delay}`
-                  : "stroke-dashoffset 0.3s ease, stroke 0.3s ease",
-                opacity: morphed ? 1 : 0,
+                strokeDashoffset: 0,
+                transition: `stroke-dashoffset 0.8s ease-out ${delay}`,
               }}
             />
           );
         })}
 
         {/* Center label — visible in dormant state */}
-        <text
-          x="140"
-          y="200"
-          textAnchor="middle"
-          fill="rgba(255,255,255,0.12)"
-          fontSize="11"
-          letterSpacing="3"
-          fontFamily="serif"
-          style={{
-            opacity: morphed ? 0 : 1,
-            transition: "opacity 0.4s ease",
-          }}
-        >
-          DORMANT
-        </text>
+        {!morphed && (
+          <text
+            x="140"
+            y="200"
+            textAnchor="middle"
+            fill="rgba(255,255,255,0.12)"
+            fontSize="11"
+            letterSpacing="3"
+            fontFamily="serif"
+          >
+            DORMANT
+          </text>
+        )}
 
         {/* Gold title beneath image when revealed */}
-        <text
-          x="140"
-          y="300"
-          textAnchor="middle"
-          fill="#c9a94e"
-          fontSize="10"
-          letterSpacing="4"
-          fontFamily="serif"
-          style={{
-            opacity: morphed ? 0.85 : 0,
-            transition: "opacity 0.5s ease 0.9s",
-          }}
-        >
-          THE ORACLE
-        </text>
+        {morphed && (
+          <text
+            x="140"
+            y="300"
+            textAnchor="middle"
+            fill="#c9a94e"
+            fontSize="10"
+            letterSpacing="4"
+            fontFamily="serif"
+            style={{ opacity: 0.85 }}
+          >
+            THE ORACLE
+          </text>
+        )}
       </svg>
     </div>
   );

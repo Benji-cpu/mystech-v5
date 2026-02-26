@@ -51,9 +51,7 @@ export function AncientTome({ morphed, className }: StageContentProps) {
           <div
             className="flex-1 flex flex-col items-center justify-center gap-3 pr-[2%] pl-[4%]"
             style={{
-              opacity: morphed ? 1 : 0,
-              transition: "opacity 0.4s ease",
-              transitionDelay: morphed ? "0.55s" : "0s",
+              visibility: morphed ? "visible" : "hidden",
             }}
           >
             <div
@@ -94,9 +92,7 @@ export function AncientTome({ morphed, className }: StageContentProps) {
           <div
             className="flex-1 flex flex-col items-center justify-center gap-2 pl-[2%] pr-[4%]"
             style={{
-              opacity: morphed ? 1 : 0,
-              transition: "opacity 0.4s ease",
-              transitionDelay: morphed ? "0.65s" : "0s",
+              visibility: morphed ? "visible" : "hidden",
             }}
           >
             <img

@@ -5,9 +5,11 @@ import gsap from "gsap";
 import type { TechniqueProps } from "../types";
 
 /**
- * Technique 6: Shatter & Reconstitute
- * 6x8 grid shatters outward with random rotation, then fragments
- * reconverge carrying State B image. Center-out explosion, edge-in reassembly.
+ * Technique: Shatter & Reconstitute
+ * 6x8 grid shatters outward with random rotation, then fragments reconverge.
+ *
+ * stageTransition: scatter fragments → call onMidpoint → reconverge
+ * morphed toggle: same scatter/reconverge cycle
  */
 
 const COLS = 6;
@@ -17,12 +19,13 @@ const TOTAL = COLS * ROWS;
 export function ShatterReconstitute({
   morphed,
   onMorphComplete,
+  stageTransition,
   children,
 }: TechniqueProps) {
   const gridRef = useRef<HTMLDivElement>(null);
   const tlRef = useRef<gsap.core.Timeline>(undefined);
+  const prevStageKeyRef = useRef<string | null>(null);
 
-  // Precompute random scatter values per fragment
   const scatterData = useMemo(
     () =>
       Array.from({ length: TOTAL }, (_, i) => {
@@ -40,73 +43,87 @@ export function ShatterReconstitute({
     []
   );
 
+  // Handle stageTransition
   useEffect(() => {
+    if (!stageTransition) {
+      prevStageKeyRef.current = null;
+      return;
+    }
+    if (stageTransition.key === prevStageKeyRef.current) return;
+    prevStageKeyRef.current = stageTransition.key;
+
     if (!gridRef.current) return;
     if (tlRef.current) tlRef.current.kill();
 
-    const fragments = gridRef.current.children;
+    const fragments = Array.from(gridRef.current.children);
     const tl = gsap.timeline({
       onComplete: () => onMorphComplete?.(),
     });
     tlRef.current = tl;
 
-    if (morphed) {
-      // Shatter outward, then reconverge
-      tl.to(
-        Array.from(fragments),
-        {
-          x: (i: number) => scatterData[i].x,
-          y: (i: number) => scatterData[i].y,
-          rotation: (i: number) => scatterData[i].rotation,
-          opacity: 0.6,
-          duration: 0.5,
-          ease: "power2.out",
-          stagger: {
-            each: 0.01,
-            from: "center",
-          },
-        }
-      ).to(Array.from(fragments), {
-        x: 0,
-        y: 0,
-        rotation: 0,
-        opacity: 1,
-        duration: 0.6,
-        ease: "back.out(1.2)",
-        stagger: {
-          each: 0.01,
-          from: "edges",
-        },
-      });
-    } else {
-      // Reset to form state
-      tl.to(Array.from(fragments), {
-        x: 0,
-        y: 0,
-        rotation: 0,
-        opacity: 1,
-        duration: 0.5,
-        ease: "power2.out",
-        stagger: {
-          each: 0.01,
-          from: "center",
-        },
-      });
-    }
+    tl.to(fragments, {
+      x: (i: number) => scatterData[i].x,
+      y: (i: number) => scatterData[i].y,
+      rotation: (i: number) => scatterData[i].rotation,
+      scale: 0.5,
+      duration: 0.45,
+      ease: "power2.out",
+      stagger: { each: 0.008, from: "center" },
+    })
+    .call(() => {
+      stageTransition.onMidpoint();
+    })
+    .to(fragments, {
+      x: 0,
+      y: 0,
+      rotation: 0,
+      scale: 1,
+      duration: 0.55,
+      ease: "back.out(1.2)",
+      stagger: { each: 0.008, from: "edges" },
+    });
 
-    return () => {
-      tl.kill();
-    };
-  }, [morphed, onMorphComplete, scatterData]);
+    return () => { tl.kill(); };
+  }, [stageTransition?.key]);
 
-  const fragmentWidth = `${100 / COLS}%`;
-  const fragmentHeight = `${100 / ROWS}%`;
+  // Handle morphed toggle
+  useEffect(() => {
+    if (stageTransition) return;
+
+    if (!gridRef.current) return;
+    if (tlRef.current) tlRef.current.kill();
+
+    const fragments = Array.from(gridRef.current.children);
+    const tl = gsap.timeline({
+      onComplete: () => onMorphComplete?.(),
+    });
+    tlRef.current = tl;
+
+    tl.to(fragments, {
+      x: (i: number) => scatterData[i].x,
+      y: (i: number) => scatterData[i].y,
+      rotation: (i: number) => scatterData[i].rotation,
+      scale: 0.5,
+      duration: 0.5,
+      ease: "power2.out",
+      stagger: { each: 0.01, from: "center" },
+    })
+    .to(fragments, {
+      x: 0,
+      y: 0,
+      rotation: 0,
+      scale: 1,
+      duration: 0.6,
+      ease: "back.out(1.2)",
+      stagger: { each: 0.01, from: "edges" },
+    });
+
+    return () => { tl.kill(); };
+  }, [morphed]);
 
   return (
     <div className="w-full h-full flex items-center justify-center">
       <div className="w-4/5 max-w-[280px] h-[85%] relative overflow-visible">
-        {/* Children base layer — sits behind the fragment grid so children's
-            State A/B transition is revealed as fragments scatter outward */}
         {children && (
           <div className="absolute inset-0 rounded-2xl overflow-hidden z-0">
             {children}
@@ -123,126 +140,34 @@ export function ShatterReconstitute({
             zIndex: 1,
           }}
         >
-          {children
-            ? // Children path: semi-transparent overlay fragments so the base
-              // layer shows through. Fragments scatter to reveal children state.
-              Array.from({ length: TOTAL }, (_, i) => {
-                const col = i % COLS;
-                const row = Math.floor(i / COLS);
-                return (
-                  <div
-                    key={i}
-                    className="relative overflow-hidden"
-                    style={{ willChange: "transform, opacity" }}
-                  >
-                    <div
-                      className="absolute inset-0"
-                      style={{
-                        background: morphed
-                          ? "rgba(15,10,30,0.3)"
-                          : "rgba(255,255,255,0.08)",
-                        borderRight:
-                          col < COLS - 1
-                            ? "1px solid rgba(255,255,255,0.05)"
-                            : "none",
-                        borderBottom:
-                          row < ROWS - 1
-                            ? "1px solid rgba(255,255,255,0.05)"
-                            : "none",
-                      }}
-                    />
-                  </div>
-                );
-              })
-            : // No-children path: keep original oracle card fragment content.
-              Array.from({ length: TOTAL }, (_, i) => {
-                const col = i % COLS;
-                const row = Math.floor(i / COLS);
-
-                return (
-                  <div
-                    key={i}
-                    className="relative overflow-hidden"
-                    style={{ willChange: "transform, opacity" }}
-                  >
-                    {/* State A: Glass form content */}
-                    <div
-                      className="absolute inset-0 transition-opacity duration-300"
-                      style={{
-                        opacity: morphed ? 0 : 1,
-                        background: "rgba(255,255,255,0.1)",
-                        borderRight:
-                          col < COLS - 1
-                            ? "1px solid rgba(255,255,255,0.05)"
-                            : "none",
-                        borderBottom:
-                          row < ROWS - 1
-                            ? "1px solid rgba(255,255,255,0.05)"
-                            : "none",
-                      }}
-                    >
-                      {/* Center fragment gets the sparkle */}
-                      {col === 2 && row === 3 && (
-                        <span className="absolute inset-0 flex items-center justify-center text-lg">
-                          ✦
-                        </span>
-                      )}
-                      {col === 2 && row === 4 && (
-                        <span className="absolute inset-0 flex items-center justify-center text-[8px] text-white/60 font-medium whitespace-nowrap">
-                          Ask the
-                        </span>
-                      )}
-                      {col === 3 && row === 4 && (
-                        <span className="absolute inset-0 flex items-center justify-center text-[8px] text-white/60 font-medium whitespace-nowrap">
-                          Oracle
-                        </span>
-                      )}
-                    </div>
-
-                    {/* State B: Card image slice */}
-                    <div
-                      className="absolute inset-0 transition-opacity duration-300"
-                      style={{
-                        opacity: morphed ? 1 : 0,
-                        transitionDelay: morphed ? "0.5s" : "0s",
-                        background: `linear-gradient(145deg, rgba(30,20,50,0.9), rgba(15,10,30,0.95))`,
-                        borderRight:
-                          col < COLS - 1
-                            ? "1px solid rgba(201,169,78,0.2)"
-                            : "none",
-                        borderBottom:
-                          row < ROWS - 1
-                            ? "1px solid rgba(201,169,78,0.2)"
-                            : "none",
-                      }}
-                    >
-                      {/* Center fragments get card content */}
-                      {col >= 1 && col <= 4 && row >= 2 && row <= 5 && (
-                        <div
-                          className="absolute inset-0"
-                          style={{
-                            backgroundImage: "url(/mock/cards/the-oracle.png)",
-                            backgroundSize: `${COLS * 100}% ${ROWS * 100}%`,
-                            backgroundPosition: `${(col - 1) * (100 / 3)}% ${(row - 2) * (100 / 3)}%`,
-                            opacity: 0.9,
-                          }}
-                        />
-                      )}
-                      {/* Title fragment */}
-                      {col === 2 && row === 6 && (
-                        <span className="absolute inset-0 flex items-center justify-center text-[10px] text-[#c9a94e] font-semibold tracking-wider whitespace-nowrap">
-                          THE O
-                        </span>
-                      )}
-                      {col === 3 && row === 6 && (
-                        <span className="absolute inset-0 flex items-center justify-center text-[10px] text-[#c9a94e] font-semibold tracking-wider whitespace-nowrap">
-                          RACLE
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
+          {Array.from({ length: TOTAL }, (_, i) => {
+            const col = i % COLS;
+            const row = Math.floor(i / COLS);
+            return (
+              <div
+                key={i}
+                className="relative overflow-hidden"
+                style={{ willChange: "transform" }}
+              >
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    background: morphed
+                      ? "rgba(15,10,30,0.3)"
+                      : "rgba(255,255,255,0.08)",
+                    borderRight:
+                      col < COLS - 1
+                        ? "1px solid rgba(255,255,255,0.05)"
+                        : "none",
+                    borderBottom:
+                      row < ROWS - 1
+                        ? "1px solid rgba(255,255,255,0.05)"
+                        : "none",
+                  }}
+                />
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>

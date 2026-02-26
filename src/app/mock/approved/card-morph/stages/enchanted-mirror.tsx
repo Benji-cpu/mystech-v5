@@ -201,76 +201,71 @@ export function EnchantedMirror({ morphed, className }: StageContentProps) {
           </div>
 
           {/* Mist layers (dormant state) */}
-          <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              opacity: morphed ? 0 : 1,
-              transition: "opacity 0.6s ease",
-              pointerEvents: "none",
-            }}
-          >
-            {/* Base mist fill */}
+          {!morphed && (
             <div
               style={{
                 position: "absolute",
                 inset: 0,
-                background:
-                  "radial-gradient(ellipse at 50% 50%, rgba(130,110,180,0.35) 0%, rgba(30,20,60,0.5) 60%, rgba(10,6,20,0.7) 100%)",
-              }}
-            />
-            {/* Animated mist drift layer 1 */}
-            <div
-              className="mist-layer"
-              style={{
-                position: "absolute",
-                inset: "-20%",
-                background:
-                  "radial-gradient(ellipse at 40% 40%, rgba(160,140,220,0.2) 0%, transparent 60%)",
-              }}
-            />
-            {/* Animated mist drift layer 2 */}
-            <div
-              className="mist-layer-2"
-              style={{
-                position: "absolute",
-                inset: "-20%",
-                background:
-                  "radial-gradient(ellipse at 65% 60%, rgba(100,80,180,0.15) 0%, transparent 55%)",
-              }}
-            />
-            {/* Frosted center blur */}
-            <div
-              style={{
-                position: "absolute",
-                inset: "15%",
-                borderRadius: "50%",
-                backdropFilter: "blur(8px)",
-                background: "rgba(150,130,200,0.06)",
-              }}
-            />
-            {/* Center symbol */}
-            <div
-              style={{
-                position: "absolute",
-                inset: 0,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
+                pointerEvents: "none",
               }}
             >
-              <span
+              <div
                 style={{
-                  fontSize: "28px",
-                  opacity: 0.25,
-                  color: "rgba(200,180,255,1)",
-                  userSelect: "none",
+                  position: "absolute",
+                  inset: 0,
+                  background:
+                    "radial-gradient(ellipse at 50% 50%, rgba(130,110,180,0.35) 0%, rgba(30,20,60,0.5) 60%, rgba(10,6,20,0.7) 100%)",
+                }}
+              />
+              <div
+                className="mist-layer"
+                style={{
+                  position: "absolute",
+                  inset: "-20%",
+                  background:
+                    "radial-gradient(ellipse at 40% 40%, rgba(160,140,220,0.2) 0%, transparent 60%)",
+                }}
+              />
+              <div
+                className="mist-layer-2"
+                style={{
+                  position: "absolute",
+                  inset: "-20%",
+                  background:
+                    "radial-gradient(ellipse at 65% 60%, rgba(100,80,180,0.15) 0%, transparent 55%)",
+                }}
+              />
+              <div
+                style={{
+                  position: "absolute",
+                  inset: "15%",
+                  borderRadius: "50%",
+                  backdropFilter: "blur(8px)",
+                  background: "rgba(150,130,200,0.06)",
+                }}
+              />
+              <div
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                 }}
               >
-                ✦
-              </span>
+                <span
+                  style={{
+                    fontSize: "28px",
+                    opacity: 0.25,
+                    color: "rgba(200,180,255,1)",
+                    userSelect: "none",
+                  }}
+                >
+                  ✦
+                </span>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Ripple effect — only when morphed */}
           {morphed && (

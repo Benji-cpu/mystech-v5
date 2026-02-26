@@ -216,82 +216,72 @@ export function PotionVial({ morphed, className }: StageContentProps) {
           />
 
           {/* Liquid surface wave — only shown when morphed */}
-          <ellipse
-            cx="100"
-            cy={flaskFillY}
-            rx="60"
-            ry="5"
-            fill="rgba(230,190,90,0.6)"
-            className={morphed ? "liquid-surface" : ""}
-            style={{
-              opacity: morphed ? 1 : 0,
-              transition: "opacity 0.4s ease, cy 1.0s cubic-bezier(0.4,0,0.2,1)",
-            }}
-          />
+          {morphed && (
+            <ellipse
+              cx="100"
+              cy={flaskFillY}
+              rx="60"
+              ry="5"
+              fill="rgba(230,190,90,0.6)"
+              className="liquid-surface"
+            />
+          )}
 
           {/* Shimmer streak in liquid */}
-          <rect
-            x="38"
-            y={flaskFillY}
-            width="124"
-            height={flaskFillHeight}
-            fill="url(#liquidShimmerGrad)"
-            className={morphed ? "liquid-shimmer" : ""}
-            style={{
-              transition: "y 1.0s cubic-bezier(0.4,0,0.2,1), height 1.0s cubic-bezier(0.4,0,0.2,1)",
-              opacity: morphed ? 1 : 0,
-            }}
-          />
+          {morphed && (
+            <rect
+              x="38"
+              y={flaskFillY}
+              width="124"
+              height={flaskFillHeight}
+              fill="url(#liquidShimmerGrad)"
+              className="liquid-shimmer"
+            />
+          )}
 
           {/* Card image as a vision inside the liquid */}
-          <foreignObject
-            x="56"
-            y="145"
-            width="88"
-            height="110"
-            clipPath="url(#visionClip)"
-            style={{
-              opacity: morphed ? 1 : 0,
-              transition: "opacity 0.7s ease 0.8s",
-            }}
-          >
-            <div
-              style={{
-                width: "100%",
-                height: "100%",
-                overflow: "hidden",
-                borderRadius: "50%",
-              }}
+          {morphed && (
+            <foreignObject
+              x="56"
+              y="145"
+              width="88"
+              height="110"
+              clipPath="url(#visionClip)"
             >
-              <img
-                src="/mock/cards/the-oracle.png"
-                alt="The Oracle"
+              <div
                 style={{
                   width: "100%",
                   height: "100%",
-                  objectFit: "cover",
-                  filter: "sepia(0.4) hue-rotate(-10deg) brightness(0.9) contrast(1.15)",
-                  mixBlendMode: "luminosity",
+                  overflow: "hidden",
+                  borderRadius: "50%",
                 }}
-              />
-            </div>
-          </foreignObject>
+              >
+                <img
+                  src="/mock/cards/the-oracle.png"
+                  alt="The Oracle"
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    filter: "sepia(0.4) hue-rotate(-10deg) brightness(0.9) contrast(1.15)",
+                    mixBlendMode: "luminosity",
+                  }}
+                />
+              </div>
+            </foreignObject>
+          )}
         </g>
 
         {/* Dry residue marks on interior walls (dormant state) */}
-        <g
-          clipPath="url(#flaskClip)"
-          style={{
-            opacity: morphed ? 0 : 0.6,
-            transition: "opacity 0.5s ease",
-          }}
-        >
-          <ellipse cx="72" cy="250" rx="6" ry="2" fill="rgba(180,150,80,0.3)" filter="url(#residueTex)" />
-          <ellipse cx="128" cy="262" rx="4" ry="1.5" fill="rgba(180,150,80,0.25)" filter="url(#residueTex)" />
-          <ellipse cx="85" cy="275" rx="8" ry="1.5" fill="rgba(180,150,80,0.2)" filter="url(#residueTex)" />
-          <path d="M 66 240 Q 68 245 65 248" stroke="rgba(150,120,60,0.3)" strokeWidth="1" fill="none" />
-          <path d="M 130 255 Q 133 260 131 264" stroke="rgba(150,120,60,0.25)" strokeWidth="1" fill="none" />
-        </g>
+        {!morphed && (
+          <g clipPath="url(#flaskClip)" style={{ opacity: 0.6 }}>
+            <ellipse cx="72" cy="250" rx="6" ry="2" fill="rgba(180,150,80,0.3)" filter="url(#residueTex)" />
+            <ellipse cx="128" cy="262" rx="4" ry="1.5" fill="rgba(180,150,80,0.25)" filter="url(#residueTex)" />
+            <ellipse cx="85" cy="275" rx="8" ry="1.5" fill="rgba(180,150,80,0.2)" filter="url(#residueTex)" />
+            <path d="M 66 240 Q 68 245 65 248" stroke="rgba(150,120,60,0.3)" strokeWidth="1" fill="none" />
+            <path d="M 130 255 Q 133 260 131 264" stroke="rgba(150,120,60,0.25)" strokeWidth="1" fill="none" />
+          </g>
+        )}
 
         {/* Glass highlight reflection (always visible) */}
         <path
@@ -308,51 +298,46 @@ export function PotionVial({ morphed, className }: StageContentProps) {
         />
 
         {/* Label ribbon on flask (dormant) */}
-        <rect
-          x="70"
-          y="200"
-          width="60"
-          height="28"
-          rx="3"
-          fill="rgba(255,255,255,0.04)"
-          stroke="rgba(255,255,255,0.08)"
-          strokeWidth="0.5"
-          style={{
-            opacity: morphed ? 0 : 0.8,
-            transition: "opacity 0.4s ease",
-          }}
-        />
-        <text
-          x="100"
-          y="218"
-          textAnchor="middle"
-          fill="rgba(255,255,255,0.15)"
-          fontSize="7"
-          letterSpacing="2"
-          fontFamily="serif"
-          style={{
-            opacity: morphed ? 0 : 1,
-            transition: "opacity 0.4s ease",
-          }}
-        >
-          EMPTY
-        </text>
+        {!morphed && (
+          <>
+            <rect
+              x="70"
+              y="200"
+              width="60"
+              height="28"
+              rx="3"
+              fill="rgba(255,255,255,0.04)"
+              stroke="rgba(255,255,255,0.08)"
+              strokeWidth="0.5"
+              style={{ opacity: 0.8 }}
+            />
+            <text
+              x="100"
+              y="218"
+              textAnchor="middle"
+              fill="rgba(255,255,255,0.15)"
+              fontSize="7"
+              letterSpacing="2"
+              fontFamily="serif"
+            >
+              EMPTY
+            </text>
+          </>
+        )}
 
         {/* Gold glow ring at base when revealed */}
-        <ellipse
-          cx="100"
-          cy="300"
-          rx="50"
-          ry="6"
-          fill="none"
-          stroke="rgba(201,169,78,0.3)"
-          strokeWidth="8"
-          style={{
-            opacity: morphed ? 1 : 0,
-            transition: "opacity 0.6s ease 0.4s",
-            filter: "blur(4px)",
-          }}
-        />
+        {morphed && (
+          <ellipse
+            cx="100"
+            cy="300"
+            rx="50"
+            ry="6"
+            fill="none"
+            stroke="rgba(201,169,78,0.3)"
+            strokeWidth="8"
+            style={{ filter: "blur(4px)" }}
+          />
+        )}
       </svg>
     </div>
   );
