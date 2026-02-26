@@ -18,8 +18,13 @@ import {
   READING_INTERPRETATION_SYSTEM_PROMPT,
   buildReadingInterpretationPrompt,
 } from "./reading-interpretation";
+import {
+  CHRONICLE_CONVERSATION_SYSTEM_PROMPT,
+  CHRONICLE_ONBOARDING_SYSTEM_PROMPT,
+  CHRONICLE_KNOWLEDGE_EXTRACTION_SYSTEM_PROMPT,
+} from "./chronicle";
 
-export type PromptCategory = "deck" | "conversation" | "journey" | "reading";
+export type PromptCategory = "deck" | "conversation" | "journey" | "reading" | "chronicle";
 
 export type PromptRegistryEntry = {
   key: string;
@@ -141,6 +146,30 @@ export const PROMPT_REGISTRY: Record<string, PromptRegistryEntry> = {
     }),
     isTemplate: true,
     templateParams: ["spreadType", "question", "cards"],
+  },
+  CHRONICLE_CONVERSATION_SYSTEM_PROMPT: {
+    key: "CHRONICLE_CONVERSATION_SYSTEM_PROMPT",
+    name: "Chronicle Conversation System Prompt",
+    description: "System prompt for daily Chronicle dialogue with Lyra",
+    category: "chronicle",
+    defaultValue: CHRONICLE_CONVERSATION_SYSTEM_PROMPT,
+    isTemplate: false,
+  },
+  CHRONICLE_ONBOARDING_SYSTEM_PROMPT: {
+    key: "CHRONICLE_ONBOARDING_SYSTEM_PROMPT",
+    name: "Chronicle Onboarding System Prompt",
+    description: "System prompt for first-time Chronicle setup conversation",
+    category: "chronicle",
+    defaultValue: CHRONICLE_ONBOARDING_SYSTEM_PROMPT,
+    isTemplate: false,
+  },
+  CHRONICLE_KNOWLEDGE_EXTRACTION_SYSTEM_PROMPT: {
+    key: "CHRONICLE_KNOWLEDGE_EXTRACTION_SYSTEM_PROMPT",
+    name: "Chronicle Knowledge Extraction",
+    description: "System prompt for extracting structured knowledge from Chronicle conversations",
+    category: "chronicle",
+    defaultValue: CHRONICLE_KNOWLEDGE_EXTRACTION_SYSTEM_PROMPT,
+    isTemplate: false,
   },
 };
 

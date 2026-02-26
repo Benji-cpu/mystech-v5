@@ -10,14 +10,22 @@ vi.mock("@/lib/db/queries", () => ({
   getReadingCardsWithData: vi.fn(),
   getUserReadingContext: vi.fn(() => ({
     contextSummary: null,
+    readingLength: "brief",
     recentReadings: [],
     deckThemes: [],
   })),
-  getUserReadingLength: vi.fn(() => "brief"),
 }));
 
 vi.mock("@/lib/ai/context-compression", () => ({
   maybeCompressUserContext: vi.fn(() => Promise.resolve()),
+}));
+
+vi.mock("@/lib/astrology/birth-chart", () => ({
+  getCurrentCelestialContext: vi.fn(() => ({
+    moonPhase: "Waxing Crescent",
+    moonPhaseFraction: 0.15,
+    moonSign: "Gemini",
+  })),
 }));
 
 vi.mock("@/lib/db", () => ({
@@ -27,15 +35,33 @@ vi.mock("@/lib/db", () => ({
         where: vi.fn(),
       })),
     })),
+    select: vi.fn(() => ({
+      from: vi.fn(() => ({
+        where: vi.fn(() => []),
+      })),
+    })),
+    insert: vi.fn(() => ({
+      values: vi.fn(() => ({
+        onConflictDoUpdate: vi.fn(() => ({
+          catch: vi.fn(),
+        })),
+      })),
+    })),
   },
 }));
 
 vi.mock("@/lib/db/schema", () => ({
   readings: {},
+  astrologyProfiles: {},
+  readingAstrology: { readingId: "reading_id" },
 }));
 
 vi.mock("@/lib/ai/gemini", () => ({
   geminiFreeModel: "mock-model",
+}));
+
+vi.mock("@/lib/ai/logging", () => ({
+  logGeneration: vi.fn(() => Promise.resolve()),
 }));
 
 const mockStreamResult = {
@@ -43,7 +69,7 @@ const mockStreamResult = {
 };
 
 vi.mock("ai", () => ({
-  streamText: vi.fn(() => mockStreamResult),
+  streamObject: vi.fn(() => mockStreamResult),
 }));
 
 import { POST } from "./route";
@@ -52,7 +78,7 @@ import {
   getReadingByIdForUser,
   getReadingCardsWithData,
 } from "@/lib/db/queries";
-import { streamText } from "ai";
+import { streamObject } from "ai";
 import { NextRequest } from "next/server";
 
 const mockUser = { id: "user-1", name: "Test User", email: "test@test.com", role: "user" };
@@ -64,6 +90,88 @@ function makeRequest(body: unknown) {
     body: JSON.stringify(body),
   });
 }
+
+const mockReading = {
+  id: "r1",
+  userId: "user-1",
+  deckId: "d1",
+  spreadType: "three_card",
+  question: "What should I focus on?",
+  interpretation: null,
+  shareToken: null,
+  feedback: null,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+};
+
+const mockCardsWithData = [
+  {
+    id: "rc1",
+    readingId: "r1",
+    position: 0,
+    positionName: "Past",
+    cardId: "c1",
+    personCardId: null,
+    createdAt: new Date(),
+    card: {
+      id: "c1",
+      deckId: "d1",
+      cardNumber: 1,
+      title: "The River",
+      meaning: "Change and flow",
+      guidance: "Let go",
+      imageUrl: null,
+      imagePrompt: null,
+      imageStatus: "completed",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
+  },
+  {
+    id: "rc2",
+    readingId: "r1",
+    position: 1,
+    positionName: "Present",
+    cardId: "c2",
+    personCardId: null,
+    createdAt: new Date(),
+    card: {
+      id: "c2",
+      deckId: "d1",
+      cardNumber: 2,
+      title: "The Hearth",
+      meaning: "Warmth",
+      guidance: "Find comfort",
+      imageUrl: null,
+      imagePrompt: null,
+      imageStatus: "completed",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
+  },
+  {
+    id: "rc3",
+    readingId: "r1",
+    position: 2,
+    positionName: "Future",
+    cardId: "c3",
+    personCardId: null,
+    createdAt: new Date(),
+    card: {
+      id: "c3",
+      deckId: "d1",
+      cardNumber: 3,
+      title: "The Star",
+      meaning: "Hope",
+      guidance: "Trust the light",
+      imageUrl: null,
+      imagePrompt: null,
+      imageStatus: "completed",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
+  },
+];
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -97,18 +205,7 @@ describe("POST /api/ai/reading", () => {
 
   it("returns 400 if reading has no cards", async () => {
     vi.mocked(getCurrentUser).mockResolvedValue(mockUser);
-    vi.mocked(getReadingByIdForUser).mockResolvedValue({
-      id: "r1",
-      userId: "user-1",
-      deckId: "d1",
-      spreadType: "three_card",
-      question: "test?",
-      interpretation: null,
-      shareToken: null,
-      feedback: null,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
+    vi.mocked(getReadingByIdForUser).mockResolvedValue(mockReading);
     vi.mocked(getReadingCardsWithData).mockResolvedValue([]);
     const response = await POST(makeRequest({ readingId: "r1" }));
     const data = await response.json();
@@ -116,100 +213,71 @@ describe("POST /api/ai/reading", () => {
     expect(data.error).toMatch(/no cards/i);
   });
 
-  it("streams response for valid request", async () => {
+  it("calls streamObject (not streamText) for valid request", async () => {
     vi.mocked(getCurrentUser).mockResolvedValue(mockUser);
-    vi.mocked(getReadingByIdForUser).mockResolvedValue({
-      id: "r1",
-      userId: "user-1",
-      deckId: "d1",
-      spreadType: "three_card",
-      question: "What should I focus on?",
-      interpretation: null,
-      shareToken: null,
-      feedback: null,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
-    vi.mocked(getReadingCardsWithData).mockResolvedValue([
-      {
-        id: "rc1",
-        readingId: "r1",
-        position: 0,
-        positionName: "Past",
-        cardId: "c1",
-        personCardId: null,
-        createdAt: new Date(),
-        card: {
-          id: "c1",
-          deckId: "d1",
-          cardNumber: 1,
-          title: "The River",
-          meaning: "Change and flow",
-          guidance: "Let go",
-          imageUrl: null,
-          imagePrompt: null,
-          imageStatus: "completed",
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-      },
-      {
-        id: "rc2",
-        readingId: "r1",
-        position: 1,
-        positionName: "Present",
-        cardId: "c2",
-        personCardId: null,
-        createdAt: new Date(),
-        card: {
-          id: "c2",
-          deckId: "d1",
-          cardNumber: 2,
-          title: "The Hearth",
-          meaning: "Warmth",
-          guidance: "Find comfort",
-          imageUrl: null,
-          imagePrompt: null,
-          imageStatus: "completed",
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-      },
-      {
-        id: "rc3",
-        readingId: "r1",
-        position: 2,
-        positionName: "Future",
-        cardId: "c3",
-        personCardId: null,
-        createdAt: new Date(),
-        card: {
-          id: "c3",
-          deckId: "d1",
-          cardNumber: 3,
-          title: "The Star",
-          meaning: "Hope",
-          guidance: "Trust the light",
-          imageUrl: null,
-          imagePrompt: null,
-          imageStatus: "completed",
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-      },
-    ]);
+    vi.mocked(getReadingByIdForUser).mockResolvedValue(mockReading);
+    vi.mocked(getReadingCardsWithData).mockResolvedValue(mockCardsWithData);
 
     const response = await POST(makeRequest({ readingId: "r1" }));
 
     expect(response.status).toBe(200);
-    expect(streamText).toHaveBeenCalledOnce();
+    expect(streamObject).toHaveBeenCalledOnce();
     expect(mockStreamResult.toTextStreamResponse).toHaveBeenCalledOnce();
+  });
 
-    // Verify streamText was called with correct params
-    const streamCall = vi.mocked(streamText).mock.calls[0][0];
+  it("passes correct params to streamObject", async () => {
+    vi.mocked(getCurrentUser).mockResolvedValue(mockUser);
+    vi.mocked(getReadingByIdForUser).mockResolvedValue(mockReading);
+    vi.mocked(getReadingCardsWithData).mockResolvedValue(mockCardsWithData);
+
+    await POST(makeRequest({ readingId: "r1" }));
+
+    const streamCall = vi.mocked(streamObject).mock.calls[0][0];
     expect(streamCall.system).toBeDefined();
     expect(streamCall.prompt).toContain("The River");
     expect(streamCall.prompt).toContain("What should I focus on?");
+    expect(streamCall.schema).toBeDefined();
     expect(streamCall.onFinish).toBeDefined();
+    expect(streamCall.onError).toBeDefined();
+  });
+
+  it("onFinish handles valid object without throwing", async () => {
+    vi.mocked(getCurrentUser).mockResolvedValue(mockUser);
+    vi.mocked(getReadingByIdForUser).mockResolvedValue(mockReading);
+    vi.mocked(getReadingCardsWithData).mockResolvedValue(mockCardsWithData);
+
+    await POST(makeRequest({ readingId: "r1" }));
+
+    const streamCall = vi.mocked(streamObject).mock.calls[0][0];
+    const onFinish = streamCall.onFinish as (args: { object: unknown }) => Promise<void>;
+
+    // Should not throw when object is well-formed
+    await expect(
+      onFinish({
+        object: {
+          cardSections: [
+            { positionName: "Past", text: "The river flows..." },
+          ],
+          synthesis: "Together...",
+          reflectiveQuestion: "What stirs?",
+        },
+      })
+    ).resolves.not.toThrow();
+  });
+
+  it("onFinish handles undefined object gracefully", async () => {
+    vi.mocked(getCurrentUser).mockResolvedValue(mockUser);
+    vi.mocked(getReadingByIdForUser).mockResolvedValue(mockReading);
+    vi.mocked(getReadingCardsWithData).mockResolvedValue(mockCardsWithData);
+
+    await POST(makeRequest({ readingId: "r1" }));
+
+    const streamCall = vi.mocked(streamObject).mock.calls[0][0];
+    const onFinish = streamCall.onFinish as (args: { object: unknown }) => Promise<void>;
+
+    // Should not throw when object is undefined (parse failure)
+    await expect(
+      onFinish({ object: undefined })
+    ).resolves.not.toThrow();
   });
 });

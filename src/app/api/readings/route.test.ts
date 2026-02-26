@@ -183,8 +183,8 @@ describe("POST /api/readings", () => {
       updatedAt: new Date(),
     });
     vi.mocked(getCardsForDeck).mockResolvedValue([
-      { id: "c1", deckId: "d1", cardNumber: 1, title: "A", meaning: "m", guidance: "g", imageUrl: null, imagePrompt: null, imageStatus: "pending", createdAt: new Date(), updatedAt: new Date() },
-      { id: "c2", deckId: "d1", cardNumber: 2, title: "B", meaning: "m", guidance: "g", imageUrl: null, imagePrompt: null, imageStatus: "pending", createdAt: new Date(), updatedAt: new Date() },
+      { id: "c1", deckId: "d1", cardNumber: 1, title: "A", meaning: "m", guidance: "g", imageUrl: null, imagePrompt: null, imageStatus: "pending", chronicleEntryId: null, createdAt: new Date(), updatedAt: new Date() },
+      { id: "c2", deckId: "d1", cardNumber: 2, title: "B", meaning: "m", guidance: "g", imageUrl: null, imagePrompt: null, imageStatus: "pending", chronicleEntryId: null, createdAt: new Date(), updatedAt: new Date() },
     ]);
     const response = await POST(makeRequest({ deckId: "d1", spreadType: "three_card" }));
     const data = await response.json();
@@ -203,6 +203,7 @@ describe("POST /api/readings", () => {
       imageUrl: null,
       imagePrompt: null,
       imageStatus: "completed" as const,
+      chronicleEntryId: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     }));
@@ -266,5 +267,209 @@ describe("POST /api/readings", () => {
     expect(data.data.reading.id).toBe("r1");
     expect(data.data.cards).toHaveLength(3);
     expect(data.data.deck.title).toBe("Test Deck");
+  });
+
+  describe("multi-deck support (deckIds)", () => {
+    const makeDeck = (id: string, title: string, cardCount: number) => ({
+      id,
+      userId: "user-1",
+      title,
+      description: null,
+      theme: null,
+      status: "completed" as const,
+      deckType: "standard" as const,
+      cardCount,
+      isPublic: false,
+      shareToken: null,
+      coverImageUrl: null,
+      artStyleId: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const makeCards = (deckId: string, count: number, startIndex = 0) =>
+      Array.from({ length: count }, (_, i) => ({
+        id: `${deckId}-c${startIndex + i}`,
+        deckId,
+        cardNumber: startIndex + i + 1,
+        title: `Card ${startIndex + i}`,
+        meaning: "meaning",
+        guidance: "guidance",
+        imageUrl: null,
+        imagePrompt: null,
+        imageStatus: "completed" as const,
+        chronicleEntryId: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }));
+
+    it("accepts deckIds array and merges card pools", async () => {
+      vi.mocked(getCurrentUser).mockResolvedValue(mockUser);
+
+      // Two decks, each with 2 cards — combined pool = 4, enough for three_card
+      vi.mocked(getDeckByIdForUser)
+        .mockResolvedValueOnce(makeDeck("d1", "Deck 1", 2))
+        .mockResolvedValueOnce(makeDeck("d2", "Deck 2", 2));
+      vi.mocked(getCardsForDeck)
+        .mockResolvedValueOnce(makeCards("d1", 2))
+        .mockResolvedValueOnce(makeCards("d2", 2, 2));
+
+      const mockReading = {
+        id: "r1",
+        userId: "user-1",
+        deckId: "d1",
+        spreadType: "three_card",
+        question: null,
+        interpretation: null,
+        shareToken: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      const mockReadingCards = [
+        { id: "rc1", readingId: "r1", position: 0, positionName: "Past", cardId: "d1-c0", personCardId: null, createdAt: new Date() },
+        { id: "rc2", readingId: "r1", position: 1, positionName: "Present", cardId: "d2-c2", personCardId: null, createdAt: new Date() },
+        { id: "rc3", readingId: "r1", position: 2, positionName: "Future", cardId: "d1-c1", personCardId: null, createdAt: new Date() },
+      ];
+
+      let callCount = 0;
+      vi.mocked(db.insert).mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) {
+          return {
+            values: vi.fn().mockReturnValue({
+              returning: vi.fn().mockResolvedValue([mockReading]),
+            }),
+          } as any;
+        }
+        return {
+          values: vi.fn().mockReturnValue({
+            returning: vi.fn().mockResolvedValue(mockReadingCards),
+          }),
+        } as any;
+      });
+
+      const response = await POST(
+        makeRequest({ deckIds: ["d1", "d2"], spreadType: "three_card" })
+      );
+      const data = await response.json();
+
+      expect(response.status).toBe(201);
+      expect(data.success).toBe(true);
+      expect(data.data.cards).toHaveLength(3);
+      // getDeckByIdForUser called for each deck
+      expect(getDeckByIdForUser).toHaveBeenCalledTimes(2);
+      // getCardsForDeck called for each deck
+      expect(getCardsForDeck).toHaveBeenCalledTimes(2);
+    });
+
+    it("returns 400 when no deckId or deckIds provided", async () => {
+      vi.mocked(getCurrentUser).mockResolvedValue(mockUser);
+      const response = await POST(makeRequest({ spreadType: "three_card" }));
+      const data = await response.json();
+      expect(response.status).toBe(400);
+      expect(data.error).toMatch(/required/i);
+    });
+
+    it("backward compat: single deckId still works", async () => {
+      vi.mocked(getCurrentUser).mockResolvedValue(mockUser);
+      vi.mocked(getDeckByIdForUser).mockResolvedValue(makeDeck("d1", "Test", 5));
+      vi.mocked(getCardsForDeck).mockResolvedValue(makeCards("d1", 5));
+
+      const mockReading = {
+        id: "r1",
+        userId: "user-1",
+        deckId: "d1",
+        spreadType: "three_card",
+        question: null,
+        interpretation: null,
+        shareToken: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      const mockReadingCards = [
+        { id: "rc1", readingId: "r1", position: 0, positionName: "Past", cardId: "d1-c0", personCardId: null, createdAt: new Date() },
+        { id: "rc2", readingId: "r1", position: 1, positionName: "Present", cardId: "d1-c1", personCardId: null, createdAt: new Date() },
+        { id: "rc3", readingId: "r1", position: 2, positionName: "Future", cardId: "d1-c2", personCardId: null, createdAt: new Date() },
+      ];
+
+      let callCount = 0;
+      vi.mocked(db.insert).mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) {
+          return {
+            values: vi.fn().mockReturnValue({
+              returning: vi.fn().mockResolvedValue([mockReading]),
+            }),
+          } as any;
+        }
+        return {
+          values: vi.fn().mockReturnValue({
+            returning: vi.fn().mockResolvedValue(mockReadingCards),
+          }),
+        } as any;
+      });
+
+      const response = await POST(
+        makeRequest({ deckId: "d1", spreadType: "three_card" })
+      );
+      const data = await response.json();
+
+      expect(response.status).toBe(201);
+      expect(data.success).toBe(true);
+    });
+
+    it("returns 404 when one of multiple decks not found", async () => {
+      vi.mocked(getCurrentUser).mockResolvedValue(mockUser);
+      vi.mocked(getDeckByIdForUser)
+        .mockResolvedValueOnce(makeDeck("d1", "Deck 1", 5))
+        .mockResolvedValueOnce(null as never);
+
+      vi.mocked(getCardsForDeck).mockResolvedValue(makeCards("d1", 5));
+
+      const response = await POST(
+        makeRequest({ deckIds: ["d1", "d2"], spreadType: "three_card" })
+      );
+      const data = await response.json();
+
+      expect(response.status).toBe(404);
+      expect(data.error).toMatch(/not found/i);
+    });
+
+    it("returns 400 when combined pool has too few cards", async () => {
+      vi.mocked(getCurrentUser).mockResolvedValue(mockUser);
+      vi.mocked(getDeckByIdForUser)
+        .mockResolvedValueOnce(makeDeck("d1", "Deck 1", 1))
+        .mockResolvedValueOnce(makeDeck("d2", "Deck 2", 1));
+      vi.mocked(getCardsForDeck)
+        .mockResolvedValueOnce(makeCards("d1", 1))
+        .mockResolvedValueOnce(makeCards("d2", 1, 1));
+
+      const response = await POST(
+        makeRequest({ deckIds: ["d1", "d2"], spreadType: "three_card" })
+      );
+      const data = await response.json();
+
+      expect(response.status).toBe(400);
+      expect(data.error).toMatch(/2 cards/);
+    });
+
+    it("returns 400 when one deck is not completed", async () => {
+      vi.mocked(getCurrentUser).mockResolvedValue(mockUser);
+      vi.mocked(getDeckByIdForUser)
+        .mockResolvedValueOnce(makeDeck("d1", "Deck 1", 5))
+        .mockResolvedValueOnce({
+          ...makeDeck("d2", "Deck 2", 5),
+          status: "draft" as const,
+        });
+      vi.mocked(getCardsForDeck).mockResolvedValue(makeCards("d1", 5));
+
+      const response = await POST(
+        makeRequest({ deckIds: ["d1", "d2"], spreadType: "three_card" })
+      );
+      const data = await response.json();
+
+      expect(response.status).toBe(400);
+      expect(data.error).toMatch(/not completed/i);
+    });
   });
 });

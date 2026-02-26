@@ -59,9 +59,15 @@ export async function POST(request: NextRequest) {
     cardCount?: number;
   };
 
-  if (!title) {
+  if (!title || typeof title !== "string" || title.trim().length === 0) {
     return NextResponse.json<ApiResponse<never>>(
       { success: false, error: "Title is required" },
+      { status: 400 }
+    );
+  }
+  if (title.length > 100) {
+    return NextResponse.json<ApiResponse<never>>(
+      { success: false, error: "Title must be 100 characters or less" },
       { status: 400 }
     );
   }

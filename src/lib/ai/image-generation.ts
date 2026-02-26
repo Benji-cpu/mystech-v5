@@ -17,7 +17,7 @@ export async function generateCardImage(
 ): Promise<{ success: boolean; imageUrl?: string; error?: string }> {
   // Check deck still exists before starting (outside retry loop for efficiency)
   const [deck] = await db
-    .select({ id: decks.id })
+    .select({ id: decks.id, deckType: decks.deckType })
     .from(decks)
     .where(eq(decks.id, deckId));
 
@@ -61,6 +61,14 @@ export async function generateCardImage(
           updatedAt: new Date(),
         })
         .where(eq(cards.id, cardId));
+
+      // For chronicle decks, set cover to latest card image
+      if (deck.deckType === "chronicle") {
+        await db
+          .update(decks)
+          .set({ coverImageUrl: blob.url, updatedAt: new Date() })
+          .where(eq(decks.id, deckId));
+      }
 
       return { success: true, imageUrl: blob.url };
     } catch (error) {

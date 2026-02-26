@@ -89,6 +89,25 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     theme?: string;
   };
 
+  if (title !== undefined && (typeof title !== "string" || title.trim().length === 0 || title.length > 100)) {
+    return NextResponse.json<ApiResponse<never>>(
+      { success: false, error: "Title must be between 1 and 100 characters" },
+      { status: 400 }
+    );
+  }
+  if (description !== undefined && typeof description === "string" && description.length > 1000) {
+    return NextResponse.json<ApiResponse<never>>(
+      { success: false, error: "Description must be 1000 characters or less" },
+      { status: 400 }
+    );
+  }
+  if (theme !== undefined && typeof theme === "string" && theme.length > 100) {
+    return NextResponse.json<ApiResponse<never>>(
+      { success: false, error: "Theme must be 100 characters or less" },
+      { status: 400 }
+    );
+  }
+
   const [updated] = await db
     .update(decks)
     .set({

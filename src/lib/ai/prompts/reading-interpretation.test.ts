@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildReadingInterpretationPrompt, buildReadingSystemPrompt, STRUCTURE_TARGETS } from "./reading-interpretation";
+import { buildReadingInterpretationPrompt, buildReadingSystemPrompt, STRUCTURE_TARGETS, ReadingInterpretationSchema } from "./reading-interpretation";
 import type { ReadingLength } from "@/types";
 
 const mockCards = [
@@ -23,6 +23,81 @@ const mockCards = [
   },
 ];
 
+describe("ReadingInterpretationSchema", () => {
+  it("validates a correct interpretation object", () => {
+    const result = ReadingInterpretationSchema.safeParse({
+      cardSections: [
+        { positionName: "Past", text: "The River flows..." },
+        { positionName: "Present", text: "The Hearth warms..." },
+      ],
+      synthesis: "Together these cards tell us...",
+      reflectiveQuestion: "What does this stir in you?",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("requires cardSections, synthesis, and reflectiveQuestion", () => {
+    const result = ReadingInterpretationSchema.safeParse({});
+    expect(result.success).toBe(false);
+  });
+
+  it("validates with optional astroResonance per card", () => {
+    const result = ReadingInterpretationSchema.safeParse({
+      cardSections: [
+        {
+          positionName: "Past",
+          text: "The River flows...",
+          astroResonance: {
+            relevantPlacement: "sun",
+            rulingSign: "Scorpio",
+            rulingPlanet: "Pluto",
+            elementHarmony: "aligned",
+          },
+        },
+        { positionName: "Present", text: "The Hearth warms..." },
+      ],
+      synthesis: "Together...",
+      reflectiveQuestion: "What stirs?",
+      astroContext: {
+        dominantInfluence: "sun",
+        celestialNote: "Waxing Crescent in Gemini",
+      },
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("validates without astrology fields (backward compatible)", () => {
+    const result = ReadingInterpretationSchema.safeParse({
+      cardSections: [
+        { positionName: "Past", text: "Text..." },
+      ],
+      synthesis: "Synthesis...",
+      reflectiveQuestion: "Question?",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects invalid astroResonance values", () => {
+    const result = ReadingInterpretationSchema.safeParse({
+      cardSections: [
+        {
+          positionName: "Past",
+          text: "Text...",
+          astroResonance: {
+            relevantPlacement: "invalid",
+            rulingSign: "Scorpio",
+            rulingPlanet: "Pluto",
+            elementHarmony: "aligned",
+          },
+        },
+      ],
+      synthesis: "Synthesis...",
+      reflectiveQuestion: "Question?",
+    });
+    expect(result.success).toBe(false);
+  });
+});
+
 describe("buildReadingInterpretationPrompt", () => {
   it("includes question when provided", () => {
     const result = buildReadingInterpretationPrompt({
@@ -45,51 +120,18 @@ describe("buildReadingInterpretationPrompt", () => {
     expect(result).not.toContain("null");
   });
 
-  it("uses brief paragraph counts by default", () => {
-    const result = buildReadingInterpretationPrompt({
-      spreadType: "single",
-      question: null,
-      cards: [mockCards[0]],
-    });
-
-    expect(result).toContain("exactly 1 concise paragraphs");
-  });
-
-  it("uses correct paragraph count for brief three_card", () => {
+  it("instructs per-card sections", () => {
     const result = buildReadingInterpretationPrompt({
       spreadType: "three_card",
       question: null,
       cards: mockCards,
     });
 
-    expect(result).toContain("exactly 2 concise paragraphs");
+    expect(result).toContain("For each card");
+    expect(result).toContain("separate section");
   });
 
-  it("uses standard paragraph counts when specified", () => {
-    const result = buildReadingInterpretationPrompt({
-      spreadType: "three_card",
-      question: null,
-      cards: mockCards,
-      readingLength: "standard",
-    });
-
-    expect(result).toContain("exactly 3 concise paragraphs");
-    expect(result).toContain("2-3 sentences maximum");
-  });
-
-  it("uses deep paragraph counts when specified", () => {
-    const result = buildReadingInterpretationPrompt({
-      spreadType: "three_card",
-      question: null,
-      cards: mockCards,
-      readingLength: "deep",
-    });
-
-    expect(result).toContain("exactly 5 concise paragraphs");
-    expect(result).toContain("3-5 sentences");
-  });
-
-  it("uses brief sentence guidance by default", () => {
+  it("includes sentence guidance for brief", () => {
     const result = buildReadingInterpretationPrompt({
       spreadType: "three_card",
       question: null,
@@ -97,6 +139,28 @@ describe("buildReadingInterpretationPrompt", () => {
     });
 
     expect(result).toContain("1-2 sentences");
+  });
+
+  it("uses standard sentence guidance when specified", () => {
+    const result = buildReadingInterpretationPrompt({
+      spreadType: "three_card",
+      question: null,
+      cards: mockCards,
+      readingLength: "standard",
+    });
+
+    expect(result).toContain("2-3 sentences maximum");
+  });
+
+  it("uses deep sentence guidance when specified", () => {
+    const result = buildReadingInterpretationPrompt({
+      spreadType: "three_card",
+      question: null,
+      cards: mockCards,
+      readingLength: "deep",
+    });
+
+    expect(result).toContain("3-5 sentences");
   });
 
   it("includes all card details in output", () => {
@@ -178,6 +242,77 @@ describe("buildReadingInterpretationPrompt", () => {
 
     expect(result).not.toContain("About this seeker:");
   });
+
+  it("instructs synthesis and reflective question", () => {
+    const result = buildReadingInterpretationPrompt({
+      spreadType: "three_card",
+      question: null,
+      cards: mockCards,
+    });
+
+    expect(result).toContain("synthesis");
+    expect(result).toContain("reflective question");
+  });
+
+  it("includes astrology context when provided", () => {
+    const result = buildReadingInterpretationPrompt({
+      spreadType: "three_card",
+      question: "Career advice?",
+      cards: mockCards,
+      astroContext: {
+        sunSign: "Scorpio",
+        moonSign: "Pisces",
+        risingSign: "Leo",
+        elementBalance: { fire: 2, earth: 1, air: 3, water: 4 },
+        currentMoonPhase: "Waxing Crescent",
+        currentMoonSign: "Gemini",
+      },
+    });
+
+    expect(result).toContain("Sun in Scorpio");
+    expect(result).toContain("Moon in Pisces");
+    expect(result).toContain("Leo Rising");
+    expect(result).toContain("Fire 2, Earth 1, Air 3, Water 4");
+    expect(result).toContain("Waxing Crescent in Gemini");
+    expect(result).toContain("astroResonance");
+    expect(result).toContain("astroContext");
+  });
+
+  it("omits astrology section when no astroContext provided", () => {
+    const result = buildReadingInterpretationPrompt({
+      spreadType: "three_card",
+      question: "Test?",
+      cards: mockCards,
+    });
+
+    expect(result).not.toContain("Astrological context");
+    expect(result).not.toContain("Sun in");
+    expect(result).not.toContain("astroResonance");
+  });
+
+  it("handles partial astrology context (sun only)", () => {
+    const result = buildReadingInterpretationPrompt({
+      spreadType: "three_card",
+      question: null,
+      cards: mockCards,
+      astroContext: {
+        sunSign: "Aries",
+        moonSign: null,
+        risingSign: null,
+        elementBalance: null,
+        currentMoonPhase: "Full Moon",
+        currentMoonSign: "Libra",
+      },
+    });
+
+    expect(result).toContain("Sun in Aries");
+    // Birth chart line should not include "Moon in" placement (null moonSign)
+    const birthChartLine = result.split("\n").find((l: string) => l.includes("Birth chart:"));
+    expect(birthChartLine).not.toContain("Moon in");
+    expect(birthChartLine).not.toContain("Rising");
+    expect(result).not.toContain("Element balance");
+    expect(result).toContain("Full Moon in Libra");
+  });
 });
 
 describe("buildReadingSystemPrompt", () => {
@@ -206,6 +341,13 @@ describe("buildReadingSystemPrompt", () => {
       expect(result).toContain("You are Lyra");
       expect(result).toContain("personal oracle card reading");
     }
+  });
+
+  it("instructs per-card structured output", () => {
+    const result = buildReadingSystemPrompt();
+    expect(result).toContain("separate interpretation section");
+    expect(result).toContain("synthesis");
+    expect(result).toContain("reflective question");
   });
 });
 

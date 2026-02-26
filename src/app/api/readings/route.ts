@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { readings, readingCards } from "@/lib/db/schema";
+import { readings, readingCards, cards as cardsTable, decks as decksTable } from "@/lib/db/schema";
 import { getCurrentUser } from "@/lib/auth/helpers";
 import {
   getUserReadingsWithDeck,
@@ -11,6 +11,11 @@ import {
 import { PLAN_LIMITS, SPREAD_POSITIONS } from "@/lib/constants";
 import { getUserPlanFromRole, checkDailyReadings } from "@/lib/usage";
 import { shuffle } from "@/lib/shuffle";
+import { generateObject } from "ai";
+import { z } from "zod";
+import { geminiModel } from "@/lib/ai/gemini";
+import { buildChroniclePositionPrompt } from "@/lib/ai/prompts/chronicle";
+import { eq, and } from "drizzle-orm";
 import type { ApiResponse, SpreadType } from "@/types";
 
 const VALID_SPREAD_TYPES: SpreadType[] = [
@@ -46,16 +51,26 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { deckId, spreadType, question } = body as {
+  const { deckId, deckIds, spreadType, question, chronicleCardId } = body as {
     deckId?: string;
+    deckIds?: string[];
     spreadType?: string;
     question?: string;
+    chronicleCardId?: string;
   };
 
+  // Support both single deckId and multi-deck deckIds
+  const resolvedDeckIds: string[] =
+    Array.isArray(deckIds) && deckIds.length > 0
+      ? deckIds
+      : deckId
+        ? [deckId]
+        : [];
+
   // Validate required fields
-  if (!deckId || !spreadType) {
+  if (resolvedDeckIds.length === 0 || !spreadType) {
     return NextResponse.json<ApiResponse<never>>(
-      { success: false, error: "deckId and spreadType are required" },
+      { success: false, error: "deckId (or deckIds) and spreadType are required" },
       { status: 400 }
     );
   }
@@ -107,46 +122,161 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  // Verify deck exists, belongs to user, and is completed
-  const deck = await getDeckByIdForUser(deckId, user.id);
-  if (!deck) {
-    return NextResponse.json<ApiResponse<never>>(
-      { success: false, error: "Deck not found" },
-      { status: 404 }
-    );
+  // Verify all decks exist, belong to user, and are completed
+  const allDeckCards: Awaited<ReturnType<typeof getCardsForDeck>> = [];
+  let primaryDeck: Awaited<ReturnType<typeof getDeckByIdForUser>> | null = null;
+
+  // Phase 1: Fetch all decks in parallel
+  const deckResults = await Promise.all(
+    resolvedDeckIds.map((id) => getDeckByIdForUser(id, user.id))
+  );
+
+  // Validate all decks exist and are completed
+  for (let i = 0; i < resolvedDeckIds.length; i++) {
+    const deck = deckResults[i];
+    if (!deck) {
+      return NextResponse.json<ApiResponse<never>>(
+        { success: false, error: `Deck not found: ${resolvedDeckIds[i]}` },
+        { status: 404 }
+      );
+    }
+    if (deck.status !== "completed") {
+      return NextResponse.json<ApiResponse<never>>(
+        { success: false, error: `Deck "${deck.title}" is not completed yet` },
+        { status: 400 }
+      );
+    }
   }
 
-  if (deck.status !== "completed") {
-    return NextResponse.json<ApiResponse<never>>(
-      { success: false, error: "Deck is not completed yet" },
-      { status: 400 }
-    );
-  }
+  // Phase 2: Fetch all card pools in parallel
+  const cardResults = await Promise.all(
+    resolvedDeckIds.map((id) => getCardsForDeck(id))
+  );
+  allDeckCards.push(...cardResults.flat());
+  primaryDeck = deckResults[0]!;
 
-  // Load deck cards
-  const deckCards = await getCardsForDeck(deckId);
   const positions = SPREAD_POSITIONS[typedSpread];
 
-  if (deckCards.length < positions.length) {
+  // If a Chronicle card will be injected it occupies one slot, so the pool
+  // only needs to supply the remaining positions.
+  const requiredFromPool = chronicleCardId
+    ? positions.length - 1
+    : positions.length;
+
+  if (allDeckCards.length < requiredFromPool) {
+    const deckWord = resolvedDeckIds.length === 1 ? "deck has" : "selected decks have";
     return NextResponse.json<ApiResponse<never>>(
       {
         success: false,
-        error: `This deck has ${deckCards.length} cards but the ${typedSpread} spread requires ${positions.length}. Choose a smaller spread or add more cards.`,
+        error: `Your ${deckWord} ${allDeckCards.length} cards but the ${typedSpread} spread requires ${positions.length}. Choose a smaller spread or add more cards.`,
       },
       { status: 400 }
     );
   }
 
-  // Shuffle and draw
-  const shuffled = shuffle(deckCards);
-  const drawn = shuffled.slice(0, positions.length);
+  // ── Chronicle card: validate + AI-assign position ─────────────────────
 
-  // Insert reading + reading cards
+  let resolvedChronicleCard: (typeof allDeckCards)[number] | null = null;
+  let chroniclePosition: number | null = null;
+
+  if (chronicleCardId) {
+    // Validate the card exists and belongs to the user (via its deck)
+    const [chronicleRow] = await db
+      .select({
+        id: cardsTable.id,
+        deckId: cardsTable.deckId,
+        cardNumber: cardsTable.cardNumber,
+        title: cardsTable.title,
+        meaning: cardsTable.meaning,
+        guidance: cardsTable.guidance,
+        imageUrl: cardsTable.imageUrl,
+        imagePrompt: cardsTable.imagePrompt,
+        imageStatus: cardsTable.imageStatus,
+        createdAt: cardsTable.createdAt,
+      })
+      .from(cardsTable)
+      .innerJoin(decksTable, eq(cardsTable.deckId, decksTable.id))
+      .where(and(eq(cardsTable.id, chronicleCardId), eq(decksTable.userId, user.id)));
+
+    if (chronicleRow) {
+      resolvedChronicleCard = {
+        ...chronicleRow,
+        updatedAt: new Date(),
+        chronicleEntryId: null,
+      } as (typeof allDeckCards)[number];
+
+      // AI position assignment
+      try {
+        const positionSchema = z.object({
+          chroniclePosition: z
+            .number()
+            .describe("0-indexed position number for the Chronicle card"),
+        });
+
+        const positionPrompt = buildChroniclePositionPrompt({
+          chronicleCard: {
+            title: chronicleRow.title,
+            meaning: chronicleRow.meaning,
+            guidance: chronicleRow.guidance,
+          },
+          spreadType: typedSpread,
+          positions: positions.map((p, i) => ({ index: i, name: p.name })),
+          question: question?.trim() || null,
+        });
+
+        const { object: posResult } = await generateObject({
+          model: geminiModel,
+          schema: positionSchema,
+          prompt: positionPrompt,
+        });
+
+        const assignedPos = posResult.chroniclePosition;
+        if (assignedPos >= 0 && assignedPos < positions.length) {
+          chroniclePosition = assignedPos;
+        } else {
+          chroniclePosition = 0;
+        }
+      } catch (err) {
+        console.error("[readings] Chronicle position AI failed, falling back to position 0:", err);
+        chroniclePosition = 0;
+      }
+    }
+  }
+
+  // Shuffle combined pool and draw
+  // If a Chronicle card is included, exclude it from the random pool to avoid duplicates
+  const poolCards = resolvedChronicleCard
+    ? allDeckCards.filter((c) => c.id !== resolvedChronicleCard!.id)
+    : allDeckCards;
+
+  const shuffled = shuffle(poolCards);
+
+  // Build the drawn array with Chronicle card at its assigned position
+  const drawn: (typeof allDeckCards)[number][] = [];
+  const needed = positions.length;
+
+  if (resolvedChronicleCard !== null && chroniclePosition !== null) {
+    // Fill all positions except the Chronicle slot from the shuffled pool
+    let poolIdx = 0;
+    for (let i = 0; i < needed; i++) {
+      if (i === chroniclePosition) {
+        drawn.push(resolvedChronicleCard);
+      } else {
+        drawn.push(shuffled[poolIdx++]);
+      }
+    }
+  } else {
+    for (let i = 0; i < needed; i++) {
+      drawn.push(shuffled[i]);
+    }
+  }
+
+  // Insert reading (store primary deck for backward compat)
   const [reading] = await db
     .insert(readings)
     .values({
       userId: user.id,
-      deckId,
+      deckId: resolvedDeckIds[0],
       spreadType: typedSpread,
       question: question?.trim() || null,
     })
@@ -182,7 +312,7 @@ export async function POST(request: NextRequest) {
       data: {
         reading,
         cards: cardsWithData,
-        deck: { title: deck.title, coverImageUrl: deck.coverImageUrl },
+        deck: { title: primaryDeck!.title, coverImageUrl: primaryDeck!.coverImageUrl },
       },
     },
     { status: 201 }
