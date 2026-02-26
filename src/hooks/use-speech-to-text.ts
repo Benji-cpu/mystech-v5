@@ -9,8 +9,10 @@ interface UseSpeechToTextOptions {
 
 // Extend Window for webkit-prefixed Speech Recognition
 interface SpeechRecognitionWindow extends Window {
-  SpeechRecognition?: new () => SpeechRecognition;
-  webkitSpeechRecognition?: new () => SpeechRecognition;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  SpeechRecognition?: new () => any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  webkitSpeechRecognition?: new () => any;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -23,6 +25,14 @@ export function useSpeechToText(options: UseSpeechToTextOptions = {}) {
   const [error, setError] = useState<string | null>(null);
   const recognitionRef = useRef<AnyRecognition>(null);
   const onTranscriptRef = useRef(onTranscript);
+  const finalizedSegmentsRef = useRef<string[]>([]);
+  // Tracks whether the user explicitly requested stop (vs browser ending the session)
+  const intentionalStopRef = useRef(false);
+  // Prevents infinite restart loops on fatal errors
+  const fatalErrorRef = useRef(false);
+  // Cap auto-restarts per session to prevent infinite loops
+  const restartCountRef = useRef(0);
+  const MAX_RESTARTS = 3;
 
   // Keep callback ref fresh
   useEffect(() => {
@@ -42,7 +52,23 @@ export function useSpeechToText(options: UseSpeechToTextOptions = {}) {
       return;
     }
 
+    // Stop any existing session before starting a new one
+    if (recognitionRef.current) {
+      intentionalStopRef.current = true;
+      try {
+        recognitionRef.current.stop();
+      } catch {
+        // Ignore — may already be stopped
+      }
+      recognitionRef.current = null;
+    }
+
     setError(null);
+    intentionalStopRef.current = false;
+    fatalErrorRef.current = false;
+    restartCountRef.current = 0;
+    // Reset accumulated text for new session
+    finalizedSegmentsRef.current = [];
 
     const w = window as unknown as SpeechRecognitionWindow;
     const SpeechRecognitionClass = w.SpeechRecognition || w.webkitSpeechRecognition;
@@ -50,7 +76,7 @@ export function useSpeechToText(options: UseSpeechToTextOptions = {}) {
 
     const recognition = new SpeechRecognitionClass();
 
-    recognition.continuous = false;
+    recognition.continuous = true;
     recognition.interimResults = true;
     recognition.lang = language;
 
@@ -58,37 +84,81 @@ export function useSpeechToText(options: UseSpeechToTextOptions = {}) {
       setIsListening(true);
     };
 
-    recognition.onresult = (event: SpeechRecognitionEvent) => {
-      let finalTranscript = "";
-      let interimTranscript = "";
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    recognition.onresult = (event: any) => {
+      const finals: string[] = [];
+      let currentInterim = "";
 
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const transcript = event.results[i][0].transcript;
-        if (event.results[i].isFinal) {
-          finalTranscript += transcript;
+      // Iterate ALL results to build full accumulated text
+      for (let i = 0; i < event.results.length; i++) {
+        const result = event.results[i];
+        if (result.isFinal) {
+          finals.push(result[0].transcript);
         } else {
-          interimTranscript += transcript;
+          currentInterim += result[0].transcript;
         }
       }
 
-      if (finalTranscript) {
-        onTranscriptRef.current?.(finalTranscript, true);
-      } else if (interimTranscript) {
-        onTranscriptRef.current?.(interimTranscript, false);
+      // Update stored finalized segments
+      finalizedSegmentsRef.current = finals;
+
+      // Full text = all finalized segments + current interim
+      const fullText = [...finals, currentInterim].join("").trim();
+      const isFinal = currentInterim.length === 0 && finals.length > 0;
+
+      if (fullText) {
+        onTranscriptRef.current?.(fullText, isFinal);
       }
     };
 
     recognition.onerror = (event: Event) => {
       const speechEvent = event as Event & { error: string };
+      console.warn("[STT] error:", speechEvent.error);
+
+      // no-speech is normal — user just hasn't spoken yet
+      // aborted fires when we intentionally stop
+      // These are non-fatal; onend will auto-restart
+      if (speechEvent.error === "no-speech" || speechEvent.error === "aborted") {
+        return;
+      }
+
+      // Fatal errors — don't auto-restart
+      fatalErrorRef.current = true;
       if (speechEvent.error === "not-allowed") {
         setError("Microphone permission denied");
-      } else if (speechEvent.error !== "aborted") {
+      } else {
         setError(`Speech recognition error: ${speechEvent.error}`);
       }
       setIsListening(false);
     };
 
     recognition.onend = () => {
+      // If a newer session replaced us, this handler is stale — bail out
+      if (recognitionRef.current !== recognition) return;
+
+      // If the user didn't explicitly stop and there's no fatal error,
+      // the browser ended the session on its own (no-speech timeout,
+      // audio glitch, etc.) — restart automatically to stay "listening"
+      if (!intentionalStopRef.current && !fatalErrorRef.current) {
+        if (restartCountRef.current < MAX_RESTARTS) {
+          restartCountRef.current++;
+          // Delay gives the browser time to release audio resources
+          setTimeout(() => {
+            // Re-check after delay — user may have stopped or a new session may have started
+            if (intentionalStopRef.current || recognitionRef.current !== recognition) return;
+            try {
+              recognition.start();
+            } catch {
+              setIsListening(false);
+              recognitionRef.current = null;
+            }
+          }, 200);
+          return; // Stay in listening state while we wait to restart
+        }
+        // Exhausted restarts
+        console.warn("[STT] max restarts reached, stopping");
+      }
+
       setIsListening(false);
       recognitionRef.current = null;
     };
@@ -98,6 +168,7 @@ export function useSpeechToText(options: UseSpeechToTextOptions = {}) {
   }, [isSupported, language]);
 
   const stopListening = useCallback(() => {
+    intentionalStopRef.current = true;
     if (recognitionRef.current) {
       recognitionRef.current.stop();
       recognitionRef.current = null;
@@ -108,6 +179,7 @@ export function useSpeechToText(options: UseSpeechToTextOptions = {}) {
   // Cleanup on unmount
   useEffect(() => {
     return () => {
+      intentionalStopRef.current = true;
       recognitionRef.current?.stop();
     };
   }, []);

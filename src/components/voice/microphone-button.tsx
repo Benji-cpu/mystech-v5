@@ -1,18 +1,29 @@
 "use client";
 
+import { useEffect } from "react";
 import { Mic, MicOff } from "lucide-react";
+import { toast } from "sonner";
 import { useSpeechToText } from "@/hooks/use-speech-to-text";
 import { cn } from "@/lib/utils";
 
 interface MicrophoneButtonProps {
   onTranscript: (text: string, isFinal: boolean) => void;
+  onListeningChange?: (isListening: boolean) => void;
   className?: string;
 }
 
-export function MicrophoneButton({ onTranscript, className }: MicrophoneButtonProps) {
-  const { startListening, stopListening, isListening, isSupported } = useSpeechToText({
+export function MicrophoneButton({ onTranscript, onListeningChange, className }: MicrophoneButtonProps) {
+  const { startListening, stopListening, isListening, isSupported, error } = useSpeechToText({
     onTranscript,
   });
+
+  useEffect(() => {
+    onListeningChange?.(isListening);
+  }, [isListening, onListeningChange]);
+
+  useEffect(() => {
+    if (error) toast.error(error);
+  }, [error]);
 
   if (!isSupported) return null;
 
@@ -26,11 +37,13 @@ export function MicrophoneButton({ onTranscript, className }: MicrophoneButtonPr
 
   return (
     <button
+      type="button"
       onClick={handleClick}
       className={cn(
         "relative flex h-[44px] w-[44px] items-center justify-center rounded-lg transition-colors",
         "text-muted-foreground hover:text-foreground hover:bg-white/10",
         isListening && "text-red-400",
+        error && !isListening && "text-red-400/60",
         className
       )}
       aria-label={isListening ? "Stop listening" : "Start voice input"}
