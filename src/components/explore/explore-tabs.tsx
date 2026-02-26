@@ -5,6 +5,7 @@ import { Plus } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { StyleCard } from "@/components/art-styles/style-card";
+import { SectionHeader } from "@/components/ui/section-header";
 import { PublicDeckCard } from "./public-deck-card";
 import type { ArtStyle, DeckWithOwner } from "@/types";
 
@@ -25,21 +26,31 @@ export function ExploreTabs({
 }: ExploreTabsProps) {
   return (
     <Tabs defaultValue="decks">
-      <TabsList>
-        <TabsTrigger value="decks">Public Decks</TabsTrigger>
-        <TabsTrigger value="styles">Art Styles</TabsTrigger>
+      <TabsList className="bg-white/5 border border-white/10">
+        <TabsTrigger
+          value="decks"
+          className="data-[state=active]:bg-[#c9a94e]/10 data-[state=active]:text-[#c9a94e]"
+        >
+          Public Decks
+        </TabsTrigger>
+        <TabsTrigger
+          value="styles"
+          className="data-[state=active]:bg-[#c9a94e]/10 data-[state=active]:text-[#c9a94e]"
+        >
+          Art Styles
+        </TabsTrigger>
       </TabsList>
 
       <TabsContent value="decks">
         {publicDecks.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground">
-            <p>No public decks available yet.</p>
-            <p className="text-sm mt-1">
+          <div className="text-center py-12">
+            <p className="text-white/60">No public decks available yet.</p>
+            <p className="text-sm mt-1 text-white/40">
               Share your decks to be the first!
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
             {publicDecks.map((deck) => (
               <PublicDeckCard key={deck.id} deck={deck} />
             ))}
@@ -51,7 +62,7 @@ export function ExploreTabs({
         {/* Presets */}
         <section>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold">Preset Styles</h2>
+            <SectionHeader>Preset Styles</SectionHeader>
             <Button asChild size="sm" variant="outline">
               <Link href="/explore/styles/new">
                 <Plus className="h-4 w-4" />
@@ -73,7 +84,7 @@ export function ExploreTabs({
         {/* Custom */}
         {artStyles.custom.length > 0 && (
           <section>
-            <h2 className="text-lg font-semibold mb-4">Custom Styles</h2>
+            <SectionHeader className="mb-4">Custom Styles</SectionHeader>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
               {artStyles.custom.map((style) => (
                 <StyleCard
@@ -89,7 +100,7 @@ export function ExploreTabs({
         {/* Shared */}
         {artStyles.shared.length > 0 && (
           <section>
-            <h2 className="text-lg font-semibold mb-4">Shared With You</h2>
+            <SectionHeader className="mb-4">Shared With You</SectionHeader>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
               {artStyles.shared.map((style) => (
                 <StyleCard

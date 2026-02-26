@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { MicrophoneButton } from "@/components/voice/microphone-button";
+import { useVoiceInput } from "@/hooks/use-voice-input";
 import type { ArtStyle } from "@/types";
 
 interface CustomStyleFormProps {
@@ -25,6 +27,8 @@ export function CustomStyleForm({
   );
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const descVoice = useVoiceInput({ value: description, onChange: setDescription, maxLength: 500 });
 
   const isEdit = !!initialData;
 
@@ -87,15 +91,21 @@ export function CustomStyleForm({
         <label htmlFor="style-description" className="text-sm font-medium">
           Description
         </label>
-        <Textarea
-          id="style-description"
-          placeholder="Describe the visual style you want for your cards. This will be used as the art generation prompt..."
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          required
-          rows={4}
-          maxLength={500}
-        />
+        <div className="relative">
+          <Textarea
+            id="style-description"
+            placeholder="Describe the visual style you want for your cards. This will be used as the art generation prompt..."
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            required
+            rows={4}
+            maxLength={500}
+            className="pr-14"
+          />
+          <div className="absolute right-2 bottom-2">
+            <MicrophoneButton onTranscript={descVoice.handleTranscript} onListeningChange={descVoice.handleListeningChange} />
+          </div>
+        </div>
         <p className="text-xs text-muted-foreground">
           This description will be used as the style prompt for AI image
           generation.

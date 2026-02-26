@@ -18,7 +18,7 @@ export default function NewReadingLoading() {
           {Array.from({ length: 4 }).map((_, i) => (
             <div
               key={i}
-              className="rounded-xl border border-border/50 bg-card overflow-hidden"
+              className="rounded-2xl bg-white/5 border border-white/10 overflow-hidden"
             >
               <Skeleton className="aspect-[3/2] w-full rounded-none" />
               <div className="p-3 space-y-1.5">

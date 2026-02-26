@@ -1,8 +1,8 @@
 import { getSharedReadingByToken } from "@/lib/db/queries";
 import { notFound } from "next/navigation";
-import { OracleCard } from "@/components/cards/oracle-card";
+import { ReviewSpreadLayout } from "@/components/readings/review-spread-layout";
 import type { Metadata } from "next";
-import type { SpreadType, Card, CardImageStatus } from "@/types";
+import type { SpreadType, CardImageStatus } from "@/types";
 
 const SPREAD_LABELS: Record<SpreadType, string> = {
   single: "Single Card",
@@ -85,35 +85,29 @@ export default async function SharedReadingPage({
         </div>
       )}
 
-      {/* Cards grid */}
+      {/* Cards spread */}
       <div className="mb-8">
-        <div className="flex flex-wrap items-start justify-center gap-6">
-          {reading.cards.map((rc) => {
-            if (!rc.card) return null;
-
-            const card: Card = {
-              id: rc.card.id,
-              deckId: rc.card.deckId,
-              cardNumber: rc.card.cardNumber,
-              title: rc.card.title,
-              meaning: rc.card.meaning,
-              guidance: rc.card.guidance,
-              imageUrl: rc.card.imageUrl,
-              imagePrompt: rc.card.imagePrompt,
-              imageStatus: rc.card.imageStatus as CardImageStatus,
-              createdAt: rc.card.createdAt,
-            };
-
-            return (
-              <div key={rc.id} className="flex flex-col items-center">
-                <OracleCard card={card} size="sm" />
-                <p className="mt-2 text-xs text-muted-foreground uppercase tracking-wider text-center">
-                  {rc.positionName}
-                </p>
-              </div>
-            );
-          })}
-        </div>
+        <ReviewSpreadLayout
+          spreadType={spreadType}
+          cards={reading.cards
+            .filter((rc) => rc.card)
+            .map((rc) => ({
+              id: rc.id,
+              card: {
+                id: rc.card!.id,
+                deckId: rc.card!.deckId,
+                cardNumber: rc.card!.cardNumber,
+                title: rc.card!.title,
+                meaning: rc.card!.meaning,
+                guidance: rc.card!.guidance,
+                imageUrl: rc.card!.imageUrl,
+                imagePrompt: rc.card!.imagePrompt,
+                imageStatus: rc.card!.imageStatus as CardImageStatus,
+                createdAt: rc.card!.createdAt,
+              },
+              positionName: rc.positionName,
+            }))}
+        />
       </div>
 
       {/* Interpretation (static, not streaming) */}

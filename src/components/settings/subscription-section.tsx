@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { Badge } from "@/components/ui/badge";
+import { GlassPanel } from "@/components/ui/glass-panel";
+import { SectionHeader } from "@/components/ui/section-header";
+import { GoldButton } from "@/components/ui/gold-button";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import type { PlanType } from "@/types";
 
 interface SubscriptionSectionProps {
@@ -14,45 +15,37 @@ const planLabels: Record<PlanType, string> = {
   admin: "Admin",
 };
 
-const planVariants: Record<PlanType, "secondary" | "default" | "outline"> = {
-  free: "secondary",
-  pro: "default",
-  admin: "outline",
-};
-
 export function SubscriptionSection({ plan }: SubscriptionSectionProps) {
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle>Subscription</CardTitle>
-            <CardDescription>Your current plan</CardDescription>
-          </div>
-          <Badge variant={planVariants[plan]}>{planLabels[plan]}</Badge>
+    <GlassPanel className="p-6">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <SectionHeader>Subscription</SectionHeader>
+          <p className="text-sm text-white/40 mt-1">Your current plan</p>
         </div>
-      </CardHeader>
-      <CardContent>
-        {plan === "free" ? (
-          <div className="space-y-2">
-            <p className="text-sm text-muted-foreground">
-              Upgrade to Pro for more cards, readings, and all spread types.
-            </p>
-            <Button asChild>
-              <Link href="/settings/billing">Upgrade to Pro</Link>
-            </Button>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            <p className="text-sm text-muted-foreground">
-              Manage your billing details and subscription.
-            </p>
-            <Button variant="outline" asChild>
-              <Link href="/settings/billing">Manage Billing</Link>
-            </Button>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+        <span className="bg-[#c9a94e]/10 border border-[#c9a94e]/30 text-[#c9a94e] rounded-full px-3 py-1 text-xs font-medium">
+          {planLabels[plan]}
+        </span>
+      </div>
+      {plan === "free" ? (
+        <div className="space-y-3">
+          <p className="text-sm text-white/60">
+            Upgrade to Pro for more cards, readings, and all spread types.
+          </p>
+          <Link href="/settings/billing">
+            <GoldButton className="text-sm px-4 py-2">Upgrade to Pro</GoldButton>
+          </Link>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <p className="text-sm text-white/60">
+            Manage your billing details and subscription.
+          </p>
+          <Button variant="outline" asChild>
+            <Link href="/settings/billing">Manage Billing</Link>
+          </Button>
+        </div>
+      )}
+    </GlassPanel>
   );
 }

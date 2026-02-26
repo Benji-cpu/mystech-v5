@@ -10,13 +10,13 @@ export default function DecksLoading() {
       <PageHeaderSkeleton hasAction />
 
       {/* Deck grid */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {Array.from({ length: 6 }).map((_, i) => (
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+        {Array.from({ length: 8 }).map((_, i) => (
           <div
             key={i}
-            className="rounded-xl border border-border/50 bg-card overflow-hidden"
+            className="rounded-2xl bg-white/5 border border-white/10 overflow-hidden"
           >
-            <Skeleton className="aspect-[3/2] w-full rounded-none" />
+            <Skeleton className="aspect-[3/4] w-full rounded-none" />
             <div className="p-3 space-y-2">
               <div className="flex items-start justify-between gap-2">
                 <Skeleton className="h-4 w-32" />

@@ -96,6 +96,7 @@ export const LYRA_HOME = {
   tagline: "The cards await",
   prompt: "Where shall we go?",
   nodes: {
+    chronicle: "Your daily oracle practice",
     decks: "Your personal oracle decks",
     readings: "Draw cards and listen",
     explore: "See what others have created",
@@ -192,6 +193,26 @@ export const LYRA_DASHBOARD = {
 export const LYRA_EXPLORE = {
   subtitle:
     "See what others have created. You might find something that speaks to you.",
+} as const;
+
+// CELESTIAL PROFILE SETUP
+export const LYRA_CELESTIAL = {
+  intro:
+    "Your birth sky is as unique as you are. Let me help you map it \u2014 each detail you share unlocks a deeper layer of your readings.",
+  sunExplain:
+    "When were you born? Your birth date reveals your Sun sign \u2014 the core of who you are, your identity and life purpose.",
+  moonExplain:
+    "Do you know your birth time? It reveals your Moon sign \u2014 your emotional inner world and deepest instincts. Check a birth certificate if you\u2019re unsure.",
+  moonSkip:
+    "That\u2019s perfectly fine. Your Sun sign alone will enrich your readings.",
+  risingExplain:
+    "Where were you born? Your Rising sign shapes how you present to the world \u2014 it needs both your time and place to calculate.",
+  reveal:
+    "Your birth sky is mapped. I\u2019ll weave these celestial threads into your readings from now on.",
+  partialNudge: {
+    noTime: "Add your birth time to discover your Moon sign",
+    noLocation: "Add your birth location to reveal your Rising sign",
+  },
 } as const;
 
 export const LYRA_ONBOARDING_MESSAGES = [

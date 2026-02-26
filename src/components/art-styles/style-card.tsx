@@ -35,7 +35,7 @@ export function StyleCard({
         onClick={onClick}
       />
       <div className="flex items-center gap-1.5">
-        <span className="text-sm font-medium">{style.name}</span>
+        <span className="text-sm font-medium text-white/90">{style.name}</span>
         <Badge variant={badge.variant} className="text-[10px] px-1.5 py-0">
           {badge.label}
         </Badge>
@@ -50,7 +50,7 @@ export function StyleCard({
   return (
     <Link
       href={`/explore/styles/${style.id}`}
-      className="group block rounded-lg p-3 transition-colors hover:bg-accent/50"
+      className="group block rounded-2xl bg-white/5 border border-white/10 p-3 transition-colors hover:border-[#c9a94e]/30 hover:bg-white/[0.08]"
     >
       {content}
     </Link>

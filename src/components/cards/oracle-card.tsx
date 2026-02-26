@@ -11,6 +11,7 @@ interface OracleCardProps {
   onRetryImage?: () => void;
   size?: "sm" | "md" | "lg" | "fill";
   onClick?: () => void;
+  hideTitle?: boolean;
 }
 
 const sizeClasses = {
@@ -25,6 +26,7 @@ export function OracleCard({
   onRetryImage,
   size = "md",
   onClick,
+  hideTitle,
 }: OracleCardProps) {
   const [isFlipped, setIsFlipped] = useState(false);
 
@@ -51,11 +53,13 @@ export function OracleCard({
         {/* Front */}
         <div className="absolute inset-0 rounded-xl overflow-hidden border border-border/50 bg-card shadow-lg [backface-visibility:hidden]">
           <CardImage card={card} onRetryImage={onRetryImage} />
-          <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-3 pt-8">
-            <h3 className="text-sm font-semibold text-white leading-tight">
-              {card.title}
-            </h3>
-          </div>
+          {!hideTitle && (
+            <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-3 pt-8">
+              <h3 className="text-sm font-semibold text-white leading-tight">
+                {card.title}
+              </h3>
+            </div>
+          )}
         </div>
 
         {/* Back */}

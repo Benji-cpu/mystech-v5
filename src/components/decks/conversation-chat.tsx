@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect, useState, useMemo, useCallback } from "react";
+import { useRef, useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
@@ -18,6 +18,7 @@ import {
 import { LyraSigil } from "@/components/guide/lyra-sigil";
 import { JOURNEY_OPENING_MESSAGE } from "@/lib/ai/prompts/conversation";
 import { MicrophoneButton } from "@/components/voice/microphone-button";
+import { useVoiceInput } from "@/hooks/use-voice-input";
 import { useTextToSpeech } from "@/hooks/use-text-to-speech";
 import { useVoicePreferences } from "@/hooks/use-voice-preferences";
 import type { ConversationMessage, JourneyReadinessState } from "@/types";
@@ -130,15 +131,11 @@ export function ConversationChat({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isStreaming]);
 
-  // Mic transcript handler
-  const handleMicTranscript = useCallback(
-    (text: string, isFinal: boolean) => {
-      if (isFinal) {
-        setInputText(text);
-      }
-    },
-    []
-  );
+  // Mic voice input
+  const { handleTranscript: handleMicTranscript, handleListeningChange: handleMicListeningChange } = useVoiceInput({
+    value: inputText,
+    onChange: setInputText,
+  });
 
   // Build display messages — always prepend the opening message
   const displayMessages: Array<{ id: string; role: "user" | "assistant"; text: string }> = [
@@ -330,7 +327,7 @@ export function ConversationChat({
           rows={1}
           className="min-h-[44px] max-h-[120px] resize-none"
         />
-        <MicrophoneButton onTranscript={handleMicTranscript} />
+        <MicrophoneButton onTranscript={handleMicTranscript} onListeningChange={handleMicListeningChange} />
         <Button
           type="button"
           size="icon"

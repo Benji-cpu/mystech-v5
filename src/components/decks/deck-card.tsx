@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
-import { Layers, Play, Users } from "lucide-react";
+import { Layers, Play, ScrollText, Users } from "lucide-react";
 import type { Deck } from "@/types";
 
 interface DeckCardProps {
@@ -22,10 +22,10 @@ export function DeckCard({ deck, resumeHref, isAdopted }: DeckCardProps) {
   return (
     <Link
       href={href}
-      className="group block rounded-xl border border-border/50 bg-card overflow-hidden transition-all hover:border-[#c9a94e]/30 hover:shadow-lg"
+      className="group block rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 overflow-hidden transition-all hover:border-[#c9a94e]/30 hover:shadow-lg hover:shadow-[#c9a94e]/5"
     >
-      {/* Cover Image */}
-      <div className="relative aspect-[3/2] overflow-hidden bg-gradient-to-b from-[#0a0118] to-[#1a0530]">
+      {/* Cover Image — tarot proportions */}
+      <div className="relative aspect-[3/4] overflow-hidden bg-gradient-to-b from-[#0a0118] to-[#1a0530]">
         {deck.coverImageUrl ? (
           <img
             src={deck.coverImageUrl}
@@ -37,6 +37,9 @@ export function DeckCard({ deck, resumeHref, isAdopted }: DeckCardProps) {
             <Layers className="h-10 w-10 text-[#c9a94e]/30" />
           </div>
         )}
+
+        {/* Bottom gradient overlay */}
+        <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/60 to-transparent" />
 
         {/* Draft hover overlay */}
         {isDraft && (
@@ -50,13 +53,18 @@ export function DeckCard({ deck, resumeHref, isAdopted }: DeckCardProps) {
       {/* Info */}
       <div className="p-3">
         <div className="flex items-start justify-between gap-2">
-          <h3 className="text-sm font-semibold leading-tight line-clamp-1">
+          <h3 className="text-sm font-semibold leading-tight line-clamp-1 text-white/90">
             {deck.title}
           </h3>
           {isAdopted ? (
             <Badge variant="secondary" className="text-[10px] shrink-0">
               <Users className="h-3 w-3 mr-0.5" />
               Community
+            </Badge>
+          ) : deck.deckType === "chronicle" ? (
+            <Badge variant="outline" className="text-[10px] shrink-0 border-[#c9a94e]/50 text-[#c9a94e]">
+              <ScrollText className="h-3 w-3 mr-0.5" />
+              Chronicle
             </Badge>
           ) : isDraft ? (
             <Badge variant="outline" className="text-[10px] shrink-0 border-[#c9a94e]/50 text-[#c9a94e]">
@@ -68,8 +76,12 @@ export function DeckCard({ deck, resumeHref, isAdopted }: DeckCardProps) {
             </Badge>
           )}
         </div>
-        <p className="mt-1 text-xs text-muted-foreground">
-          {isDraft ? "Continue creating your deck" : `${deck.cardCount} card${deck.cardCount !== 1 ? "s" : ""}`}
+        <p className="mt-1 text-xs text-white/40">
+          {isDraft
+            ? "Continue creating your deck"
+            : deck.deckType === "chronicle"
+              ? `${deck.cardCount} card${deck.cardCount !== 1 ? "s" : ""} and growing`
+              : `${deck.cardCount} card${deck.cardCount !== 1 ? "s" : ""}`}
         </p>
       </div>
     </Link>

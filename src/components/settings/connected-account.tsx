@@ -1,6 +1,6 @@
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { GlassPanel } from "@/components/ui/glass-panel";
+import { SectionHeader } from "@/components/ui/section-header";
 
 interface ConnectedAccountProps {
   email: string | null;
@@ -10,28 +10,24 @@ interface ConnectedAccountProps {
 
 export function ConnectedAccount({ email, image, name }: ConnectedAccountProps) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Connected Account</CardTitle>
-        <CardDescription>Your linked Google account</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="flex items-center gap-3">
-          <Avatar>
-            <AvatarImage src={image ?? undefined} alt={name ?? "User"} />
-            <AvatarFallback>
-              {(name ?? "U").charAt(0).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-medium truncate">{name ?? "Google User"}</p>
-            <p className="text-sm text-muted-foreground truncate">{email ?? "No email"}</p>
-          </div>
-          <Badge variant="outline" className="border-green-500/50 text-green-500">
-            Connected
-          </Badge>
+    <GlassPanel className="p-6">
+      <SectionHeader className="mb-1">Connected Account</SectionHeader>
+      <p className="text-sm text-white/40 mb-4">Your linked Google account</p>
+      <div className="flex items-center gap-3">
+        <Avatar>
+          <AvatarImage src={image ?? undefined} alt={name ?? "User"} />
+          <AvatarFallback className="bg-[#c9a94e]/10 text-[#c9a94e]">
+            {(name ?? "U").charAt(0).toUpperCase()}
+          </AvatarFallback>
+        </Avatar>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium truncate text-white/90">{name ?? "Google User"}</p>
+          <p className="text-sm text-white/40 truncate">{email ?? "No email"}</p>
         </div>
-      </CardContent>
-    </Card>
+        <span className="border border-green-500/30 bg-green-500/10 text-green-400 rounded-full px-2 py-0.5 text-xs">
+          Connected
+        </span>
+      </div>
+    </GlassPanel>
   );
 }

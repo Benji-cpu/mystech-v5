@@ -10,18 +10,18 @@ export default function ExploreLoading() {
       <PageHeaderSkeleton hasIcon hasSubtitle />
 
       {/* Tab bar */}
-      <div className="flex gap-1 border-b border-border/50 pb-px">
-        {Array.from({ length: 3 }).map((_, i) => (
+      <div className="flex gap-1 bg-white/5 border border-white/10 rounded-lg p-1">
+        {Array.from({ length: 2 }).map((_, i) => (
           <Skeleton key={i} className="h-9 w-28 rounded-md" />
         ))}
       </div>
 
       {/* Card grid */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {Array.from({ length: 6 }).map((_, i) => (
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+        {Array.from({ length: 8 }).map((_, i) => (
           <div
             key={i}
-            className="rounded-xl border border-border/50 bg-card overflow-hidden"
+            className="rounded-2xl bg-white/5 border border-white/10 overflow-hidden"
           >
             <Skeleton className="aspect-[3/2] w-full rounded-none" />
             <div className="p-3 space-y-2">

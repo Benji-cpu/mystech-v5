@@ -2,19 +2,30 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Layers, BookOpen, Compass, User } from "lucide-react";
+import { Layers, ScrollText, BookOpen, Compass, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LyraSigil } from "@/components/guide/lyra-sigil";
 import { LYRA_HOME } from "@/components/guide/lyra-constants";
 
-const nodes = [
-  { href: "/decks", label: "Decks", description: LYRA_HOME.nodes.decks, icon: Layers, delay: 0, x: "-8vw", y: "-6vh" },
-  { href: "/readings", label: "Readings", description: LYRA_HOME.nodes.readings, icon: BookOpen, delay: 0.08, x: "10vw", y: "-8vh" },
-  { href: "/explore", label: "Explore", description: LYRA_HOME.nodes.explore, icon: Compass, delay: 0.16, x: "-12vw", y: "8vh" },
-  { href: "/profile", label: "You", description: LYRA_HOME.nodes.you, icon: User, delay: 0.24, x: "6vw", y: "10vh" },
-];
+function getNodes(chronicleDeckId: string | null) {
+  const chronicleHref = chronicleDeckId
+    ? `/decks/${chronicleDeckId}`
+    : "/chronicle/setup";
 
-export function HomeRadioView() {
+  return [
+    { href: chronicleHref, label: "Chronicle", description: LYRA_HOME.nodes.chronicle, icon: ScrollText, delay: 0, x: "0vw", y: "-10vh" },
+    { href: "/decks", label: "Decks", description: LYRA_HOME.nodes.decks, icon: Layers, delay: 0.06, x: "-12vw", y: "-2vh" },
+    { href: "/readings", label: "Readings", description: LYRA_HOME.nodes.readings, icon: BookOpen, delay: 0.12, x: "12vw", y: "-2vh" },
+    { href: "/explore", label: "Explore", description: LYRA_HOME.nodes.explore, icon: Compass, delay: 0.18, x: "-8vw", y: "10vh" },
+    { href: "/profile", label: "Dashboard", description: LYRA_HOME.nodes.you, icon: User, delay: 0.24, x: "8vw", y: "10vh" },
+  ];
+}
+
+interface HomeRadioViewProps {
+  chronicleDeckId: string | null;
+}
+
+export function HomeRadioView({ chronicleDeckId }: HomeRadioViewProps) {
   return (
     <div className="relative min-h-full">
       <div className="px-4 pt-8 text-center sm:pt-12">
@@ -43,12 +54,13 @@ export function HomeRadioView() {
           {LYRA_HOME.prompt}
         </motion.h1>
       </div>
-      <RadioNavNodes />
+      <RadioNavNodes chronicleDeckId={chronicleDeckId} />
     </div>
   );
 }
 
-function RadioNavNodes() {
+function RadioNavNodes({ chronicleDeckId }: { chronicleDeckId: string | null }) {
+  const nodes = getNodes(chronicleDeckId);
   return (
     <motion.div
       className="relative flex min-h-[60vh] flex-wrap items-center justify-center gap-4 px-4 py-12"
@@ -56,7 +68,7 @@ function RadioNavNodes() {
       animate="animate"
       variants={{ animate: { transition: { staggerChildren: 0.12, delayChildren: 0.2 } } }}
     >
-      {nodes.map((node, i) => {
+      {nodes.map((node) => {
         const Icon = node.icon;
         return (
           <motion.div

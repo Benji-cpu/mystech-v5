@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { StylePickerGrid } from "@/components/art-styles/style-picker-grid";
+import { MicrophoneButton } from "@/components/voice/microphone-button";
+import { useVoiceInput } from "@/hooks/use-voice-input";
 import { cn } from "@/lib/utils";
 import { MessageCircle, Loader2, AlertCircle } from "lucide-react";
 import type { ArtStyle } from "@/types";
@@ -33,6 +35,9 @@ export function JourneySetupForm({
   const [artStyleId, setArtStyleId] = useState<string>(presets[0]?.id ?? "");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const titleVoice = useVoiceInput({ value: title, onChange: setTitle, maxLength: 100 });
+  const descVoice = useVoiceInput({ value: description, onChange: setDescription, maxLength: 1000 });
 
   const canSubmit =
     !atLimit &&
@@ -77,14 +82,6 @@ export function JourneySetupForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Guided Journey</h1>
-        <p className="text-muted-foreground mt-1">
-          We&apos;ll guide you through a conversation to craft your perfect
-          deck.
-        </p>
-      </div>
-
       {atLimit && (
         <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/10 p-4 text-sm text-yellow-200">
           <AlertCircle className="h-4 w-4 inline mr-2" />
@@ -96,28 +93,38 @@ export function JourneySetupForm({
       {/* Title */}
       <div className="space-y-2">
         <Label htmlFor="title">Deck Name</Label>
-        <Input
-          id="title"
-          placeholder='e.g. "Seasons of Change"'
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          disabled={isSubmitting}
-          maxLength={100}
-        />
+        <div className="flex gap-1 items-center">
+          <Input
+            id="title"
+            placeholder='e.g. "Seasons of Change"'
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            disabled={isSubmitting}
+            maxLength={100}
+            className="flex-1"
+          />
+          <MicrophoneButton onTranscript={titleVoice.handleTranscript} onListeningChange={titleVoice.handleListeningChange} />
+        </div>
       </div>
 
       {/* Description / Theme */}
       <div className="space-y-2">
         <Label htmlFor="description">What is this deck about?</Label>
-        <Textarea
-          id="description"
-          placeholder="A deck exploring the major transitions in my life — moving cities, changing careers, relationships that shaped me..."
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          disabled={isSubmitting}
-          rows={4}
-          maxLength={1000}
-        />
+        <div className="relative">
+          <Textarea
+            id="description"
+            placeholder="A deck exploring the major transitions in my life — moving cities, changing careers, relationships that shaped me..."
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            disabled={isSubmitting}
+            rows={4}
+            maxLength={1000}
+            className="pr-14"
+          />
+          <div className="absolute right-2 bottom-2">
+            <MicrophoneButton onTranscript={descVoice.handleTranscript} onListeningChange={descVoice.handleListeningChange} />
+          </div>
+        </div>
       </div>
 
       {/* Card Count */}

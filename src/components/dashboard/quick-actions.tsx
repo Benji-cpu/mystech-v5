@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { Plus, BookOpen } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { GlassPanel } from "@/components/ui/glass-panel";
 import { LYRA_DASHBOARD } from "@/components/guide/lyra-constants";
 
 const actions = [
@@ -23,28 +22,19 @@ export function QuickActions() {
   return (
     <div className="grid gap-4 sm:grid-cols-2">
       {actions.map((action) => (
-        <Button
-          key={action.title}
-          variant="outline"
-          className="h-auto p-0 whitespace-normal"
-          asChild
-        >
-          <Link href={action.href}>
-            <Card className="w-full border-0 shadow-none">
-              <CardContent className="flex items-center gap-4 pt-6">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                  <action.icon className="h-5 w-5 text-primary" />
-                </div>
-                <div className="text-left">
-                  <p className="font-semibold">{action.title}</p>
-                  <p className="text-sm font-normal text-muted-foreground">
-                    {action.description}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
-        </Button>
+        <Link key={action.title} href={action.href}>
+          <GlassPanel className="flex items-center gap-4 p-4 hover:border-[#c9a94e]/30 transition-colors">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#c9a94e]/10">
+              <action.icon className="h-5 w-5 text-[#c9a94e]" />
+            </div>
+            <div className="text-left">
+              <p className="font-semibold text-white/90">{action.title}</p>
+              <p className="text-sm text-white/40">
+                {action.description}
+              </p>
+            </div>
+          </GlassPanel>
+        </Link>
       ))}
     </div>
   );

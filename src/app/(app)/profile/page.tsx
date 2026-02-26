@@ -1,67 +1,124 @@
-import { Clock, User, Settings } from "lucide-react";
+import { User } from "lucide-react";
 import { requireAuth, isAdmin } from "@/lib/auth/helpers";
-import { getUserDeckCount, getUserDraftDecks, getUserPlan, getUserProfile, getUserTotalReadingCount } from "@/lib/db/queries";
+import {
+  getUserDeckCount,
+  getUserDraftDecks,
+  getUserPlan,
+  getUserProfile,
+  getUserTotalReadingCount,
+  getUserChronicleDeck,
+  getChronicleSettings,
+  getTodayChronicleCard,
+  getUserReadingLength,
+  getVoicePreferences,
+  getAstrologyProfile,
+  getUserActivityFeed,
+} from "@/lib/db/queries";
 import { getUserPlanFromRole, getOrCreateUsageRecord, checkDailyReadings } from "@/lib/usage";
 import { PLAN_LIMITS } from "@/lib/constants";
+import { getCurrentCelestialContext } from "@/lib/astrology/birth-chart";
+import { buildUnifiedFeed } from "@/lib/activity/build-unified-feed";
 import { PageHeader } from "@/components/layout/page-header";
-import { DashboardStats } from "@/components/dashboard/dashboard-stats";
-import { QuickActions } from "@/components/dashboard/quick-actions";
-import { UpgradeCta } from "@/components/dashboard/upgrade-cta";
 import { InProgressDecks } from "@/components/dashboard/in-progress-decks";
-import { EmptyState } from "@/components/shared/empty-state";
+import { TodayCelestialCard } from "@/components/dashboard/today-celestial-card";
+import { ActivityFeed } from "@/components/dashboard/activity-feed";
+import { OverviewCollapsible } from "@/components/dashboard/overview-collapsible";
 import { LyraGreeting } from "@/components/guide/lyra-greeting";
 import { LyraOnboardingGate } from "@/components/guide/lyra-onboarding";
-import { ProfileForm } from "@/components/settings/profile-form";
-import { ConnectedAccount } from "@/components/settings/connected-account";
-import { SubscriptionSection } from "@/components/settings/subscription-section";
-import { DeleteAccount } from "@/components/settings/delete-account";
-import { SignOutButton } from "@/components/settings/sign-out-button";
-import { Separator } from "@/components/ui/separator";
+import { CelestialProfile } from "@/components/settings/celestial-profile";
+import { ProfileSettingsCollapsible } from "@/components/settings/profile-settings-collapsible";
+import { ChronicleNudge } from "@/components/chronicle/chronicle-nudge";
+import { AnimatedPage } from "@/components/ui/animated-page";
+import { AnimatedItem } from "@/components/ui/animated-item";
 import type { PlanType } from "@/types";
 
 export default async function ProfilePage() {
   const user = await requireAuth();
 
   let plan: PlanType = getUserPlanFromRole((user as { role?: string }).role);
-  const [deckCount, draftDecks, subPlan, profile, readingCount] = await Promise.all([
-    getUserDeckCount(user.id!),
-    getUserDraftDecks(user.id!),
-    plan === "free" ? getUserPlan(user.id!) : Promise.resolve(plan),
-    getUserProfile(user.id!),
-    getUserTotalReadingCount(user.id!),
-  ]);
+  const [deckCount, draftDecks, subPlan, profile, readingCount, readingLength, voicePrefs, astroProfile, activityFeed] =
+    await Promise.all([
+      getUserDeckCount(user.id!),
+      getUserDraftDecks(user.id!),
+      plan === "free" ? getUserPlan(user.id!) : Promise.resolve(plan),
+      getUserProfile(user.id!),
+      getUserTotalReadingCount(user.id!),
+      getUserReadingLength(user.id!),
+      getVoicePreferences(user.id!),
+      getAstrologyProfile(user.id!),
+      getUserActivityFeed(user.id!, 15),
+    ]);
   if (plan === "free" && subPlan === "pro") plan = "pro";
 
-  const [usageRecord, readingStatus] = await Promise.all([
+  const [usageRecord, readingStatus, chronicleDeck] = await Promise.all([
     plan !== "admin" ? getOrCreateUsageRecord(user.id!, plan) : null,
     plan !== "admin" ? checkDailyReadings(user.id!, plan) : null,
+    getUserChronicleDeck(user.id!),
   ]);
 
+  // Fetch Chronicle data if deck exists
+  const [chronicleSettings, todayCard] = chronicleDeck
+    ? await Promise.all([
+        getChronicleSettings(chronicleDeck.id),
+        getTodayChronicleCard(user.id!),
+      ])
+    : [null, null];
+
   const limits = PLAN_LIMITS[plan];
+  const celestialContext = getCurrentCelestialContext();
 
   return (
-    <div className="space-y-10 p-4 sm:p-6 lg:p-8">
+    <AnimatedPage className="space-y-8 p-4 sm:p-6 lg:p-8">
       <LyraOnboardingGate />
-      <PageHeader
-        title={`Welcome, ${user.name ?? "Seeker"}`}
-        subtitle="Your profile and command center. Overview, settings, and account in one place."
-        icon={User}
-      />
+      <AnimatedItem>
+        <PageHeader
+          title={`Welcome, ${user.name ?? "Seeker"}`}
+          subtitle="Your profile and command center. Overview, settings, and account in one place."
+          icon={User}
+        />
+      </AnimatedItem>
 
-      <LyraGreeting
-        userName={user.name ?? "Seeker"}
-        deckCount={deckCount}
-        readingCount={readingCount}
-      />
+      <AnimatedItem>
+        <LyraGreeting
+          userName={user.name ?? "Seeker"}
+          deckCount={deckCount}
+          readingCount={readingCount}
+        />
+      </AnimatedItem>
 
-      {draftDecks.length > 0 && <InProgressDecks drafts={draftDecks} />}
+      <AnimatedItem>
+        <ChronicleNudge
+          hasChronicle={!!chronicleDeck}
+          deckId={chronicleDeck?.id ?? null}
+          completedToday={!!todayCard}
+          streakCount={chronicleSettings?.streakCount ?? 0}
+        />
+      </AnimatedItem>
 
-      <section>
-        <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold">
-          <User className="h-5 w-5 text-[#c9a94e]" />
-          Overview
-        </h2>
-        <DashboardStats
+      <AnimatedItem>
+        <TodayCelestialCard
+          moonPhase={celestialContext.moonPhase}
+          moonSign={celestialContext.moonSign}
+          sunSign={astroProfile?.sunSign}
+        />
+      </AnimatedItem>
+
+      <AnimatedItem>
+        <CelestialProfile profile={astroProfile} />
+      </AnimatedItem>
+
+      {draftDecks.length > 0 && (
+        <AnimatedItem>
+          <InProgressDecks drafts={draftDecks} />
+        </AnimatedItem>
+      )}
+
+      <AnimatedItem>
+        <ActivityFeed items={buildUnifiedFeed(activityFeed, astroProfile)} />
+      </AnimatedItem>
+
+      <AnimatedItem>
+        <OverviewCollapsible
           deckCount={deckCount}
           plan={plan}
           creditsUsed={usageRecord?.creditsUsed ?? 0}
@@ -70,56 +127,18 @@ export default async function ProfilePage() {
           readingsPerDay={limits.readingsPerDay}
           isLifetimeCredits={limits.creditsAreLifetime}
         />
-        <div className="mt-6">
-          <h3 className="mb-4 text-base font-semibold">Quick Actions</h3>
-          <QuickActions />
-        </div>
-        <div className="mt-6">
-          <h3 className="mb-4 text-base font-semibold">Recent Activity</h3>
-          <EmptyState
-            icon={Clock}
-            title="No activity yet"
-            description="Create your first deck to get started on your mystical journey."
-            actionLabel="Create a Deck"
-            actionHref="/decks/new"
+      </AnimatedItem>
+
+      {profile && (
+        <AnimatedItem>
+          <ProfileSettingsCollapsible
+            profile={profile}
+            plan={isAdmin(user) ? "admin" : plan}
+            readingLength={readingLength}
+            voicePrefs={voicePrefs}
           />
-        </div>
-        {plan === "free" && <UpgradeCta />}
-      </section>
-
-      <Separator className="my-8" />
-
-      <section id="settings">
-        <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold">
-          <Settings className="h-5 w-5 text-[#c9a94e]" />
-          Account & settings
-        </h2>
-        {profile ? (
-          <div className="space-y-6">
-            <ProfileForm profile={profile} />
-            <Separator />
-            <ConnectedAccount
-              email={profile.email}
-              image={profile.image}
-              name={profile.name}
-            />
-            <Separator />
-            <SubscriptionSection plan={isAdmin(user) ? "admin" : plan} />
-            <Separator />
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-medium">Sign Out</h3>
-                <p className="text-sm text-muted-foreground">Sign out of your account on this device.</p>
-              </div>
-              <SignOutButton />
-            </div>
-            <Separator />
-            <DeleteAccount />
-          </div>
-        ) : (
-          <p className="text-muted-foreground">Profile not found.</p>
-        )}
-      </section>
-    </div>
+        </AnimatedItem>
+      )}
+    </AnimatedPage>
   );
 }

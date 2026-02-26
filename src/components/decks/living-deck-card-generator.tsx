@@ -4,6 +4,8 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { MicrophoneButton } from "@/components/voice/microphone-button";
+import { useVoiceInput } from "@/hooks/use-voice-input";
 import { Loader2, Sparkles, Sun } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -38,6 +40,8 @@ export function LivingDeckCardGenerator({
   const [reflection, setReflection] = useState("");
   const [generating, setGenerating] = useState(false);
   const [todayCard, setTodayCard] = useState<GeneratedCard | null>(initialTodayCard ?? null);
+
+  const reflectionVoice = useVoiceInput({ value: reflection, onChange: setReflection, maxLength: 2000 });
 
   async function handleGenerate() {
     if (generationMode === "manual" && reflection.trim().length === 0) {
@@ -103,14 +107,20 @@ export function LivingDeckCardGenerator({
 
         {generationMode === "manual" ? (
           <>
-            <Textarea
-              placeholder="What's alive for you today? Write a reflection and a card will be crafted from your words..."
-              value={reflection}
-              onChange={(e) => setReflection(e.target.value)}
-              rows={4}
-              maxLength={2000}
-              disabled={generating}
-            />
+            <div className="relative">
+              <Textarea
+                placeholder="What's alive for you today? Write a reflection and a card will be crafted from your words..."
+                value={reflection}
+                onChange={(e) => setReflection(e.target.value)}
+                rows={4}
+                maxLength={2000}
+                disabled={generating}
+                className="pr-14"
+              />
+              <div className="absolute right-2 bottom-2">
+                <MicrophoneButton onTranscript={reflectionVoice.handleTranscript} onListeningChange={reflectionVoice.handleListeningChange} />
+              </div>
+            </div>
             <p className="text-xs text-muted-foreground text-right">
               {reflection.length}/2000
             </p>

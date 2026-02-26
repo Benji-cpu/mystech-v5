@@ -1,18 +1,15 @@
 import Link from "next/link";
 import { requireAuth } from "@/lib/auth/helpers";
-import { PageHeader } from "@/components/layout/page-header";
 import { LyraSigil } from "@/components/guide/lyra-sigil";
 import { LYRA_DECK_CREATION } from "@/components/guide/lyra-constants";
+import { AstroNudgeBanner } from "@/components/shared/astro-nudge-banner";
 
 export default async function NewDeckPage() {
   await requireAuth();
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6 p-4 sm:p-6 lg:p-8">
-      <PageHeader
-        title="Create New Deck"
-        subtitle={LYRA_DECK_CREATION.pageSubtitle}
-      />
+    <div className="max-w-2xl mx-auto space-y-6 p-4 pt-24 sm:p-6 sm:pt-24 lg:p-8 lg:pt-24">
+      <AstroNudgeBanner />
 
       <div className="grid gap-4 sm:grid-cols-2">
         {/* Quick Create */}

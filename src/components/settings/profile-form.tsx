@@ -3,10 +3,13 @@
 import { useState } from "react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { GlassPanel } from "@/components/ui/glass-panel";
+import { SectionHeader } from "@/components/ui/section-header";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { MicrophoneButton } from "@/components/voice/microphone-button";
+import { useVoiceInput } from "@/hooks/use-voice-input";
 import { toast } from "sonner";
 import type { UserProfile } from "@/types";
 
@@ -18,6 +21,8 @@ export function ProfileForm({ profile }: ProfileFormProps) {
   const [displayName, setDisplayName] = useState(profile.displayName ?? "");
   const [bio, setBio] = useState(profile.bio ?? "");
   const [saving, setSaving] = useState(false);
+
+  const bioVoice = useVoiceInput({ value: bio, onChange: setBio, maxLength: 500 });
 
   const initialDisplayName = profile.displayName ?? "";
   const initialBio = profile.bio ?? "";
@@ -52,55 +57,63 @@ export function ProfileForm({ profile }: ProfileFormProps) {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center gap-4">
-          <Avatar className="size-20">
+    <GlassPanel className="p-6">
+      <div className="flex items-center gap-4 mb-6">
+        <div className="relative">
+          <Avatar className="size-20 ring-2 ring-[#c9a94e]/30">
             <AvatarImage src={profile.image ?? undefined} alt={profile.name ?? "User"} />
-            <AvatarFallback className="text-2xl">
+            <AvatarFallback className="text-2xl bg-[#c9a94e]/10 text-[#c9a94e]">
               {(profile.name ?? "U").charAt(0).toUpperCase()}
             </AvatarFallback>
           </Avatar>
-          <div className="min-w-0">
-            <CardTitle className="text-xl">{profile.name ?? "User"}</CardTitle>
-            {memberSince && (
-              <CardDescription>Member since {memberSince}</CardDescription>
-            )}
-          </div>
         </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
+        <div className="min-w-0">
+          <h3 className="text-xl font-semibold text-white/90">{profile.name ?? "User"}</h3>
+          {memberSince && (
+            <p className="text-sm text-white/40">Member since {memberSince}</p>
+          )}
+        </div>
+      </div>
+      <SectionHeader className="mb-4">Profile</SectionHeader>
+      <div className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="displayName">Display Name</Label>
+          <Label htmlFor="displayName" className="text-white/60">Display Name</Label>
           <Input
             id="displayName"
             placeholder={profile.name ?? "Enter a display name"}
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
             maxLength={100}
+            className="bg-white/5 border-white/10"
           />
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-white/40">
             This overrides your Google name across the app. Leave blank to use your Google name.
           </p>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="bio">Bio</Label>
-          <Textarea
-            id="bio"
-            placeholder="Tell us about yourself..."
-            value={bio}
-            onChange={(e) => setBio(e.target.value)}
-            maxLength={500}
-            rows={3}
-          />
-          <p className="text-xs text-muted-foreground text-right">
+          <Label htmlFor="bio" className="text-white/60">Bio</Label>
+          <div className="relative">
+            <Textarea
+              id="bio"
+              placeholder="Tell us about yourself..."
+              value={bio}
+              onChange={(e) => setBio(e.target.value)}
+              maxLength={500}
+              rows={3}
+              className="bg-white/5 border-white/10 pr-14"
+            />
+            <div className="absolute right-2 bottom-2">
+              <MicrophoneButton onTranscript={bioVoice.handleTranscript} onListeningChange={bioVoice.handleListeningChange} />
+            </div>
+          </div>
+          <p className="text-xs text-white/40 text-right">
             {bio.length}/500
           </p>
         </div>
         <Button onClick={handleSave} disabled={!isDirty || saving}>
           {saving ? "Saving..." : "Save Changes"}
         </Button>
-      </CardContent>
-    </Card>
+      </div>
+    </GlassPanel>
   );
 }

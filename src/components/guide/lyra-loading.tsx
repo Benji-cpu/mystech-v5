@@ -18,7 +18,7 @@ export function LyraLoading({ message, className }: LyraLoadingProps) {
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
     >
       <LyraSigil size="md" state="dormant" />
-      <p className="text-sm text-muted-foreground">{message}</p>
+      <p className="text-sm text-white/40">{message}</p>
     </motion.div>
   );
 }

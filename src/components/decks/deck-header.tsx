@@ -5,6 +5,7 @@ import { Pencil } from "lucide-react";
 import { DeleteDeckButton } from "./delete-deck-button";
 import { ShareButton } from "@/components/shared/share-button";
 import { AdoptDeckButton } from "@/components/shared/adopt-deck-button";
+import { GlassPanel } from "@/components/ui/glass-panel";
 import type { Deck } from "@/types";
 
 interface DeckHeaderProps {
@@ -17,64 +18,66 @@ interface DeckHeaderProps {
 
 export function DeckHeader({ deck, artStyleName, shareToken, isAdopter, ownerName }: DeckHeaderProps) {
   return (
-    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-      <div className="space-y-1">
-        <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-bold">{deck.title}</h1>
-          <Badge
-            variant={deck.status === "completed" ? "default" : "secondary"}
-          >
-            {deck.status}
-          </Badge>
-        </div>
-        {deck.description && (
-          <p className="text-muted-foreground">{deck.description}</p>
-        )}
-        <div className="flex items-center gap-3 text-sm text-muted-foreground">
-          <span>
-            {deck.cardCount} card{deck.cardCount !== 1 ? "s" : ""}
-          </span>
-          {artStyleName && (
-            <>
-              <span>&middot;</span>
-              <span>{artStyleName}</span>
-            </>
+    <GlassPanel className="p-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold text-white/90">{deck.title}</h1>
+            <Badge
+              variant={deck.status === "completed" ? "default" : "secondary"}
+            >
+              {deck.status}
+            </Badge>
+          </div>
+          {deck.description && (
+            <p className="text-white/60">{deck.description}</p>
           )}
-          {isAdopter && ownerName && (
-            <>
-              <span>&middot;</span>
-              <span>by {ownerName}</span>
-            </>
-          )}
-        </div>
-      </div>
-
-      <div className="flex items-center gap-2">
-        {isAdopter ? (
-          <AdoptDeckButton
-            deckId={deck.id}
-            isAdopted
-          />
-        ) : (
-          <>
-            {deck.status === "completed" && (
-              <ShareButton
-                shareEndpoint={`/api/decks/${deck.id}/share`}
-                revokeEndpoint={`/api/decks/${deck.id}/share`}
-                contentType="deck"
-                existingShareToken={shareToken}
-              />
+          <div className="flex items-center gap-3 text-sm text-[#c9a94e]">
+            <span>
+              {deck.cardCount} card{deck.cardCount !== 1 ? "s" : ""}
+            </span>
+            {artStyleName && (
+              <>
+                <span>&middot;</span>
+                <span>{artStyleName}</span>
+              </>
             )}
-            <Button variant="outline" size="sm" asChild>
-              <Link href={`/decks/${deck.id}/edit`}>
-                <Pencil className="h-4 w-4 mr-1" />
-                Edit
-              </Link>
-            </Button>
-            <DeleteDeckButton deckId={deck.id} deckTitle={deck.title} />
-          </>
-        )}
+            {isAdopter && ownerName && (
+              <>
+                <span>&middot;</span>
+                <span>by {ownerName}</span>
+              </>
+            )}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {isAdopter ? (
+            <AdoptDeckButton
+              deckId={deck.id}
+              isAdopted
+            />
+          ) : (
+            <>
+              {deck.status === "completed" && (
+                <ShareButton
+                  shareEndpoint={`/api/decks/${deck.id}/share`}
+                  revokeEndpoint={`/api/decks/${deck.id}/share`}
+                  contentType="deck"
+                  existingShareToken={shareToken}
+                />
+              )}
+              <Button variant="outline" size="sm" asChild>
+                <Link href={`/decks/${deck.id}/edit`}>
+                  <Pencil className="h-4 w-4 mr-1" />
+                  Edit
+                </Link>
+              </Button>
+              <DeleteDeckButton deckId={deck.id} deckTitle={deck.title} />
+            </>
+          )}
+        </div>
       </div>
-    </div>
+    </GlassPanel>
   );
 }

@@ -16,7 +16,7 @@ export default function ReadingsLoading() {
         {Array.from({ length: 5 }).map((_, i) => (
           <div
             key={i}
-            className="flex items-center gap-4 p-4 rounded-xl border border-border/50 bg-card/50"
+            className="flex items-center gap-4 p-4 rounded-2xl bg-white/5 border border-white/10"
           >
             {/* Thumbnail */}
             <Skeleton className="w-12 h-12 rounded-lg shrink-0" />

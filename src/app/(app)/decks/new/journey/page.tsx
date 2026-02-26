@@ -53,7 +53,7 @@ export default async function JourneySetupPage() {
   const custom = styles.filter((s) => !s.isPreset);
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="max-w-2xl mx-auto pt-24">
       <JourneySetupForm
         presets={presets}
         customStyles={custom}

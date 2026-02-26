@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { MessageSquare, CheckSquare, ArrowRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { GlassPanel } from "@/components/ui/glass-panel";
+import { SectionHeader } from "@/components/ui/section-header";
 import type { DraftDeckWithPhase } from "@/types";
 
 interface InProgressDecksProps {
@@ -12,7 +13,7 @@ export function InProgressDecks({ drafts }: InProgressDecksProps) {
 
   return (
     <div>
-      <h2 className="mb-4 text-lg font-semibold">In Progress</h2>
+      <SectionHeader className="mb-4">In Progress</SectionHeader>
       <div className="grid gap-3 sm:grid-cols-2">
         {drafts.map((deck) => {
           const isChat = deck.journeyPhase === "chat";
@@ -20,28 +21,25 @@ export function InProgressDecks({ drafts }: InProgressDecksProps) {
           const phaseLabel = isChat ? "In conversation" : "Reviewing cards";
 
           return (
-            <div
+            <GlassPanel
               key={deck.id}
-              className="flex items-center gap-4 rounded-xl border border-[#c9a94e]/20 bg-[#c9a94e]/5 p-4"
+              className="flex items-center gap-4 border-[#c9a94e]/20 p-4"
             >
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#c9a94e]/10">
                 <Icon className="h-5 w-5 text-[#c9a94e]" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="truncate font-semibold">{deck.title}</p>
-                <p className="text-sm text-muted-foreground">{phaseLabel}</p>
+                <p className="truncate font-semibold text-white/90">{deck.title}</p>
+                <p className="text-sm text-white/40">{phaseLabel}</p>
               </div>
-              <Button
-                size="sm"
-                className="shrink-0 bg-[#c9a94e] text-black hover:bg-[#b8993f]"
-                asChild
+              <Link
+                href={deck.resumeHref}
+                className="shrink-0 inline-flex items-center gap-1 rounded-lg bg-gradient-to-r from-[#c9a94e] to-[#daa520] px-3 py-1.5 text-sm font-semibold text-black"
               >
-                <Link href={deck.resumeHref}>
-                  Resume
-                  <ArrowRight className="ml-1 h-3 w-3" />
-                </Link>
-              </Button>
-            </div>
+                Resume
+                <ArrowRight className="h-3 w-3" />
+              </Link>
+            </GlassPanel>
           );
         })}
       </div>

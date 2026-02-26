@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { GlassPanel } from "@/components/ui/glass-panel";
+import { SectionHeader } from "@/components/ui/section-header";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { VoicePreferences as VoicePrefs, VoiceSpeed } from "@/types";
@@ -65,34 +66,32 @@ export function VoicePreferences({ initialPrefs, className }: VoicePreferencesPr
   }
 
   return (
-    <Card className={className}>
-      <CardHeader>
-        <CardTitle>Voice</CardTitle>
-        <CardDescription>
-          Configure Lyra's voice narration for readings and conversations.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
+    <GlassPanel className={cn("p-6", className)}>
+      <SectionHeader className="mb-1">Voice</SectionHeader>
+      <p className="text-sm text-white/40 mb-4">
+        Configure Lyra&apos;s voice narration for readings and conversations.
+      </p>
+      <div className="space-y-4">
         {/* Voice enabled toggle */}
         <button
           onClick={handleToggleEnabled}
           disabled={saving}
           className={cn(
-            "flex w-full items-center justify-between rounded-lg border p-4 text-left transition-colors",
+            "flex w-full items-center justify-between rounded-xl border p-4 text-left transition-colors",
             prefs.enabled
-              ? "border-primary bg-primary/5"
-              : "border-border hover:border-primary/50 hover:bg-white/[0.02]"
+              ? "border-[#c9a94e]/50 bg-[#c9a94e]/5"
+              : "border-white/10 hover:border-[#c9a94e]/30 hover:bg-white/[0.02]"
           )}
         >
           <div>
-            <span className="font-medium">Voice Narration</span>
-            <p className="text-sm text-muted-foreground">
+            <span className="font-medium text-white/90">Voice Narration</span>
+            <p className="text-sm text-white/40">
               Lyra speaks readings and card reveals aloud.
             </p>
           </div>
           <span className={cn(
             "text-xs font-medium px-2 py-1 rounded",
-            prefs.enabled ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
+            prefs.enabled ? "bg-[#c9a94e]/20 text-[#c9a94e]" : "bg-white/5 text-white/40"
           )}>
             {prefs.enabled ? "On" : "Off"}
           </span>
@@ -103,22 +102,22 @@ export function VoicePreferences({ initialPrefs, className }: VoicePreferencesPr
           onClick={handleToggleAutoplay}
           disabled={saving || !prefs.enabled}
           className={cn(
-            "flex w-full items-center justify-between rounded-lg border p-4 text-left transition-colors",
+            "flex w-full items-center justify-between rounded-xl border p-4 text-left transition-colors",
             !prefs.enabled && "opacity-50 cursor-not-allowed",
             prefs.autoplay && prefs.enabled
-              ? "border-primary bg-primary/5"
-              : "border-border hover:border-primary/50 hover:bg-white/[0.02]"
+              ? "border-[#c9a94e]/50 bg-[#c9a94e]/5"
+              : "border-white/10 hover:border-[#c9a94e]/30 hover:bg-white/[0.02]"
           )}
         >
           <div>
-            <span className="font-medium">Auto-Play</span>
-            <p className="text-sm text-muted-foreground">
+            <span className="font-medium text-white/90">Auto-Play</span>
+            <p className="text-sm text-white/40">
               Automatically narrate when interpretations stream in.
             </p>
           </div>
           <span className={cn(
             "text-xs font-medium px-2 py-1 rounded",
-            prefs.autoplay && prefs.enabled ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
+            prefs.autoplay && prefs.enabled ? "bg-[#c9a94e]/20 text-[#c9a94e]" : "bg-white/5 text-white/40"
           )}>
             {prefs.autoplay ? "On" : "Off"}
           </span>
@@ -126,7 +125,7 @@ export function VoicePreferences({ initialPrefs, className }: VoicePreferencesPr
 
         {/* Speed */}
         <div className={cn(!prefs.enabled && "opacity-50 pointer-events-none")}>
-          <p className="text-sm font-medium mb-3">Speed</p>
+          <p className="text-sm font-medium text-white/60 mb-3">Speed</p>
           <div className="grid grid-cols-4 gap-2">
             {SPEED_OPTIONS.map((option) => (
               <button
@@ -134,10 +133,10 @@ export function VoicePreferences({ initialPrefs, className }: VoicePreferencesPr
                 onClick={() => handleSpeedChange(option.value)}
                 disabled={saving || !prefs.enabled}
                 className={cn(
-                  "rounded-lg border px-3 py-2 text-sm font-medium transition-colors",
+                  "rounded-xl border px-3 py-2 text-sm font-medium transition-colors",
                   prefs.speed === option.value
-                    ? "border-primary bg-primary/5 text-foreground"
-                    : "border-border text-muted-foreground hover:border-primary/50 hover:bg-white/[0.02]"
+                    ? "border-[#c9a94e]/50 bg-[#c9a94e]/5 text-white/90"
+                    : "border-white/10 text-white/40 hover:border-[#c9a94e]/30 hover:bg-white/[0.02]"
                 )}
               >
                 {option.label}
@@ -145,7 +144,7 @@ export function VoicePreferences({ initialPrefs, className }: VoicePreferencesPr
             ))}
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </GlassPanel>
   );
 }

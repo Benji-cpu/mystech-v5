@@ -1,5 +1,5 @@
 import { Layers, BookOpen, Coins } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { GlassPanel } from "@/components/ui/glass-panel";
 import type { PlanType } from "@/types";
 
 interface DashboardStatsProps {
@@ -53,20 +53,20 @@ export function DashboardStats({
   ];
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {stats.map((stat) => (
-        <Card key={stat.label} className="border-border/50">
-          <CardContent className="flex items-center gap-4 pt-6">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-              <stat.icon className="h-5 w-5 text-primary" />
+        <GlassPanel key={stat.label} className="p-4">
+          <div className="flex items-center gap-4">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#c9a94e]/10">
+              <stat.icon className="h-5 w-5 text-[#c9a94e]" />
             </div>
             <div>
-              <p className="text-2xl font-bold">{stat.value}</p>
-              <p className="text-sm text-muted-foreground">{stat.label}</p>
-              <p className="text-xs text-muted-foreground/70">{stat.sublabel}</p>
+              <p className="text-2xl font-bold text-white/90">{stat.value}</p>
+              <p className="text-sm text-white/60">{stat.label}</p>
+              <p className="text-xs text-white/40">{stat.sublabel}</p>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </GlassPanel>
       ))}
     </div>
   );

@@ -6,6 +6,8 @@ import { getPublicDecks } from "@/lib/db/queries";
 import { eq, or, and } from "drizzle-orm";
 import { PageHeader } from "@/components/layout/page-header";
 import { ExploreTabs } from "@/components/explore/explore-tabs";
+import { AnimatedPage } from "@/components/ui/animated-page";
+import { AnimatedItem } from "@/components/ui/animated-item";
 import { LYRA_EXPLORE } from "@/components/guide/lyra-constants";
 import type { ArtStyle } from "@/types";
 
@@ -56,18 +58,22 @@ export default async function ExplorePage() {
   const shared = sharedRows.map((r) => toArtStyle(r.style));
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 space-y-8">
-      <PageHeader
-        icon={Compass}
-        title="Explore"
-        subtitle={LYRA_EXPLORE.subtitle}
-      />
+    <AnimatedPage className="p-4 sm:p-6 lg:p-8 space-y-8">
+      <AnimatedItem>
+        <PageHeader
+          icon={Compass}
+          title="Explore"
+          subtitle={LYRA_EXPLORE.subtitle}
+        />
+      </AnimatedItem>
 
-      <ExploreTabs
-        publicDecks={publicDecks}
-        artStyles={{ presets, custom, shared }}
-        currentUserId={user.id!}
-      />
-    </div>
+      <AnimatedItem>
+        <ExploreTabs
+          publicDecks={publicDecks}
+          artStyles={{ presets, custom, shared }}
+          currentUserId={user.id!}
+        />
+      </AnimatedItem>
+    </AnimatedPage>
   );
 }

@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { MicrophoneButton } from "@/components/voice/microphone-button";
+import { useVoiceInput } from "@/hooks/use-voice-input";
 import { Loader2, Send, X } from "lucide-react";
 
 interface CardEditInlineProps {
@@ -19,6 +21,8 @@ export function CardEditInline({
   isLoading,
 }: CardEditInlineProps) {
   const [instruction, setInstruction] = useState("");
+
+  const instructionVoice = useVoiceInput({ value: instruction, onChange: setInstruction });
 
   async function handleSubmit() {
     const text = instruction.trim();
@@ -46,6 +50,11 @@ export function CardEditInline({
         disabled={isLoading}
         autoFocus
         className="flex-1 text-sm"
+      />
+      <MicrophoneButton
+        onTranscript={instructionVoice.handleTranscript}
+        onListeningChange={instructionVoice.handleListeningChange}
+        className="h-9 w-9 flex-shrink-0"
       />
       <Button
         size="icon"

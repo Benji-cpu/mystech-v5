@@ -20,7 +20,7 @@ export default function ReadingViewLoading() {
         </div>
 
         {/* Question box */}
-        <div className="mt-4 p-3 rounded-lg border border-border/50 bg-card/50">
+        <div className="mt-4 p-3 rounded-2xl bg-white/5 border border-white/10">
           <Skeleton className="h-3 w-24 mb-2" />
           <Skeleton className="h-4 w-64" />
         </div>
@@ -39,7 +39,7 @@ export default function ReadingViewLoading() {
       </div>
 
       {/* Interpretation */}
-      <div className="max-w-2xl mx-auto space-y-3">
+      <div className="max-w-2xl mx-auto rounded-2xl bg-white/5 border border-white/10 p-6 space-y-3">
         <Skeleton className="h-5 w-32" />
         <Skeleton className="h-4 w-full" />
         <Skeleton className="h-4 w-full" />

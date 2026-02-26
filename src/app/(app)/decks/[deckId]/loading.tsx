@@ -7,22 +7,24 @@ export default function DeckViewLoading() {
     <div className="space-y-6 p-4 sm:p-6 lg:p-8">
       <LyraLoading message={LYRA_LOADING.deckDetail} />
       {/* Deck header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-2">
+      <div className="rounded-2xl bg-white/5 border border-white/10 p-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-8 w-56" />
+              <Skeleton className="h-5 w-20 rounded-full" />
+            </div>
+            <Skeleton className="h-4 w-80" />
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-4 w-16" />
+              <Skeleton className="h-4 w-24" />
+            </div>
+          </div>
           <div className="flex items-center gap-2">
-            <Skeleton className="h-8 w-56" />
-            <Skeleton className="h-5 w-20 rounded-full" />
+            <Skeleton className="h-9 w-20 rounded-md" />
+            <Skeleton className="h-9 w-16 rounded-md" />
+            <Skeleton className="h-9 w-20 rounded-md" />
           </div>
-          <Skeleton className="h-4 w-80" />
-          <div className="flex items-center gap-3">
-            <Skeleton className="h-4 w-16" />
-            <Skeleton className="h-4 w-24" />
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Skeleton className="h-9 w-20 rounded-md" />
-          <Skeleton className="h-9 w-16 rounded-md" />
-          <Skeleton className="h-9 w-20 rounded-md" />
         </div>
       </div>
 

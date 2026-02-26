@@ -3,84 +3,75 @@ import { PageHeaderSkeleton } from "@/components/layout/page-header-skeleton";
 
 export default function ProfileLoading() {
   return (
-    <div className="space-y-10 p-4 sm:p-6 lg:p-8">
+    <div className="space-y-8 p-4 sm:p-6 lg:p-8">
       {/* Page header */}
       <PageHeaderSkeleton hasIcon hasSubtitle />
 
-      {/* Overview section */}
-      <section>
-        <div className="flex items-center gap-2 mb-4">
-          <Skeleton className="h-5 w-5 rounded-md" />
-          <Skeleton className="h-5 w-24" />
-        </div>
+      {/* Lyra greeting skeleton */}
+      <div className="rounded-2xl bg-white/5 border border-white/10 p-4">
+        <Skeleton className="h-4 w-3/4" />
+      </div>
 
-        {/* Stats grid (3 cards) */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      {/* Chronicle nudge skeleton */}
+      <div className="rounded-2xl bg-white/5 border border-white/10 p-4">
+        <Skeleton className="h-4 w-48" />
+      </div>
+
+      {/* Today celestial card skeleton */}
+      <div className="rounded-2xl bg-white/5 border border-white/10 border-l-2 border-l-[#c9a94e]/20 p-4 space-y-2">
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-5 w-5 rounded" />
+          <Skeleton className="h-4 w-28" />
+          <Skeleton className="h-3 w-20" />
+        </div>
+        <Skeleton className="h-3 w-64" />
+      </div>
+
+      {/* Celestial Profile skeleton */}
+      <div className="rounded-2xl bg-white/5 border border-white/10 p-5 sm:p-6 space-y-4">
+        <Skeleton className="h-5 w-36" />
+        <div className="flex flex-wrap gap-2">
           {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} className="h-8 w-28 rounded-full" />
+          ))}
+        </div>
+        <Skeleton className="h-3 w-48" />
+      </div>
+
+      {/* Activity feed skeleton */}
+      <div className="space-y-3">
+        <Skeleton className="h-4 w-28" />
+        <div className="space-y-2">
+          {Array.from({ length: 4 }).map((_, i) => (
             <div
               key={i}
-              className="rounded-xl border border-border/50 bg-card p-4 space-y-3"
+              className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.03] border border-white/5"
             >
-              <Skeleton className="h-4 w-20" />
-              <Skeleton className="h-8 w-16" />
-              <Skeleton className="h-2 w-full rounded-full" />
+              <Skeleton className="h-8 w-8 rounded-lg shrink-0" />
+              <Skeleton className="h-3 flex-1" />
+              <Skeleton className="h-3 w-10 shrink-0" />
             </div>
           ))}
         </div>
+      </div>
 
-        {/* Quick Actions */}
-        <div className="mt-6">
-          <Skeleton className="h-5 w-28 mb-4" />
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} className="h-20 rounded-xl" />
-            ))}
-          </div>
+      {/* Overview collapsible trigger skeleton */}
+      <div className="rounded-2xl bg-white/5 border border-white/10 p-4 flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <Skeleton className="h-4 w-4 rounded" />
+          <Skeleton className="h-4 w-28" />
         </div>
+        <Skeleton className="h-4 w-4 rounded" />
+      </div>
 
-        {/* Recent Activity */}
-        <div className="mt-6">
-          <Skeleton className="h-5 w-32 mb-4" />
-          <Skeleton className="h-32 rounded-xl" />
+      {/* Settings collapsible trigger skeleton */}
+      <div className="rounded-2xl bg-white/5 border border-white/10 p-4 flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <Skeleton className="h-4 w-4 rounded" />
+          <Skeleton className="h-4 w-32" />
         </div>
-      </section>
-
-      {/* Separator */}
-      <Skeleton className="h-px w-full" />
-
-      {/* Settings section */}
-      <section>
-        <div className="flex items-center gap-2 mb-4">
-          <Skeleton className="h-5 w-5 rounded-md" />
-          <Skeleton className="h-5 w-36" />
-        </div>
-        <div className="space-y-6">
-          {/* Profile form fields */}
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Skeleton className="h-4 w-16" />
-              <Skeleton className="h-10 w-full rounded-md" />
-            </div>
-            <div className="space-y-2">
-              <Skeleton className="h-4 w-20" />
-              <Skeleton className="h-10 w-full rounded-md" />
-            </div>
-            <Skeleton className="h-9 w-24 rounded-md" />
-          </div>
-          <Skeleton className="h-px w-full" />
-          {/* Connected account */}
-          <div className="flex items-center gap-3">
-            <Skeleton className="h-10 w-10 rounded-full" />
-            <div className="space-y-1">
-              <Skeleton className="h-4 w-32" />
-              <Skeleton className="h-3 w-48" />
-            </div>
-          </div>
-          <Skeleton className="h-px w-full" />
-          {/* Subscription */}
-          <Skeleton className="h-16 rounded-xl" />
-        </div>
-      </section>
+        <Skeleton className="h-4 w-4 rounded" />
+      </div>
     </div>
   );
 }

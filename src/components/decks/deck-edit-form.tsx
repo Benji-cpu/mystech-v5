@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { MicrophoneButton } from "@/components/voice/microphone-button";
+import { useVoiceInput } from "@/hooks/use-voice-input";
 import { Loader2 } from "lucide-react";
 import type { Deck } from "@/types";
 
@@ -20,6 +22,9 @@ export function DeckEditForm({ deck }: DeckEditFormProps) {
   const [theme, setTheme] = useState(deck.theme ?? "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const titleVoice = useVoiceInput({ value: title, onChange: setTitle, maxLength: 100 });
+  const descVoice = useVoiceInput({ value: description, onChange: setDescription, maxLength: 1000 });
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -64,25 +69,35 @@ export function DeckEditForm({ deck }: DeckEditFormProps) {
 
       <div className="space-y-2">
         <Label htmlFor="title">Title</Label>
-        <Input
-          id="title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          disabled={saving}
-          maxLength={100}
-        />
+        <div className="flex gap-1 items-center">
+          <Input
+            id="title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            disabled={saving}
+            maxLength={100}
+            className="flex-1"
+          />
+          <MicrophoneButton onTranscript={titleVoice.handleTranscript} onListeningChange={titleVoice.handleListeningChange} />
+        </div>
       </div>
 
       <div className="space-y-2">
         <Label htmlFor="description">Description</Label>
-        <Textarea
-          id="description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          disabled={saving}
-          rows={4}
-          maxLength={1000}
-        />
+        <div className="relative">
+          <Textarea
+            id="description"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            disabled={saving}
+            rows={4}
+            maxLength={1000}
+            className="pr-14"
+          />
+          <div className="absolute right-2 bottom-2">
+            <MicrophoneButton onTranscript={descVoice.handleTranscript} onListeningChange={descVoice.handleListeningChange} />
+          </div>
+        </div>
       </div>
 
       <div className="space-y-2">

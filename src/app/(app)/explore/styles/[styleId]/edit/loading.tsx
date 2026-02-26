@@ -13,7 +13,7 @@ export default function StyleEditLoading() {
       </div>
 
       {/* Form */}
-      <div className="space-y-4">
+      <div className="rounded-2xl bg-white/5 border border-white/10 p-6 space-y-4">
         <div className="space-y-2">
           <Skeleton className="h-4 w-12" />
           <Skeleton className="h-10 w-full rounded-md" />

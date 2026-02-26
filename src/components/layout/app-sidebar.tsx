@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   Home,
   Layers,
-  Sprout,
+  ScrollText,
   BookOpen,
   Compass,
   Sparkles,
@@ -17,10 +17,10 @@ import { UsageIndicator } from "@/components/shared/usage-indicator";
 const navItems = [
   { href: "/home", label: "Home", icon: Home },
   { href: "/decks", label: "My Decks", icon: Layers },
-  { href: "/decks/living", label: "Living Deck", icon: Sprout },
+  { href: "/chronicle", label: "Chronicle", icon: ScrollText },
   { href: "/readings", label: "Readings", icon: BookOpen },
   { href: "/explore", label: "Explore", icon: Compass },
-  { href: "/profile", label: "Profile", icon: User },
+  { href: "/profile", label: "Dashboard", icon: User },
 ];
 
 interface AppSidebarProps {

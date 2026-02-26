@@ -2,10 +2,13 @@ import { notFound, redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { decks, cards, artStyles, users } from "@/lib/db/schema";
 import { requireAuth } from "@/lib/auth/helpers";
-import { getDeckMetadata, hasAdoptedDeck, getUserCardFeedback } from "@/lib/db/queries";
+import { getDeckMetadata, hasAdoptedDeck, getUserCardFeedback, getChronicleSettings, getTodayChronicleCard, getChronicleEntries } from "@/lib/db/queries";
 import { eq, and, asc } from "drizzle-orm";
 import { DeckHeader } from "@/components/decks/deck-header";
 import { DeckViewClient } from "@/components/decks/deck-view-client";
+import { ChronicleDeckDetail } from "@/components/chronicle/chronicle-deck-detail";
+import { AnimatedPage } from "@/components/ui/animated-page";
+import { AnimatedItem } from "@/components/ui/animated-item";
 import type { Deck, Card, DraftCard } from "@/types";
 
 interface DeckViewPageProps {
@@ -59,6 +62,49 @@ export default async function DeckViewPage({ params }: DeckViewPageProps) {
     redirect(`/decks/new/journey/${deckId}/${phase}`);
   }
 
+  // Chronicle deck — render chronicle hub
+  if ((deck.deckType ?? "standard") === "chronicle") {
+    const [chronicleSettings, todayCard, entries] = await Promise.all([
+      getChronicleSettings(deckId),
+      getTodayChronicleCard(user.id!),
+      getChronicleEntries(user.id!),
+    ]);
+
+    return (
+      <AnimatedPage className="p-4 sm:p-6 lg:p-8">
+        <ChronicleDeckDetail
+          deckId={deckId}
+          deckTitle={deck.title}
+          cardCount={deck.cardCount}
+          completedToday={!!todayCard}
+          todayCard={todayCard ? {
+            id: todayCard.id,
+            title: todayCard.title,
+            meaning: todayCard.meaning,
+            guidance: todayCard.guidance,
+            imageUrl: todayCard.imageUrl,
+            imageStatus: todayCard.imageStatus,
+          } : null}
+          streakCount={chronicleSettings?.streakCount ?? 0}
+          totalEntries={chronicleSettings?.totalEntries ?? 0}
+          badges={chronicleSettings?.badgesEarned ?? []}
+          entries={entries.map(e => ({
+            id: e.id,
+            entryDate: e.entryDate,
+            mood: e.mood,
+            status: e.status,
+            cardId: e.cardId,
+            cardTitle: e.cardTitle,
+            cardImageUrl: e.cardImageUrl,
+            cardMeaning: e.cardMeaning,
+            cardGuidance: e.cardGuidance,
+            cardImageStatus: e.cardImageStatus,
+          }))}
+        />
+      </AnimatedPage>
+    );
+  }
+
   const cardRows = await db
     .select()
     .from(cards)
@@ -110,19 +156,23 @@ export default async function DeckViewPage({ params }: DeckViewPageProps) {
   );
 
   return (
-    <div className="space-y-6 p-4 sm:p-6 lg:p-8">
-      <DeckHeader
-        deck={deckData}
-        artStyleName={artStyleName}
-        shareToken={deck.shareToken}
-        isAdopter={isAdopter}
-        ownerName={ownerName}
-      />
-      <DeckViewClient
-        deck={deckData}
-        initialCards={cardsData}
-        initialFeedbackMap={feedbackMap}
-      />
-    </div>
+    <AnimatedPage className="space-y-6 p-4 sm:p-6 lg:p-8">
+      <AnimatedItem>
+        <DeckHeader
+          deck={deckData}
+          artStyleName={artStyleName}
+          shareToken={deck.shareToken}
+          isAdopter={isAdopter}
+          ownerName={ownerName}
+        />
+      </AnimatedItem>
+      <AnimatedItem>
+        <DeckViewClient
+          deck={deckData}
+          initialCards={cardsData}
+          initialFeedbackMap={feedbackMap}
+        />
+      </AnimatedItem>
+    </AnimatedPage>
   );
 }

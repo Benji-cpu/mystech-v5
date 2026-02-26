@@ -30,7 +30,7 @@ export default function StyleDetailLoading() {
       {/* Style prompt */}
       <div className="space-y-2">
         <Skeleton className="h-4 w-24" />
-        <div className="rounded-lg border border-border/50 bg-muted/50 p-4 space-y-2">
+        <div className="rounded-2xl bg-white/5 border border-white/10 p-4 space-y-2">
           <Skeleton className="h-4 w-full" />
           <Skeleton className="h-4 w-3/4" />
         </div>

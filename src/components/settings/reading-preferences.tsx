@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { GlassPanel } from "@/components/ui/glass-panel";
+import { SectionHeader } from "@/components/ui/section-header";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { ReadingLength } from "@/types";
@@ -59,35 +60,31 @@ export function ReadingPreferences({ initialLength, className }: ReadingPreferen
   }
 
   return (
-    <Card className={className}>
-      <CardHeader>
-        <CardTitle>Reading Length</CardTitle>
-        <CardDescription>
-          Choose how detailed your reading interpretations should be.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="grid gap-3">
-          {LENGTH_OPTIONS.map((option) => (
-            <button
-              key={option.value}
-              onClick={() => handleSelect(option.value)}
-              disabled={saving}
-              className={cn(
-                "flex flex-col items-start gap-1 rounded-lg border p-4 text-left transition-colors",
-                selected === option.value
-                  ? "border-primary bg-primary/5"
-                  : "border-border hover:border-primary/50 hover:bg-white/[0.02]"
-              )}
-            >
-              <span className="font-medium">{option.label}</span>
-              <span className="text-sm text-muted-foreground">
-                {option.description}
-              </span>
-            </button>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+    <GlassPanel className={cn("p-6", className)}>
+      <SectionHeader className="mb-1">Reading Length</SectionHeader>
+      <p className="text-sm text-white/40 mb-4">
+        Choose how detailed your reading interpretations should be.
+      </p>
+      <div className="grid gap-3">
+        {LENGTH_OPTIONS.map((option) => (
+          <button
+            key={option.value}
+            onClick={() => handleSelect(option.value)}
+            disabled={saving}
+            className={cn(
+              "flex flex-col items-start gap-1 rounded-xl border p-4 text-left transition-colors",
+              selected === option.value
+                ? "border-[#c9a94e]/50 bg-[#c9a94e]/5"
+                : "border-white/10 hover:border-[#c9a94e]/30 hover:bg-white/[0.02]"
+            )}
+          >
+            <span className="font-medium text-white/90">{option.label}</span>
+            <span className="text-sm text-white/40">
+              {option.description}
+            </span>
+          </button>
+        ))}
+      </div>
+    </GlassPanel>
   );
 }

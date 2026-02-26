@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { MicrophoneButton } from "@/components/voice/microphone-button";
+import { useVoiceInput } from "@/hooks/use-voice-input";
 import type { DraftCard } from "@/types";
 
 interface CardEditModalProps {
@@ -28,6 +30,10 @@ export function CardEditModal({
   const [title, setTitle] = useState("");
   const [meaning, setMeaning] = useState("");
   const [guidance, setGuidance] = useState("");
+
+  const titleVoice = useVoiceInput({ value: title, onChange: setTitle, maxLength: 100 });
+  const meaningVoice = useVoiceInput({ value: meaning, onChange: setMeaning, maxLength: 500 });
+  const guidanceVoice = useVoiceInput({ value: guidance, onChange: setGuidance, maxLength: 500 });
 
   useEffect(() => {
     if (card) {
@@ -55,34 +61,50 @@ export function CardEditModal({
         <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="edit-title">Title</Label>
-            <Input
-              id="edit-title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              maxLength={100}
-            />
+            <div className="flex gap-1 items-center">
+              <Input
+                id="edit-title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                maxLength={100}
+                className="flex-1"
+              />
+              <MicrophoneButton onTranscript={titleVoice.handleTranscript} onListeningChange={titleVoice.handleListeningChange} />
+            </div>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="edit-meaning">Meaning</Label>
-            <Textarea
-              id="edit-meaning"
-              value={meaning}
-              onChange={(e) => setMeaning(e.target.value)}
-              rows={4}
-              maxLength={500}
-            />
+            <div className="relative">
+              <Textarea
+                id="edit-meaning"
+                value={meaning}
+                onChange={(e) => setMeaning(e.target.value)}
+                rows={4}
+                maxLength={500}
+                className="pr-14"
+              />
+              <div className="absolute right-2 bottom-2">
+                <MicrophoneButton onTranscript={meaningVoice.handleTranscript} onListeningChange={meaningVoice.handleListeningChange} />
+              </div>
+            </div>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="edit-guidance">Guidance</Label>
-            <Textarea
-              id="edit-guidance"
-              value={guidance}
-              onChange={(e) => setGuidance(e.target.value)}
-              rows={3}
-              maxLength={500}
-            />
+            <div className="relative">
+              <Textarea
+                id="edit-guidance"
+                value={guidance}
+                onChange={(e) => setGuidance(e.target.value)}
+                rows={3}
+                maxLength={500}
+                className="pr-14"
+              />
+              <div className="absolute right-2 bottom-2">
+                <MicrophoneButton onTranscript={guidanceVoice.handleTranscript} onListeningChange={guidanceVoice.handleListeningChange} />
+              </div>
+            </div>
           </div>
 
           <div className="flex gap-2 justify-end">

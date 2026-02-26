@@ -7,6 +7,9 @@ import { eq, or, and } from "drizzle-orm";
 import { Button } from "@/components/ui/button";
 import { StyleCard } from "@/components/art-styles/style-card";
 import { PageHeader } from "@/components/layout/page-header";
+import { AnimatedPage } from "@/components/ui/animated-page";
+import { AnimatedItem } from "@/components/ui/animated-item";
+import { SectionHeader } from "@/components/ui/section-header";
 import type { ArtStyle } from "@/types";
 
 function toArtStyle(s: typeof artStyles.$inferSelect): ArtStyle {
@@ -53,41 +56,29 @@ export default async function ArtStylesPage() {
   const shared = sharedRows.map((r) => toArtStyle(r.style));
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 space-y-8">
-      <PageHeader
-        icon={Palette}
-        title="Art Styles"
-        subtitle="Choose a visual style for your oracle card artwork"
-        action={
-          <Button asChild>
-            <Link href="/art-styles/new">
-              <Plus className="h-4 w-4" />
-              Create Custom
-            </Link>
-          </Button>
-        }
-      />
+    <AnimatedPage className="p-4 sm:p-6 lg:p-8 space-y-8">
+      <AnimatedItem>
+        <PageHeader
+          icon={Palette}
+          title="Art Styles"
+          subtitle="Choose a visual style for your oracle card artwork"
+          action={
+            <Button asChild>
+              <Link href="/art-styles/new">
+                <Plus className="h-4 w-4" />
+                Create Custom
+              </Link>
+            </Button>
+          }
+        />
+      </AnimatedItem>
 
       {/* Presets */}
-      <section>
-        <h2 className="text-lg font-semibold mb-4">Preset Styles</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-          {presets.map((style) => (
-            <StyleCard
-              key={style.id}
-              style={style}
-              currentUserId={user.id!}
-            />
-          ))}
-        </div>
-      </section>
-
-      {/* Custom */}
-      {custom.length > 0 && (
+      <AnimatedItem>
         <section>
-          <h2 className="text-lg font-semibold mb-4">Custom Styles</h2>
+          <SectionHeader className="mb-4">Preset Styles</SectionHeader>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-            {custom.map((style) => (
+            {presets.map((style) => (
               <StyleCard
                 key={style.id}
                 style={style}
@@ -96,23 +87,43 @@ export default async function ArtStylesPage() {
             ))}
           </div>
         </section>
+      </AnimatedItem>
+
+      {/* Custom */}
+      {custom.length > 0 && (
+        <AnimatedItem>
+          <section>
+            <SectionHeader className="mb-4">Custom Styles</SectionHeader>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+              {custom.map((style) => (
+                <StyleCard
+                  key={style.id}
+                  style={style}
+                  currentUserId={user.id!}
+                />
+              ))}
+            </div>
+          </section>
+        </AnimatedItem>
       )}
 
       {/* Shared */}
       {shared.length > 0 && (
-        <section>
-          <h2 className="text-lg font-semibold mb-4">Shared With You</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-            {shared.map((style) => (
-              <StyleCard
-                key={style.id}
-                style={style}
-                currentUserId={user.id!}
-              />
-            ))}
-          </div>
-        </section>
+        <AnimatedItem>
+          <section>
+            <SectionHeader className="mb-4">Shared With You</SectionHeader>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+              {shared.map((style) => (
+                <StyleCard
+                  key={style.id}
+                  style={style}
+                  currentUserId={user.id!}
+                />
+              ))}
+            </div>
+          </section>
+        </AnimatedItem>
       )}
-    </div>
+    </AnimatedPage>
   );
 }
