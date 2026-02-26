@@ -23,11 +23,9 @@ export function useCardReveal({
   const [isRevealing, setIsRevealing] = useState(false);
   const [allRevealed, setAllRevealed] = useState(false);
   const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
-  const isRevealingRef = useRef(false);
 
   const startReveal = useCallback(() => {
-    if (isRevealingRef.current) return;
-    isRevealingRef.current = true;
+    if (isRevealing) return;
     setIsRevealing(true);
 
     // Clear any existing timeouts
@@ -57,7 +55,6 @@ export function useCardReveal({
         // Check if all cards are now revealed
         if (i === cardCount - 1) {
           setAllRevealed(true);
-          isRevealingRef.current = false;
           setIsRevealing(false);
           onAllRevealed?.();
         }
@@ -65,13 +62,12 @@ export function useCardReveal({
 
       timeoutsRef.current.push(t1, t2);
     }
-  }, [cardCount, revealDuration, delayBetween, onAllRevealed]);
+  }, [cardCount, revealDuration, delayBetween, isRevealing, onAllRevealed]);
 
   const reset = useCallback(() => {
     timeoutsRef.current.forEach(clearTimeout);
     timeoutsRef.current = [];
     setCardStates(Array(cardCount).fill("hidden"));
-    isRevealingRef.current = false;
     setIsRevealing(false);
     setAllRevealed(false);
   }, [cardCount]);

@@ -6,61 +6,70 @@ import type { Card, SpreadType } from "@/types";
 // ── Phase IDs ──────────────────────────────────────────────────────────
 
 export type ReadingPhase =
-  | "deck"
-  | "spread"
-  | "intention"
+  | "setup"
   | "creating"
   | "drawing"
-  | "interpreting"
+  | "presenting"
   | "complete";
 
 // ── State shape ────────────────────────────────────────────────────────
 
 export interface ReadingFlowState {
   phase: ReadingPhase;
+  /** @deprecated Use selectedDeckIds instead */
   selectedDeckId: string | null;
+  selectedDeckIds: string[];
   selectedSpread: SpreadType | null;
   question: string;
   readingId: string | null;
   drawnCards: { card: Card; positionName: string }[];
   error: string | null;
-  narrationText: string;
+  activeCardIndex: number | null;
+  /** Which card is currently being presented (0-based) */
+  presentingCardIndex: number;
+  /** Whether the synthesis/reflective question should be shown */
+  showSynthesis: boolean;
+  /** Chronicle card to include in this reading, if the user has one forged today */
+  chronicleCardId: string | null;
 }
 
 // ── Actions ────────────────────────────────────────────────────────────
 
 export type ReadingFlowAction =
   | { type: "SELECT_DECK"; deckId: string }
+  | { type: "TOGGLE_DECK"; deckId: string }
   | { type: "SELECT_SPREAD"; spread: SpreadType }
   | { type: "SET_QUESTION"; question: string }
-  | { type: "GO_BACK" }
-  | { type: "START_CREATING" }
+  | { type: "SET_CHRONICLE_CARD"; chronicleCardId: string | null }
+  | { type: "BEGIN_READING" }
   | {
       type: "CREATION_SUCCESS";
       readingId: string;
       cards: { card: Card; positionName: string }[];
     }
   | { type: "CREATION_ERROR"; error: string }
-  | { type: "CARDS_REVEALED" }
-  | { type: "SET_NARRATION"; text: string }
+  | { type: "START_PRESENTING" }
+  | { type: "ADVANCE_CARD" }
+  | { type: "SHOW_SYNTHESIS" }
   | { type: "COMPLETE" }
+  | { type: "RESTORE_DEFAULTS"; deckIds: string[]; spread: SpreadType | null }
   | { type: "RESET" };
-
-// ── Phase navigation order (setup phases only) ────────────────────────
-
-const SETUP_PHASES: ReadingPhase[] = ["deck", "spread", "intention"];
 
 // ── Initial state ──────────────────────────────────────────────────────
 
 export const initialReadingFlowState: ReadingFlowState = {
-  phase: "deck",
+  phase: "setup",
   selectedDeckId: null,
+  selectedDeckIds: [],
   selectedSpread: null,
   question: "",
   readingId: null,
   drawnCards: [],
   error: null,
-  narrationText: "",
+  activeCardIndex: null,
+  presentingCardIndex: 0,
+  showSynthesis: false,
+  chronicleCardId: null,
 };
 
 // ── Reducer ────────────────────────────────────────────────────────────
@@ -74,32 +83,46 @@ export function readingFlowReducer(
       return {
         ...state,
         selectedDeckId: action.deckId,
-        phase: "spread",
+        selectedDeckIds: [action.deckId],
         error: null,
       };
+
+    case "TOGGLE_DECK": {
+      const current = state.selectedDeckIds;
+      const isSelected = current.includes(action.deckId);
+
+      let next: string[];
+      if (isSelected) {
+        // Don't allow removing the last deck
+        if (current.length <= 1) return state;
+        next = current.filter((id) => id !== action.deckId);
+      } else {
+        next = [...current, action.deckId];
+      }
+
+      return {
+        ...state,
+        selectedDeckIds: next,
+        // Keep selectedDeckId in sync (first deck in array)
+        selectedDeckId: next[0] ?? null,
+        error: null,
+      };
+    }
 
     case "SELECT_SPREAD":
       return {
         ...state,
         selectedSpread: action.spread,
-        phase: "intention",
         error: null,
       };
 
     case "SET_QUESTION":
       return { ...state, question: action.question };
 
-    case "GO_BACK": {
-      const idx = SETUP_PHASES.indexOf(state.phase);
-      if (idx <= 0) return state;
-      return {
-        ...state,
-        phase: SETUP_PHASES[idx - 1],
-        error: null,
-      };
-    }
+    case "SET_CHRONICLE_CARD":
+      return { ...state, chronicleCardId: action.chronicleCardId };
 
-    case "START_CREATING":
+    case "BEGIN_READING":
       return {
         ...state,
         phase: "creating",
@@ -118,21 +141,47 @@ export function readingFlowReducer(
     case "CREATION_ERROR":
       return {
         ...state,
-        phase: "intention",
+        phase: "setup",
         error: action.error,
       };
 
-    case "CARDS_REVEALED":
+    case "START_PRESENTING":
       return {
         ...state,
-        phase: "interpreting",
+        phase: "presenting",
+        presentingCardIndex: 0,
+        activeCardIndex: 0,
+        showSynthesis: false,
       };
 
-    case "SET_NARRATION":
-      return { ...state, narrationText: action.text };
+    case "ADVANCE_CARD": {
+      const nextIndex = state.presentingCardIndex + 1;
+      const maxIndex = state.drawnCards.length - 1;
+      if (nextIndex > maxIndex) return state;
+      return {
+        ...state,
+        presentingCardIndex: nextIndex,
+        activeCardIndex: nextIndex,
+      };
+    }
+
+    case "SHOW_SYNTHESIS":
+      return {
+        ...state,
+        showSynthesis: true,
+        activeCardIndex: null,
+      };
 
     case "COMPLETE":
-      return { ...state, phase: "complete" };
+      return { ...state, phase: "complete", activeCardIndex: null };
+
+    case "RESTORE_DEFAULTS":
+      return {
+        ...state,
+        selectedDeckIds: action.deckIds.length > 0 ? action.deckIds : state.selectedDeckIds,
+        selectedDeckId: action.deckIds.length > 0 ? action.deckIds[0] : state.selectedDeckId,
+        selectedSpread: action.spread ?? state.selectedSpread,
+      };
 
     case "RESET":
       return { ...initialReadingFlowState };
@@ -142,36 +191,20 @@ export function readingFlowReducer(
   }
 }
 
-// ── Zone proportions per phase ─────────────────────────────────────────
-
-export interface ZoneProportions {
-  header: number;
-  content: number;
-  action: number;
-}
-
-export function getZoneProportions(phase: ReadingPhase): ZoneProportions {
-  switch (phase) {
-    case "deck":
-    case "spread":
-    case "intention":
-      return { header: 0.10, content: 0.78, action: 0.12 };
-    case "creating":
-      return { header: 0.25, content: 0.65, action: 0.10 };
-    case "drawing":
-      return { header: 0.08, content: 0.82, action: 0.10 };
-    case "interpreting":
-    case "complete":
-      return { header: 0.06, content: 0.84, action: 0.10 };
-  }
-}
-
 // ── Helpers ─────────────────────────────────────────────────────────────
 
 export function isSetupPhase(phase: ReadingPhase): boolean {
-  return SETUP_PHASES.includes(phase);
+  return phase === "setup";
 }
 
 export function isCardPhase(phase: ReadingPhase): boolean {
-  return phase === "drawing" || phase === "interpreting" || phase === "complete";
+  return (
+    phase === "drawing" ||
+    phase === "presenting" ||
+    phase === "complete"
+  );
+}
+
+export function isPresentingPhase(phase: ReadingPhase): boolean {
+  return phase === "presenting" || phase === "complete";
 }
