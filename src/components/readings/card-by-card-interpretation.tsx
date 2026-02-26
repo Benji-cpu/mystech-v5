@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useMemo } from "react";
+import { useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { RefreshCw, AlertCircle, Sparkles, ChevronRight, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -34,7 +34,7 @@ interface CardByCardInterpretationProps {
   object: PartialReading | undefined;
   isStreaming: boolean;
   presentingCardIndex: number;
-  showSynthesis: boolean;
+  showSynthesis?: boolean;
   drawnCards: { card: Card; positionName: string }[];
   error: unknown;
   onRetry?: () => void;

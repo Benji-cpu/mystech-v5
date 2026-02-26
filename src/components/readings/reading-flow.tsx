@@ -99,7 +99,6 @@ export function ReadingFlow({ decks, userPlan, userRole }: ReadingFlowProps) {
     error,
     activeCardIndex,
     presentingCardIndex,
-    showSynthesis,
     chronicleCardId,
   } = state;
 
@@ -873,11 +872,9 @@ export function ReadingFlow({ decks, userPlan, userRole }: ReadingFlowProps) {
               object={presentation.object}
               isStreaming={presentation.isStreaming}
               presentingCardIndex={presentingCardIndex}
-              showSynthesis={false}
               drawnCards={drawnCards}
               error={presentation.error}
               onRetry={handleReset}
-              onReset={handleReset}
               isCurrentSectionComplete={isCurrentSectionComplete}
               onAdvance={handleAdvanceCard}
               readingId={readingId}
