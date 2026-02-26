@@ -8,7 +8,10 @@ import { Sparkles } from "lucide-react";
 
 export function FloatingOrb() {
   const { state, toggleOrb } = useImmersive();
-  const { isOrbExpanded, currentSection } = state;
+  const { isOrbExpanded, currentSection, focusMode } = state;
+
+  // Hide orb and back pill during focus mode (reading ceremony, chronicle, deck creation, etc.)
+  if (focusMode) return null;
 
   // When inside a section, orb is smaller
   const isInSection = currentSection !== null && currentSection !== "home" && currentSection !== "dashboard";

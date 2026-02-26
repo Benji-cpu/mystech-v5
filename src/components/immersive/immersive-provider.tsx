@@ -22,14 +22,18 @@ interface ImmersiveState {
   backLabel: string | null;
   mood: Mood;
   performanceTier: PerformanceTier;
+  focusMode: boolean;
+  focusTitle: string | null;
+  focusSubtitle: string | null;
 }
 
 type ImmersiveAction =
   | { type: "TOGGLE_ORB" }
   | { type: "CLOSE_ORB" }
-  | { type: "SET_NAV_CONTEXT"; section: string | null; depth: number; backTarget: string | null; backLabel: string | null; mood: Mood }
+  | { type: "SET_NAV_CONTEXT"; section: string | null; depth: number; backTarget: string | null; backLabel: string | null; mood: Mood; focusMode: boolean; focusTitle: string | null; focusSubtitle: string | null }
   | { type: "SET_MOOD"; mood: Mood }
-  | { type: "SET_PERFORMANCE_TIER"; tier: PerformanceTier };
+  | { type: "SET_PERFORMANCE_TIER"; tier: PerformanceTier }
+  | { type: "EXIT_FOCUS_MODE" };
 
 function reducer(state: ImmersiveState, action: ImmersiveAction): ImmersiveState {
   switch (action.type) {
@@ -46,11 +50,16 @@ function reducer(state: ImmersiveState, action: ImmersiveAction): ImmersiveState
         backLabel: action.backLabel,
         mood: action.mood,
         isOrbExpanded: false,
+        focusMode: action.focusMode,
+        focusTitle: action.focusTitle,
+        focusSubtitle: action.focusSubtitle,
       };
     case "SET_MOOD":
       return { ...state, mood: action.mood };
     case "SET_PERFORMANCE_TIER":
       return { ...state, performanceTier: action.tier };
+    case "EXIT_FOCUS_MODE":
+      return { ...state, focusMode: false };
     default:
       return state;
   }
@@ -62,6 +71,7 @@ interface ImmersiveContextValue {
   closeOrb: () => void;
   setMood: (mood: Mood) => void;
   setMoodPreset: (name: MoodPresetName) => void;
+  exitFocusMode: () => void;
   tierConfig: TierConfig;
 }
 
@@ -90,6 +100,9 @@ export function ImmersiveProvider({ children }: { children: ReactNode }) {
     backLabel: initialNav.backLabel,
     mood: getMoodForRoute(pathname),
     performanceTier: "full", // default until client-side detection
+    focusMode: initialNav.focusMode,
+    focusTitle: initialNav.focusTitle,
+    focusSubtitle: initialNav.focusSubtitle,
   });
 
   // Detect performance tier on mount
@@ -108,6 +121,9 @@ export function ImmersiveProvider({ children }: { children: ReactNode }) {
       backTarget: nav.backTarget,
       backLabel: nav.backLabel,
       mood: getMoodForRoute(pathname),
+      focusMode: nav.focusMode,
+      focusTitle: nav.focusTitle,
+      focusSubtitle: nav.focusSubtitle,
     });
   }, [pathname]);
 
@@ -118,12 +134,13 @@ export function ImmersiveProvider({ children }: { children: ReactNode }) {
     const preset = moodPresets[name];
     if (preset) dispatch({ type: "SET_MOOD", mood: preset });
   }, []);
+  const exitFocusMode = useCallback(() => dispatch({ type: "EXIT_FOCUS_MODE" }), []);
 
   const tierConfig = useMemo(() => tierConfigs[state.performanceTier], [state.performanceTier]);
 
   const value = useMemo<ImmersiveContextValue>(
-    () => ({ state, toggleOrb, closeOrb, setMood, setMoodPreset, tierConfig }),
-    [state, toggleOrb, closeOrb, setMood, setMoodPreset, tierConfig]
+    () => ({ state, toggleOrb, closeOrb, setMood, setMoodPreset, exitFocusMode, tierConfig }),
+    [state, toggleOrb, closeOrb, setMood, setMoodPreset, exitFocusMode, tierConfig]
   );
 
   return (

@@ -5,6 +5,7 @@ import { type ReactNode } from "react";
 import { ImmersiveProvider } from "./immersive-provider";
 import { PageTransitionWrapper } from "./page-transition-wrapper";
 import { FloatingOrb } from "./floating-orb";
+import { FocusHeader } from "./focus-header";
 import { PromptFabProvider } from "@/components/admin/prompt-fab";
 
 const AmbientBackground = dynamic(
@@ -43,8 +44,9 @@ export function ImmersiveShell({ children, user }: ImmersiveShellProps) {
           </PageTransitionWrapper>
         </div>
 
-        {/* Navigation: fixed overlay, z-50 */}
+        {/* Navigation: fixed overlay — FloatingOrb (z-50) or FocusHeader (z-40), mutually exclusive */}
         <FloatingOrb />
+        <FocusHeader />
         <PromptFabProvider />
       </div>
     </ImmersiveProvider>
