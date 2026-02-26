@@ -318,6 +318,79 @@ npm run test:e2e:ui  # Playwright with interactive UI
 
 ---
 
+## Dev Server Management
+
+Agents frequently need a running dev server for E2E tests, manual verification, or browser preview. Follow these conventions to avoid orphaned processes and port conflicts.
+
+### Port Convention
+
+| Port | Role | Notes |
+|------|------|-------|
+| 3000 | Canonical | Google OAuth callbacks configured here; Playwright default |
+| 3001 | Fallback 1 | Use when 3000 is occupied |
+| 3002 | Fallback 2 | Use when 3000 and 3001 are occupied |
+
+If all three are taken, ask the user before proceeding.
+
+### Rules
+
+1. **Check before starting** — always probe the port first:
+   ```bash
+   lsof -ti :3000                                                    # PID using the port (empty = free)
+   curl -s -o /dev/null -w '%{http_code}' http://localhost:3000      # 200 = server responding
+   ```
+2. **Reuse existing servers** — if a dev server is already running on the target port, use it. Never kill a server you didn't start.
+3. **Start in background with PID capture**:
+   ```bash
+   npm run dev &                  # starts on 3000 (default)
+   DEV_PID=$!
+   # or for an alternate port:
+   PORT=3001 npm run dev &
+   DEV_PID=$!
+   ```
+4. **Wait for ready** — poll until the server responds before running tests:
+   ```bash
+   for i in {1..30}; do
+     curl -s -o /dev/null -w '%{http_code}' http://localhost:3000 | grep -q '200' && break
+     sleep 1
+   done
+   ```
+5. **Clean up when done** — kill only the server you started, then verify:
+   ```bash
+   kill $DEV_PID
+   lsof -ti :3000  # should be empty
+   ```
+
+### Verification Workflow (7-step)
+
+When an agent needs a dev server, follow this sequence:
+
+1. **CHECK** — `lsof -ti :3000` / `curl` to see if a server is already running
+2. **START** — only if no server found; capture PID
+3. **VERIFY** — poll until the server responds with 200
+4. **USE** — run tests, open browser, etc.
+5. **CHECK LOGS** — if something fails, check the server output
+6. **CLEANUP** — `kill $DEV_PID` (only the server you started)
+7. **REPORT** — confirm port is free with `lsof`
+
+### Auth Constraint
+
+Google OAuth redirect URIs are registered for `localhost:3000` only. On alternate ports (3001/3002), use the dev-only test login endpoint instead:
+
+```
+POST /api/auth/test-login
+```
+
+### Playwright Integration
+
+`playwright.config.ts` reads `process.env.PORT` (default `3000`), so you can run E2E tests on an alternate port:
+
+```bash
+PORT=3001 npm run test:e2e
+```
+
+---
+
 ## Context Management
 
 - If context usage exceeds 60%, inform the user before continuing
