@@ -6,6 +6,26 @@ type FeedOptions = {
   pastDays?: number;
   futureDays?: number;
   limit?: number;
+  maxCelestialEvents?: number;
+  maxPersonalTransits?: number;
+};
+
+// Significance order for celestial events — lower = more significant
+const CELESTIAL_SIGNIFICANCE: Record<string, number> = {
+  solar_eclipse: 0,
+  lunar_eclipse: 0,
+  retrograde_start: 1,
+  retrograde_end: 1,
+  full_moon: 2,
+  new_moon: 2,
+  equinox: 3,
+  solstice: 3,
+  spring_equinox: 3,
+  summer_solstice: 3,
+  autumn_equinox: 3,
+  winter_solstice: 3,
+  first_quarter: 4,
+  last_quarter: 4,
 };
 
 export function buildUnifiedFeed(
@@ -13,7 +33,13 @@ export function buildUnifiedFeed(
   astroProfile: AstrologyProfile | null,
   options?: FeedOptions
 ): ActivityItemWithTemporal[] {
-  const { pastDays = 30, futureDays = 14, limit = 25 } = options ?? {};
+  const {
+    pastDays = 30,
+    futureDays = 14,
+    limit = 25,
+    maxCelestialEvents,
+    maxPersonalTransits,
+  } = options ?? {};
 
   const now = new Date();
   const rangeStart = new Date(now.getTime() - pastDays * 86_400_000);
@@ -21,7 +47,7 @@ export function buildUnifiedFeed(
 
   // 1. Celestial events (universal)
   const celestialEvents = getCelestialEvents(rangeStart, rangeEnd);
-  const celestialItems: ActivityItem[] = celestialEvents.map((evt) => {
+  let celestialItems: ActivityItem[] = celestialEvents.map((evt) => {
     const dateStr = evt.date.toISOString().slice(0, 10);
     return {
       id: `celestial-${evt.type}-${dateStr}`,
@@ -34,6 +60,18 @@ export function buildUnifiedFeed(
       planet: evt.planet,
     };
   });
+
+  // Limit celestial events by significance
+  if (maxCelestialEvents != null && celestialItems.length > maxCelestialEvents) {
+    celestialItems = celestialItems
+      .sort((a, b) => {
+        const sigA = CELESTIAL_SIGNIFICANCE[(a as { eventType: string }).eventType] ?? 5;
+        const sigB = CELESTIAL_SIGNIFICANCE[(b as { eventType: string }).eventType] ?? 5;
+        return sigA - sigB;
+      })
+      .slice(0, maxCelestialEvents)
+      .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+  }
 
   // 2. Personal transits (only if user has astrology profile with positions)
   let transitItems: ActivityItem[] = [];
@@ -57,6 +95,10 @@ export function buildUnifiedFeed(
         significance: t.significance,
       };
     });
+
+    if (maxPersonalTransits != null && transitItems.length > maxPersonalTransits) {
+      transitItems = transitItems.slice(0, maxPersonalTransits);
+    }
   }
 
   // 3. Merge all items
@@ -82,4 +124,25 @@ export function buildUnifiedFeed(
   const merged = [...futureItems, ...pastItems];
 
   return merged.slice(0, limit);
+}
+
+/**
+ * Split feed items into celestial events and user activities.
+ */
+export function splitFeedByCategory(items: ActivityItemWithTemporal[]): {
+  celestial: ActivityItemWithTemporal[];
+  activities: ActivityItemWithTemporal[];
+} {
+  const celestial: ActivityItemWithTemporal[] = [];
+  const activities: ActivityItemWithTemporal[] = [];
+
+  for (const item of items) {
+    if (item.type === "celestial_event" || item.type === "personal_transit") {
+      celestial.push(item);
+    } else {
+      activities.push(item);
+    }
+  }
+
+  return { celestial, activities };
 }

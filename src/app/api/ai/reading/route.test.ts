@@ -54,6 +54,14 @@ vi.mock("@/lib/db/schema", () => ({
   readings: {},
   astrologyProfiles: {},
   readingAstrology: { readingId: "reading_id" },
+  readingJourneyContext: { readingId: "reading_id" },
+  paths: { id: "id", name: "name" },
+  retreats: { id: "id", name: "name" },
+  waypoints: { id: "id", name: "name" },
+}));
+
+vi.mock("@/lib/db/queries-journey", () => ({
+  getCardJourneyHistory: vi.fn(() => []),
 }));
 
 vi.mock("@/lib/ai/gemini", () => ({
@@ -100,6 +108,7 @@ const mockReading = {
   interpretation: null,
   shareToken: null,
   feedback: null,
+  pathId: null,
   createdAt: new Date(),
   updatedAt: new Date(),
 };

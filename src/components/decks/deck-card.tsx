@@ -9,15 +9,30 @@ interface DeckCardProps {
   isAdopted?: boolean;
 }
 
-const statusVariant: Record<string, "default" | "secondary" | "outline"> = {
-  draft: "outline",
-  generating: "secondary",
-  completed: "default",
-};
-
 export function DeckCard({ deck, resumeHref, isAdopted }: DeckCardProps) {
   const isDraft = deck.status === "draft";
   const href = resumeHref ?? `/decks/${deck.id}`;
+
+  // Badge logic — no badge for completed standard decks
+  const badgeContent = isAdopted ? (
+    <Badge variant="secondary" className="text-[10px] bg-black/50 backdrop-blur-sm">
+      <Users className="h-3 w-3 mr-0.5" />
+      Community
+    </Badge>
+  ) : deck.deckType === "chronicle" ? (
+    <Badge variant="outline" className="text-[10px] border-[#c9a94e]/50 text-[#c9a94e] bg-black/50 backdrop-blur-sm">
+      <ScrollText className="h-3 w-3 mr-0.5" />
+      Chronicle
+    </Badge>
+  ) : isDraft ? (
+    <Badge variant="outline" className="text-[10px] border-[#c9a94e]/50 text-[#c9a94e] bg-black/50 backdrop-blur-sm">
+      in progress
+    </Badge>
+  ) : deck.status === "generating" ? (
+    <Badge variant="secondary" className="text-[10px] bg-black/50 backdrop-blur-sm">
+      generating
+    </Badge>
+  ) : null;
 
   return (
     <Link
@@ -38,6 +53,13 @@ export function DeckCard({ deck, resumeHref, isAdopted }: DeckCardProps) {
           </div>
         )}
 
+        {/* Badge overlay — top right */}
+        {badgeContent && (
+          <div className="absolute top-2 right-2 z-10">
+            {badgeContent}
+          </div>
+        )}
+
         {/* Bottom gradient overlay */}
         <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/60 to-transparent" />
 
@@ -52,30 +74,9 @@ export function DeckCard({ deck, resumeHref, isAdopted }: DeckCardProps) {
 
       {/* Info */}
       <div className="p-3">
-        <div className="flex items-start justify-between gap-2">
-          <h3 className="text-sm font-semibold leading-tight line-clamp-1 text-white/90">
-            {deck.title}
-          </h3>
-          {isAdopted ? (
-            <Badge variant="secondary" className="text-[10px] shrink-0">
-              <Users className="h-3 w-3 mr-0.5" />
-              Community
-            </Badge>
-          ) : deck.deckType === "chronicle" ? (
-            <Badge variant="outline" className="text-[10px] shrink-0 border-[#c9a94e]/50 text-[#c9a94e]">
-              <ScrollText className="h-3 w-3 mr-0.5" />
-              Chronicle
-            </Badge>
-          ) : isDraft ? (
-            <Badge variant="outline" className="text-[10px] shrink-0 border-[#c9a94e]/50 text-[#c9a94e]">
-              in progress
-            </Badge>
-          ) : (
-            <Badge variant={statusVariant[deck.status] ?? "outline"} className="text-[10px] shrink-0">
-              {deck.status}
-            </Badge>
-          )}
-        </div>
+        <h3 className="text-sm font-semibold leading-tight line-clamp-2 text-white/90">
+          {deck.title}
+        </h3>
         <p className="mt-1 text-xs text-white/40">
           {isDraft
             ? "Continue creating your deck"

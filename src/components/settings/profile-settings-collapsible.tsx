@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Settings, ChevronDown } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -26,6 +26,8 @@ interface ProfileSettingsCollapsibleProps {
   plan: PlanType;
   readingLength: ReadingLength;
   voicePrefs: VoicePrefs;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   className?: string;
 }
 
@@ -34,20 +36,15 @@ export function ProfileSettingsCollapsible({
   plan,
   readingLength,
   voicePrefs,
+  open: controlledOpen,
+  onOpenChange,
   className,
 }: ProfileSettingsCollapsibleProps) {
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
 
-  // Auto-open if URL has #settings hash (e.g. redirect from /settings)
-  useEffect(() => {
-    if (typeof window !== "undefined" && window.location.hash === "#settings") {
-      setOpen(true);
-      // Scroll the settings section into view after a short delay for animation
-      setTimeout(() => {
-        document.getElementById("settings")?.scrollIntoView({ behavior: "smooth" });
-      }, 300);
-    }
-  }, []);
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
+  const setOpen = isControlled ? (onOpenChange ?? (() => {})) : setInternalOpen;
 
   return (
     <Collapsible open={open} onOpenChange={setOpen} className={className}>

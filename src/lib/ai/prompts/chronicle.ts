@@ -89,10 +89,19 @@ export function buildChronicleConversationContext({
   knowledge,
   recentEntries,
   interests,
+  journeyContext,
 }: {
   knowledge?: ChronicleKnowledge | null;
   recentEntries?: { mood: string | null; themes: string[]; entryDate: string }[];
   interests?: { spiritual: string[]; lifeDomains: string[] } | null;
+  journeyContext?: {
+    pathName: string;
+    retreatName: string;
+    waypointName: string;
+    pathLens: string;
+    retreatLens: string;
+    waypointLens: string;
+  } | null;
 }): string {
   const parts: string[] = [];
 
@@ -125,6 +134,18 @@ export function buildChronicleConversationContext({
     }
   }
 
+  if (journeyContext) {
+    parts.push(
+      `Journey context (ambient — do NOT steer toward these themes unless the seeker raises them naturally):\n` +
+      `The seeker is on the ${journeyContext.pathName} path, in the ${journeyContext.retreatName} retreat, at waypoint: ${journeyContext.waypointName}.\n` +
+      `Path lens: ${journeyContext.pathLens}\n` +
+      `Retreat focus: ${journeyContext.retreatLens}\n` +
+      `Waypoint intention: ${journeyContext.waypointLens}\n` +
+      `If themes of this lens appear in what the seeker shares, explore them gently.\n` +
+      `If they do not arise organically, say nothing about the path.`
+    );
+  }
+
   if (parts.length === 0) return "";
   return `\n--- Seeker Context ---\n${parts.join("\n")}\n--- End Context ---\n`;
 }
@@ -137,6 +158,7 @@ export function buildChronicleCardPrompt({
   knowledge,
   preferences,
   artStyleName,
+  journeyContext,
 }: {
   conversation: { role: string; content: string }[];
   existingCards: { title: string; meaning: string }[];
@@ -146,6 +168,7 @@ export function buildChronicleCardPrompt({
     dismissedCards: { title: string; meaning: string }[];
   };
   artStyleName?: string;
+  journeyContext?: { waypointName: string; waypointLens: string } | null;
 }): string {
   const conversationText = conversation
     .map((m) => `${m.role === "user" ? "Seeker" : "Lyra"}: ${m.content}`)
@@ -199,7 +222,7 @@ The imagePrompt should:
 - Focus on concrete visual subjects
 ${artStyleName ? `- Complement the "${artStyleName}" aesthetic` : ""}
 - Describe ONLY the subject and composition — do NOT describe art technique or style
-
+${journeyContext ? `\nJourney waypoint (if conversation touched on this theme, the card may echo it — but only if organic): "${journeyContext.waypointName}" — ${journeyContext.waypointLens}` : ""}
 Return one card with: title, meaning, guidance, and imagePrompt.`;
 }
 
@@ -211,12 +234,14 @@ export function buildChronicleMiniReadingPrompt({
   knowledge,
   streakCount,
   isPro,
+  journeyContext,
 }: {
   card: { title: string; meaning: string; guidance: string };
   conversation: { role: string; content: string }[];
   knowledge?: ChronicleKnowledge | null;
   streakCount: number;
   isPro: boolean;
+  journeyContext?: { waypointName: string; retreatName: string; waypointLens: string } | null;
 }): string {
   const conversationText = conversation
     .map((m) => `${m.role === "user" ? "Seeker" : "Lyra"}: ${m.content}`)
@@ -224,9 +249,14 @@ export function buildChronicleMiniReadingPrompt({
 
   const depth = isPro ? "3-5 sentences" : "1-2 sentences";
 
-  let journeyContext = "";
+  let knowledgeContext = "";
   if (knowledge?.summary) {
-    journeyContext = `\nBroader journey context:\n${knowledge.summary}\n`;
+    knowledgeContext = `\nBroader journey context:\n${knowledge.summary}\n`;
+  }
+
+  let pathContext = "";
+  if (journeyContext) {
+    pathContext = `\nPath waypoint: "${journeyContext.waypointName}" in ${journeyContext.retreatName}. ${journeyContext.waypointLens}\n`;
   }
 
   return `Today's Chronicle card has been forged:
@@ -236,7 +266,7 @@ Guidance: ${card.guidance}
 
 Today's conversation:
 ${conversationText}
-${journeyContext}
+${knowledgeContext}${pathContext}
 Write a mini-reading (${depth}) connecting today's card to the seeker's journey. Reference specific moments from today's conversation. ${isPro && streakCount > 7 ? "You may reference patterns you've noticed across their Chronicle." : ""}
 
 Speak as Lyra — warm, direct, insightful. No headers or formatting.`;

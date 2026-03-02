@@ -13,6 +13,7 @@ import {
 } from "@/lib/db/queries";
 import { getUserPlanFromRole } from "@/lib/usage";
 import { buildChronicleMiniReadingPrompt } from "@/lib/ai/prompts/chronicle";
+import { getJourneyPosition } from "@/lib/db/queries-journey";
 import { eq } from "drizzle-orm";
 import type { ApiResponse } from "@/types";
 
@@ -77,9 +78,10 @@ export async function POST() {
   const isPro = plan !== "free";
   const model = plan === "free" ? geminiModel : geminiProModel;
 
-  const [knowledge, settings] = await Promise.all([
+  const [knowledge, settings, journeyPosition] = await Promise.all([
     getChronicleKnowledge(user.id),
     getChronicleSettings(deck.id),
+    getJourneyPosition(user.id),
   ]);
 
   const prompt = buildChronicleMiniReadingPrompt({
@@ -88,6 +90,13 @@ export async function POST() {
     knowledge,
     streakCount: settings?.streakCount ?? 0,
     isPro,
+    journeyContext: journeyPosition
+      ? {
+          waypointName: journeyPosition.waypoint.name,
+          retreatName: journeyPosition.retreat.name,
+          waypointLens: journeyPosition.waypoint.waypointLens,
+        }
+      : null,
   });
 
   const entryId = entry.id;

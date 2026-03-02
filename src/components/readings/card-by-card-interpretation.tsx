@@ -6,6 +6,7 @@ import { RefreshCw, AlertCircle, Sparkles, ChevronRight, Eye } from "lucide-reac
 import { Button } from "@/components/ui/button";
 import { LyraSigil } from "@/components/guide/lyra-sigil";
 import Link from "next/link";
+import { ObstacleProposal } from "./obstacle-proposal";
 import type { Card } from "@/types";
 
 // ── Types ──────────────────────────────────────────────────────────────
@@ -47,6 +48,8 @@ interface CardByCardInterpretationProps {
   readingId?: string | null;
   /** Whether the currently presenting card is the last one */
   isLastCard?: boolean;
+  /** Journey path ID — when set, enables obstacle card proposals */
+  journeyPathId?: string;
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────
@@ -78,6 +81,7 @@ export function CardByCardInterpretation({
   onAdvance,
   readingId,
   isLastCard,
+  journeyPathId,
 }: CardByCardInterpretationProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -206,6 +210,9 @@ export function CardByCardInterpretation({
             className="flex flex-col items-center gap-3 pt-6 pb-20"
           >
             <p className="text-sm text-white/40 italic">Your reading is complete.</p>
+            {journeyPathId && readingId && (
+              <ObstacleProposal readingId={readingId} className="w-full max-w-sm" />
+            )}
             <Link
               href={`/readings/${readingId}`}
               className="flex items-center gap-2 px-6 py-2.5 rounded-xl font-medium text-sm bg-gradient-to-r from-[#c9a94e] to-[#b89840] text-[#0a0118] shadow-lg shadow-[#c9a94e]/20 hover:shadow-xl hover:shadow-[#c9a94e]/30 transition-all duration-300"

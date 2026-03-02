@@ -10,6 +10,7 @@ interface ChronicleNudgeProps {
   deckId: string | null;
   completedToday: boolean;
   streakCount: number;
+  waypointName?: string | null;
   className?: string;
 }
 
@@ -18,20 +19,23 @@ export function ChronicleNudge({
   deckId,
   completedToday,
   streakCount,
+  waypointName,
   className,
 }: ChronicleNudgeProps) {
   if (hasChronicle && completedToday) return null;
 
   const href = hasChronicle
-    ? deckId
-      ? `/decks/${deckId}`
-      : "/chronicle/today"
+    ? "/chronicle/today"
     : "/chronicle/setup";
 
   const message = hasChronicle
     ? streakCount > 1
-      ? `${streakCount} day streak — keep it going!`
-      : "Your Chronicle awaits today\u2019s entry."
+      ? waypointName
+        ? `${streakCount} day streak — today: ${waypointName}`
+        : `${streakCount} day streak — keep it going!`
+      : waypointName
+        ? `Your Chronicle awaits — ${waypointName}`
+        : "Your Chronicle awaits today\u2019s entry."
     : "Start a Chronicle — a daily practice of reflection and card creation.";
 
   return (

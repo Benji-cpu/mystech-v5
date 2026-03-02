@@ -68,6 +68,8 @@ function toCard(data: {
     imageUrl: data.cardImageUrl,
     imagePrompt: null,
     imageStatus: (data.cardImageStatus ?? "pending") as CardImageStatus,
+    cardType: 'general' as const,
+    originContext: null,
     createdAt: new Date(),
   };
 }

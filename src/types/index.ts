@@ -41,6 +41,20 @@ export type DeckWithOwner = Deck & {
 // Card types
 export type CardImageStatus = 'pending' | 'generating' | 'completed' | 'failed';
 export type CardFeedbackType = 'loved' | 'dismissed';
+export type CardType = 'general' | 'obstacle' | 'threshold';
+
+export type CardOriginContext = {
+  source: 'retreat_completion' | 'obstacle_detection' | 'chronicle' | 'deck_creation';
+  pathId?: string;
+  pathName?: string;
+  retreatId?: string;
+  retreatName?: string;
+  waypointId?: string;
+  waypointName?: string;
+  detectedPattern?: string;
+  readingIds?: string[];
+  forgedAt?: string;
+};
 
 export type Card = {
   id: string;
@@ -52,6 +66,8 @@ export type Card = {
   imageUrl: string | null;
   imagePrompt: string | null;
   imageStatus: CardImageStatus;
+  cardType: CardType;
+  originContext: CardOriginContext | null;
   createdAt: Date;
 };
 
@@ -79,7 +95,7 @@ export type ArtStyleShare = {
 };
 
 // Reading types
-export type SpreadType = 'single' | 'three_card' | 'five_card' | 'celtic_cross';
+export type SpreadType = 'single' | 'three_card' | 'five_card' | 'celtic_cross' | 'daily';
 export type ReadingLength = 'brief' | 'standard' | 'deep';
 
 export type ReadingFeedback = 'positive' | 'negative';
@@ -364,6 +380,135 @@ export type ChronicleBadgeDefinition = {
   name: string;
   threshold: number; // streak days required
   lyraMessage: string;
+};
+
+// ── Paths / Journey types ──────────────────────────────────────────────
+
+export type PathStatus = 'active' | 'completed' | 'paused';
+
+export type Path = {
+  id: string;
+  name: string;
+  description: string;
+  themes: string[];
+  symbolicVocabulary: string[];
+  interpretiveLens: string;
+  isPreset: boolean;
+  createdBy: string | null;
+  isPublic: boolean;
+  shareToken: string | null;
+  followerCount: number;
+  iconKey: string;
+  sortOrder: number;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type Retreat = {
+  id: string;
+  pathId: string;
+  name: string;
+  description: string;
+  theme: string;
+  sortOrder: number;
+  retreatLens: string;
+  estimatedReadings: number;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type Waypoint = {
+  id: string;
+  retreatId: string;
+  name: string;
+  description: string;
+  sortOrder: number;
+  suggestedIntention: string;
+  waypointLens: string;
+  requiredReadings: number;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type UserPathProgress = {
+  id: string;
+  userId: string;
+  pathId: string;
+  status: PathStatus;
+  currentRetreatId: string | null;
+  currentWaypointId: string | null;
+  startedAt: Date;
+  completedAt: Date | null;
+};
+
+export type UserRetreatProgress = {
+  id: string;
+  userId: string;
+  retreatId: string;
+  pathProgressId: string;
+  status: 'active' | 'completed';
+  readingCount: number;
+  startedAt: Date;
+  completedAt: Date | null;
+  artifactSummary: string | null;
+  artifactThemes: string[];
+  artifactImageUrl: string | null;
+  thresholdCardId: string | null;
+};
+
+export type UserWaypointProgress = {
+  id: string;
+  userId: string;
+  waypointId: string;
+  retreatProgressId: string;
+  status: 'active' | 'completed';
+  readingCount: number;
+  startedAt: Date;
+  completedAt: Date | null;
+};
+
+export type ReadingJourneyContext = {
+  readingId: string;
+  pathId: string;
+  retreatId: string;
+  waypointId: string;
+  pathLensSnapshot: string;
+  retreatLensSnapshot: string;
+  waypointLensSnapshot: string;
+  waypointIntentionSnapshot: string;
+  createdAt: Date;
+};
+
+export type PathWithRetreats = Path & {
+  retreats: (Retreat & { waypoints: Waypoint[] })[];
+};
+
+export type JourneyPosition = {
+  path: Path;
+  retreat: Retreat;
+  waypoint: Waypoint;
+  pathProgress: UserPathProgress;
+  retreatProgress: UserRetreatProgress;
+  waypointProgress: UserWaypointProgress;
+};
+
+export type CardJourneyMemory = {
+  cardTitle: string;
+  retreatName: string;
+  waypointName: string;
+  question: string | null;
+  readingDate: Date;
+};
+
+export type JourneyContextForPrompt = {
+  pathName: string;
+  pathLens: string;
+  retreatName: string;
+  retreatLens: string;
+  waypointName: string;
+  waypointLens: string;
+  suggestedIntention: string;
+  cardsRemember: CardJourneyMemory[];
 };
 
 // Activity feed types

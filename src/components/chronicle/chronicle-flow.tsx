@@ -27,7 +27,7 @@ import { ChronicleDialogue } from './chronicle-dialogue';
 import { CardForgingAnimation } from './card-forging-animation';
 import { OracleCard } from '@/components/cards/oracle-card';
 
-import type { Card, CardImageStatus, ChronicleEntry, ChronicleSettings } from '@/types';
+import type { Card, CardImageStatus, ChronicleEntry, ChronicleSettings, JourneyPosition } from '@/types';
 
 // ── Springs ──────────────────────────────────────────────────────────────
 
@@ -69,6 +69,7 @@ interface ChronicleFlowProps {
   } | null;
   initialPhase: string;
   isFirstEntry?: boolean;
+  journeyPosition: JourneyPosition | null;
 }
 
 // ── ChronicleCard → Card adapter ──────────────────────────────────────────
@@ -84,6 +85,8 @@ function toCard(chronicle: NonNullable<ChronicleFlowProps['todayCard']>): Card {
     imageUrl: chronicle.imageUrl,
     imagePrompt: null,
     imageStatus: chronicle.imageStatus as CardImageStatus,
+    cardType: 'general' as const,
+    originContext: null,
     createdAt: new Date(),
   };
 }
@@ -325,6 +328,7 @@ export function ChronicleFlow({
   todayCard,
   initialPhase,
   isFirstEntry = false,
+  journeyPosition,
 }: ChronicleFlowProps) {
   const immersive = useImmersiveOptional();
   const setMoodPreset = immersive?.setMoodPreset;
@@ -348,13 +352,12 @@ export function ChronicleFlow({
   const [showBadge, setShowBadge] = useState(true);
 
   // Refs for one-shot effects
-  const greetingFired = useRef(false);
   const reflectingFired = useRef(false);
   const forgeFired = useRef(false);
   const readingFired = useRef(false);
   const completeFired = useRef(false);
 
-  const { phase, messages, isStreaming, card, miniReading, streakCount, newBadge, error } = state;
+  const { phase, messages, isStreaming, card, miniReading, streakCount, newBadge, journeyRecorded, error } = state;
 
   const canForge = useMemo(
     () => userMessageCount(messages) >= 2 && !isStreaming,
@@ -401,29 +404,36 @@ export function ChronicleFlow({
   }, [phase, setMoodPreset, exitFocusMode]);
 
   // ── Phase: greeting — push Lyra's greeting message ────────────────────
+  // StrictMode-safe: uses cleanup `cancelled` flag instead of a persistent ref guard
 
   useEffect(() => {
-    if (phase !== 'greeting' || greetingFired.current) return;
-    greetingFired.current = true;
+    if (phase !== 'greeting') return;
+
+    let cancelled = false;
 
     dispatch({ type: 'START_STREAMING' });
 
-    // Simulate typewriter for the greeting
     const greeting = getLyraGreeting();
     let i = 0;
-    const interval = setInterval(() => {
+
+    function tick() {
+      if (cancelled) return;
       if (i < greeting.length) {
         dispatch({ type: 'STREAM_TOKEN', token: greeting[i] });
         i++;
+        setTimeout(tick, 18);
       } else {
-        clearInterval(interval);
         dispatch({ type: 'STREAM_COMPLETE', content: greeting });
-        // Auto-advance to dialogue after short pause
-        setTimeout(() => dispatch({ type: 'GREETING_DONE' }), 600);
+        setTimeout(() => {
+          if (!cancelled) dispatch({ type: 'GREETING_DONE' });
+        }, 600);
       }
-    }, 18);
+    }
 
-    return () => clearInterval(interval);
+    // Small initial delay to let React settle
+    setTimeout(tick, 18);
+
+    return () => { cancelled = true; };
   }, [phase]);
 
   // ── Phase: reflecting — show a brief message then trigger forge ───────
@@ -529,8 +539,9 @@ export function ChronicleFlow({
         if (!data.success) return;
         dispatch({
           type: 'COMPLETE',
-          streakCount: data.data.streak ?? streakCount,
+          streakCount: data.data.streak?.streakCount ?? streakCount,
           newBadge: data.data.newBadge ?? null,
+          journeyRecorded: data.data.journeyRecorded ?? false,
         });
       })
       .catch(() => {
@@ -586,6 +597,19 @@ export function ChronicleFlow({
     dispatch({ type: 'START_REFLECTING' });
   }, [canForge]);
 
+  const handleDeepen = useCallback(() => {
+    if (!card || !journeyPosition) return;
+    try {
+      sessionStorage.setItem('mystech_reading_handoff', JSON.stringify({
+        source: 'chronicle',
+        chronicleCardId: card.id,
+        question: journeyPosition.waypoint.suggestedIntention,
+        deckId,
+      }));
+    } catch { /* sessionStorage unavailable */ }
+    window.location.href = '/readings/new?source=chronicle';
+  }, [card, journeyPosition, deckId]);
+
   // ── Auto-transition: card_reveal → reading ─────────────────────────
 
   useEffect(() => {
@@ -618,7 +642,21 @@ export function ChronicleFlow({
   // ── Render ────────────────────────────────────────────────────────────
 
   return (
-    <div className="-mx-4 sm:-mx-6 lg:-mx-8 -mt-6 h-[100dvh] flex flex-col overflow-hidden">
+    <div className="-mx-4 sm:-mx-6 lg:-mx-8 -mt-6 h-[100dvh] flex flex-col overflow-hidden relative">
+      {/* ── Journey indicator bar ── */}
+      {journeyPosition && (
+        <div className="absolute top-0 left-0 right-0 z-10 px-4 py-1.5 bg-white/5 backdrop-blur-sm border-b border-white/5">
+          <p className="text-[10px] text-[#c9a94e]/70 text-center truncate">
+            {journeyPosition.path.name} &gt; {journeyPosition.retreat.name} · {journeyPosition.waypoint.name}
+            {journeyPosition.waypoint.requiredReadings > 1 && (
+              <span className="text-white/30 ml-1.5">
+                {journeyPosition.waypointProgress.readingCount}/{journeyPosition.waypoint.requiredReadings}
+              </span>
+            )}
+          </p>
+        </div>
+      )}
+
       {/* ── CARD ZONE — always mounted, resizes ── */}
       <motion.div
         layout
@@ -750,6 +788,31 @@ export function ChronicleFlow({
                         : "Your card has been added to your Chronicle."}
                     </p>
                   </GlassPanel>
+
+                  {/* Journey progress notice */}
+                  {journeyRecorded && journeyPosition && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ ...CONTENT_SPRING, delay: 0.6 }}
+                      className="rounded-xl bg-white/5 border border-[#c9a94e]/20 p-3 text-xs text-white/60 text-center"
+                    >
+                      <span className="text-[#c9a94e]">{journeyPosition.waypoint.name}</span> — reading recorded for your journey
+                    </motion.div>
+                  )}
+
+                  {/* Deepen with full reading CTA */}
+                  {journeyPosition && card && (
+                    <motion.button
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ ...CONTENT_SPRING, delay: 0.8 }}
+                      onClick={handleDeepen}
+                      className="w-full py-3 rounded-xl text-sm font-medium border border-white/10 bg-white/5 text-white/70 hover:text-white/90 hover:border-white/20 transition-colors"
+                    >
+                      Deepen with a Full Reading →
+                    </motion.button>
+                  )}
                 </motion.div>
               )}
             </div>

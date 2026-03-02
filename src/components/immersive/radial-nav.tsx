@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Layers, BookOpen, Compass, User } from "lucide-react";
+import { Layers, BookOpen, Map, User } from "lucide-react";
 import Link from "next/link";
 import { useImmersive } from "./immersive-provider";
 import type { LucideIcon } from "lucide-react";
@@ -15,32 +15,32 @@ interface NavItem {
 }
 
 const allItems = {
-  profile: { href: "/profile", label: "Profile", icon: User, section: "profile" },
+  dashboard: { href: "/dashboard", label: "Dashboard", icon: User, section: "dashboard" },
   decks: { href: "/decks", label: "Decks", icon: Layers, section: "decks" },
   readings: { href: "/readings", label: "Readings", icon: BookOpen, section: "readings" },
-  explore: { href: "/explore", label: "Explore", icon: Compass, section: "explore" },
+  paths: { href: "/paths", label: "Paths", icon: Map, section: "paths" },
 };
 
 /**
  * Returns exactly 3 nav items with fixed slot assignments:
  *   Left (-135°): Profile preferred
  *   Center (-90°): Decks/Readings (rotates based on current section)
- *   Right (-45°): Art Styles preferred
+ *   Right (-45°): Paths preferred
  *
  * The current section is excluded, and remaining items fill the 3 slots.
  */
 function getRadialItems(currentSection: string | null): NavItem[] {
-  const pool = [allItems.profile, allItems.decks, allItems.readings, allItems.explore]
+  const pool = [allItems.dashboard, allItems.decks, allItems.readings, allItems.paths]
     .filter(item => item.section !== currentSection);
 
-  // If we filtered nothing (user is on home/dashboard/settings/etc.), drop readings to keep 3
+  // If we filtered nothing (user is on settings/etc.), drop readings to keep 3
   if (pool.length > 3) {
     pool.splice(pool.findIndex(i => i.section === "readings"), 1);
   }
 
   // Assign slots by preference
-  const left = pool.find(i => i.section === "profile") ?? pool[0];
-  const right = pool.find(i => i.section === "explore" && i !== left) ?? pool[pool.length - 1];
+  const left = pool.find(i => i.section === "dashboard") ?? pool[0];
+  const right = pool.find(i => i.section === "paths" && i !== left) ?? pool[pool.length - 1];
   const center = pool.find(i => i !== left && i !== right)!;
 
   return [

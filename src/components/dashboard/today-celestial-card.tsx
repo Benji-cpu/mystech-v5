@@ -1,69 +1,12 @@
 import { cn } from "@/lib/utils";
 import { GlassPanel } from "@/components/ui/glass-panel";
 import type { ZodiacSign } from "@/lib/astrology/birth-chart";
-import { ZODIAC_ELEMENTS, ZODIAC_GLYPHS } from "@/lib/astrology/birth-chart";
-
-const MOON_PHASE_EMOJI: Record<string, string> = {
-  "New Moon": "\u{1F311}",
-  "Waxing Crescent": "\u{1F312}",
-  "First Quarter": "\u{1F313}",
-  "Waxing Gibbous": "\u{1F314}",
-  "Full Moon": "\u{1F315}",
-  "Waning Gibbous": "\u{1F316}",
-  "Last Quarter": "\u{1F317}",
-  "Waning Crescent": "\u{1F318}",
-};
-
-const MOON_TRANSIT_NOTES: Record<string, string> = {
-  Aries: "A bold lunar energy stirs — trust decisive instincts today.",
-  Taurus: "The moon seeks comfort and grounding — savor what nourishes you.",
-  Gemini: "Curiosity hums through the air — follow the thread of new ideas.",
-  Cancer: "Emotional tides run deep — honor what your heart already knows.",
-  Leo: "A warm, expressive moon — let your creative fire speak freely.",
-  Virgo: "Clarity arrives through small details — refine and organize.",
-  Libra: "Harmony calls — relationships and beauty take center stage.",
-  Scorpio: "Hidden truths surface under this intense moon — look beneath.",
-  Sagittarius: "The moon reaches outward — explore, wander, question everything.",
-  Capricorn: "Steady and purposeful energy — build something that lasts.",
-  Aquarius: "An unconventional moon — embrace the spark of originality.",
-  Pisces: "Intuition flows freely — dreams and symbols carry meaning now.",
-};
-
-function getElementAlignment(
-  userSunSign: string,
-  moonSign: string
-): { label: string; note: string } {
-  const userElement = ZODIAC_ELEMENTS[userSunSign as ZodiacSign];
-  const moonElement = ZODIAC_ELEMENTS[moonSign as ZodiacSign];
-  if (!userElement || !moonElement) {
-    return { label: "neutral", note: "" };
-  }
-
-  if (userElement === moonElement) {
-    return {
-      label: "flows with",
-      note: `The ${moonElement} moon flows with your ${userElement} sun — a harmonious day.`,
-    };
-  }
-
-  const complementary: Record<string, string> = {
-    fire: "air",
-    air: "fire",
-    earth: "water",
-    water: "earth",
-  };
-  if (complementary[userElement] === moonElement) {
-    return {
-      label: "supports",
-      note: `The ${moonElement} moon supports your ${userElement} nature — use the momentum.`,
-    };
-  }
-
-  return {
-    label: "contrasts with",
-    note: `The ${moonElement} moon contrasts your ${userElement} sun — creative tension brings insight.`,
-  };
-}
+import {
+  MOON_PHASE_EMOJI,
+  MOON_TRANSIT_NOTES,
+  ZODIAC_GLYPHS,
+  getElementAlignment,
+} from "@/lib/astrology/celestial-text";
 
 interface TodayCelestialCardProps {
   moonPhase: string;

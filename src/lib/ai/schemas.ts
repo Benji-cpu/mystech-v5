@@ -17,6 +17,14 @@ export const generatedCardSchema = z.object({
 });
 
 export const generatedDeckSchema = z.object({
+  deckTitle: z
+    .string()
+    .describe("A short, evocative title for this oracle deck (2-5 words)"),
+  deckDescription: z
+    .string()
+    .describe(
+      "A 1-2 sentence poetic description of this deck's theme and purpose"
+    ),
   cards: z
     .array(generatedCardSchema)
     .describe("Array of generated oracle cards"),

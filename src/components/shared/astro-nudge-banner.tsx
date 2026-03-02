@@ -63,10 +63,10 @@ export function AstroNudgeBanner({ className }: { className?: string }) {
             Add your birth data to unlock astrological insights
           </p>
           <Link
-            href="/profile"
+            href="/dashboard"
             className="shrink-0 flex items-center gap-1 text-xs text-[#c9a94e] hover:text-[#daa520] font-medium transition-colors"
           >
-            Profile
+            Dashboard
             <ArrowRight className="w-3 h-3" />
           </Link>
           <button

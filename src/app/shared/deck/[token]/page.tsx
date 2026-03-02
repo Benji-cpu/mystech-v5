@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { OracleCard } from "@/components/cards/oracle-card";
 import { AdoptDeckButton } from "@/components/shared/adopt-deck-button";
 import type { Metadata } from "next";
-import type { Card, CardImageStatus } from "@/types";
+import type { Card, CardImageStatus, CardType } from "@/types";
 
 export async function generateMetadata({
   params,
@@ -83,6 +83,8 @@ export default async function SharedDeckPage({
             imageUrl: c.imageUrl,
             imagePrompt: c.imagePrompt,
             imageStatus: c.imageStatus as CardImageStatus,
+            cardType: (c.cardType ?? 'general') as CardType,
+            originContext: c.originContext ?? null,
             createdAt: c.createdAt,
           };
 

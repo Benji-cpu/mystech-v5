@@ -3,6 +3,8 @@ import { artStyles, artStyleShares } from "@/lib/db/schema";
 import { requireAuth } from "@/lib/auth/helpers";
 import { eq, or, and } from "drizzle-orm";
 import { SimpleCreateForm } from "@/components/decks/simple-create-form";
+import { GlassPanel } from "@/components/ui/glass-panel";
+import { LYRA_SIMPLE_CREATE } from "@/components/guide/lyra-constants";
 import type { ArtStyle } from "@/types";
 
 export default async function SimpleCreatePage() {
@@ -54,11 +56,21 @@ export default async function SimpleCreatePage() {
 
   return (
     <div className="max-w-2xl mx-auto p-4 pt-24 sm:p-6 sm:pt-24 lg:p-8 lg:pt-24">
-      <SimpleCreateForm
-        presets={presets}
-        customStyles={custom}
-        atLimit={atLimit}
-      />
+      <div className="mb-6 text-center">
+        <h1 className="text-2xl font-semibold text-white/90">
+          {LYRA_SIMPLE_CREATE.pageTitle}
+        </h1>
+        <p className="mt-1 text-white/50 text-sm">
+          {LYRA_SIMPLE_CREATE.pageSubtitle}
+        </p>
+      </div>
+      <GlassPanel className="p-6">
+        <SimpleCreateForm
+          presets={presets}
+          customStyles={custom}
+          atLimit={atLimit}
+        />
+      </GlassPanel>
     </div>
   );
 }

@@ -1,21 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 
 interface GenerateDeckInput {
-  title: string;
-  description: string;
+  vision: string;
   cardCount: number;
   artStyleId: string;
 }
 
 export function useDeckGeneration() {
-  const router = useRouter();
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function generate(input: GenerateDeckInput) {
+  async function generate(
+    input: GenerateDeckInput
+  ): Promise<{ deckId: string; title: string } | null> {
     setIsGenerating(true);
     setError(null);
 
@@ -30,10 +29,10 @@ export function useDeckGeneration() {
       const textJson = await textRes.json();
       if (!textJson.success) {
         setError(textJson.error ?? "Failed to generate deck");
-        return;
+        return null;
       }
 
-      const { deckId } = textJson.data;
+      const { deckId, title } = textJson.data;
 
       // Phase 2: Trigger batch image generation (fire-and-forget)
       fetch("/api/ai/generate-images-batch", {
@@ -42,10 +41,11 @@ export function useDeckGeneration() {
         body: JSON.stringify({ deckId }),
       });
 
-      // Navigate to deck view
-      router.push(`/decks/${deckId}`);
+      // Return data — let the caller control navigation
+      return { deckId, title: title ?? "Your Deck" };
     } catch {
       setError("Something went wrong. Please try again.");
+      return null;
     } finally {
       setIsGenerating(false);
     }

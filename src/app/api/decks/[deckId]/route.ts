@@ -54,6 +54,8 @@ export async function GET(request: NextRequest, { params }: Params) {
       imageUrl: c.imageUrl,
       imagePrompt: c.imagePrompt,
       imageStatus: c.imageStatus as Card["imageStatus"],
+      cardType: (c.cardType ?? 'general') as Card["cardType"],
+      originContext: c.originContext ?? null,
       createdAt: c.createdAt,
     })),
   };

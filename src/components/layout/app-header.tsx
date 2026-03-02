@@ -17,7 +17,7 @@ interface AppHeaderProps {
 export function AppHeader({ user }: AppHeaderProps) {
   return (
     <SiteHeader
-      logoHref="/home"
+      logoHref="/dashboard"
       showLogoOnDesktop={false}
       sidebarContent={<AppSidebar />}
       rightContent={

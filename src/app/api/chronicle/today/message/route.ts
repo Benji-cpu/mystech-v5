@@ -19,6 +19,7 @@ import {
 } from "@/lib/ai/prompts/chronicle";
 import { eq } from "drizzle-orm";
 import { createId } from "@paralleldrive/cuid2";
+import { getJourneyPosition } from "@/lib/db/queries-journey";
 import type { ChronicleConversationMessage } from "@/types";
 
 export const maxDuration = 60;
@@ -107,10 +108,11 @@ export async function POST(request: NextRequest) {
     .where(eq(chronicleEntries.id, entry.id));
 
   // Build context for Lyra
-  const [knowledge, recentEntries, settings] = await Promise.all([
+  const [knowledge, recentEntries, settings, journeyPosition] = await Promise.all([
     getChronicleKnowledge(user.id),
     getRecentChronicleEntries(user.id, 5),
     getChronicleSettings(deck.id),
+    getJourneyPosition(user.id),
   ]);
 
   const contextInjection = buildChronicleConversationContext({
@@ -121,6 +123,16 @@ export async function POST(request: NextRequest) {
       entryDate: e.entryDate,
     })),
     interests: settings?.interests ?? null,
+    journeyContext: journeyPosition
+      ? {
+          pathName: journeyPosition.path.name,
+          retreatName: journeyPosition.retreat.name,
+          waypointName: journeyPosition.waypoint.name,
+          pathLens: journeyPosition.path.interpretiveLens,
+          retreatLens: journeyPosition.retreat.retreatLens,
+          waypointLens: journeyPosition.waypoint.waypointLens,
+        }
+      : null,
   });
 
   // Build messages array for AI

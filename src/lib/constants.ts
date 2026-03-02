@@ -71,6 +71,9 @@ export const SPREAD_POSITIONS: Record<
     { position: 8, name: 'Hopes & Fears' },
     { position: 9, name: 'Final Outcome' },
   ],
+  daily: [
+    { position: 0, name: 'Chronicle' },
+  ],
 };
 
 // Spread layout positions (percentage-based for desktop absolute positioning)
@@ -105,6 +108,9 @@ export const SPREAD_LAYOUT_POSITIONS: Record<
     { x: 75, y: 62 },                 // 7: Environment
     { x: 75, y: 38 },                 // 8: Hopes & Fears
     { x: 75, y: 15 },                 // 9: Final Outcome
+  ],
+  daily: [
+    { x: 50, y: 50 },
   ],
 };
 

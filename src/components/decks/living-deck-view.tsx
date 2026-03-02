@@ -70,6 +70,8 @@ export function LivingDeckView({
       imageUrl: card.imageUrl,
       imagePrompt: null,
       imageStatus: card.imageStatus as CardType["imageStatus"],
+      cardType: 'general' as const,
+      originContext: null,
       createdAt: new Date(card.createdAt),
     };
     setCards((prev) => [newCard, ...prev]);

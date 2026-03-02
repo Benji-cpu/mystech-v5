@@ -40,7 +40,7 @@ export function LyraSigil({
   className,
 }: LyraSigilProps) {
   const dimension = sizeMap[size];
-  const baseRadius = size === "sm" ? 1.5 : size === "md" ? 2 : size === "lg" ? 2.5 : 3.5;
+  const baseRadius = size === "sm" ? 3.5 : size === "md" ? 4.5 : size === "lg" ? 5 : 6;
 
   // Animation configurations based on state
   const getStarAnimation = (index: number, star: (typeof stars)[0]) => {
@@ -72,20 +72,20 @@ export function LyraSigil({
   const getOpacity = () => {
     switch (state) {
       case "dormant":
-        return 0.4;
+        return 0.6;
       case "attentive":
-        return 0.8;
+        return 0.9;
       case "speaking":
         return 1.0;
       default:
-        return 0.4;
+        return 0.6;
     }
   };
 
   const getStarById = (id: string) => stars.find((s) => s.id === id);
 
   return (
-    <div
+    <span
       className={cn(
         "inline-flex items-center justify-center",
         state === "speaking" && "shadow-[0_0_20px_rgba(201,169,78,0.3)]",
@@ -113,8 +113,8 @@ export function LyraSigil({
               y1={fromStar.cy}
               x2={toStar.cx}
               y2={toStar.cy}
-              stroke="rgba(255,255,255,0.15)"
-              strokeWidth="0.5"
+              stroke="rgba(201,169,78,0.3)"
+              strokeWidth="1.5"
             />
           );
         })}
@@ -131,6 +131,6 @@ export function LyraSigil({
           />
         ))}
       </svg>
-    </div>
+    </span>
   );
 }

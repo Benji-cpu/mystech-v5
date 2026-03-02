@@ -1,0 +1,103 @@
+'use client';
+
+import { motion } from 'framer-motion';
+import { cn } from '@/lib/utils';
+import { Compass, Sparkles } from 'lucide-react';
+
+interface JourneyContextBannerProps {
+  pathName: string;
+  retreatName: string;
+  waypointName: string;
+  suggestedIntention: string;
+  waypointIndex?: number;
+  totalWaypoints?: number;
+  className?: string;
+}
+
+export function JourneyContextBanner({
+  pathName,
+  retreatName,
+  waypointName,
+  suggestedIntention,
+  waypointIndex,
+  totalWaypoints,
+  className,
+}: JourneyContextBannerProps) {
+  const hasProgress = waypointIndex !== undefined && totalWaypoints !== undefined;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+      className={cn(
+        'relative overflow-hidden rounded-xl',
+        'bg-white/5 backdrop-blur-xl',
+        'border border-[#c9a94e]/30',
+        'shadow-lg shadow-purple-900/20',
+        'p-4',
+        className
+      )}
+    >
+      {/* Subtle gradient */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[#c9a94e]/5 via-transparent to-purple-500/5 pointer-events-none" />
+
+      <div className="relative z-10">
+        {/* Journey position — prominent display */}
+        <div className="flex items-center gap-2 mb-1">
+          <Compass className="h-4 w-4 text-[color:var(--gold)] shrink-0" />
+          <span className="text-sm font-semibold text-foreground tracking-wide">
+            {pathName} Path
+          </span>
+        </div>
+
+        {/* Breadcrumb position */}
+        <p className="text-xs text-[#c9a94e]/80 font-medium mb-3 ml-6">
+          {retreatName}
+          {hasProgress && (
+            <span className="text-muted-foreground">
+              {' '}&mdash; Step {waypointIndex + 1} of {totalWaypoints}: {waypointName}
+            </span>
+          )}
+          {!hasProgress && (
+            <span className="text-muted-foreground">
+              {' '}&middot; {waypointName}
+            </span>
+          )}
+        </p>
+
+        {/* Progress dots */}
+        {hasProgress && (
+          <div className="flex items-center gap-1.5 ml-6 mb-3">
+            {Array.from({ length: totalWaypoints }).map((_, i) => (
+              <div
+                key={i}
+                className={cn(
+                  'h-1.5 rounded-full transition-all',
+                  i < waypointIndex
+                    ? 'w-4 bg-emerald-500/80'
+                    : i === waypointIndex
+                      ? 'w-6 bg-[#c9a94e]'
+                      : 'w-3 bg-white/15'
+                )}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* The intention IS the question — displayed prominently */}
+        <div className={cn(
+          'flex items-start gap-2.5 px-3 py-2.5',
+          'rounded-lg',
+          'border border-[#c9a94e]/20',
+          'bg-[#c9a94e]/5'
+        )}>
+          <Sparkles className="h-4 w-4 text-[color:var(--gold)] shrink-0 mt-0.5" />
+          <p className="text-sm text-[#c9a94e] italic font-medium leading-relaxed">
+            &ldquo;{suggestedIntention}&rdquo;
+          </p>
+        </div>
+      </div>
+    </motion.div>
+  );
+}

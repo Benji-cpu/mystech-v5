@@ -8,7 +8,6 @@ export default auth;
 export const config = {
   matcher: [
     "/dashboard/:path*",
-    "/home",
     "/profile/:path*",
     "/decks/:path*",
     "/readings/:path*",

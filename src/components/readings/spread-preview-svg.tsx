@@ -30,6 +30,7 @@ const SPREAD_COORDS: Record<SpreadType, { x: number; y: number; rotation?: numbe
     { x: 75, y: 40 },
     { x: 75, y: 20 },
   ],
+  daily: [{ x: 50, y: 50 }],
 };
 
 interface SpreadPreviewSVGProps {

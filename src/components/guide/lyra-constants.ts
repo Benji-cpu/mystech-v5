@@ -91,19 +91,6 @@ export const LYRA_UPGRADE_MESSAGES: Record<
   },
 } as const;
 
-// HOME PAGE
-export const LYRA_HOME = {
-  tagline: "The cards await",
-  prompt: "Where shall we go?",
-  nodes: {
-    chronicle: "Your daily oracle practice",
-    decks: "Your personal oracle decks",
-    readings: "Draw cards and listen",
-    explore: "See what others have created",
-    you: "Your journey so far",
-  },
-} as const;
-
 // READING FLOW STEPS
 export const LYRA_READING_FLOW = {
   deckSelector: {
@@ -144,12 +131,35 @@ export const LYRA_DECK_CREATION = {
 // SIMPLE CREATE FORM
 export const LYRA_SIMPLE_CREATE = {
   pageTitle: "Quick Create",
-  pageSubtitle: "Tell me about the deck you're imagining.",
+  pageSubtitle: "Shape a deck from your imagination.",
+  visionHelper: "This shapes your deck's theme, card meanings, and imagery.",
   submitButton: "Bring It to Life",
   generatingButton: "Shaping the cards...",
   creditPreview: (count: number) =>
-    `This will draw on ${count} card credits and ${count} image credits.`,
+    `This will use ${count} card credits and ${count} image credits.`,
 } as const;
+
+export const LYRA_QUICK_CREATE_PROMPTS = [
+  "A deck inspired by my grandmother's garden...",
+  "Navigating a career crossroads...",
+  "The phases of healing after loss...",
+  "Lessons from the ocean and tides...",
+  "The colors and moods of my childhood home...",
+  "Finding courage during a life transition...",
+  "The wisdom of seasonal changes...",
+  "A journey through my favorite myths...",
+  "The quiet strength in everyday rituals...",
+  "What the stars have been telling me lately...",
+] as const;
+
+// FORGING EXPERIENCE (post-submit ceremony)
+export const LYRA_FORGING_MESSAGES = [
+  "Weaving your vision into the cards...",
+  "The symbols are taking shape...",
+  "Naming what wants to be named...",
+  "Drawing the threads together...",
+  "Almost there...",
+] as const;
 
 // GENERATION PROGRESS
 export const LYRA_GENERATION = {
@@ -173,7 +183,7 @@ export const LYRA_LOADING = {
   newReading: "Preparing the space...",
   decks: "Finding your decks...",
   deckDetail: "Opening the deck...",
-  explore: "Looking around...",
+  paths: "Tracing the journey ahead...",
 } as const;
 
 // DASHBOARD
@@ -189,10 +199,10 @@ export const LYRA_DASHBOARD = {
   },
 } as const;
 
-// EXPLORE
-export const LYRA_EXPLORE = {
+// PATHS
+export const LYRA_PATHS = {
   subtitle:
-    "See what others have created. You might find something that speaks to you.",
+    "Each path is a journey of deepening. Choose the one that calls to you.",
 } as const;
 
 // CELESTIAL PROFILE SETUP
@@ -262,4 +272,42 @@ export function pickGreeting(context: {
     hour < 12 ? "morning" : hour < 17 ? "afternoon" : "evening";
   const arr = LYRA_GREETINGS.returningUser[timeOfDay];
   return arr[hash % arr.length];
+}
+
+const CELESTIAL_GREETING_TEMPLATES = [
+  "The {moonPhase} drifts through {moonSign} today\u2026",
+  "Under tonight's {moonPhase} in {moonSign}\u2026",
+  "{moonPhase} light filters through {moonSign}\u2026",
+  "The moon wears {moonSign}'s colors tonight\u2026",
+] as const;
+
+/**
+ * Pick a Lyra-voiced intro line that acknowledges today's celestial context.
+ * Falls back to pickGreeting when no celestial data is available.
+ */
+export function pickCelestialGreeting(context: {
+  deckCount: number;
+  readingCount: number;
+  moonPhase?: string;
+  moonSign?: string;
+}): string {
+  if (!context.moonPhase || !context.moonSign) {
+    return pickGreeting(context);
+  }
+
+  // First-visit and no-reading users still get their specific greetings
+  if (context.deckCount === 0 || context.readingCount === 0) {
+    return pickGreeting(context);
+  }
+
+  const seed = new Date().toDateString();
+  const hash = Array.from(seed).reduce(
+    (acc, char) => acc + char.charCodeAt(0),
+    0
+  );
+
+  const template = CELESTIAL_GREETING_TEMPLATES[hash % CELESTIAL_GREETING_TEMPLATES.length];
+  return template
+    .replace("{moonPhase}", context.moonPhase)
+    .replace("{moonSign}", context.moonSign);
 }

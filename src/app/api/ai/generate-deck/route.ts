@@ -49,14 +49,18 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { title, description, cardCount, artStyleId, mode, deckId } = body as {
+  const { title, description, vision, cardCount, artStyleId, mode, deckId } = body as {
     title?: string;
     description?: string;
+    vision?: string;
     cardCount?: number;
     artStyleId?: string;
     mode?: "simple" | "journey";
     deckId?: string;
   };
+
+  // Support both new `vision` field and legacy `title`+`description`
+  const resolvedVision = vision || description || "";
 
   // Journey mode: generate draft cards for an existing deck
   if (mode === "journey") {
@@ -193,10 +197,10 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Simple mode (existing behavior)
-  if (!title || !description || !cardCount) {
+  // Simple mode
+  if (!resolvedVision || !cardCount) {
     return NextResponse.json<ApiResponse<never>>(
-      { success: false, error: "title, description, and cardCount are required" },
+      { success: false, error: "vision (or title+description) and cardCount are required" },
       { status: 400 }
     );
   }
@@ -233,12 +237,14 @@ export async function POST(request: NextRequest) {
 
   const preferences = await getUserCardPreferences(user.id);
 
-  const userPrompt = buildDeckGenerationUserPrompt(title, description, cardCount, artStyleName, artStyleDescription, preferences);
+  const userPrompt = buildDeckGenerationUserPrompt(resolvedVision, cardCount, artStyleName, artStyleDescription, preferences);
   const simpleSystemPrompt = await resolvePrompt("DECK_GENERATION_SYSTEM_PROMPT", role);
 
   // Generate card definitions with retries BEFORE creating deck
   // This ensures no orphan decks are created if AI generation fails
   let generatedCards: GeneratedCard[] | undefined;
+  let generatedTitle: string | undefined;
+  let generatedDescription: string | undefined;
   const simpleStart = Date.now();
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
@@ -249,6 +255,8 @@ export async function POST(request: NextRequest) {
         prompt: userPrompt,
       });
       generatedCards = result.object.cards;
+      generatedTitle = result.object.deckTitle;
+      generatedDescription = result.object.deckDescription;
       await logGeneration({
         userId: user.id,
         operationType: "deck_generation",
@@ -295,14 +303,20 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Use AI-generated title, fall back to legacy `title` field for backward compat
+  const deckTitle = generatedTitle || title || "Untitled Deck";
+  // Use AI-generated description, fall back to raw vision for backward compat
+  const deckDescription = generatedDescription || resolvedVision;
+
   // Create deck first, then cards and metadata
   // Note: neon-http driver doesn't support transactions, using sequential inserts
   const [deck] = await db
     .insert(decks)
     .values({
       userId: user.id,
-      title,
-      description,
+      title: deckTitle,
+      description: deckDescription,
+      theme: resolvedVision,
       status: "generating",
       cardCount: generatedCards.length,
       artStyleId: artStyleId ?? null,
@@ -318,6 +332,7 @@ export async function POST(request: NextRequest) {
       guidance: card.guidance,
       imagePrompt: card.imagePrompt,
       imageStatus: "pending",
+      cardType: "general",
     }))
   );
 
@@ -329,8 +344,8 @@ export async function POST(request: NextRequest) {
   // Increment credits for created cards
   await incrementCredits(user.id, plan, generatedCards.length);
 
-  return NextResponse.json<ApiResponse<{ deckId: string }>>(
-    { success: true, data: { deckId: deck.id } },
+  return NextResponse.json<ApiResponse<{ deckId: string; title: string }>>(
+    { success: true, data: { deckId: deck.id, title: deckTitle } },
     { status: 201 }
   );
 }

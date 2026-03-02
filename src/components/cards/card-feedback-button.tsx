@@ -9,6 +9,7 @@ import type { CardFeedbackType } from "@/types";
 interface CardFeedbackButtonProps {
   cardId: string;
   initialFeedback?: CardFeedbackType | null;
+  onFeedbackChange?: (cardId: string, feedback: CardFeedbackType | null) => void;
   size?: "sm" | "md";
   className?: string;
 }
@@ -16,6 +17,7 @@ interface CardFeedbackButtonProps {
 export function CardFeedbackButton({
   cardId,
   initialFeedback = null,
+  onFeedbackChange,
   size = "md",
   className,
 }: CardFeedbackButtonProps) {
@@ -43,6 +45,8 @@ export function CardFeedbackButton({
         if (!res.ok) {
           setFeedback(previous);
           toast.error("Failed to remove feedback");
+        } else {
+          onFeedbackChange?.(cardId, next);
         }
       } else {
         const res = await fetch(`/api/cards/${cardId}/feedback`, {
@@ -53,6 +57,8 @@ export function CardFeedbackButton({
         if (!res.ok) {
           setFeedback(previous);
           toast.error("Failed to save feedback");
+        } else {
+          onFeedbackChange?.(cardId, next);
         }
       }
     } catch {

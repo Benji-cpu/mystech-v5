@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { chronicleEntries, chronicleSettings } from "@/lib/db/schema";
+import { chronicleEntries, chronicleSettings, readings, readingCards } from "@/lib/db/schema";
 import { getCurrentUser } from "@/lib/auth/helpers";
 import {
   getUserChronicleDeck,
@@ -9,6 +9,7 @@ import {
   updateChronicleStreak,
   getUserPlan,
 } from "@/lib/db/queries";
+import { getJourneyPosition, recordJourneyReading } from "@/lib/db/queries-journey";
 import { getUserPlanFromRole } from "@/lib/usage";
 import { extractAndMergeKnowledge } from "@/lib/ai/chronicle-knowledge";
 import { eq } from "drizzle-orm";
@@ -126,6 +127,42 @@ export async function POST() {
     }
   }
 
+  // ── Journey recording (non-fatal) ──────────────────────────
+  let journeyRecorded = false;
+
+  if (entry.cardId) {
+    try {
+      const journeyPosition = await getJourneyPosition(user.id);
+      if (journeyPosition) {
+        // Create a 'daily' reading row as a vehicle for recordJourneyReading.
+        // Filtered out of /readings list by getUserReadingsWithDeck.
+        const [dailyReading] = await db
+          .insert(readings)
+          .values({
+            userId: user.id,
+            deckId: deck.id,
+            spreadType: 'daily',
+            question: journeyPosition.waypoint.suggestedIntention,
+            interpretation: updatedEntry.miniReading,
+          })
+          .returning();
+
+        await db.insert(readingCards).values({
+          readingId: dailyReading.id,
+          position: 0,
+          positionName: 'Chronicle',
+          cardId: entry.cardId,
+        });
+
+        await recordJourneyReading(user.id, dailyReading.id, journeyPosition);
+        journeyRecorded = true;
+      }
+    } catch (err) {
+      console.error('[chronicle/today/complete] journey recording error:', err);
+      // Non-fatal — chronicle completion still succeeds
+    }
+  }
+
   return NextResponse.json<
     ApiResponse<{
       entry: typeof updatedEntry;
@@ -135,6 +172,7 @@ export async function POST() {
         totalEntries: number;
       };
       newBadge: (ChronicleBadgeDefinition & { earnedAt: string }) | null;
+      journeyRecorded: boolean;
     }>
   >({
     success: true,
@@ -148,6 +186,7 @@ export async function POST() {
       newBadge: newBadge
         ? { ...newBadge, earnedAt: new Date().toISOString() }
         : null,
+      journeyRecorded,
     },
   });
 }

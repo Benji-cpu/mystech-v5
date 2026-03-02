@@ -2,13 +2,14 @@ import { getSharedReadingByToken } from "@/lib/db/queries";
 import { notFound } from "next/navigation";
 import { ReviewSpreadLayout } from "@/components/readings/review-spread-layout";
 import type { Metadata } from "next";
-import type { SpreadType, CardImageStatus } from "@/types";
+import type { SpreadType, CardImageStatus, CardType } from "@/types";
 
 const SPREAD_LABELS: Record<SpreadType, string> = {
   single: "Single Card",
   three_card: "Three Card",
   five_card: "Five Card Cross",
   celtic_cross: "Celtic Cross",
+  daily: "Daily Chronicle",
 };
 
 function renderBoldMarkdown(text: string) {
@@ -103,6 +104,8 @@ export default async function SharedReadingPage({
                 imageUrl: rc.card!.imageUrl,
                 imagePrompt: rc.card!.imagePrompt,
                 imageStatus: rc.card!.imageStatus as CardImageStatus,
+                cardType: (rc.card!.cardType ?? 'general') as CardType,
+                originContext: rc.card!.originContext ?? null,
                 createdAt: rc.card!.createdAt,
               },
               positionName: rc.positionName,

@@ -19,31 +19,32 @@ describe("DECK_GENERATION_SYSTEM_PROMPT", () => {
       "image prompt"
     );
   });
+
+  it("mentions generating a deck title", () => {
+    expect(DECK_GENERATION_SYSTEM_PROMPT.toLowerCase()).toContain(
+      "deck title"
+    );
+  });
+
+  it("mentions generating a deck description", () => {
+    expect(DECK_GENERATION_SYSTEM_PROMPT.toLowerCase()).toContain(
+      "description"
+    );
+  });
 });
 
 describe("buildDeckGenerationUserPrompt", () => {
-  it("includes the deck title", () => {
+  it("includes the vision text", () => {
     const result = buildDeckGenerationUserPrompt(
-      "My Cosmic Deck",
-      "A deck about the cosmos",
+      "A deck about the cosmos and stargazing",
       10
     );
-    expect(result).toContain("My Cosmic Deck");
-  });
-
-  it("includes the description", () => {
-    const result = buildDeckGenerationUserPrompt(
-      "Test Deck",
-      "Exploring inner peace",
-      5
-    );
-    expect(result).toContain("Exploring inner peace");
+    expect(result).toContain("A deck about the cosmos and stargazing");
   });
 
   it("includes the card count", () => {
     const result = buildDeckGenerationUserPrompt(
-      "Test Deck",
-      "Some description",
+      "Exploring inner peace",
       7
     );
     expect(result).toContain("7");
@@ -51,17 +52,31 @@ describe("buildDeckGenerationUserPrompt", () => {
 
   it("mentions sequential numbering", () => {
     const result = buildDeckGenerationUserPrompt(
-      "Test",
-      "Description",
+      "Some vision",
       12
     );
     expect(result).toContain("1 to 12");
   });
 
+  it("instructs AI to generate a deck title", () => {
+    const result = buildDeckGenerationUserPrompt(
+      "Healing through nature",
+      5
+    );
+    expect(result.toLowerCase()).toContain("deck title");
+  });
+
+  it("instructs AI to generate a deck description", () => {
+    const result = buildDeckGenerationUserPrompt(
+      "Healing through nature",
+      5
+    );
+    expect(result.toLowerCase()).toContain("description");
+  });
+
   it("includes art style context when provided", () => {
     const result = buildDeckGenerationUserPrompt(
-      "Test Deck",
-      "Description",
+      "Some vision",
       5,
       "Watercolor Dream",
       "Soft watercolor washes with delicate, flowing brushstrokes."
@@ -73,8 +88,7 @@ describe("buildDeckGenerationUserPrompt", () => {
 
   it("uses mystical as default when no art style provided", () => {
     const result = buildDeckGenerationUserPrompt(
-      "Test Deck",
-      "Description",
+      "Some vision",
       5
     );
     expect(result).toContain('"mystical"');

@@ -33,8 +33,8 @@ export function StylePickerGrid({
           className={cn(
             "flex flex-col items-center gap-1.5 rounded-lg p-2 transition-colors",
             selectedStyleId === style.id
-              ? "bg-accent"
-              : "hover:bg-accent/50"
+              ? "bg-[#c9a94e]/10"
+              : "hover:bg-white/5"
           )}
         >
           <StyleThumbnail
@@ -43,7 +43,12 @@ export function StylePickerGrid({
             size="md"
             selected={selectedStyleId === style.id}
           />
-          <span className="text-xs font-medium text-center leading-tight">
+          <span
+            className={cn(
+              "text-xs font-medium text-center leading-tight",
+              selectedStyleId === style.id && "text-[#c9a94e]"
+            )}
+          >
             {style.name}
           </span>
           {!style.isPreset && (
@@ -59,7 +64,7 @@ export function StylePickerGrid({
         <button
           type="button"
           onClick={onCreateCustom}
-          className="flex flex-col items-center gap-1.5 rounded-lg p-2 transition-colors hover:bg-accent/50"
+          className="flex flex-col items-center gap-1.5 rounded-lg p-2 transition-colors hover:bg-white/5"
         >
           <div className="flex h-24 w-24 items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 transition-colors hover:border-[#c9a94e]/50">
             <Plus className="h-8 w-8 text-muted-foreground/50" />

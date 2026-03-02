@@ -31,6 +31,12 @@ export interface ReadingFlowState {
   showSynthesis: boolean;
   /** Chronicle card to include in this reading, if the user has one forged today */
   chronicleCardId: string | null;
+  /** Journey context — set when user is on a Path */
+  journeyPathId: string | null;
+  journeyRetreatId: string | null;
+  journeyWaypointId: string | null;
+  /** The suggested intention from the current waypoint */
+  journeySuggestedIntention: string | null;
 }
 
 // ── Actions ────────────────────────────────────────────────────────────
@@ -41,6 +47,14 @@ export type ReadingFlowAction =
   | { type: "SELECT_SPREAD"; spread: SpreadType }
   | { type: "SET_QUESTION"; question: string }
   | { type: "SET_CHRONICLE_CARD"; chronicleCardId: string | null }
+  | {
+      type: "SET_JOURNEY_CONTEXT";
+      pathId: string;
+      retreatId: string;
+      waypointId: string;
+      suggestedIntention: string;
+    }
+  | { type: "CLEAR_JOURNEY_CONTEXT" }
   | { type: "BEGIN_READING" }
   | {
       type: "CREATION_SUCCESS";
@@ -70,6 +84,10 @@ export const initialReadingFlowState: ReadingFlowState = {
   presentingCardIndex: 0,
   showSynthesis: false,
   chronicleCardId: null,
+  journeyPathId: null,
+  journeyRetreatId: null,
+  journeyWaypointId: null,
+  journeySuggestedIntention: null,
 };
 
 // ── Reducer ────────────────────────────────────────────────────────────
@@ -122,6 +140,26 @@ export function readingFlowReducer(
     case "SET_CHRONICLE_CARD":
       return { ...state, chronicleCardId: action.chronicleCardId };
 
+    case "SET_JOURNEY_CONTEXT":
+      return {
+        ...state,
+        journeyPathId: action.pathId,
+        journeyRetreatId: action.retreatId,
+        journeyWaypointId: action.waypointId,
+        journeySuggestedIntention: action.suggestedIntention,
+        // Auto-fill the reading question from the waypoint's intention
+        question: action.suggestedIntention,
+      };
+
+    case "CLEAR_JOURNEY_CONTEXT":
+      return {
+        ...state,
+        journeyPathId: null,
+        journeyRetreatId: null,
+        journeyWaypointId: null,
+        journeySuggestedIntention: null,
+      };
+
     case "BEGIN_READING":
       return {
         ...state,
@@ -173,7 +211,7 @@ export function readingFlowReducer(
       };
 
     case "COMPLETE":
-      return { ...state, phase: "complete", activeCardIndex: null };
+      return { ...state, phase: "complete" };
 
     case "RESTORE_DEFAULTS":
       return {

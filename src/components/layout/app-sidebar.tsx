@@ -7,20 +7,18 @@ import {
   Layers,
   ScrollText,
   BookOpen,
-  Compass,
   Sparkles,
-  User,
+  Map,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { UsageIndicator } from "@/components/shared/usage-indicator";
 
 const navItems = [
-  { href: "/home", label: "Home", icon: Home },
+  { href: "/dashboard", label: "Dashboard", icon: Home },
   { href: "/decks", label: "My Decks", icon: Layers },
   { href: "/chronicle", label: "Chronicle", icon: ScrollText },
   { href: "/readings", label: "Readings", icon: BookOpen },
-  { href: "/explore", label: "Explore", icon: Compass },
-  { href: "/profile", label: "Dashboard", icon: User },
+  { href: "/paths", label: "Paths", icon: Map },
 ];
 
 interface AppSidebarProps {

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { requireAuth } from "@/lib/auth/helpers";
-import { LyraSigil } from "@/components/guide/lyra-sigil";
+import { Zap, MessageCircle } from "lucide-react";
 import { LYRA_DECK_CREATION } from "@/components/guide/lyra-constants";
 import { AstroNudgeBanner } from "@/components/shared/astro-nudge-banner";
 
@@ -15,10 +15,10 @@ export default async function NewDeckPage() {
         {/* Quick Create */}
         <Link
           href="/decks/new/simple"
-          className="group block rounded-xl border border-border/50 bg-card p-6 transition-all hover:border-[#c9a94e]/30 hover:shadow-lg"
+          className="group block rounded-2xl p-6 transition-all bg-white/5 backdrop-blur-xl border border-white/10 shadow-lg shadow-purple-900/20 hover:border-[#c9a94e]/40 hover:bg-white/10 hover:shadow-[0_0_30px_rgba(201,169,78,0.15)]"
         >
-          <div className="mb-3 rounded-full bg-[#c9a94e]/10 p-3 w-fit">
-            <LyraSigil size="sm" state="dormant" />
+          <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-[#c9a94e]/10 text-[#c9a94e] mb-3">
+            <Zap className="h-7 w-7" />
           </div>
           <h3 className="text-lg font-semibold mb-1">Quick Create</h3>
           <p className="text-sm text-muted-foreground">
@@ -29,10 +29,10 @@ export default async function NewDeckPage() {
         {/* Guided Journey */}
         <Link
           href="/decks/new/journey"
-          className="group block rounded-xl border border-border/50 bg-card p-6 transition-all hover:border-[#c9a94e]/30 hover:shadow-lg"
+          className="group block rounded-2xl p-6 transition-all bg-white/5 backdrop-blur-xl border border-white/10 shadow-lg shadow-purple-900/20 hover:border-[#c9a94e]/40 hover:bg-white/10 hover:shadow-[0_0_30px_rgba(201,169,78,0.15)]"
         >
-          <div className="mb-3 rounded-full bg-[#c9a94e]/10 p-3 w-fit">
-            <LyraSigil size="sm" state="attentive" />
+          <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-[#c9a94e]/10 text-[#c9a94e] mb-3">
+            <MessageCircle className="h-7 w-7" />
           </div>
           <h3 className="text-lg font-semibold mb-1">Guided Journey</h3>
           <p className="text-sm text-muted-foreground">

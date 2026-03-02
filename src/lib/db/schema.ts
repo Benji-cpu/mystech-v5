@@ -157,6 +157,19 @@ export const cards = pgTable(
     imageUrl: text("image_url"),
     imagePrompt: text("image_prompt"),
     imageStatus: text("image_status").notNull().default("pending"),
+    cardType: text("card_type").notNull().default("general"), // "general" | "obstacle" | "threshold"
+    originContext: jsonb("origin_context").$type<{
+      source: 'retreat_completion' | 'obstacle_detection' | 'chronicle' | 'deck_creation';
+      pathId?: string;
+      pathName?: string;
+      retreatId?: string;
+      retreatName?: string;
+      waypointId?: string;
+      waypointName?: string;
+      detectedPattern?: string;
+      readingIds?: string[];
+      forgedAt?: string;
+    }>(),
     chronicleEntryId: text("chronicle_entry_id"), // FK added after chronicleEntries is defined
     createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
@@ -331,6 +344,7 @@ export const readings = pgTable(
     interpretation: text("interpretation"),
     shareToken: text("share_token").unique(),
     feedback: text("feedback"), // 'positive' | 'negative' | null
+    pathId: text("path_id"), // FK to paths — nullable, set when reading is done within a Path
     createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
   },
@@ -454,6 +468,7 @@ export const userProfiles = pgTable("user_profile", {
   voiceId: text("voice_id"),
   contextSummary: text("context_summary"),
   contextVersion: integer("context_version").default(0).notNull(),
+  activePathId: text("active_path_id"), // FK to paths — nullable, user's current journey Path
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
 });
@@ -509,6 +524,177 @@ export const readingAstrology = pgTable("reading_astrology", {
     }[]
   >(),
 
+  createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+});
+
+// ── Paths (Spiritual Journey Framework) ──────────────────────────────
+
+// Path definitions (3 presets initially)
+export const paths = pgTable("path", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => createId()),
+  name: text("name").notNull(),
+  description: text("description").notNull(),
+  themes: jsonb("themes").$type<string[]>().notNull().default([]),
+  symbolicVocabulary: jsonb("symbolic_vocabulary")
+    .$type<string[]>()
+    .notNull()
+    .default([]),
+  interpretiveLens: text("interpretive_lens").notNull(),
+  isPreset: boolean("is_preset").default(false).notNull(),
+  createdBy: text("created_by").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  isPublic: boolean("is_public").default(false).notNull(),
+  shareToken: text("share_token").unique(),
+  followerCount: integer("follower_count").notNull().default(0),
+  iconKey: text("icon_key").notNull().default("sparkles"),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
+});
+
+// Retreats — chapters within a Path
+export const retreats = pgTable(
+  "retreat",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    pathId: text("path_id")
+      .notNull()
+      .references(() => paths.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    description: text("description").notNull(),
+    theme: text("theme").notNull(),
+    sortOrder: integer("sort_order").notNull().default(0),
+    retreatLens: text("retreat_lens").notNull(), // paragraph for AI prompt injection
+    estimatedReadings: integer("estimated_readings").notNull().default(5),
+    createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
+  },
+  (t) => [index("retreat_path_id_idx").on(t.pathId)]
+);
+
+// Waypoints — milestones within a Retreat
+export const waypoints = pgTable(
+  "waypoint",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    retreatId: text("retreat_id")
+      .notNull()
+      .references(() => retreats.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    description: text("description").notNull(),
+    sortOrder: integer("sort_order").notNull().default(0),
+    suggestedIntention: text("suggested_intention").notNull(), // auto-fills reading question
+    waypointLens: text("waypoint_lens").notNull(), // AI prompt context
+    requiredReadings: integer("required_readings").notNull().default(1),
+    createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
+  },
+  (t) => [index("waypoint_retreat_id_idx").on(t.retreatId)]
+);
+
+// User path progress — tracks active Path + position
+export const userPathProgress = pgTable(
+  "user_path_progress",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    pathId: text("path_id")
+      .notNull()
+      .references(() => paths.id, { onDelete: "cascade" }),
+    status: text("status").notNull().default("active"), // "active" | "completed" | "paused"
+    currentRetreatId: text("current_retreat_id"),
+    currentWaypointId: text("current_waypoint_id"),
+    startedAt: timestamp("started_at", { mode: "date" }).defaultNow().notNull(),
+    completedAt: timestamp("completed_at", { mode: "date" }),
+  },
+  (t) => [
+    unique().on(t.userId, t.pathId),
+    index("user_path_progress_user_id_idx").on(t.userId),
+  ]
+);
+
+// User retreat progress — tracks Retreat completion + Artifact
+export const userRetreatProgress = pgTable(
+  "user_retreat_progress",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    retreatId: text("retreat_id")
+      .notNull()
+      .references(() => retreats.id, { onDelete: "cascade" }),
+    pathProgressId: text("path_progress_id")
+      .notNull()
+      .references(() => userPathProgress.id, { onDelete: "cascade" }),
+    status: text("status").notNull().default("active"), // "active" | "completed"
+    readingCount: integer("reading_count").notNull().default(0),
+    startedAt: timestamp("started_at", { mode: "date" }).defaultNow().notNull(),
+    completedAt: timestamp("completed_at", { mode: "date" }),
+    artifactSummary: text("artifact_summary"),
+    artifactThemes: jsonb("artifact_themes").$type<string[]>().default([]),
+    artifactImageUrl: text("artifact_image_url"),
+    thresholdCardId: text("threshold_card_id"), // FK to cards — linked after threshold card is forged
+  },
+  (t) => [
+    unique().on(t.userId, t.retreatId),
+    index("user_retreat_progress_user_id_idx").on(t.userId),
+  ]
+);
+
+// User waypoint progress — tracks Waypoint completion
+export const userWaypointProgress = pgTable(
+  "user_waypoint_progress",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    waypointId: text("waypoint_id")
+      .notNull()
+      .references(() => waypoints.id, { onDelete: "cascade" }),
+    retreatProgressId: text("retreat_progress_id")
+      .notNull()
+      .references(() => userRetreatProgress.id, { onDelete: "cascade" }),
+    status: text("status").notNull().default("active"), // "active" | "completed"
+    readingCount: integer("reading_count").notNull().default(0),
+    nextAvailableAt: timestamp("next_available_at", { mode: "date" }), // daily pacing: locked until this time
+    startedAt: timestamp("started_at", { mode: "date" }).defaultNow().notNull(),
+    completedAt: timestamp("completed_at", { mode: "date" }),
+  },
+  (t) => [
+    unique().on(t.userId, t.waypointId),
+    index("user_waypoint_progress_user_id_idx").on(t.userId),
+  ]
+);
+
+// Reading journey context — snapshots Path/Retreat/Waypoint lens at reading time
+export const readingJourneyContext = pgTable("reading_journey_context", {
+  readingId: text("reading_id")
+    .primaryKey()
+    .references(() => readings.id, { onDelete: "cascade" }),
+  pathId: text("path_id").notNull(),
+  retreatId: text("retreat_id").notNull(),
+  waypointId: text("waypoint_id").notNull(),
+  pathLensSnapshot: text("path_lens_snapshot").notNull(),
+  retreatLensSnapshot: text("retreat_lens_snapshot").notNull(),
+  waypointLensSnapshot: text("waypoint_lens_snapshot").notNull(),
+  waypointIntentionSnapshot: text("waypoint_intention_snapshot").notNull(),
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
 });
 

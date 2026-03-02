@@ -48,11 +48,11 @@ export const PROMPT_REGISTRY: Record<string, PromptRegistryEntry> = {
   DECK_GENERATION_USER_PROMPT: {
     key: "DECK_GENERATION_USER_PROMPT",
     name: "Deck Generation User Prompt",
-    description: "User prompt template for simple mode. Variables: {title}, {description}, {cardCount}, {artStyleName}, {artStyleDescription}",
+    description: "User prompt template for simple mode. Variables: {vision}, {cardCount}, {artStyleName}, {artStyleDescription}",
     category: "deck",
-    defaultValue: buildDeckGenerationUserPrompt("{title}", "{description}", 10, "{artStyleName}", "{artStyleDescription}"),
+    defaultValue: buildDeckGenerationUserPrompt("{vision}", 10, "{artStyleName}", "{artStyleDescription}"),
     isTemplate: true,
-    templateParams: ["title", "description", "cardCount", "artStyleName", "artStyleDescription"],
+    templateParams: ["vision", "cardCount", "artStyleName", "artStyleDescription"],
   },
   JOURNEY_CONVERSATION_SYSTEM_PROMPT: {
     key: "JOURNEY_CONVERSATION_SYSTEM_PROMPT",

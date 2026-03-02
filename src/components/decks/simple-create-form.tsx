@@ -1,19 +1,127 @@
 "use client";
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
+import { useReducer, useState, useEffect, useRef, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { StylePickerGrid } from "@/components/art-styles/style-picker-grid";
 import { MicrophoneButton } from "@/components/voice/microphone-button";
 import { useVoiceInput } from "@/hooks/use-voice-input";
 import { useDeckGeneration } from "@/hooks/use-deck-generation";
+import { GoldButton } from "@/components/ui/gold-button";
+import { SectionHeader } from "@/components/ui/section-header";
 import { cn } from "@/lib/utils";
 import { AlertCircle } from "lucide-react";
-import { LyraSigil } from "@/components/guide/lyra-sigil";
-import { LYRA_SIMPLE_CREATE } from "@/components/guide/lyra-constants";
+import {
+  LYRA_SIMPLE_CREATE,
+  LYRA_QUICK_CREATE_PROMPTS,
+  LYRA_FORGING_MESSAGES,
+} from "@/components/guide/lyra-constants";
+import { AnimatePresence, motion } from "framer-motion";
 import type { ArtStyle } from "@/types";
+
+// ── Spring config ─────────────────────────────────────────────────────────────
+
+const SPRING = { type: "spring" as const, stiffness: 300, damping: 30 };
+
+// ── Constants ─────────────────────────────────────────────────────────────────
+
+// Spiritual numbers: trinity, chakras, zodiac, major arcana
+const CARD_COUNT_PRESETS = [3, 7, 12, 22];
+
+// ── State machine ─────────────────────────────────────────────────────────────
+
+type Phase = "card_count" | "art_style" | "vision" | "forging" | "reveal";
+
+interface WizardState {
+  phase: Phase;
+  cardCount: number;
+  isCustomCount: boolean;
+  customCountInput: string;
+  artStyleId: string;
+  generatedTitle: string | null;
+  generatedDeckId: string | null;
+}
+
+type WizardAction =
+  | { type: "SET_CARD_COUNT"; count: number }
+  | { type: "ENABLE_CUSTOM_COUNT" }
+  | { type: "SET_CUSTOM_INPUT"; value: string }
+  | { type: "DISABLE_CUSTOM_COUNT" }
+  | { type: "SET_ART_STYLE"; styleId: string }
+  | { type: "NEXT" }
+  | { type: "BACK" }
+  | { type: "START_FORGING" }
+  | { type: "FORGE_COMPLETE"; title: string; deckId: string }
+  | { type: "FORGE_ERROR" };
+
+const PHASE_ORDER: Phase[] = ["card_count", "art_style", "vision"];
+
+function reducer(state: WizardState, action: WizardAction): WizardState {
+  switch (action.type) {
+    case "SET_CARD_COUNT":
+      return {
+        ...state,
+        cardCount: action.count,
+        isCustomCount: false,
+        customCountInput: "",
+      };
+
+    case "ENABLE_CUSTOM_COUNT":
+      return { ...state, isCustomCount: true };
+
+    case "SET_CUSTOM_INPUT": {
+      const num = parseInt(action.value, 10);
+      return {
+        ...state,
+        customCountInput: action.value,
+        ...((!isNaN(num) && num >= 1 && num <= 30) ? { cardCount: num } : {}),
+      };
+    }
+
+    case "DISABLE_CUSTOM_COUNT":
+      return {
+        ...state,
+        isCustomCount: false,
+        customCountInput: "",
+        ...(!state.customCountInput || parseInt(state.customCountInput, 10) < 1
+          ? { cardCount: 3 }
+          : {}),
+      };
+
+    case "SET_ART_STYLE":
+      return { ...state, artStyleId: action.styleId };
+
+    case "NEXT": {
+      const i = PHASE_ORDER.indexOf(state.phase);
+      if (i < 0 || i >= PHASE_ORDER.length - 1) return state;
+      return { ...state, phase: PHASE_ORDER[i + 1] };
+    }
+
+    case "BACK": {
+      const i = PHASE_ORDER.indexOf(state.phase);
+      if (i <= 0) return state;
+      return { ...state, phase: PHASE_ORDER[i - 1] };
+    }
+
+    case "START_FORGING":
+      return { ...state, phase: "forging" };
+
+    case "FORGE_COMPLETE":
+      return {
+        ...state,
+        phase: "reveal",
+        generatedTitle: action.title,
+        generatedDeckId: action.deckId,
+      };
+
+    case "FORGE_ERROR":
+      return { ...state, phase: "vision" };
+
+    default:
+      return state;
+  }
+}
+
+// ── Props ─────────────────────────────────────────────────────────────────────
 
 interface SimpleCreateFormProps {
   presets: ArtStyle[];
@@ -21,196 +129,498 @@ interface SimpleCreateFormProps {
   atLimit: boolean;
 }
 
-// Spiritual numbers: trinity, chakras, zodiac, major arcana
-const CARD_COUNT_PRESETS = [3, 7, 12, 22];
+// ── Step indicator ────────────────────────────────────────────────────────────
+
+function StepIndicator({ phase }: { phase: Phase }) {
+  const isForging = phase === "forging" || phase === "reveal";
+  const activeIndex = isForging ? PHASE_ORDER.length : PHASE_ORDER.indexOf(phase);
+  return (
+    <div className="flex items-center justify-center gap-2 py-4">
+      {PHASE_ORDER.map((p, i) => (
+        <motion.div
+          key={p}
+          animate={{
+            width: isForging ? 6 : i === activeIndex ? 20 : 6,
+            height: 6,
+            backgroundColor: isForging
+              ? "rgba(201, 169, 78, 1)"
+              : i === activeIndex
+                ? "rgba(201, 169, 78, 1)"
+                : i < activeIndex
+                  ? "rgba(201, 169, 78, 0.4)"
+                  : "rgba(255, 255, 255, 0.15)",
+            opacity: isForging ? [1, 0.5, 1] : 1,
+          }}
+          transition={
+            isForging
+              ? { opacity: { repeat: Infinity, duration: 2, ease: "easeInOut" }, ...SPRING }
+              : SPRING
+          }
+          className="rounded-full"
+        />
+      ))}
+    </div>
+  );
+}
+
+// ── Content variants ──────────────────────────────────────────────────────────
+
+const contentVariants = {
+  initial: { opacity: 0, y: 16 },
+  animate: { opacity: 1, y: 0, transition: SPRING },
+  exit: { opacity: 0, y: -12, transition: { duration: 0.18 } },
+};
+
+// ── Step: Card Count ──────────────────────────────────────────────────────────
+
+function CardCountStep({
+  cardCount,
+  isCustomCount,
+  customCountInput,
+  dispatch,
+  disabled,
+}: {
+  cardCount: number;
+  isCustomCount: boolean;
+  customCountInput: string;
+  dispatch: React.Dispatch<WizardAction>;
+  disabled: boolean;
+}) {
+  return (
+    <motion.div
+      key="card_count"
+      variants={contentVariants}
+      initial="initial"
+      animate="animate"
+      exit="exit"
+      className="space-y-4"
+    >
+      <SectionHeader>How many cards?</SectionHeader>
+      <div className="flex flex-wrap gap-2">
+        {CARD_COUNT_PRESETS.map((count) => (
+          <button
+            key={count}
+            type="button"
+            onClick={() => dispatch({ type: "SET_CARD_COUNT", count })}
+            disabled={disabled}
+            className={cn(
+              "rounded-xl px-5 py-3 text-sm font-medium transition-colors border min-w-[48px]",
+              !isCustomCount && cardCount === count
+                ? "bg-[#c9a94e]/20 border-[#c9a94e] text-[#c9a94e]"
+                : "bg-white/5 border-white/10 text-white/60 hover:border-white/20 hover:text-white/80"
+            )}
+          >
+            {count}
+          </button>
+        ))}
+        {isCustomCount ? (
+          <input
+            type="number"
+            min={1}
+            max={30}
+            value={customCountInput}
+            onChange={(e) =>
+              dispatch({ type: "SET_CUSTOM_INPUT", value: e.target.value })
+            }
+            onBlur={() => dispatch({ type: "DISABLE_CUSTOM_COUNT" })}
+            disabled={disabled}
+            className="w-20 rounded-xl bg-white/5 border border-white/10 px-3 py-3 text-sm text-white/90 focus:border-[#c9a94e] focus:outline-none"
+            autoFocus
+            placeholder="1-30"
+          />
+        ) : (
+          <button
+            type="button"
+            onClick={() => dispatch({ type: "ENABLE_CUSTOM_COUNT" })}
+            disabled={disabled}
+            className="rounded-xl px-5 py-3 text-sm font-medium transition-colors border bg-white/5 border-white/10 text-white/60 hover:border-white/20 hover:text-white/80"
+          >
+            Custom
+          </button>
+        )}
+      </div>
+    </motion.div>
+  );
+}
+
+// ── Step: Art Style ───────────────────────────────────────────────────────────
+
+function ArtStyleStep({
+  presets,
+  customStyles,
+  artStyleId,
+  onSelect,
+}: {
+  presets: ArtStyle[];
+  customStyles: ArtStyle[];
+  artStyleId: string;
+  onSelect: (id: string) => void;
+}) {
+  return (
+    <motion.div
+      key="art_style"
+      variants={contentVariants}
+      initial="initial"
+      animate="animate"
+      exit="exit"
+      className="space-y-4"
+    >
+      <SectionHeader>Choose an art style</SectionHeader>
+      <StylePickerGrid
+        presets={presets}
+        customStyles={customStyles}
+        selectedStyleId={artStyleId}
+        onSelect={onSelect}
+      />
+    </motion.div>
+  );
+}
+
+// ── Step: Vision ──────────────────────────────────────────────────────────────
+
+function VisionStep({
+  vision,
+  setVision,
+  disabled,
+  visionVoice,
+}: {
+  vision: string;
+  setVision: (v: string) => void;
+  disabled: boolean;
+  visionVoice: ReturnType<typeof useVoiceInput>;
+}) {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [isFocused, setIsFocused] = useState(false);
+  const [placeholderIndex, setPlaceholderIndex] = useState(0);
+
+  const shouldRotate = !isFocused && vision.length === 0;
+  useEffect(() => {
+    if (!shouldRotate) return;
+    const interval = setInterval(() => {
+      setPlaceholderIndex(
+        (prev) => (prev + 1) % LYRA_QUICK_CREATE_PROMPTS.length
+      );
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [shouldRotate]);
+
+  return (
+    <motion.div
+      key="vision"
+      variants={contentVariants}
+      initial="initial"
+      animate="animate"
+      exit="exit"
+      className="space-y-4"
+    >
+      <SectionHeader>Describe your vision</SectionHeader>
+      <p className="text-white/40 text-sm">
+        {LYRA_SIMPLE_CREATE.visionHelper}
+      </p>
+      <div className="relative">
+        <textarea
+          ref={textareaRef}
+          value={vision}
+          onChange={(e) => setVision(e.target.value)}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
+          disabled={disabled}
+          rows={5}
+          maxLength={1000}
+          className="w-full resize-none rounded-xl bg-white/5 border border-white/10 px-4 py-3 pr-14 text-white/90 placeholder-transparent focus:border-[#c9a94e]/50 focus:outline-none focus:ring-1 focus:ring-[#c9a94e]/30 transition-colors"
+        />
+        {/* Rotating placeholder overlay */}
+        {vision.length === 0 && (
+          <div
+            className="pointer-events-none absolute inset-0 flex items-start px-4 py-3 pr-14"
+            onClick={() => textareaRef.current?.focus()}
+          >
+            <AnimatePresence mode="wait">
+              <motion.span
+                key={placeholderIndex}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.4, ease: "easeInOut" }}
+                className="text-white/30 text-sm"
+              >
+                {LYRA_QUICK_CREATE_PROMPTS[placeholderIndex]}
+              </motion.span>
+            </AnimatePresence>
+          </div>
+        )}
+        <div className="absolute right-2 bottom-2">
+          <MicrophoneButton
+            onTranscript={visionVoice.handleTranscript}
+            onListeningChange={visionVoice.handleListeningChange}
+          />
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+// ── View: Forging ────────────────────────────────────────────────────────────
+
+function ForgingView() {
+  const [messageIndex, setMessageIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setMessageIndex((prev) => (prev + 1) % LYRA_FORGING_MESSAGES.length);
+    }, 3500);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <motion.div
+      key="forging"
+      variants={contentVariants}
+      initial="initial"
+      animate="animate"
+      exit="exit"
+      className="flex flex-col items-center justify-center py-12 gap-8"
+    >
+      {/* Pulsing glow ring */}
+      <div className="relative flex items-center justify-center">
+        <motion.div
+          className="h-20 w-20 rounded-full border-2 border-[#c9a94e]/40"
+          animate={{
+            boxShadow: [
+              "0 0 20px rgba(201, 169, 78, 0.15)",
+              "0 0 40px rgba(201, 169, 78, 0.35)",
+              "0 0 20px rgba(201, 169, 78, 0.15)",
+            ],
+            borderColor: [
+              "rgba(201, 169, 78, 0.3)",
+              "rgba(201, 169, 78, 0.6)",
+              "rgba(201, 169, 78, 0.3)",
+            ],
+          }}
+          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <motion.div
+          className="absolute h-10 w-10 rounded-full bg-[#c9a94e]/10"
+          animate={{
+            scale: [1, 1.2, 1],
+            opacity: [0.3, 0.6, 0.3],
+          }}
+          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+        />
+      </div>
+
+      {/* Rotating status text */}
+      <div className="h-6 flex items-center justify-center">
+        <AnimatePresence mode="wait">
+          <motion.p
+            key={messageIndex}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.4, ease: "easeInOut" }}
+            className="text-white/50 text-sm text-center"
+          >
+            {LYRA_FORGING_MESSAGES[messageIndex]}
+          </motion.p>
+        </AnimatePresence>
+      </div>
+    </motion.div>
+  );
+}
+
+// ── View: Reveal ─────────────────────────────────────────────────────────────
+
+function RevealView({ title }: { title: string }) {
+  return (
+    <motion.div
+      key="reveal"
+      variants={contentVariants}
+      initial="initial"
+      animate="animate"
+      exit="exit"
+      className="flex flex-col items-center justify-center py-12 gap-6"
+    >
+      {/* Golden flash ring */}
+      <motion.div
+        className="h-20 w-20 rounded-full border-2 border-[#c9a94e]"
+        initial={{
+          boxShadow: "0 0 60px rgba(201, 169, 78, 0.6)",
+          borderColor: "rgba(201, 169, 78, 0.8)",
+        }}
+        animate={{
+          boxShadow: "0 0 20px rgba(201, 169, 78, 0.15)",
+          borderColor: "rgba(201, 169, 78, 0.3)",
+        }}
+        transition={{ duration: 1.2, ease: "easeOut" }}
+      />
+
+      {/* Title reveal */}
+      <motion.h2
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3, ...SPRING }}
+        className="text-xl font-semibold text-[#c9a94e] text-center px-4"
+      >
+        {title}
+      </motion.h2>
+    </motion.div>
+  );
+}
+
+// ── Main component ────────────────────────────────────────────────────────────
 
 export function SimpleCreateForm({
   presets,
   customStyles,
   atLimit,
 }: SimpleCreateFormProps) {
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [cardCount, setCardCount] = useState(3);
-  const [isCustomCount, setIsCustomCount] = useState(false);
-  const [customCountInput, setCustomCountInput] = useState("");
-  const [artStyleId, setArtStyleId] = useState<string>(presets[0]?.id ?? "");
+  const router = useRouter();
+  const [vision, setVision] = useState("");
 
-  const { generate, isGenerating, error } = useDeckGeneration();
+  const [state, dispatch] = useReducer(reducer, {
+    phase: "card_count",
+    cardCount: 3,
+    isCustomCount: false,
+    customCountInput: "",
+    artStyleId: presets[0]?.id ?? "",
+    generatedTitle: null,
+    generatedDeckId: null,
+  });
 
-  const titleVoice = useVoiceInput({ value: title, onChange: setTitle, maxLength: 100 });
-  const descVoice = useVoiceInput({ value: description, onChange: setDescription, maxLength: 1000 });
+  const { generate, error } = useDeckGeneration();
 
-  const canSubmit =
-    !atLimit &&
-    !isGenerating &&
-    title.trim().length > 0 &&
-    description.trim().length > 0 &&
-    artStyleId;
+  const visionVoice = useVoiceInput({
+    value: vision,
+    onChange: setVision,
+    maxLength: 1000,
+  });
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  const isLastStep = state.phase === "vision";
+  const isForging = state.phase === "forging" || state.phase === "reveal";
+  const canContinue =
+    state.phase === "card_count"
+      ? state.cardCount >= 1 && state.cardCount <= 30
+      : state.phase === "art_style"
+        ? !!state.artStyleId
+        : vision.trim().length > 0;
+
+  const canSubmit = !atLimit && canContinue && isLastStep;
+
+  const handleSubmit = useCallback(async () => {
     if (!canSubmit) return;
+    dispatch({ type: "START_FORGING" });
 
-    await generate({
-      title: title.trim(),
-      description: description.trim(),
-      cardCount,
-      artStyleId,
+    const result = await generate({
+      vision: vision.trim(),
+      cardCount: state.cardCount,
+      artStyleId: state.artStyleId,
     });
-  }
+
+    if (result) {
+      dispatch({ type: "FORGE_COMPLETE", title: result.title, deckId: result.deckId });
+    } else {
+      dispatch({ type: "FORGE_ERROR" });
+    }
+  }, [canSubmit, generate, vision, state.cardCount, state.artStyleId]);
+
+  // Auto-navigate after reveal
+  useEffect(() => {
+    if (state.phase !== "reveal" || !state.generatedDeckId) return;
+    const timeout = setTimeout(() => {
+      router.push(`/decks/${state.generatedDeckId}`);
+    }, 2000);
+    return () => clearTimeout(timeout);
+  }, [state.phase, state.generatedDeckId, router]);
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      {atLimit && (
-        <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/10 p-4 text-sm text-yellow-200">
+    <div className="flex flex-col gap-6">
+      {atLimit && !isForging && (
+        <div className="rounded-2xl border border-yellow-500/30 bg-yellow-500/10 p-4 text-sm text-yellow-200">
           <AlertCircle className="h-4 w-4 inline mr-2" />
-          You&apos;ve reached the free tier limit of 2 decks. Upgrade to Pro for
-          unlimited decks.
+          You&apos;ve reached the free tier limit of 2 decks. Upgrade to Pro
+          for unlimited decks.
         </div>
       )}
 
-      {/* Title */}
-      <div className="space-y-2">
-        <Label htmlFor="title">Deck Name</Label>
-        <div className="flex gap-1 items-center">
-          <Input
-            id="title"
-            placeholder='e.g. "Grandmother&apos;s Garden"'
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            disabled={isGenerating}
-            maxLength={100}
-            className="flex-1"
-          />
-          <MicrophoneButton onTranscript={titleVoice.handleTranscript} onListeningChange={titleVoice.handleListeningChange} />
-        </div>
-      </div>
+      {/* Step indicator */}
+      <StepIndicator phase={state.phase} />
 
-      {/* Description */}
-      <div className="space-y-2">
-        <Label htmlFor="description">Describe your deck theme</Label>
-        <div className="relative">
-          <Textarea
-            id="description"
-            placeholder="A deck inspired by my grandmother's garden and the seasons of life. The flowers, the herbs, the changing light through the year..."
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            disabled={isGenerating}
-            rows={4}
-            maxLength={1000}
-            className="pr-14"
-          />
-          <div className="absolute right-2 bottom-2">
-            <MicrophoneButton onTranscript={descVoice.handleTranscript} onListeningChange={descVoice.handleListeningChange} />
-          </div>
-        </div>
-      </div>
-
-      {/* Card Count */}
-      <div className="space-y-2">
-        <Label>Number of Cards</Label>
-        <div className="flex flex-wrap gap-2">
-          {CARD_COUNT_PRESETS.map((count) => (
-            <button
-              key={count}
-              type="button"
-              onClick={() => {
-                setCardCount(count);
-                setIsCustomCount(false);
-                setCustomCountInput("");
-              }}
-              disabled={isGenerating}
-              className={cn(
-                "rounded-lg px-4 py-2 text-sm font-medium transition-colors border",
-                !isCustomCount && cardCount === count
-                  ? "bg-[#c9a94e]/20 border-[#c9a94e] text-[#c9a94e]"
-                  : "border-border hover:border-[#c9a94e]/30 text-muted-foreground hover:text-foreground"
-              )}
-            >
-              {count}
-            </button>
-          ))}
-          {isCustomCount ? (
-            <Input
-              type="number"
-              min={1}
-              max={30}
-              value={customCountInput}
-              onChange={(e) => {
-                const val = e.target.value;
-                setCustomCountInput(val);
-                const num = parseInt(val, 10);
-                if (!isNaN(num) && num >= 1 && num <= 30) {
-                  setCardCount(num);
-                }
-              }}
-              onBlur={() => {
-                if (!customCountInput || parseInt(customCountInput, 10) < 1) {
-                  setIsCustomCount(false);
-                  setCardCount(3);
-                }
-              }}
-              disabled={isGenerating}
-              className="w-20"
-              autoFocus
-              placeholder="1-30"
+      {/* Step content */}
+      <div>
+        <AnimatePresence mode="wait">
+          {state.phase === "card_count" && (
+            <CardCountStep
+              cardCount={state.cardCount}
+              isCustomCount={state.isCustomCount}
+              customCountInput={state.customCountInput}
+              dispatch={dispatch}
+              disabled={false}
             />
-          ) : (
-            <button
-              type="button"
-              onClick={() => setIsCustomCount(true)}
-              disabled={isGenerating}
-              className="rounded-lg px-4 py-2 text-sm font-medium transition-colors border border-border hover:border-[#c9a94e]/30 text-muted-foreground hover:text-foreground"
-            >
-              Custom
-            </button>
           )}
+
+          {state.phase === "art_style" && (
+            <ArtStyleStep
+              presets={presets}
+              customStyles={customStyles}
+              artStyleId={state.artStyleId}
+              onSelect={(id) => dispatch({ type: "SET_ART_STYLE", styleId: id })}
+            />
+          )}
+
+          {state.phase === "vision" && (
+            <VisionStep
+              vision={vision}
+              setVision={setVision}
+              disabled={false}
+              visionVoice={visionVoice}
+            />
+          )}
+
+          {state.phase === "forging" && <ForgingView />}
+
+          {state.phase === "reveal" && state.generatedTitle && (
+            <RevealView title={state.generatedTitle} />
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* Credit preview (visible on last step) */}
+      {isLastStep && (
+        <div className="text-white/40 text-sm">
+          {LYRA_SIMPLE_CREATE.creditPreview(state.cardCount)}
         </div>
-      </div>
-
-      {/* Art Style */}
-      <div className="space-y-2">
-        <Label>Art Style</Label>
-        <StylePickerGrid
-          presets={presets}
-          customStyles={customStyles}
-          selectedStyleId={artStyleId}
-          onSelect={setArtStyleId}
-        />
-      </div>
-
-      {/* Credit Preview */}
-      <div className="text-sm text-muted-foreground">
-        {LYRA_SIMPLE_CREATE.creditPreview(cardCount)}
-      </div>
+      )}
 
       {/* Error */}
-      {error && (
-        <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">
+      {error && !isForging && (
+        <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">
           {error}
         </div>
       )}
 
-      {/* Submit */}
-      <Button
-        type="submit"
-        size="lg"
-        className="w-full"
-        disabled={!canSubmit}
-      >
-        {isGenerating ? (
-          <>
-            <LyraSigil size="sm" state="speaking" />
-            <span className="ml-2">{LYRA_SIMPLE_CREATE.generatingButton}</span>
-          </>
-        ) : (
-          <>
-            <LyraSigil size="sm" state="attentive" />
-            <span className="ml-2">{LYRA_SIMPLE_CREATE.submitButton}</span>
-          </>
-        )}
-      </Button>
-    </form>
+      {/* Navigation + submit — hidden during forging/reveal */}
+      {!isForging && (
+        <div className="flex gap-3">
+          {state.phase !== "card_count" && (
+            <GoldButton
+              className="px-4 py-3 bg-white/5 !bg-none border border-white/10 text-white/60 !shadow-none hover:text-white/80"
+              onClick={() => dispatch({ type: "BACK" })}
+            >
+              Back
+            </GoldButton>
+          )}
+
+          <GoldButton
+            className="flex-1"
+            disabled={isLastStep ? !canSubmit : !canContinue}
+            onClick={isLastStep ? handleSubmit : () => dispatch({ type: "NEXT" })}
+          >
+            {isLastStep
+              ? LYRA_SIMPLE_CREATE.submitButton
+              : "Continue"}
+          </GoldButton>
+        </div>
+      )}
+    </div>
   );
 }

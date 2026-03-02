@@ -123,7 +123,7 @@ export function ChronicleDialogue({
   }, [messages, miniReading]);
 
   if (messages.length === 0 && !showMiniReading) {
-    return null;
+    return <div className={cn('flex flex-col gap-3 py-2', className)} />;
   }
 
   return (

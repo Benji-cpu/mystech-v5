@@ -10,7 +10,8 @@ import { cn } from "@/lib/utils";
 import { Loader2, AlertCircle, RotateCcw } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CardFeedbackButton } from "@/components/cards/card-feedback-button";
-import type { Card, CardFeedbackType } from "@/types";
+import { CARD_TYPE_CONFIG } from "@/components/cards/card-type-config";
+import type { Card, CardFeedbackType, CardType } from "@/types";
 
 interface CardDetailModalProps {
   card: Card | null;
@@ -18,6 +19,7 @@ interface CardDetailModalProps {
   onOpenChange: (open: boolean) => void;
   onRetryImage?: (cardId: string) => void;
   feedbackMap?: Record<string, CardFeedbackType>;
+  onFeedbackChange?: (cardId: string, feedback: CardFeedbackType | null) => void;
 }
 
 export function CardDetailModal({
@@ -26,6 +28,7 @@ export function CardDetailModal({
   onOpenChange,
   onRetryImage,
   feedbackMap,
+  onFeedbackChange,
 }: CardDetailModalProps) {
   const [isFlipped, setIsFlipped] = useState(false);
 
@@ -37,6 +40,11 @@ export function CardDetailModal({
     }
     onOpenChange(nextOpen);
   };
+
+  const cardType = (card.cardType ?? 'general') as CardType;
+  const typeConfig = CARD_TYPE_CONFIG[cardType];
+  const TypeIcon = typeConfig.icon;
+  const isSpecial = cardType !== 'general';
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -57,8 +65,20 @@ export function CardDetailModal({
             )}
           >
             {/* Front face — image */}
-            <div className="absolute inset-0 rounded-xl overflow-hidden border border-border/50 bg-card shadow-lg [backface-visibility:hidden]">
+            <div className={cn(
+              "absolute inset-0 rounded-xl overflow-hidden border bg-card shadow-lg [backface-visibility:hidden]",
+              typeConfig.borderClass,
+              typeConfig.glowClass,
+            )}>
               <CardImage card={card} onRetryImage={onRetryImage} />
+              {isSpecial && (
+                <div className={cn(
+                  "absolute top-3 left-3 z-10 flex h-7 w-7 items-center justify-center rounded-full",
+                  typeConfig.badgeClass,
+                )}>
+                  <TypeIcon className="h-3.5 w-3.5" />
+                </div>
+              )}
               <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-4 pt-10">
                 <h3 className="text-base font-semibold text-white leading-tight">
                   {card.title}
@@ -67,8 +87,18 @@ export function CardDetailModal({
             </div>
 
             {/* Back face — meaning & guidance */}
-            <div className="absolute inset-0 rounded-xl overflow-hidden border border-border/50 bg-card shadow-lg [backface-visibility:hidden] [transform:rotateY(180deg)]">
+            <div className={cn(
+              "absolute inset-0 rounded-xl overflow-hidden border bg-card shadow-lg [backface-visibility:hidden] [transform:rotateY(180deg)]",
+              typeConfig.borderClass,
+              typeConfig.glowClass,
+            )}>
               <div className="flex flex-col h-full p-5 sm:p-6 overflow-y-auto bg-gradient-to-b from-[#0a0118] to-[#1a0530]">
+                {isSpecial && (
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1 flex items-center gap-1">
+                    <TypeIcon className="h-3 w-3" />
+                    {typeConfig.label}
+                  </p>
+                )}
                 <h3 className="text-lg font-semibold text-[#c9a94e] mb-4">
                   {card.title}
                 </h3>
@@ -88,6 +118,20 @@ export function CardDetailModal({
                     {card.guidance}
                   </p>
                 </div>
+                {card.originContext && (
+                  <div className="mt-3 pt-3 border-t border-white/5">
+                    <p className="text-[10px] uppercase tracking-wider text-white/30 mb-1">
+                      Journey Origin
+                    </p>
+                    <p className="text-xs text-white/50">
+                      {card.originContext.retreatName
+                        ? `Forged during: ${card.originContext.retreatName} retreat`
+                        : card.originContext.source === 'obstacle_detection'
+                          ? `Pattern detected: ${card.originContext.detectedPattern ?? 'recurring card'}`
+                          : 'Earned through practice'}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -103,6 +147,7 @@ export function CardDetailModal({
           <CardFeedbackButton
             cardId={card.id}
             initialFeedback={feedbackMap?.[card.id] ?? null}
+            onFeedbackChange={onFeedbackChange}
           />
         </div>
       </DialogContent>

@@ -7,6 +7,7 @@ import {
   getTodayChronicleCard,
   getChronicleEntries,
 } from "@/lib/db/queries";
+import { getJourneyPosition } from "@/lib/db/queries-journey";
 import { ChronicleFlow } from "@/components/chronicle/chronicle-flow";
 
 export const metadata = {
@@ -22,11 +23,12 @@ export default async function ChronicleTodayPage() {
     redirect("/chronicle/setup");
   }
 
-  const [entry, settings, todayCard, pastEntries] = await Promise.all([
+  const [entry, settings, todayCard, pastEntries, journeyPosition] = await Promise.all([
     getTodayChronicleEntry(user.id!),
     getChronicleSettings(deck.id),
     getTodayChronicleCard(user.id!),
     getChronicleEntries(user.id!, 1),
+    getJourneyPosition(user.id!),
   ]);
 
   // First entry if there are no past completed entries (excluding today's)
@@ -50,6 +52,7 @@ export default async function ChronicleTodayPage() {
       todayCard={todayCard}
       initialPhase={initialPhase}
       isFirstEntry={isFirstEntry}
+      journeyPosition={journeyPosition}
     />
   );
 }

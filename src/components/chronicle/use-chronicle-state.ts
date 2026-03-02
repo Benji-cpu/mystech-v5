@@ -41,6 +41,7 @@ export type ChronicleState = {
   miniReading: string | null;
   streakCount: number;
   newBadge: ChronicleBadgeNotice | null;
+  journeyRecorded: boolean;
   error: string | null;
 };
 
@@ -62,7 +63,7 @@ export type ChronicleAction =
   | { type: 'START_READING' }
   | { type: 'READING_STREAM_TOKEN'; token: string }
   | { type: 'READING_COMPLETE'; miniReading: string }
-  | { type: 'COMPLETE'; streakCount: number; newBadge: ChronicleBadgeNotice | null }
+  | { type: 'COMPLETE'; streakCount: number; newBadge: ChronicleBadgeNotice | null; journeyRecorded?: boolean }
   | { type: 'SKIP_TO_COMPLETE'; streakCount: number }
   | { type: 'SET_ERROR'; error: string }
   | { type: 'RESTORE'; messages: ChronicleMessage[]; card: ChronicleCard | null; miniReading: string | null; phase: ChroniclePhase };
@@ -77,6 +78,7 @@ export const initialChronicleState: ChronicleState = {
   miniReading: null,
   streakCount: 0,
   newBadge: null,
+  journeyRecorded: false,
   error: null,
 };
 
@@ -162,6 +164,7 @@ export function chronicleReducer(
         phase: 'complete',
         streakCount: action.streakCount,
         newBadge: action.newBadge,
+        journeyRecorded: action.journeyRecorded ?? false,
         isStreaming: false,
       };
 

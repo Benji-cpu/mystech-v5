@@ -78,12 +78,12 @@ test.describe("Reading Flow", () => {
     const interpretationHeader = page.getByText(/your reading/i);
     await expect(interpretationHeader).toBeVisible({ timeout: 30_000 });
 
-    // Wait for "Begin Another Reading" — the completion indicator
-    const anotherButton = page.getByRole("button", { name: /begin another reading/i });
-    await expect(anotherButton).toBeVisible({ timeout: 60_000 });
+    // Wait for "View Complete Reading" link — the completion indicator
+    const viewReadingLink = page.getByRole("link", { name: /view complete reading/i });
+    await expect(viewReadingLink).toBeVisible({ timeout: 60_000 });
   });
 
-  test("Begin Another Reading returns to setup", async ({ page }) => {
+  test("View Complete Reading navigates to reading page", async ({ page }) => {
     test.setTimeout(90_000);
 
     await page.goto("/readings/new");
@@ -99,11 +99,64 @@ test.describe("Reading Flow", () => {
     await page.getByRole("button", { name: /begin reading/i }).click();
 
     // Wait for completion
-    const anotherButton = page.getByRole("button", { name: /begin another reading/i });
-    await expect(anotherButton).toBeVisible({ timeout: 60_000 });
+    const viewReadingLink = page.getByRole("link", { name: /view complete reading/i });
+    await expect(viewReadingLink).toBeVisible({ timeout: 60_000 });
 
-    // Click and verify we're back in setup
-    await anotherButton.click();
-    await expect(page.getByText(/what guidance do you seek/i)).toBeVisible({ timeout: 5000 });
+    // Click and verify navigation to reading detail page
+    await viewReadingLink.click();
+    await expect(page).toHaveURL(/\/readings\/[a-zA-Z0-9-]+$/, { timeout: 5000 });
+  });
+
+  test("Celtic Cross reading completes without timeout", async ({ page }) => {
+    test.setTimeout(120_000);
+
+    await page.goto("/readings/new");
+    await page.waitForTimeout(1000);
+
+    const deckButtons = page.locator("button").filter({ hasText: /cards$/ });
+    if ((await deckButtons.count()) === 0) {
+      test.skip(true, "No decks available");
+      return;
+    }
+    await deckButtons.first().click();
+
+    // Select Celtic Cross spread (requires pro or admin)
+    const celticCross = page.getByRole("button", { name: /celtic cross/i }).first();
+    const celticVisible = await celticCross.isVisible().catch(() => false);
+    if (!celticVisible) {
+      test.skip(true, "Celtic Cross not available (likely free tier)");
+      return;
+    }
+
+    // Check if it's disabled (locked for free users)
+    const isDisabled = await celticCross.isDisabled().catch(() => false);
+    if (isDisabled) {
+      test.skip(true, "Celtic Cross locked for this user");
+      return;
+    }
+
+    await celticCross.click();
+
+    const beginButton = page.getByRole("button", { name: /begin reading/i });
+    await expect(beginButton).toBeEnabled();
+
+    const startTime = Date.now();
+    await beginButton.click();
+
+    // Setup should collapse
+    await expect(beginButton).not.toBeVisible({ timeout: 5000 });
+
+    // Should NOT see timeout error
+    const timeoutError = page.getByText(/timed out/i);
+
+    // Wait for "Next Card" button — first card revealed
+    const nextCardButton = page.getByRole("button", { name: /next card/i });
+    await expect(nextCardButton).toBeVisible({ timeout: 60_000 });
+
+    // Verify no timeout occurred
+    await expect(timeoutError).not.toBeVisible();
+
+    const elapsed = Date.now() - startTime;
+    console.log(`[Celtic Cross timing] First card ready in ${elapsed}ms`);
   });
 });

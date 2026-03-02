@@ -58,26 +58,38 @@ export function DeckHeader({ deck, artStyleName, shareToken, isAdopter, ownerNam
               isAdopted
             />
           ) : (
-            <>
-              {deck.status === "completed" && (
+            deck.status === "completed" && (
+              <>
                 <ShareButton
                   shareEndpoint={`/api/decks/${deck.id}/share`}
                   revokeEndpoint={`/api/decks/${deck.id}/share`}
                   contentType="deck"
                   existingShareToken={shareToken}
                 />
-              )}
-              <Button variant="outline" size="sm" asChild>
-                <Link href={`/decks/${deck.id}/edit`}>
-                  <Pencil className="h-4 w-4 mr-1" />
-                  Edit
-                </Link>
-              </Button>
-              <DeleteDeckButton deckId={deck.id} deckTitle={deck.title} />
-            </>
+                <Button variant="outline" size="sm" asChild>
+                  <Link href={`/decks/${deck.id}/edit`}>
+                    <Pencil className="h-4 w-4 mr-1" />
+                    Edit
+                  </Link>
+                </Button>
+                <DeleteDeckButton deckId={deck.id} deckTitle={deck.title} />
+              </>
+            )
           )}
         </div>
       </div>
+
+      {deck.theme && (
+        <div className="mt-4 border-t border-white/5 pt-4">
+          <p className="text-xs uppercase tracking-wider text-white/30 mb-1">Seed</p>
+          <p className="text-sm text-white/40 italic leading-relaxed">
+            &ldquo;{deck.theme}&rdquo;
+          </p>
+          {artStyleName && (
+            <p className="text-xs text-white/25 mt-1">{artStyleName}</p>
+          )}
+        </div>
+      )}
     </GlassPanel>
   );
 }

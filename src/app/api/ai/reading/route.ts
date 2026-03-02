@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { streamObject } from "ai";
 import { db } from "@/lib/db";
-import { readings, astrologyProfiles, readingAstrology } from "@/lib/db/schema";
+import { readings, astrologyProfiles, readingAstrology, readingJourneyContext } from "@/lib/db/schema";
 import { getCurrentUser } from "@/lib/auth/helpers";
 import { geminiFreeModel, geminiProModel } from "@/lib/ai/gemini";
 import { logGeneration } from "@/lib/ai/logging";
@@ -11,6 +11,7 @@ import {
   getReadingCardsWithData,
   getUserReadingContext,
 } from "@/lib/db/queries";
+import { getCardJourneyHistory } from "@/lib/db/queries-journey";
 import { maybeCompressUserContext } from "@/lib/ai/context-compression";
 import { getCurrentCelestialContext } from "@/lib/astrology/birth-chart";
 import {
@@ -19,17 +20,22 @@ import {
   ReadingInterpretationSchema,
   STRUCTURE_TARGETS,
 } from "@/lib/ai/prompts/reading-interpretation";
-import type { SpreadType, AstrologicalReadingContext } from "@/types";
+import type { SpreadType, AstrologicalReadingContext, JourneyContextForPrompt } from "@/types";
 
 export const maxDuration = 60;
 
 export async function POST(request: NextRequest) {
+  const isDev = process.env.NODE_ENV === "development";
+  const t0 = isDev ? Date.now() : 0;
+  const mark = (label: string) => isDev && console.log(`[ai/reading POST] +${Date.now() - t0}ms ${label}`);
+
   const user = await getCurrentUser();
   if (!user?.id) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,
     });
   }
+  mark("auth");
 
   const body = await request.json();
   const { readingId } = body as { readingId?: string };
@@ -48,6 +54,7 @@ export async function POST(request: NextRequest) {
     getUserReadingContext(user.id),
     db.select().from(astrologyProfiles).where(eq(astrologyProfiles.userId, user.id)),
   ]);
+  mark("parallel queries");
 
   if (!reading) {
     return new Response(JSON.stringify({ error: "Reading not found" }), {
@@ -62,6 +69,7 @@ export async function POST(request: NextRequest) {
       title: rc.card!.title,
       meaning: rc.card!.meaning,
       guidance: rc.card!.guidance,
+      cardType: (rc.card!.cardType ?? 'general') as 'general' | 'obstacle' | 'threshold',
     }));
 
   if (cardsForPrompt.length === 0) {
@@ -90,6 +98,49 @@ export async function POST(request: NextRequest) {
     };
   }
 
+  // Build journey context if this reading has a journey context snapshot
+  let journeyContext: JourneyContextForPrompt | undefined;
+  const [journeyContextRow] = await db
+    .select()
+    .from(readingJourneyContext)
+    .where(eq(readingJourneyContext.readingId, readingId));
+
+  if (journeyContextRow) {
+    // Get card IDs for "Cards Remember" lookup
+    const cardIds = cardsWithData
+      .map((rc) => rc.cardId)
+      .filter((id): id is string => id !== null);
+
+    const cardsRemember = await getCardJourneyHistory(
+      user.id,
+      cardIds,
+      readingId,
+      journeyContextRow.retreatId
+    );
+
+    journeyContext = {
+      pathName: "", // We'll use the snapshot lens text directly
+      pathLens: journeyContextRow.pathLensSnapshot,
+      retreatName: "", // Filled from snapshot context below
+      retreatLens: journeyContextRow.retreatLensSnapshot,
+      waypointName: "",
+      waypointLens: journeyContextRow.waypointLensSnapshot,
+      suggestedIntention: journeyContextRow.waypointIntentionSnapshot,
+      cardsRemember,
+    };
+
+    // Fetch the actual names for display in the prompt
+    const { paths, retreats, waypoints } = await import("@/lib/db/schema");
+    const [pathRow, retreatRow, waypointRow] = await Promise.all([
+      db.select({ name: paths.name }).from(paths).where(eq(paths.id, journeyContextRow.pathId)).then((r) => r[0]),
+      db.select({ name: retreats.name }).from(retreats).where(eq(retreats.id, journeyContextRow.retreatId)).then((r) => r[0]),
+      db.select({ name: waypoints.name }).from(waypoints).where(eq(waypoints.id, journeyContextRow.waypointId)).then((r) => r[0]),
+    ]);
+    journeyContext.pathName = pathRow?.name ?? "Unknown Path";
+    journeyContext.retreatName = retreatRow?.name ?? "Unknown Retreat";
+    journeyContext.waypointName = waypointRow?.name ?? "Unknown Waypoint";
+  }
+
   const prompt = buildReadingInterpretationPrompt({
     spreadType,
     question: reading.question,
@@ -97,14 +148,17 @@ export async function POST(request: NextRequest) {
     userContext,
     readingLength,
     astroContext,
+    journeyContext,
   });
   const { maxTokens } = STRUCTURE_TARGETS[readingLength][spreadType];
+  mark("prompt built");
 
   const role = (user as { role?: string }).role ?? "user";
   const model = role === "admin" ? geminiProModel : geminiFreeModel;
   const readingStart = Date.now();
   const readingSystemPrompt = buildReadingSystemPrompt(readingLength);
 
+  mark("stream start");
   const result = streamObject({
     model,
     schema: ReadingInterpretationSchema,

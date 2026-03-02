@@ -56,6 +56,8 @@ describe("generatedCardSchema", () => {
 
 describe("generatedDeckSchema", () => {
   const validDeck = {
+    deckTitle: "Mystic Wanderer",
+    deckDescription: "A deck exploring the journey of self-discovery and inner strength.",
     cards: [
       {
         cardNumber: 1,
@@ -80,7 +82,11 @@ describe("generatedDeckSchema", () => {
   });
 
   it("accepts an empty cards array", () => {
-    const result = generatedDeckSchema.safeParse({ cards: [] });
+    const result = generatedDeckSchema.safeParse({
+      deckTitle: "Test",
+      deckDescription: "A test deck.",
+      cards: [],
+    });
     expect(result.success).toBe(true);
   });
 
@@ -91,7 +97,17 @@ describe("generatedDeckSchema", () => {
 
   it("rejects if a card is invalid", () => {
     const result = generatedDeckSchema.safeParse({
+      deckTitle: "Test",
+      deckDescription: "A test deck.",
       cards: [{ cardNumber: 1, title: "Incomplete" }],
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects missing deckDescription", () => {
+    const result = generatedDeckSchema.safeParse({
+      deckTitle: "Test",
+      cards: [],
     });
     expect(result.success).toBe(false);
   });

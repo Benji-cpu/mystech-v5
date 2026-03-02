@@ -1,5 +1,6 @@
 import { z } from "zod";
-import type { SpreadType, ReadingLength, AstrologicalReadingContext } from "@/types";
+import type { SpreadType, ReadingLength, AstrologicalReadingContext, JourneyContextForPrompt } from "@/types";
+import { buildJourneyContextSection } from "./journey-context";
 
 // ── Zod schema for structured interpretation (streamObject) ───────────
 
@@ -84,7 +85,11 @@ Formatting rules (CRITICAL — follow exactly):
 - Do NOT use bullet points or numbered lists
 - Do NOT use horizontal rules or dividers
 - Keep each card section focused on that card's position and meaning
-- The synthesis should weave all cards together into a cohesive narrative`;
+- The synthesis should weave all cards together into a cohesive narrative
+
+Card type awareness:
+- When a card is marked OBSTACLE: treat it as a mirror showing a pattern the seeker circles around. Speak with compassion but directness about what this pattern teaches.
+- When a card is marked THRESHOLD: honor it as a milestone earned through practice. Reference the passage it represents and speak with reverence for the journey it commemorates.`;
 }
 
 // Backward-compat: default to brief
@@ -98,18 +103,21 @@ export const STRUCTURE_TARGETS: Record<ReadingLength, Record<SpreadType, { parag
     three_card:   { paragraphs: 2, maxTokens: 1200 },
     five_card:    { paragraphs: 3, maxTokens: 2000 },
     celtic_cross: { paragraphs: 4, maxTokens: 4000 },
+    daily:        { paragraphs: 1, maxTokens: 600 },
   },
   standard: {
     single:       { paragraphs: 2, maxTokens: 1000 },
     three_card:   { paragraphs: 3, maxTokens: 2000 },
     five_card:    { paragraphs: 5, maxTokens: 3500 },
     celtic_cross: { paragraphs: 7, maxTokens: 6000 },
+    daily:        { paragraphs: 2, maxTokens: 1000 },
   },
   deep: {
     single:       { paragraphs: 3, maxTokens: 1500 },
     three_card:   { paragraphs: 5, maxTokens: 3000 },
     five_card:    { paragraphs: 7, maxTokens: 5000 },
     celtic_cross: { paragraphs: 10, maxTokens: 8000 },
+    daily:        { paragraphs: 3, maxTokens: 1500 },
   },
 };
 
@@ -118,6 +126,7 @@ type ReadingCard = {
   title: string;
   meaning: string;
   guidance: string;
+  cardType?: 'general' | 'obstacle' | 'threshold';
 };
 
 export type UserReadingContext = {
@@ -138,6 +147,7 @@ export function buildReadingInterpretationPrompt({
   readingLength = 'brief',
   astroContext,
   chronicleContext,
+  journeyContext,
 }: {
   spreadType: SpreadType;
   question: string | null;
@@ -151,16 +161,22 @@ export function buildReadingInterpretationPrompt({
     entryDate: string;
     knowledgeSummary: string | null;
   };
+  journeyContext?: JourneyContextForPrompt;
 }): string {
   const questionSection = question
     ? `The seeker's question: "${question}"`
     : "The seeker has not asked a specific question. Provide general life guidance based on the cards drawn.";
 
   const cardsSection = cards
-    .map(
-      (c) =>
-        `Position: ${c.positionName}\nCard: ${c.title}\nMeaning: ${c.meaning}\nGuidance: ${c.guidance}`
-    )
+    .map((c) => {
+      const typeAnnotation =
+        c.cardType === 'obstacle'
+          ? '\nCard Type: OBSTACLE — forged from a recurring pattern'
+          : c.cardType === 'threshold'
+            ? '\nCard Type: THRESHOLD — earned through retreat completion'
+            : '';
+      return `Position: ${c.positionName}\nCard: ${c.title}${typeAnnotation}\nMeaning: ${c.meaning}\nGuidance: ${c.guidance}`;
+    })
     .join("\n\n");
 
   const { paragraphs } = STRUCTURE_TARGETS[readingLength][spreadType];
@@ -243,6 +259,10 @@ It emerged from their reflection about: ${themes}.
 When interpreting this card, honor its personal origin — reference the fact that it came from their own daily practice.${chronicleContext.knowledgeSummary ? `\nBroader Chronicle journey context:\n${chronicleContext.knowledgeSummary}` : ""}`;
   }
 
+  const journeySection = journeyContext
+    ? buildJourneyContextSection(journeyContext)
+    : "";
+
   return `Interpret this ${spreadType.replace("_", " ")} reading.
 ${contextSection}
 ${questionSection}
@@ -256,5 +276,5 @@ After all cards, write a synthesis paragraph tying the reading together.
 
 End with a brief reflective question that invites the seeker to sit with what the cards have shown — something like "What does this stir in you?" or "How does this land?" Keep it to one sentence.
 
-Remember these are personal oracle cards created from the seeker's own experiences — honor the personal symbolism in each card.${astroSection}${chronicleSection}`;
+Remember these are personal oracle cards created from the seeker's own experiences — honor the personal symbolism in each card.${astroSection}${chronicleSection}${journeySection}`;
 }

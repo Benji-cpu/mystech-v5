@@ -20,6 +20,7 @@ export function GoldButton({ children, onClick, className, disabled, type }: Gol
       disabled={disabled}
       type={type}
       className={cn(
+        "flex items-center justify-center gap-2",
         "bg-gradient-to-r from-[#c9a94e] to-[#daa520] text-black font-semibold rounded-xl px-6 py-3",
         "shadow-lg shadow-[#c9a94e]/20 transition-shadow duration-300",
         "hover:shadow-xl hover:shadow-[#c9a94e]/30",

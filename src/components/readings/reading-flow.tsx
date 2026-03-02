@@ -23,6 +23,7 @@ import { CardByCardInterpretation } from "./card-by-card-interpretation";
 import { ReadingFlipCard } from "./reading-flip-card";
 import { AstrologyBar } from "./astrology-bar";
 import { AstroNudgeBanner } from "@/components/shared/astro-nudge-banner";
+import { JourneyContextBanner } from "./journey-context-banner";
 import type { AstrologyProfile } from "@/types";
 
 import {
@@ -36,6 +37,17 @@ import {
 import { SPRINGS, MOOD_MAP } from "./reading-flow-theme";
 
 import type { Deck, PlanType, SpreadType, Card } from "@/types";
+
+// ── Dev-only timing telemetry ─────────────────────────────────────────
+
+const isDev = process.env.NODE_ENV === "development";
+const flowStart = isDev ? performance.now() : 0;
+
+function devLog(milestone: string, detail?: string) {
+  if (!isDev) return;
+  const elapsed = Math.round(performance.now() - flowStart);
+  console.log(`[reading-flow] +${elapsed}ms ${milestone}${detail ? ` — ${detail}` : ""}`);
+}
 
 // ── localStorage key ──────────────────────────────────────────────────
 
@@ -115,18 +127,42 @@ export function ReadingFlow({ decks, userPlan, userRole }: ReadingFlowProps) {
   const showCards = isCardPhase(phase);
   const isPresenting = isPresentingPhase(phase);
   const cardCount = selectedSpread
-    ? { single: 1, three_card: 3, five_card: 5, celtic_cross: 10 }[selectedSpread]
+    ? { single: 1, three_card: 3, five_card: 5, celtic_cross: 10, daily: 1 }[selectedSpread]
     : 0;
 
   // Celtic Cross gets an expanded active card alongside the spread
   const isCelticCross = selectedSpread === "celtic_cross";
   const isCelticPresenting = isCelticCross && isPresenting;
 
-  // ── Restore defaults from localStorage ────────────────────────────────
+  // ── Restore defaults from localStorage (or Chronicle handoff) ────────
 
   useEffect(() => {
     if (defaultsRestored.current) return;
     defaultsRestored.current = true;
+
+    // Check for Chronicle handoff via sessionStorage
+    const searchParams = new URLSearchParams(window.location.search);
+    if (searchParams.get('source') === 'chronicle') {
+      try {
+        const raw = sessionStorage.getItem('mystech_reading_handoff');
+        if (raw) {
+          const handoff = JSON.parse(raw) as {
+            source: string;
+            chronicleCardId?: string;
+            question?: string;
+            deckId?: string;
+          };
+          sessionStorage.removeItem('mystech_reading_handoff');
+
+          if (handoff.deckId) dispatch({ type: "SELECT_DECK", deckId: handoff.deckId });
+          dispatch({ type: "SELECT_SPREAD", spread: "three_card" });
+          if (handoff.question) dispatch({ type: "SET_QUESTION", question: handoff.question });
+          if (handoff.chronicleCardId) dispatch({ type: "SET_CHRONICLE_CARD", chronicleCardId: handoff.chronicleCardId });
+
+          return; // Skip localStorage defaults
+        }
+      } catch { /* sessionStorage unavailable */ }
+    }
 
     const saved = loadDefaults();
     if (!saved) {
@@ -223,7 +259,7 @@ export function ReadingFlow({ decks, userPlan, userRole }: ReadingFlowProps) {
 
   useEffect(() => {
     setMoodPreset(MOOD_MAP[phase]);
-    if (phase === "complete") exitFocusMode();
+    if (phase !== "setup") exitFocusMode();
   }, [phase, setMoodPreset, exitFocusMode]);
 
   // ── Responsive card sizing ─────────────────────────────────────────────
@@ -278,6 +314,42 @@ export function ReadingFlow({ decks, userPlan, userRole }: ReadingFlowProps) {
           const card = data.data.todayCard as ChronicleCardPreview;
           setTodayChronicleCard(card);
           dispatch({ type: "SET_CHRONICLE_CARD", chronicleCardId: card.id });
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  // ── Journey position (Path + Retreat + Waypoint) ──────────────────────
+
+  type JourneyPositionPreview = {
+    pathId: string;
+    pathName: string;
+    retreatId: string;
+    retreatName: string;
+    waypointId: string;
+    waypointName: string;
+    suggestedIntention: string;
+  };
+  const [journeyPosition, setJourneyPosition] =
+    useState<JourneyPositionPreview | null>(null);
+  const journeyFetched = useRef(false);
+
+  useEffect(() => {
+    if (journeyFetched.current) return;
+    journeyFetched.current = true;
+    fetch("/api/paths/progress")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && data.data?.position) {
+          const pos = data.data.position as JourneyPositionPreview;
+          setJourneyPosition(pos);
+          dispatch({
+            type: "SET_JOURNEY_CONTEXT",
+            pathId: pos.pathId,
+            retreatId: pos.retreatId,
+            waypointId: pos.waypointId,
+            suggestedIntention: pos.suggestedIntention,
+          });
         }
       })
       .catch(() => {});
@@ -360,6 +432,7 @@ export function ReadingFlow({ decks, userPlan, userRole }: ReadingFlowProps) {
     if (phase !== "creating" || createReadingTriggered.current) return;
     if (selectedDeckIds.length === 0 || !selectedSpread) return;
     createReadingTriggered.current = true;
+    devLog("creating", "API call started");
 
     fetch("/api/readings", {
       method: "POST",
@@ -369,6 +442,9 @@ export function ReadingFlow({ decks, userPlan, userRole }: ReadingFlowProps) {
         spreadType: selectedSpread,
         question: question.trim() || undefined,
         chronicleCardId: chronicleCardId ?? undefined,
+        journeyPathId: state.journeyPathId ?? undefined,
+        journeyRetreatId: state.journeyRetreatId ?? undefined,
+        journeyWaypointId: state.journeyWaypointId ?? undefined,
       }),
     })
       .then((res) => res.json())
@@ -382,6 +458,7 @@ export function ReadingFlow({ decks, userPlan, userRole }: ReadingFlowProps) {
           return;
         }
 
+        devLog("created", `Reading ${data.data.reading.id} with ${data.data.cards.length} cards`);
         dispatch({
           type: "CREATION_SUCCESS",
           readingId: data.data.reading.id,
@@ -400,14 +477,15 @@ export function ReadingFlow({ decks, userPlan, userRole }: ReadingFlowProps) {
         });
         toast.error("Something went wrong. Please try again.");
       });
-  }, [phase, selectedDeckIds, selectedSpread, question, chronicleCardId]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, selectedDeckIds, selectedSpread, question, chronicleCardId, state.journeyPathId]);
 
   // ── Orchestration: drawing → presenting ────────────────────────────────
 
   // Split into three concerns:
   // 1. Start streaming immediately for performance
   // 2. Settle timer — after 1.2s cards have settled visually
-  // 3. Gate presenting — only when BOTH settled AND first section is AI-ready
+  // 3. Gate presenting — only when settled (text zone has its own loading state)
 
   const streamStarted = useRef(false);
   const presentingStarted = useRef(false);
@@ -421,6 +499,7 @@ export function ReadingFlow({ decks, userPlan, userRole }: ReadingFlowProps) {
   useEffect(() => {
     if (phase === "drawing" && drawnCards.length > 0 && readingId && !streamStarted.current) {
       streamStarted.current = true;
+      devLog("streaming", "AI interpretation stream started");
       startStreamingRef.current(readingId);
     }
   }, [phase, drawnCards.length, readingId]);
@@ -428,22 +507,22 @@ export function ReadingFlow({ decks, userPlan, userRole }: ReadingFlowProps) {
   // 2. Settle timer — cards settled visually after 1.2s
   useEffect(() => {
     if (phase !== "drawing" || drawnCards.length === 0) return;
-    const timer = setTimeout(() => setIsSettled(true), 1200);
+    const timer = setTimeout(() => {
+      devLog("settled", "Cards visually settled after 1.2s");
+      setIsSettled(true);
+    }, 1200);
     return () => clearTimeout(timer);
   }, [phase, drawnCards.length]);
 
-  // 3. Gate presenting on BOTH isSettled AND first section ready
-  const isSectionReadyForGate = useRef(presentation.isSectionReady);
-  isSectionReadyForGate.current = presentation.isSectionReady;
-
+  // 3. Gate presenting on isSettled only — text zone has its own loading state
   useEffect(() => {
     if (phase !== "drawing" || presentingStarted.current) return;
     if (!isSettled) return;
-    if (!isSectionReadyForGate.current(0) && presentation.isStreaming) return;
 
     presentingStarted.current = true;
+    devLog("presenting", "Layout transition: drawing → presenting");
     dispatch({ type: "START_PRESENTING" });
-  }, [phase, isSettled, presentation.object, presentation.isStreaming]);
+  }, [phase, isSettled]);
 
   // ── Orchestration: reveal cards as sections become ready ──────────────
 
@@ -466,12 +545,26 @@ export function ReadingFlow({ decks, userPlan, userRole }: ReadingFlowProps) {
     }
   }, [phase, presentingCardIndex, presentation.object, presentation.isStreaming]);
 
+  // ── Fallback: force-reveal first card if section-ready check missed it ──
+  useEffect(() => {
+    if (phase !== "presenting") return;
+    if (lastRevealTriggered.current >= 0) return; // Already revealed at least one card
+
+    const timer = setTimeout(() => {
+      if (lastRevealTriggered.current < 0) {
+        lastRevealTriggered.current = 0;
+        revealNextRef.current();
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [phase]);
+
   // ── Orchestration: advance to next card when section is complete ──────
 
   // A section is "complete" when the next section has started filling,
   // or synthesis has started, or streaming has ended
   const isCurrentSectionComplete = useMemo(() => {
-    if (phase !== "presenting") return false;
+    if (!isPresentingPhase(phase)) return false;
     const totalCards = drawnCards.length;
     const isLastCard = presentingCardIndex >= totalCards - 1;
 
@@ -526,7 +619,7 @@ export function ReadingFlow({ decks, userPlan, userRole }: ReadingFlowProps) {
       presentingStarted.current = false;
       setIsSettled(false);
       dispatch({ type: "CREATION_ERROR", error: "Reading timed out. Please try again." });
-    }, 10_000);
+    }, 30_000);
     return () => clearTimeout(timer);
   }, [phase]);
 
@@ -544,7 +637,7 @@ export function ReadingFlow({ decks, userPlan, userRole }: ReadingFlowProps) {
         presentingStarted.current = false;
         dispatch({ type: "CREATION_ERROR", error: "Interpretation timed out. Please try again." });
       }
-    }, 120_000);
+    }, Math.max(60_000, drawnCards.length * 20_000));
     return () => clearTimeout(timer);
   }, [phase, presentation.object]);
 
@@ -676,8 +769,19 @@ export function ReadingFlow({ decks, userPlan, userRole }: ReadingFlowProps) {
             />
           )}
 
-          {/* Question input — visible once spread selected */}
-          {isSectionVisible("intention") && (
+          {/* Journey context banner — visible once spread selected, non-dismissable */}
+          {isSectionVisible("intention") && journeyPosition && state.journeyPathId && (
+            <JourneyContextBanner
+              pathName={journeyPosition.pathName}
+              retreatName={journeyPosition.retreatName}
+              waypointName={journeyPosition.waypointName}
+              suggestedIntention={journeyPosition.suggestedIntention}
+              className="mb-4"
+            />
+          )}
+
+          {/* Question input — hidden when journey context provides the intention */}
+          {isSectionVisible("intention") && !(journeyPosition && state.journeyPathId && state.journeySuggestedIntention) && (
             <IntentionInput
               question={question}
               onChange={(q) => dispatch({ type: "SET_QUESTION", question: q })}
@@ -764,9 +868,9 @@ export function ReadingFlow({ decks, userPlan, userRole }: ReadingFlowProps) {
           {showCards && (
             <div className={cn(
               "w-full h-full",
-              isCelticPresenting ? "max-w-5xl flex flex-col sm:flex-row items-center gap-3 sm:gap-4" : "max-w-4xl"
+              isCelticPresenting ? "max-w-5xl flex flex-row items-center gap-2 sm:gap-4" : "max-w-4xl"
             )}>
-              <div className={isCelticPresenting ? "sm:flex-1 min-h-0 min-w-0 w-full sm:w-auto" : "w-full h-full"}>
+              <div className={isCelticPresenting ? "flex-1 min-h-0 min-w-0" : "w-full h-full"}>
                 <CeremonySpreadLayout
                   spreadType={selectedSpread!}
                   cards={
@@ -879,6 +983,7 @@ export function ReadingFlow({ decks, userPlan, userRole }: ReadingFlowProps) {
               onAdvance={handleAdvanceCard}
               readingId={readingId}
               isLastCard={presentingCardIndex >= drawnCards.length - 1}
+              journeyPathId={state.journeyPathId ?? undefined}
             />
           )}
         </div>

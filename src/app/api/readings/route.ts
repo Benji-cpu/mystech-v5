@@ -8,6 +8,7 @@ import {
   getDeckByIdForUser,
   getUserPlan,
 } from "@/lib/db/queries";
+import { getJourneyPosition, recordJourneyReading, canAdvanceWaypoint } from "@/lib/db/queries-journey";
 import { PLAN_LIMITS, SPREAD_POSITIONS } from "@/lib/constants";
 import { getUserPlanFromRole, checkDailyReadings } from "@/lib/usage";
 import { shuffle } from "@/lib/shuffle";
@@ -42,6 +43,10 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  const isDev = process.env.NODE_ENV === "development";
+  const t0 = isDev ? Date.now() : 0;
+  const mark = (label: string) => isDev && console.log(`[readings POST] +${Date.now() - t0}ms ${label}`);
+
   const user = await getCurrentUser();
   if (!user?.id) {
     return NextResponse.json<ApiResponse<never>>(
@@ -49,14 +54,27 @@ export async function POST(request: NextRequest) {
       { status: 401 }
     );
   }
+  mark("auth");
 
   const body = await request.json();
-  const { deckId, deckIds, spreadType, question, chronicleCardId } = body as {
+  const {
+    deckId,
+    deckIds,
+    spreadType,
+    question,
+    chronicleCardId,
+    journeyPathId,
+    journeyRetreatId,
+    journeyWaypointId,
+  } = body as {
     deckId?: string;
     deckIds?: string[];
     spreadType?: string;
     question?: string;
     chronicleCardId?: string;
+    journeyPathId?: string;
+    journeyRetreatId?: string;
+    journeyWaypointId?: string;
   };
 
   // Support both single deckId and multi-deck deckIds
@@ -122,6 +140,20 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  // Check daily pacing for journey readings
+  if (journeyPathId && journeyWaypointId) {
+    const pacing = await canAdvanceWaypoint(user.id);
+    if (!pacing.allowed) {
+      return NextResponse.json<ApiResponse<never>>(
+        {
+          success: false,
+          error: "This waypoint opens tomorrow. Let today's reading settle before continuing the journey.",
+        },
+        { status: 400 }
+      );
+    }
+  }
+
   // Verify all decks exist, belong to user, and are completed
   const allDeckCards: Awaited<ReturnType<typeof getCardsForDeck>> = [];
   let primaryDeck: Awaited<ReturnType<typeof getDeckByIdForUser>> | null = null;
@@ -130,6 +162,8 @@ export async function POST(request: NextRequest) {
   const deckResults = await Promise.all(
     resolvedDeckIds.map((id) => getDeckByIdForUser(id, user.id))
   );
+
+  mark("deck fetch");
 
   // Validate all decks exist and are completed
   for (let i = 0; i < resolvedDeckIds.length; i++) {
@@ -154,6 +188,7 @@ export async function POST(request: NextRequest) {
   );
   allDeckCards.push(...cardResults.flat());
   primaryDeck = deckResults[0]!;
+  mark("card fetch");
 
   const positions = SPREAD_POSITIONS[typedSpread];
 
@@ -243,6 +278,8 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  mark(chronicleCardId ? "chronicle AI" : "skip chronicle");
+
   // Shuffle combined pool and draw
   // If a Chronicle card is included, exclude it from the random pool to avoid duplicates
   const poolCards = resolvedChronicleCard
@@ -293,6 +330,28 @@ export async function POST(request: NextRequest) {
     .insert(readingCards)
     .values(readingCardValues)
     .returning();
+
+  mark("db insert");
+
+  // Record journey progress if this reading has journey context
+  if (journeyPathId && journeyRetreatId && journeyWaypointId) {
+    try {
+      const journeyPosition = await getJourneyPosition(user.id);
+      if (
+        journeyPosition &&
+        journeyPosition.path.id === journeyPathId &&
+        journeyPosition.retreat.id === journeyRetreatId &&
+        journeyPosition.waypoint.id === journeyWaypointId
+      ) {
+        await recordJourneyReading(user.id, reading.id, journeyPosition);
+      }
+    } catch (err) {
+      console.error("[readings] Journey recording failed:", err);
+      // Non-fatal — the reading was still created successfully
+    }
+  }
+
+  mark("total");
 
   // Return reading with card data
   const cardsWithData = insertedCards.map((rc, i) => ({

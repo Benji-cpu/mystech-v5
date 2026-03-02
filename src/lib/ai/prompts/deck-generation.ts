@@ -1,5 +1,7 @@
 export const DECK_GENERATION_SYSTEM_PROMPT = `You are a wise mystic oracle deck designer. Given a theme description, you create cohesive sets of oracle cards that guide seekers through personal transformation.
 
+You also generate an evocative deck title (2-5 words) and a poetic 1-2 sentence description that captures the essence of the seeker's vision.
+
 Each card should:
 - Have an evocative, meaningful title that resonates with the theme
 - Carry a distinct meaning that relates to the overall deck theme
@@ -11,8 +13,7 @@ The cards should form a complete narrative arc — from beginning/foundation thr
 Write in the voice of a wise, compassionate guide. The meanings should feel personal and the guidance should feel like it's speaking directly to the seeker's heart.`;
 
 export function buildDeckGenerationUserPrompt(
-  title: string,
-  description: string,
+  vision: string,
   cardCount: number,
   artStyleName?: string,
   artStyleDescription?: string,
@@ -36,11 +37,15 @@ export function buildDeckGenerationUserPrompt(
     preferencesContext = `\n${parts.join(' ')} Let these patterns inform tone and themes.\n`;
   }
 
-  return `Create ${cardCount} oracle cards for a deck called "${title}".
+  return `Create ${cardCount} oracle cards for a deck based on this vision:
 
-Theme: ${description}
+"${vision}"
 ${artStyleContext}${preferencesContext}
-Generate exactly ${cardCount} cards with diverse, complementary meanings that tell a complete story. Number them sequentially from 1 to ${cardCount}.
+First, generate a short, evocative deck title (2-5 words) that captures the essence of this vision.
+
+Then, write a poetic 1-2 sentence description of the deck's theme and purpose — this will be displayed to the seeker as the deck's description.
+
+Then generate exactly ${cardCount} cards with diverse, complementary meanings that tell a complete story. Number them sequentially from 1 to ${cardCount}.
 
 Each card's imagePrompt should:
 - Describe a symbolic scene for an oracle card (2-3 sentences)

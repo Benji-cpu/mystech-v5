@@ -37,14 +37,12 @@ const routeRules: RouteRule[] = [
   { pattern: /^\/readings\/new$/, backTarget: "/readings", backLabel: "Readings", focusMode: true, focusTitle: "New Reading", focusSubtitle: "Consult the cards" },
   { pattern: /^\/readings\/[^/]+$/, backTarget: "/readings", backLabel: "Readings" },
 
-  // Explore (art styles — focus mode for new style creation)
-  { pattern: /^\/explore\/styles\/new$/, backTarget: "/explore", backLabel: "Explore", focusMode: true, focusTitle: "New Art Style", focusSubtitle: "Create a custom style" },
-  { pattern: /^\/explore\/styles\/[^/]+\/edit$/, backTarget: "PARENT", backLabel: "Back" },
-  { pattern: /^\/explore\/styles\/[^/]+$/, backTarget: "/explore", backLabel: "Explore" },
+  // Paths (journey system)
+  { pattern: /^\/paths\/[^/]+$/, backTarget: "/paths", backLabel: "Paths" },
 
   // Chronicle (focus mode — process flows)
   { pattern: /^\/chronicle\/today$/, backTarget: "/decks", backLabel: "Decks", focusMode: true, focusTitle: "Daily Chronicle", focusSubtitle: "Today's practice" },
-  { pattern: /^\/chronicle\/setup$/, backTarget: "/home", backLabel: "Home", focusMode: true, focusTitle: "Chronicle Setup", focusSubtitle: "Begin your practice" },
+  { pattern: /^\/chronicle\/setup$/, backTarget: "/dashboard", backLabel: "Dashboard", focusMode: true, focusTitle: "Chronicle Setup", focusSubtitle: "Begin your practice" },
 
   // Settings
   { pattern: /^\/settings\/billing$/, backTarget: "/settings", backLabel: "Settings" },

@@ -250,7 +250,7 @@ describe("readingFlowReducer", () => {
       expect(state.activeCardIndex).toBeNull();
     });
 
-    it("COMPLETE transitions to complete and clears activeCardIndex", () => {
+    it("COMPLETE transitions to complete and preserves activeCardIndex", () => {
       const prev: ReadingFlowState = {
         ...initialReadingFlowState,
         phase: "presenting",
@@ -258,7 +258,7 @@ describe("readingFlowReducer", () => {
       };
       const state = readingFlowReducer(prev, { type: "COMPLETE" });
       expect(state.phase).toBe("complete");
-      expect(state.activeCardIndex).toBeNull();
+      expect(state.activeCardIndex).toBe(2);
     });
   });
 
@@ -277,6 +277,10 @@ describe("readingFlowReducer", () => {
         presentingCardIndex: 2,
         showSynthesis: true,
         chronicleCardId: null,
+        journeyPathId: null,
+        journeyRetreatId: null,
+        journeyWaypointId: null,
+        journeySuggestedIntention: null,
       };
       const state = readingFlowReducer(prev, { type: "RESET" });
       expect(state).toEqual(initialReadingFlowState);

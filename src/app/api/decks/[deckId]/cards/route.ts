@@ -36,6 +36,8 @@ export async function GET(request: NextRequest, { params }: Params) {
     imageUrl: c.imageUrl,
     imagePrompt: c.imagePrompt,
     imageStatus: c.imageStatus as Card["imageStatus"],
+    cardType: (c.cardType ?? 'general') as Card["cardType"],
+    originContext: c.originContext ?? null,
     createdAt: c.createdAt,
   }));
 
@@ -98,6 +100,8 @@ export async function POST(request: NextRequest, { params }: Params) {
     imageUrl: created.imageUrl,
     imagePrompt: created.imagePrompt,
     imageStatus: created.imageStatus as Card["imageStatus"],
+    cardType: (created.cardType ?? 'general') as Card["cardType"],
+    originContext: created.originContext ?? null,
     createdAt: created.createdAt,
   };
 

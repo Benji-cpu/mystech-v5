@@ -145,6 +145,8 @@ export async function getReadingCardsWithData(readingId: string) {
         imageUrl: cards.imageUrl,
         imagePrompt: cards.imagePrompt,
         imageStatus: cards.imageStatus,
+        cardType: cards.cardType,
+        originContext: cards.originContext,
         createdAt: cards.createdAt,
         updatedAt: cards.updatedAt,
       },
@@ -229,7 +231,7 @@ export async function getUserReadingsWithDeck(userId: string, limit?: number) {
     })
     .from(readings)
     .innerJoin(decks, eq(readings.deckId, decks.id))
-    .where(eq(readings.userId, userId))
+    .where(and(eq(readings.userId, userId), ne(readings.spreadType, 'daily')))
     .orderBy(desc(readings.createdAt));
 
   if (limit && limit !== Infinity) {
@@ -392,6 +394,8 @@ export async function getSharedReadingByToken(token: string) {
         imageUrl: cards.imageUrl,
         imagePrompt: cards.imagePrompt,
         imageStatus: cards.imageStatus,
+        cardType: cards.cardType,
+        originContext: cards.originContext,
         createdAt: cards.createdAt,
         updatedAt: cards.updatedAt,
       },

@@ -4,7 +4,8 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Loader2, AlertCircle, RotateCcw } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { Card } from "@/types";
+import { CARD_TYPE_CONFIG } from "@/components/cards/card-type-config";
+import type { Card, CardType } from "@/types";
 
 interface OracleCardProps {
   card: Card;
@@ -30,6 +31,11 @@ export function OracleCard({
 }: OracleCardProps) {
   const [isFlipped, setIsFlipped] = useState(false);
 
+  const cardType = (card.cardType ?? 'general') as CardType;
+  const typeConfig = CARD_TYPE_CONFIG[cardType];
+  const TypeIcon = typeConfig.icon;
+  const isSpecial = cardType !== 'general';
+
   const handleClick = () => {
     if (onClick) {
       onClick();
@@ -51,8 +57,20 @@ export function OracleCard({
         )}
       >
         {/* Front */}
-        <div className="absolute inset-0 rounded-xl overflow-hidden border border-border/50 bg-card shadow-lg [backface-visibility:hidden]">
+        <div className={cn(
+          "absolute inset-0 rounded-xl overflow-hidden border bg-card shadow-lg [backface-visibility:hidden]",
+          typeConfig.borderClass,
+          typeConfig.glowClass,
+        )}>
           <CardImage card={card} onRetryImage={onRetryImage} />
+          {isSpecial && (
+            <div className={cn(
+              "absolute top-2 left-2 z-10 flex h-6 w-6 items-center justify-center rounded-full",
+              typeConfig.badgeClass,
+            )}>
+              <TypeIcon className="h-3 w-3" />
+            </div>
+          )}
           {!hideTitle && (
             <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-3 pt-8">
               <h3 className="text-sm font-semibold text-white leading-tight">
@@ -63,8 +81,18 @@ export function OracleCard({
         </div>
 
         {/* Back */}
-        <div className="absolute inset-0 rounded-xl overflow-hidden border border-border/50 bg-card shadow-lg [backface-visibility:hidden] [transform:rotateY(180deg)]">
+        <div className={cn(
+          "absolute inset-0 rounded-xl overflow-hidden border bg-card shadow-lg [backface-visibility:hidden] [transform:rotateY(180deg)]",
+          typeConfig.borderClass,
+          typeConfig.glowClass,
+        )}>
           <div className="flex flex-col h-full p-4 overflow-y-auto bg-gradient-to-b from-[#0a0118] to-[#1a0530]">
+            {isSpecial && (
+              <p className="text-[9px] uppercase tracking-wider text-muted-foreground mb-1 flex items-center gap-1">
+                <TypeIcon className="h-2.5 w-2.5" />
+                {typeConfig.label}
+              </p>
+            )}
             <h3 className="text-sm font-semibold text-[#c9a94e] mb-2">
               {card.title}
             </h3>
