@@ -114,6 +114,7 @@ export async function GET() {
               artifactSummary: rp.artifactSummary,
               artifactThemes: (rp.artifactThemes as string[]) ?? [],
               artifactImageUrl: rp.artifactImageUrl,
+              thresholdCardId: rp.thresholdCardId ?? null,
             })
           ),
         };

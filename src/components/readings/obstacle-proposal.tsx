@@ -109,7 +109,7 @@ export function ObstacleProposal({ readingId, className }: ObstacleProposalProps
 
             {/* Lyra's message */}
             <div className="flex items-start gap-3 pl-1">
-              <LyraSigil size="sm" state="idle" />
+              <LyraSigil size="sm" state="attentive" />
               <p className="text-sm text-white/60 leading-relaxed italic">
                 {proposal.pattern}
               </p>

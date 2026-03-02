@@ -1,5 +1,5 @@
-import { HomeRadioView } from "@/components/home/radio-nav-nodes";
+import { redirect } from "next/navigation";
 
 export default function HomePage() {
-  return <HomeRadioView />;
+  redirect("/dashboard");
 }

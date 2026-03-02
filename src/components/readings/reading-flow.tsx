@@ -887,6 +887,8 @@ export function ReadingFlow({ decks, userPlan, userRole }: ReadingFlowProps) {
                             imageUrl: null,
                             imagePrompt: null,
                             imageStatus: "pending" as const,
+                            cardType: "general" as const,
+                            originContext: null,
                             createdAt: new Date(),
                           },
                           positionName:

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { AnimatedItem } from '@/components/ui/animated-item';
 import { RetreatMap } from '@/components/paths/retreat-map';
+import { PathCardCollection } from '@/components/paths/path-card-collection';
 import {
   Compass,
   Flower2,
@@ -185,6 +186,18 @@ export function PathDetail({
           />
         </div>
       </AnimatedItem>
+
+      {/* Path cards — only show when user has started the path */}
+      {pathProgress && (
+        <AnimatedItem>
+          <div className="space-y-3">
+            <h2 className="text-sm font-semibold text-white/40 uppercase tracking-wider px-1">
+              Forged Cards
+            </h2>
+            <PathCardCollection pathId={path.id} />
+          </div>
+        </AnimatedItem>
+      )}
     </div>
   );
 }

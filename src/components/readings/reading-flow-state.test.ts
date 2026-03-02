@@ -19,6 +19,8 @@ const mockCard: Card = {
   imageUrl: null,
   imagePrompt: null,
   imageStatus: "completed",
+  cardType: "general",
+  originContext: null,
   createdAt: new Date(),
 };
 
