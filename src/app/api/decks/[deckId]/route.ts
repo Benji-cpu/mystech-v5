@@ -85,10 +85,11 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   }
 
   const body = await request.json();
-  const { title, description, theme } = body as {
+  const { title, description, theme, status } = body as {
     title?: string;
     description?: string;
     theme?: string;
+    status?: string;
   };
 
   if (title !== undefined && (typeof title !== "string" || title.trim().length === 0 || title.length > 100)) {
@@ -116,6 +117,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       ...(title !== undefined && { title }),
       ...(description !== undefined && { description }),
       ...(theme !== undefined && { theme }),
+      ...(status !== undefined && { status }),
       updatedAt: new Date(),
     })
     .where(eq(decks.id, deckId))

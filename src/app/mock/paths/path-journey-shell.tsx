@@ -1,6 +1,6 @@
 "use client";
 
-import { useReducer, useEffect, useCallback, useRef } from "react";
+import { useReducer, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useMockImmersive, moodPresets } from "@/components/mock/mock-immersive-provider";
@@ -31,8 +31,7 @@ const SPRING = { type: "spring" as const, stiffness: 200, damping: 28 };
 
 export function PathJourneyShell() {
   const [state, dispatch] = useReducer(pathJourneyReducer, initialPathJourneyState);
-  const { setMoodPreset, setMood } = useMockImmersive();
-  const autoAdvanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { setMood } = useMockImmersive();
 
   const { phase, subPhase, currentWaypointIndex, completedWaypoints, trailProgress } = state;
   const currentWaypoint = MOCK_RETREAT.waypoints[currentWaypointIndex];
@@ -51,19 +50,6 @@ export function PathJourneyShell() {
     if (preset) setMood(preset);
   }, [state.backgroundMood, setMood]);
 
-  // ── Auto-advance from arriving → present after 1.5s ────────────────
-
-  useEffect(() => {
-    if (phase === "waypoint" && subPhase === "arriving") {
-      autoAdvanceTimer.current = setTimeout(() => {
-        dispatch({ type: "WAYPOINT_PRESENT" });
-      }, 1500);
-      return () => {
-        if (autoAdvanceTimer.current) clearTimeout(autoAdvanceTimer.current);
-      };
-    }
-  }, [phase, subPhase]);
-
   // ── Handlers ────────────────────────────────────────────────────────
 
   const handleBeginJourney = useCallback(() => {
@@ -72,6 +58,23 @@ export function PathJourneyShell() {
 
   const handleProceedToIntention = useCallback(() => {
     dispatch({ type: "SET_INTENTION" });
+  }, []);
+
+  const handleSetUserIntention = useCallback((text: string) => {
+    dispatch({ type: "SET_USER_INTENTION", text });
+  }, []);
+
+  const handleUseSuggestedIntention = useCallback(() => {
+    if (!currentWaypoint) return;
+    dispatch({ type: "SET_USER_INTENTION", text: currentWaypoint.suggestedIntention });
+  }, [currentWaypoint]);
+
+  const handleConfirmIntention = useCallback(() => {
+    dispatch({ type: "CONFIRM_INTENTION" });
+  }, []);
+
+  const handleSetUserQuestion = useCallback((text: string) => {
+    dispatch({ type: "SET_USER_QUESTION", text });
   }, []);
 
   const handleDrawCards = useCallback(() => {
@@ -84,18 +87,14 @@ export function PathJourneyShell() {
   const handleRevealCard = useCallback(
     (index: number) => {
       dispatch({ type: "REVEAL_CARD", index });
-
-      // After all 3 revealed, auto-start interpretation
-      const nextRevealed = [...state.revealedCardIndices, index];
-      if (nextRevealed.length >= 3) {
-        setTimeout(() => {
-          const text = MOCK_INTERPRETATIONS[currentWaypointIndex] ?? "";
-          dispatch({ type: "START_INTERPRETATION", text });
-        }, 800);
-      }
     },
-    [state.revealedCardIndices, currentWaypointIndex]
+    []
   );
+
+  const handleBeginInterpretation = useCallback(() => {
+    const text = MOCK_INTERPRETATIONS[currentWaypointIndex] ?? "";
+    dispatch({ type: "BEGIN_INTERPRETATION", text });
+  }, [currentWaypointIndex]);
 
   const handleReadingComplete = useCallback(() => {
     dispatch({ type: "READING_COMPLETE" });
@@ -103,6 +102,14 @@ export function PathJourneyShell() {
 
   const handleAbsorbAndContinue = useCallback(() => {
     dispatch({ type: "ABSORB_AND_CONTINUE" });
+  }, []);
+
+  const handleSetUserReflection = useCallback((text: string) => {
+    dispatch({ type: "SET_USER_REFLECTION", text });
+  }, []);
+
+  const handleSkipReflection = useCallback(() => {
+    dispatch({ type: "SKIP_REFLECTION" });
   }, []);
 
   const handleAdvanceToNext = useCallback(() => {
@@ -121,27 +128,50 @@ export function PathJourneyShell() {
 
   type CTAConfig = { label: string; onClick: () => void; disabled?: boolean } | null;
 
+  const allRevealed = state.revealedCardIndices.length >= 3;
+
   const getCTA = (): CTAConfig => {
     switch (phase) {
       case "overview":
         return { label: "Begin Today's Step", onClick: handleBeginJourney };
       case "waypoint":
-        if (subPhase === "present") {
-          return { label: "Set Your Intention", onClick: handleProceedToIntention };
-        }
-        return null;
+        return { label: "Set My Intention", onClick: handleProceedToIntention };
       case "intention":
-        return { label: "Draw Your Cards", onClick: handleDrawCards };
+        return {
+          label: "Continue to Reading",
+          onClick: handleConfirmIntention,
+          disabled: !state.userIntention.trim(),
+        };
       case "reading":
-        if (subPhase === "complete" || subPhase === "interpreting") {
+        if (subPhase === "questioning") {
+          return {
+            label: "Draw Your Cards",
+            onClick: handleDrawCards,
+            disabled: !state.userQuestion.trim(),
+          };
+        }
+        if (subPhase === "revealing" && allRevealed) {
+          return { label: "Interpret My Cards", onClick: handleBeginInterpretation };
+        }
+        if (subPhase === "interpreting" || subPhase === "complete") {
           return { label: "Absorb and Continue", onClick: handleAbsorbAndContinue };
         }
         return null;
-      case "reflection":
+      case "reflection": {
+        const canProceed = state.userReflection.trim() || state.reflectionSkipped;
         if (currentWaypointIndex >= 2) {
-          return { label: "Complete the Retreat", onClick: () => dispatch({ type: "RETREAT_COMPLETE" }) };
+          return {
+            label: "Complete the Retreat",
+            onClick: () => dispatch({ type: "RETREAT_COMPLETE" }),
+            disabled: !canProceed,
+          };
         }
-        return { label: "Continue the Path", onClick: handleAdvanceToNext };
+        return {
+          label: "Continue the Path",
+          onClick: handleAdvanceToNext,
+          disabled: !canProceed,
+        };
+      }
       case "advancing":
         return { label: "Arrive at Next Step", onClick: handleAdvanceComplete };
       case "retreat_complete":
@@ -211,7 +241,6 @@ export function PathJourneyShell() {
               <WaypointZone
                 waypoint={currentWaypoint}
                 waypointIndex={currentWaypointIndex}
-                subPhase={phase === "waypoint" ? (subPhase as "arriving" | "present" | null) : null}
                 onProceedToIntention={handleProceedToIntention}
               />
             )}
@@ -229,8 +258,11 @@ export function PathJourneyShell() {
           >
             {currentWaypoint && (
               <IntentionZone
-                intention={currentWaypoint.suggestedIntention}
+                suggestedIntention={currentWaypoint.suggestedIntention}
                 waypointName={currentWaypoint.name}
+                userIntention={state.userIntention}
+                onSetUserIntention={handleSetUserIntention}
+                onUseSuggested={handleUseSuggestedIntention}
               />
             )}
           </motion.div>
@@ -246,10 +278,13 @@ export function PathJourneyShell() {
             className="overflow-hidden flex-1 min-h-0"
           >
             <ReadingZone
-              subPhase={phase === "reading" ? (subPhase as "drawing" | "revealing" | "interpreting" | "complete" | null) : null}
+              subPhase={phase === "reading" ? (subPhase as "questioning" | "drawing" | "revealing" | "interpreting" | "complete" | null) : null}
               cards={state.drawnCards}
               revealedIndices={state.revealedCardIndices}
               interpretationText={state.interpretationText}
+              userIntention={state.userIntention}
+              userQuestion={state.userQuestion}
+              onSetUserQuestion={handleSetUserQuestion}
               onRevealCard={handleRevealCard}
             />
           </motion.div>
@@ -270,6 +305,10 @@ export function PathJourneyShell() {
                 waypointIndex={currentWaypointIndex}
                 isLastWaypoint={currentWaypointIndex >= 2}
                 isTimeLocked={state.isTimeLocked}
+                userReflection={state.userReflection}
+                onSetUserReflection={handleSetUserReflection}
+                onSkipReflection={handleSkipReflection}
+                reflectionSkipped={state.reflectionSkipped}
               />
             )}
           </motion.div>

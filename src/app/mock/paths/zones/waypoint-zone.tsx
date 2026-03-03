@@ -3,7 +3,6 @@
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import type { MockWaypoint } from '../path-journey-data';
-import type { WaypointSubPhase } from '../path-journey-state';
 
 // ── Decoration icons ──────────────────────────────────────────────────────────
 
@@ -76,7 +75,6 @@ const DECORATION_ICONS: Record<MockWaypoint['decorationIcon'], typeof ArchwayIco
 interface WaypointZoneProps {
   waypoint: MockWaypoint;
   waypointIndex: number;
-  subPhase: WaypointSubPhase | null;
   onProceedToIntention: () => void;
   className?: string;
 }
@@ -87,7 +85,7 @@ const containerVariants = {
   initial: { opacity: 0 },
   animate: {
     opacity: 1,
-    transition: { ...SPRING, staggerChildren: 0.1 },
+    transition: { ...SPRING, staggerChildren: 0.12 },
   },
 };
 
@@ -103,14 +101,10 @@ const itemVariants = {
 export function WaypointZone({
   waypoint,
   waypointIndex,
-  subPhase,
   onProceedToIntention,
   className,
 }: WaypointZoneProps) {
-  const isPresent = subPhase === 'present';
   const DecoIcon = DECORATION_ICONS[waypoint.decorationIcon];
-
-  // Note: auto-advance from arriving → present is handled by the shell's useEffect
 
   return (
     <motion.div
@@ -139,40 +133,23 @@ export function WaypointZone({
         </div>
       </motion.div>
 
-      {/* Description — slides in when present */}
+      {/* Description */}
       <motion.div
-        layout
-        animate={{
-          opacity: isPresent ? 1 : 0,
-          height: isPresent ? 'auto' : 0,
-        }}
-        transition={SPRING}
-        className="overflow-hidden"
+        variants={itemVariants}
+        className={cn(
+          'relative overflow-hidden rounded-2xl p-4',
+          'bg-white/5 backdrop-blur-xl border border-white/10',
+          'shadow-lg shadow-purple-900/20',
+        )}
       >
-        <div
-          className={cn(
-            'relative overflow-hidden rounded-2xl p-4',
-            'bg-white/5 backdrop-blur-xl border border-white/10',
-            'shadow-lg shadow-purple-900/20',
-          )}
-        >
-          <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent pointer-events-none rounded-2xl" />
-          <p className="relative z-10 text-sm text-white/60 leading-relaxed">
-            {waypoint.description}
-          </p>
-        </div>
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent pointer-events-none rounded-2xl" />
+        <p className="relative z-10 text-sm text-white/60 leading-relaxed">
+          {waypoint.description}
+        </p>
       </motion.div>
 
-      {/* Lyra guidance — delayed reveal when present */}
-      <motion.div
-        layout
-        animate={{
-          opacity: isPresent ? 1 : 0,
-          height: isPresent ? 'auto' : 0,
-        }}
-        transition={{ ...SPRING, delay: isPresent ? 0.18 : 0 }}
-        className="overflow-hidden"
-      >
+      {/* Lyra guidance */}
+      <motion.div variants={itemVariants}>
         <div className="flex gap-3 items-start">
           {/* Lyra sigil dot */}
           <div className="mt-1 shrink-0 w-5 h-5 rounded-full border border-[#c9a94e]/40 flex items-center justify-center">
@@ -184,16 +161,8 @@ export function WaypointZone({
         </div>
       </motion.div>
 
-      {/* CTA — only shown when present */}
-      <motion.div
-        layout
-        animate={{
-          opacity: isPresent ? 1 : 0,
-          height: isPresent ? 'auto' : 0,
-        }}
-        transition={{ ...SPRING, delay: isPresent ? 0.28 : 0 }}
-        className="overflow-hidden"
-      >
+      {/* CTA */}
+      <motion.div variants={itemVariants}>
         <motion.button
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}

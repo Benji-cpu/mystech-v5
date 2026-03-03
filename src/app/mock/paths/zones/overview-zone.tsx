@@ -85,6 +85,26 @@ export function OverviewZone({ path, retreat, onBeginJourney, className }: Overv
         </span>
       </motion.div>
 
+      {/* Waypoint preview list */}
+      <motion.div variants={itemVariants} className="flex flex-col gap-2">
+        <p className="text-[10px] font-medium tracking-widest uppercase text-white/30">
+          {retreat.waypoints.length} Waypoints
+        </p>
+        <div className="flex flex-col gap-1.5">
+          {retreat.waypoints.map((wp, i) => (
+            <div key={wp.id ?? i} className="flex items-center gap-2.5">
+              <div className="flex items-center justify-center w-5 h-5 shrink-0">
+                <div className="w-2 h-2 rounded-full border border-white/20 bg-white/5" />
+              </div>
+              <p className="text-xs text-white/45">
+                <span className="text-white/25 mr-1.5">{i + 1}.</span>
+                {wp.name}
+              </p>
+            </div>
+          ))}
+        </div>
+      </motion.div>
+
       {/* Begin journey button */}
       <motion.button
         variants={itemVariants}

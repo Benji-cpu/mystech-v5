@@ -1,41 +1,56 @@
 // Hardcoded data for the Path Journey mock — sourced from seed-paths.ts
 
 export interface MockWaypoint {
+  id: string;
   name: string;
   description: string;
   suggestedIntention: string;
   waypointLens: string;
   lyraGuidance: string;
   decorationIcon: "archway" | "mirror" | "cliff";
+  requiredReadings: number;
 }
 
 export interface MockRetreat {
+  id: string;
   name: string;
   description: string;
   theme: string;
+  retreatLens: string;
   waypoints: MockWaypoint[];
 }
 
 export interface MockPath {
+  id: string;
   name: string;
   description: string;
+  themes: string[];
+  interpretiveLens: string;
 }
 
 // ── The Archetypal Path — first retreat "The Threshold" ────────────────
 
 export const MOCK_PATH: MockPath = {
+  id: "path_archetypal",
   name: "Archetypal",
   description:
     "Explore the universal patterns of the psyche through Jungian archetypes, shadow work, and the journey toward wholeness.",
+  themes: ["Self-discovery", "Shadow work", "Individuation"],
+  interpretiveLens:
+    "Interpret cards through the lens of Jungian archetypes and the journey toward psychological wholeness.",
 };
 
 export const MOCK_RETREAT: MockRetreat = {
+  id: "retreat_threshold",
   name: "The Threshold",
   description:
     "The journey begins with awareness. Before you can transform, you must see where you stand — the masks you wear, the stories you tell yourself, and the quiet call to something deeper.",
   theme: "Self-awareness and the call to inner work",
+  retreatLens:
+    "This retreat focuses on the initial awakening — recognizing the call to inner work and beginning to see oneself clearly.",
   waypoints: [
     {
+      id: "wp_acknowledging_call",
       name: "Acknowledging the Call",
       description:
         "Something is stirring. A restlessness, a question that won't quiet. This waypoint invites you to name what is calling you inward.",
@@ -45,8 +60,10 @@ export const MOCK_RETREAT: MockRetreat = {
       lyraGuidance:
         "I sense something stirring within you — a whisper from the depths, a pull toward something unnamed. Let us begin here, at the threshold of awareness. The cards will help you give voice to what is calling.",
       decorationIcon: "archway",
+      requiredReadings: 1,
     },
     {
+      id: "wp_meeting_persona",
       name: "Meeting Your Persona",
       description:
         "The persona is the mask we show the world. Here you examine the roles you play and the face you present — not to discard them, but to see them clearly.",
@@ -56,8 +73,10 @@ export const MOCK_RETREAT: MockRetreat = {
       lyraGuidance:
         "We all wear masks — some chosen, some inherited. Today we examine the face you show the world. Not to judge it, but to see it clearly. The cards will reflect back what lies beneath the surface you present.",
       decorationIcon: "mirror",
+      requiredReadings: 1,
     },
     {
+      id: "wp_mirrors_edge",
       name: "The Mirror's Edge",
       description:
         "Standing at the mirror's edge means being willing to see yourself as you truly are — not the idealized version, not the feared version, but the real one.",
@@ -67,6 +86,7 @@ export const MOCK_RETREAT: MockRetreat = {
       lyraGuidance:
         "You have arrived at the edge — the place where pretense falls away and truth becomes visible. This is brave ground. The cards you draw here will show you not who you wish to be, nor who you fear being, but who you are. Are you ready?",
       decorationIcon: "cliff",
+      requiredReadings: 1,
     },
   ],
 };

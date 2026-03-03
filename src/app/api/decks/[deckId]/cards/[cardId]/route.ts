@@ -28,11 +28,13 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   }
 
   const body = await request.json();
-  const { title, meaning, guidance, imagePrompt } = body as {
+  const { title, meaning, guidance, imagePrompt, cardType, originContext } = body as {
     title?: string;
     meaning?: string;
     guidance?: string;
     imagePrompt?: string;
+    cardType?: string;
+    originContext?: typeof cards.$inferInsert.originContext;
   };
 
   const [updated] = await db
@@ -42,6 +44,8 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       ...(meaning !== undefined && { meaning }),
       ...(guidance !== undefined && { guidance }),
       ...(imagePrompt !== undefined && { imagePrompt }),
+      ...(cardType !== undefined && { cardType }),
+      ...(originContext !== undefined && { originContext }),
       updatedAt: new Date(),
     })
     .where(and(eq(cards.id, cardId), eq(cards.deckId, deckId)))

@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { encode } from "next-auth/jwt";
+import { db } from "@/lib/db";
+import { users } from "@/lib/db/schema";
 import type { ApiResponse } from "@/types";
 
 /**
@@ -30,6 +32,17 @@ export async function POST() {
     email: "e2e-test@example.com",
     image: null,
   };
+
+  // Ensure the test user exists in the database
+  await db
+    .insert(users)
+    .values({
+      id: testUser.id,
+      name: testUser.name,
+      email: testUser.email,
+      image: testUser.image,
+    })
+    .onConflictDoNothing();
 
   // In dev/test, the cookie is unprefixed
   const cookieName = "authjs.session-token";

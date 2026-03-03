@@ -7,15 +7,15 @@ import type { MockCard } from "@/components/mock/mock-data";
 
 export type PathPhase =
   | "overview"          // Retreat intro, see the full trail
-  | "waypoint"          // At a waypoint (sub: arriving → present)
+  | "waypoint"          // At a waypoint — content shown immediately
   | "intention"         // Setting intention before reading
-  | "reading"           // Inline card reading (sub: drawing → revealing → interpreting → complete)
+  | "reading"           // Inline card reading (sub: questioning → drawing → revealing → interpreting → complete)
   | "reflection"        // Post-reading, waypoint completion
   | "advancing"         // Trail animation to next waypoint
   | "retreat_complete"; // All waypoints done
 
-export type WaypointSubPhase = "arriving" | "present";
-export type ReadingSubPhase = "drawing" | "revealing" | "interpreting" | "complete";
+export type WaypointSubPhase = "present";
+export type ReadingSubPhase = "questioning" | "drawing" | "revealing" | "interpreting" | "complete";
 
 // ── State shape ────────────────────────────────────────────────────────
 
@@ -30,6 +30,10 @@ export interface PathJourneyState {
   interpretationText: string;
   backgroundMood: string;
   isTimeLocked: boolean;              // next waypoint locked until tomorrow
+  userIntention: string;
+  userQuestion: string;
+  userReflection: string;
+  reflectionSkipped: boolean;
 }
 
 // ── Actions ────────────────────────────────────────────────────────────
@@ -37,13 +41,17 @@ export interface PathJourneyState {
 export type PathJourneyAction =
   | { type: "BEGIN_JOURNEY" }
   | { type: "ARRIVE_AT_WAYPOINT" }
-  | { type: "WAYPOINT_PRESENT" }
   | { type: "SET_INTENTION" }
+  | { type: "SET_USER_INTENTION"; text: string }
+  | { type: "SET_USER_QUESTION"; text: string }
+  | { type: "SET_USER_REFLECTION"; text: string }
+  | { type: "CONFIRM_INTENTION" }
   | { type: "DRAW_CARDS"; cards: MockCard[] }
   | { type: "REVEAL_CARD"; index: number }
-  | { type: "START_INTERPRETATION"; text: string }
+  | { type: "BEGIN_INTERPRETATION"; text: string }
   | { type: "READING_COMPLETE" }
   | { type: "ABSORB_AND_CONTINUE" }
+  | { type: "SKIP_REFLECTION" }
   | { type: "ADVANCE_TO_NEXT" }
   | { type: "ADVANCE_COMPLETE" }
   | { type: "RETREAT_COMPLETE" }
@@ -67,6 +75,10 @@ export const initialPathJourneyState: PathJourneyState = {
   interpretationText: "",
   backgroundMood: "default",
   isTimeLocked: false,
+  userIntention: "",
+  userQuestion: "",
+  userReflection: "",
+  reflectionSkipped: false,
 };
 
 // ── Reducer ────────────────────────────────────────────────────────────
@@ -80,7 +92,7 @@ export function pathJourneyReducer(
       return {
         ...state,
         phase: "waypoint",
-        subPhase: "arriving",
+        subPhase: "present",
         trailProgress: WAYPOINT_TRAIL_POSITIONS[state.currentWaypointIndex] ?? 0.2,
         backgroundMood: MOOD_PER_WAYPOINT[state.currentWaypointIndex] ?? "default",
       };
@@ -89,15 +101,9 @@ export function pathJourneyReducer(
       return {
         ...state,
         phase: "waypoint",
-        subPhase: "arriving",
+        subPhase: "present",
         trailProgress: WAYPOINT_TRAIL_POSITIONS[state.currentWaypointIndex] ?? 0.5,
         backgroundMood: MOOD_PER_WAYPOINT[state.currentWaypointIndex] ?? "default",
-      };
-
-    case "WAYPOINT_PRESENT":
-      return {
-        ...state,
-        subPhase: "present",
       };
 
     case "SET_INTENTION":
@@ -107,10 +113,36 @@ export function pathJourneyReducer(
         subPhase: null,
       };
 
-    case "DRAW_CARDS":
+    case "SET_USER_INTENTION":
+      return {
+        ...state,
+        userIntention: action.text,
+      };
+
+    case "SET_USER_QUESTION":
+      return {
+        ...state,
+        userQuestion: action.text,
+      };
+
+    case "SET_USER_REFLECTION":
+      return {
+        ...state,
+        userReflection: action.text,
+      };
+
+    case "CONFIRM_INTENTION":
+      if (!state.userIntention.trim()) return state;
       return {
         ...state,
         phase: "reading",
+        subPhase: "questioning",
+        userQuestion: state.userIntention, // pre-fill question with intention
+      };
+
+    case "DRAW_CARDS":
+      return {
+        ...state,
         subPhase: "drawing",
         drawnCards: action.cards,
         revealedCardIndices: [],
@@ -124,7 +156,7 @@ export function pathJourneyReducer(
         revealedCardIndices: [...state.revealedCardIndices, action.index],
       };
 
-    case "START_INTERPRETATION":
+    case "BEGIN_INTERPRETATION":
       return {
         ...state,
         subPhase: "interpreting",
@@ -143,6 +175,12 @@ export function pathJourneyReducer(
         phase: "reflection",
         subPhase: null,
         completedWaypoints: [...state.completedWaypoints, state.currentWaypointIndex],
+      };
+
+    case "SKIP_REFLECTION":
+      return {
+        ...state,
+        reflectionSkipped: true,
       };
 
     case "ADVANCE_TO_NEXT": {
@@ -167,7 +205,7 @@ export function pathJourneyReducer(
       return {
         ...state,
         phase: "waypoint",
-        subPhase: "arriving",
+        subPhase: "present",
         currentWaypointIndex: state.currentWaypointIndex + 1,
         trailProgress: WAYPOINT_TRAIL_POSITIONS[state.currentWaypointIndex + 1] ?? 0.8,
         backgroundMood: MOOD_PER_WAYPOINT[state.currentWaypointIndex + 1] ?? "default",
@@ -175,6 +213,10 @@ export function pathJourneyReducer(
         revealedCardIndices: [],
         interpretationText: "",
         isTimeLocked: false,
+        userIntention: "",
+        userQuestion: "",
+        userReflection: "",
+        reflectionSkipped: false,
       };
 
     case "RETREAT_COMPLETE":
@@ -206,12 +248,13 @@ export function getZoneProportions(state: PathJourneyState) {
     case "overview":
       return { trail: "55%", scene: "35%", action: "10%" };
     case "waypoint":
-      return subPhase === "arriving"
-        ? { trail: "35%", scene: "55%", action: "10%" }
-        : { trail: "25%", scene: "65%", action: "10%" };
+      return { trail: "25%", scene: "65%", action: "10%" };
     case "intention":
       return { trail: "15%", scene: "75%", action: "10%" };
     case "reading":
+      if (subPhase === "questioning") {
+        return { trail: "10%", scene: "80%", action: "10%" };
+      }
       return subPhase === "drawing" || subPhase === "revealing"
         ? { trail: "8%", scene: "82%", action: "10%" }
         : { trail: "5%", scene: "85%", action: "10%" };

@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { Textarea } from '@/components/ui/textarea';
 import type { MockWaypoint } from '../path-journey-data';
 
 // ── Check circle icon ─────────────────────────────────────────────────────────
@@ -44,10 +45,15 @@ interface ReflectionZoneProps {
   waypointIndex: number;
   isLastWaypoint: boolean;
   isTimeLocked: boolean;
+  userReflection: string;
+  onSetUserReflection: (text: string) => void;
+  onSkipReflection: () => void;
+  reflectionSkipped: boolean;
   className?: string;
 }
 
 const SPRING = { type: 'spring' as const, stiffness: 300, damping: 30 };
+const MAX_REFLECTION_CHARS = 1000;
 
 const containerVariants = {
   initial: { opacity: 0, y: 20 },
@@ -72,6 +78,10 @@ export function ReflectionZone({
   waypointIndex,
   isLastWaypoint,
   isTimeLocked,
+  userReflection,
+  onSetUserReflection,
+  onSkipReflection,
+  reflectionSkipped,
   className,
 }: ReflectionZoneProps) {
   return (
@@ -100,23 +110,61 @@ export function ReflectionZone({
         {waypoint.name}
       </motion.p>
 
-      {/* Lyra encouragement */}
+      {/* Lyra reflection prompt */}
       <motion.div
         variants={itemVariants}
-        className={cn(
-          'relative overflow-hidden rounded-2xl p-4',
-          'bg-white/5 backdrop-blur-xl border border-white/10',
-          'shadow-lg shadow-purple-900/20',
-        )}
+        className="flex gap-3 items-start"
       >
-        <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent pointer-events-none rounded-2xl" />
-        <div className="relative z-10 flex gap-3 items-start">
-          <div className="mt-1 shrink-0 w-5 h-5 rounded-full border border-[#c9a94e]/40 flex items-center justify-center">
-            <div className="w-1.5 h-1.5 rounded-full bg-[#c9a94e]/60" />
-          </div>
-          <p className="text-sm italic text-white/50 leading-relaxed">
-            Let this settle. The next step on the path will be here for you tomorrow.
-          </p>
+        <div className="mt-1 shrink-0 w-5 h-5 rounded-full border border-[#c9a94e]/40 flex items-center justify-center">
+          <div className="w-1.5 h-1.5 rounded-full bg-[#c9a94e]/60" />
+        </div>
+        <p className="text-sm italic text-white/50 leading-relaxed">
+          What resonated with you? What truths are you carrying forward?
+        </p>
+      </motion.div>
+
+      {/* Journal textarea */}
+      <motion.div variants={itemVariants}>
+        <Textarea
+          value={userReflection}
+          onChange={(e) => {
+            if (e.target.value.length <= MAX_REFLECTION_CHARS) {
+              onSetUserReflection(e.target.value);
+            }
+          }}
+          placeholder="Write what emerged for you..."
+          disabled={reflectionSkipped}
+          className={cn(
+            'min-h-[100px] resize-none',
+            'bg-white/5 backdrop-blur-xl border-white/10 rounded-xl',
+            'text-white/80 placeholder:text-white/20',
+            'focus-visible:border-[#c9a94e]/50 focus-visible:ring-[#c9a94e]/20',
+            reflectionSkipped && 'opacity-30',
+          )}
+        />
+        <div className="flex items-center justify-between mt-1.5">
+          {/* Skip link */}
+          {!reflectionSkipped && !userReflection.trim() && (
+            <button
+              onClick={onSkipReflection}
+              className="text-white/30 text-xs underline underline-offset-2 hover:text-white/50 transition-colors"
+            >
+              Skip
+            </button>
+          )}
+          {reflectionSkipped && (
+            <p className="text-white/25 text-xs italic">Skipped</p>
+          )}
+          {!reflectionSkipped && userReflection.length > 0 && <span />}
+          {/* Character counter */}
+          {userReflection.length > 0 && (
+            <p className={cn(
+              'text-[10px]',
+              userReflection.length > MAX_REFLECTION_CHARS * 0.9 ? 'text-amber-400/60' : 'text-white/20',
+            )}>
+              {userReflection.length}/{MAX_REFLECTION_CHARS}
+            </p>
+          )}
         </div>
       </motion.div>
 
