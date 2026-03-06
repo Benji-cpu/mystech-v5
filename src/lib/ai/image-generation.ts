@@ -8,12 +8,44 @@ import { ORACLE_CARD_BASE_PROMPT, ORACLE_CARD_NEGATIVE_PROMPT } from "./prompts/
 const MAX_RETRIES = 3;
 const BACKOFF_BASE_MS = 1000;
 
+/**
+ * Extracts exclusion terms from a vision string by looking for common
+ * negation patterns: "no X", "without X", "avoid X", "not X".
+ * Returns a comma-joined string of extracted terms, or empty string if none found.
+ */
+export function extractNegativeTerms(vision: string): string {
+  // Lookahead terminates on: comma/semicolon/period, em/en dash, " and", " or", end of string
+  const TERM = String.raw`(?=[,;.—–]|\s*[—–]|\s+and\b|\s+or\b|$)`;
+  const patterns = [
+    new RegExp(String.raw`\bno\s+([a-z][a-z\s]{2,30}?)` + TERM, "gi"),
+    new RegExp(String.raw`\bwithout\s+(?:any\s+)?([a-z][a-z\s]{2,30}?)` + TERM, "gi"),
+    new RegExp(String.raw`\bavoid(?:ing)?\s+([a-z][a-z\s]{2,30}?)` + TERM, "gi"),
+    new RegExp(String.raw`\bnot\s+(?:any\s+)?([a-z][a-z\s]{2,30}?)` + TERM, "gi"),
+  ];
+
+  const terms: string[] = [];
+
+  for (const pattern of patterns) {
+    let match: RegExpExecArray | null;
+    while ((match = pattern.exec(vision)) !== null) {
+      const term = match[1].trim().replace(/\s+/g, " ");
+      if (term.length > 2) {
+        terms.push(term);
+      }
+    }
+  }
+
+  // Deduplicate
+  return [...new Set(terms)].join(", ");
+}
+
 export async function generateCardImage(
   cardId: string,
   imagePrompt: string,
   artStylePrompt: string,
   deckId: string,
-  stabilityPreset?: string
+  stabilityPreset?: string,
+  visionTheme?: string
 ): Promise<{ success: boolean; imageUrl?: string; error?: string }> {
   // Check deck still exists before starting (outside retry loop for efficiency)
   const [deck] = await db
@@ -35,11 +67,17 @@ export async function generateCardImage(
     .filter(s => s.length > 0)
     .join(', ');
 
+  // Build negative prompt — inject vision exclusions as a safety net
+  const visionNegatives = visionTheme ? extractNegativeTerms(visionTheme) : "";
+  const negativePrompt = [ORACLE_CARD_NEGATIVE_PROMPT, visionNegatives]
+    .filter(Boolean)
+    .join(", ");
+
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     try {
       const imageBuffer = await generateStabilityImage({
         prompt: finalPrompt,
-        negativePrompt: ORACLE_CARD_NEGATIVE_PROMPT,
+        negativePrompt,
         stylePreset: stabilityPreset,
         aspectRatio: "2:3",
         outputFormat: "png",

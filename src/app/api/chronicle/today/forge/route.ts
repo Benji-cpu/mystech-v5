@@ -132,7 +132,7 @@ export async function POST() {
       model,
       schema: singleCardSchema,
       prompt,
-      maxOutputTokens: 2000,
+      maxOutputTokens: 4000,
     });
     generatedCard = object;
   } catch (err) {

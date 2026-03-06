@@ -10,7 +10,9 @@ Each card should:
 
 The cards should form a complete narrative arc — from beginning/foundation through challenges to resolution/transcendence. Each card should be unique and contribute something different to the whole deck.
 
-Write in the voice of a wise, compassionate guide. The meanings should feel personal and the guidance should feel like it's speaking directly to the seeker's heart.`;
+Write in the voice of a wise, compassionate guide. The meanings should feel personal and the guidance should feel like it's speaking directly to the seeker's heart.
+
+If the seeker's vision contains exclusions (no X, without X, avoid X, not X), treat these as hard constraints — they MUST be honoured in every card's imagePrompt. Excluded subjects must be explicitly avoided, not merely omitted by chance.`;
 
 export function buildDeckGenerationUserPrompt(
   vision: string,
@@ -49,7 +51,11 @@ Then generate exactly ${cardCount} cards with diverse, complementary meanings th
 
 Each card's imagePrompt should:
 - Describe a symbolic scene for an oracle card (2-3 sentences)
-- Focus on concrete visual subjects — figures, objects, nature, symbols
+- Focus on symbolic objects, natural elements, celestial imagery, abstract forms — avoid literal human figures unless the vision explicitly requests them
 - Complement the "${artStyleName || 'mystical'}" aesthetic in imagery choices
-- Describe ONLY the subject and composition — do NOT describe art technique or style`;
+- Describe ONLY the subject and composition — do NOT describe art technique or style
+
+Important constraints that MUST be reflected in every imagePrompt:
+- Original vision: "${vision}"
+- If the vision excludes any subject matter (e.g., "no humans", "without people", "purely abstract"), every imagePrompt MUST honour those exclusions. State excluded elements explicitly in the imagePrompt.`;
 }

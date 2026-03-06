@@ -4,78 +4,10 @@ import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import type { MockWaypoint } from '../path-journey-data';
 
-// ── Decoration icons ──────────────────────────────────────────────────────────
-
-function ArchwayIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 48 48"
-      fill="none"
-      className={className}
-      aria-hidden="true"
-    >
-      <path
-        d="M8 40 L8 22 Q8 8 24 8 Q40 8 40 22 L40 40"
-        stroke="#c9a94e"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        fill="none"
-        opacity="0.7"
-      />
-      <line x1="4" y1="40" x2="44" y2="40" stroke="#c9a94e" strokeWidth="1.5" strokeLinecap="round" opacity="0.5" />
-    </svg>
-  );
-}
-
-function MirrorIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 48 48"
-      fill="none"
-      className={className}
-      aria-hidden="true"
-    >
-      <ellipse cx="24" cy="20" rx="12" ry="16" stroke="#c9a94e" strokeWidth="1.5" opacity="0.7" />
-      <path d="M18 37 L20 42 L28 42 L30 37" stroke="#c9a94e" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.5" />
-      <line x1="24" y1="10" x2="24" y2="14" stroke="#c9a94e" strokeWidth="1" opacity="0.4" />
-    </svg>
-  );
-}
-
-function CliffIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 48 48"
-      fill="none"
-      className={className}
-      aria-hidden="true"
-    >
-      <path
-        d="M4 40 L4 22 L18 22 L18 12 L32 12 L32 22 L44 16 L44 40"
-        stroke="#c9a94e"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        fill="none"
-        opacity="0.7"
-      />
-      <line x1="4" y1="40" x2="44" y2="40" stroke="#c9a94e" strokeWidth="1.5" strokeLinecap="round" opacity="0.5" />
-    </svg>
-  );
-}
-
-const DECORATION_ICONS: Record<MockWaypoint['decorationIcon'], typeof ArchwayIcon> = {
-  archway: ArchwayIcon,
-  mirror: MirrorIcon,
-  cliff: CliffIcon,
-};
-
-// ── Component ─────────────────────────────────────────────────────────────────
-
 interface WaypointZoneProps {
   waypoint: MockWaypoint;
   waypointIndex: number;
-  onProceedToIntention: () => void;
+  onDrawCards: () => void;
   className?: string;
 }
 
@@ -101,49 +33,43 @@ const itemVariants = {
 export function WaypointZone({
   waypoint,
   waypointIndex,
-  onProceedToIntention,
+  onDrawCards,
   className,
 }: WaypointZoneProps) {
-  const DecoIcon = DECORATION_ICONS[waypoint.decorationIcon];
-
   return (
     <motion.div
       layout
       variants={containerVariants}
       initial="initial"
       animate="animate"
-      className={cn('flex flex-col gap-4 p-4', className)}
+      className={cn('flex flex-col gap-3 p-4', className)}
     >
-      {/* Waypoint header — icon + name */}
+      {/* Waypoint header — number + name */}
       <motion.div
         variants={itemVariants}
-        className="flex items-center gap-3"
       >
-        <DecoIcon className="w-10 h-10 shrink-0" />
-        <div>
-          <p className="text-[10px] font-medium tracking-widest uppercase text-[#c9a94e]/70 mb-0.5">
-            Waypoint {waypointIndex + 1}
-          </p>
-          <h3
-            className="text-lg font-bold text-white leading-tight"
-            style={{ textShadow: '0 0 20px rgba(201,169,78,0.25)' }}
-          >
-            {waypoint.name}
-          </h3>
-        </div>
+        <p className="text-[10px] font-medium tracking-widest uppercase text-[#c9a94e]/70 mb-0.5">
+          Waypoint {waypointIndex + 1}
+        </p>
+        <h3
+          className="text-lg font-bold text-white leading-tight"
+          style={{ textShadow: '0 0 20px rgba(201,169,78,0.25)' }}
+        >
+          {waypoint.name}
+        </h3>
       </motion.div>
 
       {/* Description */}
       <motion.div
         variants={itemVariants}
         className={cn(
-          'relative overflow-hidden rounded-2xl p-4',
+          'relative overflow-hidden rounded-2xl p-3',
           'bg-white/5 backdrop-blur-xl border border-white/10',
           'shadow-lg shadow-purple-900/20',
         )}
       >
         <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent pointer-events-none rounded-2xl" />
-        <p className="relative z-10 text-sm text-white/60 leading-relaxed">
+        <p className="relative z-10 text-sm text-white/60 leading-relaxed line-clamp-2">
           {waypoint.description}
         </p>
       </motion.div>
@@ -155,27 +81,10 @@ export function WaypointZone({
           <div className="mt-1 shrink-0 w-5 h-5 rounded-full border border-[#c9a94e]/40 flex items-center justify-center">
             <div className="w-1.5 h-1.5 rounded-full bg-[#c9a94e]/60" />
           </div>
-          <p className="text-sm italic text-white/50 leading-relaxed">
+          <p className="text-sm italic text-white/50 leading-relaxed line-clamp-3">
             {waypoint.lyraGuidance}
           </p>
         </div>
-      </motion.div>
-
-      {/* CTA */}
-      <motion.div variants={itemVariants}>
-        <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={onProceedToIntention}
-          className={cn(
-            'w-full py-3 px-6 rounded-2xl text-sm font-semibold',
-            'border border-[#c9a94e]/40 text-[#c9a94e]',
-            'bg-[#c9a94e]/5 hover:bg-[#c9a94e]/10',
-            'transition-colors duration-200',
-          )}
-        >
-          Set My Intention
-        </motion.button>
       </motion.div>
     </motion.div>
   );

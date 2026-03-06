@@ -152,7 +152,8 @@ export async function POST(request: NextRequest) {
           card.imagePrompt,
           artStylePrompt,
           deckId,
-          stabilityPreset
+          stabilityPreset,
+          deck.theme ?? undefined
         );
       })
     );

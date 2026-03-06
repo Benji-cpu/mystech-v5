@@ -3,8 +3,17 @@ import { getUserCompletedDecks, getUserPlan } from "@/lib/db/queries";
 import { ReadingFlow } from "@/components/readings/reading-flow";
 import type { Deck, PlanType } from "@/types";
 
-export default async function NewReadingPage() {
+interface NewReadingPageProps {
+  searchParams: Promise<{ guided?: string; deckId?: string }>;
+}
+
+export default async function NewReadingPage({ searchParams }: NewReadingPageProps) {
   const user = await requireAuth();
+  const params = await searchParams;
+
+  const isGuided = params.guided === "true";
+  const guidedDeckId = params.deckId ?? undefined;
+
   const [rows, resolvedPlan] = await Promise.all([
     getUserCompletedDecks(user.id!),
     getUserPlan(user.id!),
@@ -28,5 +37,13 @@ export default async function NewReadingPage() {
     updatedAt: d.updatedAt,
   }));
 
-  return <ReadingFlow decks={decks} userPlan={plan} userRole={user.role ?? "user"} />;
+  return (
+    <ReadingFlow
+      decks={decks}
+      userPlan={plan}
+      userRole={user.role ?? "user"}
+      guided={isGuided}
+      guidedDeckId={guidedDeckId}
+    />
+  );
 }

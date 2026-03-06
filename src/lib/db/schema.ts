@@ -23,6 +23,7 @@ export const users = pgTable("user", {
   displayName: text("display_name"),
   bio: text("bio"),
   role: text("role").notNull().default("user"), // "user" | "tester" | "admin"
+  initiationCompletedAt: timestamp("initiation_completed_at", { mode: "date" }),
   createdAt: timestamp("createdAt", { mode: "date" }).defaultNow().notNull(),
   updatedAt: timestamp("updatedAt", { mode: "date" }).defaultNow().notNull(),
 });

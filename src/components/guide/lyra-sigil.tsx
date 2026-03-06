@@ -40,7 +40,7 @@ export function LyraSigil({
   className,
 }: LyraSigilProps) {
   const dimension = sizeMap[size];
-  const baseRadius = size === "sm" ? 3.5 : size === "md" ? 4.5 : size === "lg" ? 5 : 6;
+  const baseRadius = size === "sm" ? 4.5 : size === "md" ? 5.5 : size === "lg" ? 7 : 9;
 
   // Animation configurations based on state
   const getStarAnimation = (index: number, star: (typeof stars)[0]) => {
@@ -72,13 +72,13 @@ export function LyraSigil({
   const getOpacity = () => {
     switch (state) {
       case "dormant":
-        return 0.6;
+        return 0.8;
       case "attentive":
         return 0.9;
       case "speaking":
         return 1.0;
       default:
-        return 0.6;
+        return 0.8;
     }
   };
 
@@ -100,6 +100,16 @@ export function LyraSigil({
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
       >
+        <defs>
+          <filter id="star-glow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="2" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+
         {/* Constellation lines */}
         {connections.map((conn, index) => {
           const fromStar = getStarById(conn.from);
@@ -113,23 +123,34 @@ export function LyraSigil({
               y1={fromStar.cy}
               x2={toStar.cx}
               y2={toStar.cy}
-              stroke="rgba(201,169,78,0.3)"
+              stroke="rgba(201,169,78,0.55)"
               strokeWidth="1.5"
             />
           );
         })}
 
-        {/* Stars */}
-        {stars.map((star, index) => (
-          <motion.circle
-            key={star.id}
-            cx={star.cx}
-            cy={star.cy}
-            r={baseRadius}
-            fill="#c9a94e"
-            animate={getStarAnimation(index, star)}
-          />
-        ))}
+        {/* Stars — gold body with glow, white hot core */}
+        {stars.map((star, index) => {
+          const r = star.id === "vega" ? baseRadius + 1.5 : baseRadius;
+          return (
+            <g key={star.id} filter="url(#star-glow)">
+              <motion.circle
+                cx={star.cx}
+                cy={star.cy}
+                r={r}
+                fill="#c9a94e"
+                animate={getStarAnimation(index, star)}
+              />
+              {/* Bright white core */}
+              <circle
+                cx={star.cx}
+                cy={star.cy}
+                r={r * 0.4}
+                fill="rgba(255,255,255,0.9)"
+              />
+            </g>
+          );
+        })}
       </svg>
     </span>
   );

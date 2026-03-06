@@ -3,7 +3,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { Textarea } from '@/components/ui/textarea';
 import { MockCardFront, MockCardBack } from '@/components/mock/mock-card';
 import type { MockCard } from '@/components/mock/mock-data';
 import type { ReadingSubPhase } from '../path-journey-state';
@@ -114,29 +113,20 @@ interface ReadingZoneProps {
   cards: MockCard[];
   revealedIndices: number[];
   interpretationText: string;
-  userIntention: string;
-  userQuestion: string;
-  onSetUserQuestion: (text: string) => void;
   onRevealCard: (index: number) => void;
   className?: string;
 }
-
-const MAX_QUESTION_CHARS = 300;
 
 export function ReadingZone({
   subPhase,
   cards,
   revealedIndices,
   interpretationText,
-  userIntention,
-  userQuestion,
-  onSetUserQuestion,
   onRevealCard,
   className,
 }: ReadingZoneProps) {
   const isInterpreting = subPhase === 'interpreting' || subPhase === 'complete';
   const isDrawing = subPhase === 'drawing';
-  const isQuestioning = subPhase === 'questioning';
   const allRevealed = revealedIndices.length >= 3;
   const streamedText = useStreamingText(interpretationText, isInterpreting);
 
@@ -145,89 +135,6 @@ export function ReadingZone({
 
   return (
     <div className={cn('flex flex-col h-full min-h-0', className)}>
-      {/* Questioning sub-phase — always mounted, visibility controlled */}
-      <motion.div
-        layout
-        animate={{
-          flex: isQuestioning ? 1 : 0,
-          opacity: isQuestioning ? 1 : 0,
-          height: isQuestioning ? 'auto' : 0,
-        }}
-        transition={SPRING}
-        className="overflow-hidden min-h-0"
-      >
-        <div className="flex flex-col gap-4 p-4">
-          {/* Header */}
-          <motion.p
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={SPRING}
-            className="text-xs font-medium tracking-widest uppercase text-white/40 text-center"
-          >
-            What question will you bring to the cards?
-          </motion.p>
-
-          {/* Intention reference chip */}
-          {userIntention && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ ...SPRING, delay: 0.08 }}
-              className="flex items-center justify-center"
-            >
-              <span className={cn(
-                'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs',
-                'bg-[#c9a94e]/10 border border-[#c9a94e]/20 text-[#c9a94e]/70',
-              )}>
-                <span className="w-1 h-1 rounded-full bg-[#c9a94e]/50" />
-                {userIntention.length > 60 ? userIntention.slice(0, 57) + '...' : userIntention}
-              </span>
-            </motion.div>
-          )}
-
-          {/* Question textarea */}
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ ...SPRING, delay: 0.14 }}
-          >
-            <Textarea
-              value={userQuestion}
-              onChange={(e) => {
-                if (e.target.value.length <= MAX_QUESTION_CHARS) {
-                  onSetUserQuestion(e.target.value);
-                }
-              }}
-              placeholder="Ask the cards a question..."
-              className={cn(
-                'min-h-[80px] resize-none',
-                'bg-white/5 backdrop-blur-xl border-white/10 rounded-xl',
-                'text-white/80 placeholder:text-white/20',
-                'focus-visible:border-[#c9a94e]/50 focus-visible:ring-[#c9a94e]/20',
-              )}
-            />
-            {userQuestion.length > 0 && (
-              <p className={cn(
-                'text-[10px] text-right mt-1.5',
-                userQuestion.length > MAX_QUESTION_CHARS * 0.9 ? 'text-amber-400/60' : 'text-white/20',
-              )}>
-                {userQuestion.length}/{MAX_QUESTION_CHARS}
-              </p>
-            )}
-          </motion.div>
-
-          {/* Hint */}
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 0.4 }}
-            transition={{ delay: 0.2 }}
-            className="text-xs italic text-white/30 text-center"
-          >
-            The cards will speak to this question
-          </motion.p>
-        </div>
-      </motion.div>
-
       {/* Card spread — always mounted, visibility controlled */}
       <motion.div
         layout

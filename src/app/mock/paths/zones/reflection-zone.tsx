@@ -89,7 +89,7 @@ export function ReflectionZone({
       variants={containerVariants}
       initial="initial"
       animate="animate"
-      className={cn('flex flex-col gap-4 p-4', className)}
+      className={cn('flex flex-col gap-3 p-4', className)}
     >
       {/* Completion badge */}
       <motion.div
@@ -118,7 +118,7 @@ export function ReflectionZone({
         <div className="mt-1 shrink-0 w-5 h-5 rounded-full border border-[#c9a94e]/40 flex items-center justify-center">
           <div className="w-1.5 h-1.5 rounded-full bg-[#c9a94e]/60" />
         </div>
-        <p className="text-sm italic text-white/50 leading-relaxed">
+        <p className="text-sm italic text-white/50 leading-relaxed line-clamp-2">
           What resonated with you? What truths are you carrying forward?
         </p>
       </motion.div>
@@ -135,7 +135,7 @@ export function ReflectionZone({
           placeholder="Write what emerged for you..."
           disabled={reflectionSkipped}
           className={cn(
-            'min-h-[100px] resize-none',
+            'min-h-[60px] resize-none',
             'bg-white/5 backdrop-blur-xl border-white/10 rounded-xl',
             'text-white/80 placeholder:text-white/20',
             'focus-visible:border-[#c9a94e]/50 focus-visible:ring-[#c9a94e]/20',

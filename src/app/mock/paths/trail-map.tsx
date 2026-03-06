@@ -28,35 +28,6 @@ const TRAIL_PATH = `
   L 150 580
 `;
 
-// Decoration shapes per waypoint type
-function WaypointDecoration({ type, x, y }: { type: string; x: number; y: number }) {
-  switch (type) {
-    case "archway":
-      return (
-        <g transform={`translate(${x - 18}, ${y - 30})`} opacity={0.3}>
-          <path d="M 0 24 L 0 0 C 0 -8, 36 -8, 36 0 L 36 24" stroke="#c9a94e" strokeWidth="1.5" fill="none" />
-          <line x1="0" y1="24" x2="36" y2="24" stroke="#c9a94e" strokeWidth="1" />
-        </g>
-      );
-    case "mirror":
-      return (
-        <g transform={`translate(${x + 24}, ${y - 14})`} opacity={0.3}>
-          <ellipse cx="0" cy="0" rx="12" ry="16" stroke="#c9a94e" strokeWidth="1.5" fill="none" />
-          <line x1="0" y1="16" x2="0" y2="24" stroke="#c9a94e" strokeWidth="1.5" />
-          <line x1="-6" y1="24" x2="6" y2="24" stroke="#c9a94e" strokeWidth="1.5" />
-        </g>
-      );
-    case "cliff":
-      return (
-        <g transform={`translate(${x - 30}, ${y + 8})`} opacity={0.3}>
-          <polyline points="0,20 10,0 20,12 30,2 40,16 50,6 60,20" stroke="#c9a94e" strokeWidth="1.5" fill="none" />
-        </g>
-      );
-    default:
-      return null;
-  }
-}
-
 export function TrailMap({
   waypoints,
   currentWaypointIndex,
@@ -79,21 +50,7 @@ export function TrailMap({
         animate={{ viewBox: `0 ${viewBoxY} 400 400` }}
         transition={{ type: "spring", stiffness: 100, damping: 25, duration: 1.2 }}
       >
-        {/* Fog/mist gradient overlays */}
         <defs>
-          <linearGradient id="trailFog" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="rgba(10,1,24,0.8)" />
-            <stop offset="30%" stopColor="rgba(10,1,24,0)" />
-            <stop offset="70%" stopColor="rgba(10,1,24,0)" />
-            <stop offset="100%" stopColor="rgba(10,1,24,0.8)" />
-          </linearGradient>
-          <filter id="glow">
-            <feGaussianBlur stdDeviation="3" result="blur" />
-            <feMerge>
-              <feMergeNode in="blur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
           <filter id="softGlow">
             <feGaussianBlur stdDeviation="6" result="blur" />
             <feMerge>
@@ -112,27 +69,16 @@ export function TrailMap({
           strokeDasharray="8 4"
         />
 
-        {/* Trail path — progress highlight */}
+        {/* Trail path — progress highlight (no glow filter) */}
         <motion.path
           d={TRAIL_PATH}
           stroke="rgba(201,169,78,0.5)"
           strokeWidth="2.5"
           fill="none"
-          filter="url(#glow)"
           initial={{ pathLength: 0 }}
           animate={{ pathLength: trailProgress }}
           transition={{ type: "spring", stiffness: 50, damping: 20 }}
         />
-
-        {/* Waypoint decorations */}
-        {waypoints.map((wp, i) => (
-          <WaypointDecoration
-            key={`dec-${i}`}
-            type={wp.decorationIcon}
-            x={WAYPOINT_X[i]}
-            y={WAYPOINT_Y[i]}
-          />
-        ))}
 
         {/* Waypoint markers */}
         {waypoints.map((wp, i) => {
@@ -249,7 +195,6 @@ export function TrailMap({
           cy={WAYPOINT_Y[currentWaypointIndex]}
           r={5}
           fill="#c9a94e"
-          filter="url(#glow)"
           animate={{
             cx: WAYPOINT_X[currentWaypointIndex],
             cy: WAYPOINT_Y[currentWaypointIndex],
@@ -257,8 +202,6 @@ export function TrailMap({
           transition={{ type: "spring", stiffness: 80, damping: 20 }}
         />
 
-        {/* Fog overlay */}
-        <rect x="0" y={viewBoxY} width="400" height="400" fill="url(#trailFog)" />
       </motion.svg>
     </motion.div>
   );

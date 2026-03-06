@@ -34,16 +34,17 @@ function Sparkle({ x, y, delay, size }: SparkleProps) {
   );
 }
 
+// Sparkles concentrated around the badge area (top-center)
 const SPARKLES: SparkleProps[] = [
-  { x: '10%', y: '20%', delay: 0,    size: 3 },
-  { x: '25%', y: '10%', delay: 0.4,  size: 2 },
-  { x: '50%', y: '5%',  delay: 0.8,  size: 4 },
-  { x: '75%', y: '12%', delay: 0.25, size: 2 },
-  { x: '88%', y: '22%', delay: 0.6,  size: 3 },
-  { x: '15%', y: '55%', delay: 1.1,  size: 2 },
-  { x: '85%', y: '50%', delay: 0.9,  size: 3 },
-  { x: '40%', y: '15%', delay: 1.4,  size: 2 },
-  { x: '62%', y: '8%',  delay: 0.55, size: 3 },
+  { x: '30%', y: '5%',  delay: 0,    size: 3 },
+  { x: '40%', y: '2%',  delay: 0.4,  size: 2 },
+  { x: '50%', y: '0%',  delay: 0.8,  size: 4 },
+  { x: '60%', y: '3%',  delay: 0.25, size: 2 },
+  { x: '70%', y: '6%',  delay: 0.6,  size: 3 },
+  { x: '35%', y: '10%', delay: 1.1,  size: 2 },
+  { x: '65%', y: '9%',  delay: 0.9,  size: 3 },
+  { x: '45%', y: '7%',  delay: 1.4,  size: 2 },
+  { x: '55%', y: '1%',  delay: 0.55, size: 3 },
 ];
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -75,6 +76,12 @@ const itemVariants = {
   },
 };
 
+const STATS = [
+  { value: '3', label: 'Waypoints' },
+  { value: '9', label: 'Cards Drawn' },
+  { value: '3', label: 'Themes' },
+];
+
 export function RetreatCompleteZone({
   retreat,
   artifactTitle,
@@ -87,7 +94,7 @@ export function RetreatCompleteZone({
       variants={containerVariants}
       initial="initial"
       animate="animate"
-      className={cn('relative flex flex-col gap-5 p-4 overflow-hidden', className)}
+      className={cn('relative flex flex-col gap-3 p-3 overflow-hidden', className)}
     >
       {/* Ambient sparkles */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
@@ -96,17 +103,64 @@ export function RetreatCompleteZone({
         ))}
       </div>
 
-      {/* Heading */}
-      <motion.div variants={itemVariants} className="text-center">
-        <p className="text-[10px] font-medium tracking-widest uppercase text-[#c9a94e]/70 mb-1">
-          Retreat complete
-        </p>
-        <h2
-          className="text-2xl font-bold text-[#c9a94e] leading-tight"
-          style={{ textShadow: '0 0 30px rgba(201,169,78,0.35)' }}
+      {/* ── Achievement badge ── */}
+      <motion.div variants={itemVariants} className="flex flex-col items-center gap-2">
+        {/* Glowing badge circle */}
+        <motion.div
+          className="relative flex items-center justify-center"
+          animate={{
+            boxShadow: [
+              '0 0 20px rgba(201,169,78,0.2)',
+              '0 0 35px rgba(201,169,78,0.4)',
+              '0 0 20px rgba(201,169,78,0.2)',
+            ],
+          }}
+          transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+          style={{ borderRadius: '50%' }}
         >
-          {retreat.name} Complete
-        </h2>
+          <div
+            className={cn(
+              'w-14 h-14 rounded-full flex items-center justify-center',
+              'border-2 border-[#c9a94e] bg-[#c9a94e]/10',
+            )}
+          >
+            {/* Diamond/star SVG */}
+            <svg viewBox="0 0 24 24" className="w-7 h-7" fill="none" aria-hidden="true">
+              <path
+                d="M12 2 L14.5 9 L22 9.5 L16 14.5 L18 22 L12 17.5 L6 22 L8 14.5 L2 9.5 L9.5 9 Z"
+                fill="#c9a94e"
+                opacity={0.9}
+              />
+            </svg>
+          </div>
+        </motion.div>
+
+        {/* Badge title */}
+        <p
+          className="text-sm font-bold text-[#c9a94e]"
+          style={{ textShadow: '0 0 20px rgba(201,169,78,0.3)' }}
+        >
+          Threshold Walker
+        </p>
+        <p className="text-xs text-white/40">
+          First retreat completed
+        </p>
+      </motion.div>
+
+      {/* ── Stats row ── */}
+      <motion.div variants={itemVariants} className="flex items-center justify-center gap-2">
+        {STATS.map((stat) => (
+          <div
+            key={stat.label}
+            className={cn(
+              'flex flex-col items-center px-3 py-2 rounded-xl text-center',
+              'bg-white/5 border border-white/10',
+            )}
+          >
+            <span className="text-base font-bold text-[#c9a94e]">{stat.value}</span>
+            <span className="text-[10px] text-white/40">{stat.label}</span>
+          </div>
+        ))}
       </motion.div>
 
       {/* Divider */}
@@ -118,11 +172,11 @@ export function RetreatCompleteZone({
         }}
       />
 
-      {/* Artifact card */}
+      {/* ── Artifact card ── */}
       <motion.div
         variants={itemVariants}
         className={cn(
-          'relative overflow-hidden rounded-2xl p-4',
+          'relative overflow-hidden rounded-2xl p-3',
           'bg-white/5 backdrop-blur-xl',
           'border border-[#c9a94e]/40',
           'shadow-[0_0_30px_rgba(201,169,78,0.15)]',
@@ -138,7 +192,7 @@ export function RetreatCompleteZone({
         <div className="absolute bottom-2 left-2 w-3 h-3 border-b border-l border-[#c9a94e]/40" />
         <div className="absolute bottom-2 right-2 w-3 h-3 border-b border-r border-[#c9a94e]/40" />
 
-        <div className="relative z-10 flex flex-col gap-3">
+        <div className="relative z-10 flex flex-col gap-2">
           {/* Artifact label */}
           <p className="text-[9px] font-medium tracking-widest uppercase text-[#c9a94e]/60">
             Retreat artifact
@@ -174,7 +228,7 @@ export function RetreatCompleteZone({
           />
 
           {/* Summary */}
-          <p className="text-xs text-white/55 leading-relaxed">
+          <p className="text-xs text-white/55 leading-relaxed line-clamp-3">
             {artifactSummary}
           </p>
         </div>

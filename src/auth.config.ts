@@ -20,7 +20,8 @@ export default {
         nextUrl.pathname.startsWith("/decks") ||
         nextUrl.pathname.startsWith("/readings") ||
         nextUrl.pathname.startsWith("/explore") ||
-        nextUrl.pathname.startsWith("/settings");
+        nextUrl.pathname.startsWith("/settings") ||
+        nextUrl.pathname.startsWith("/onboarding");
       const isOnAdmin = nextUrl.pathname.startsWith("/admin");
       const isOnLogin = nextUrl.pathname === "/login";
 

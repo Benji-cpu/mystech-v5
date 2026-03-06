@@ -10,7 +10,10 @@ import {
 } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { GlassPanel } from '@/components/ui/glass-panel';
+import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
+import { Send } from 'lucide-react';
+import { MicrophoneButton } from '@/components/voice/microphone-button';
 import { LyraSigil } from '@/components/guide/lyra-sigil';
 import { useImmersiveOptional } from '@/components/immersive/immersive-provider';
 
@@ -43,6 +46,15 @@ function getLyraGreeting(): string {
   if (hour < 17) return "The afternoon light bends to listen. How have the hours been weaving themselves for you today?";
   if (hour < 21) return "As evening descends, I am here. What has today placed in your hands — or taken away?";
   return "The night deepens. Before you rest, let us tend to the threads of today. What wishes to be known?";
+}
+
+function getPathAwareGreeting(waypointName: string): string {
+  const hour = new Date().getHours();
+  if (hour < 5) return `The night is still. Today's waypoint — "${waypointName}" — waits for your reflection.`;
+  if (hour < 12) return `Good morning. Your path continues today through "${waypointName}." What has this theme been stirring in you?`;
+  if (hour < 17) return `The afternoon bends to listen. Today we walk with "${waypointName}." What comes to mind?`;
+  if (hour < 21) return `As evening descends, let us tend to "${waypointName}." What has the day revealed about this theme?`;
+  return `The night deepens. Before you rest, let us sit with "${waypointName}." What wishes to be known?`;
 }
 
 // ── Reflecting messages ───────────────────────────────────────────────────
@@ -159,25 +171,25 @@ function StreakBadge({ count }: { count: number }) {
 interface ActionBarProps {
   phase: string;
   inputValue: string;
-  userMsgCount: number;
   isStreaming: boolean;
   canForge: boolean;
   isFirstEntry: boolean;
   onInputChange: (v: string) => void;
   onSend: () => void;
   onForge: () => void;
+  onMicTranscript: (text: string, isFinal: boolean) => void;
 }
 
 function ActionBar({
   phase,
   inputValue,
-  userMsgCount,
   isStreaming,
   canForge,
   onInputChange,
   onSend,
   isFirstEntry,
   onForge,
+  onMicTranscript,
 }: ActionBarProps) {
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -187,14 +199,6 @@ function ActionBar({
       onSend();
     }
   };
-
-  // Auto-resize textarea: grows to max 3 lines (~88px), then scrolls
-  useEffect(() => {
-    const el = inputRef.current;
-    if (!el) return;
-    el.style.height = '44px';
-    el.style.height = Math.min(el.scrollHeight, 88) + 'px';
-  }, [inputValue]);
 
   if (phase === 'greeting' || phase === 'reflecting' || phase === 'card_forging') {
     return (
@@ -224,60 +228,42 @@ function ActionBar({
         transition={CONTENT_SPRING}
         className="flex flex-col gap-2"
       >
-        {/* Input row */}
-        <div className="flex items-end gap-2">
-          <div className="flex-1 relative">
-            <textarea
-              ref={inputRef}
-              value={inputValue}
-              onChange={(e) => onInputChange(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Share what's on your mind..."
-              disabled={isStreaming}
-              maxLength={500}
-              rows={1}
-              className={cn(
-                'w-full resize-none rounded-xl px-4 py-3 text-sm',
-                'bg-white/5 border border-white/10',
-                'text-white/90 placeholder:text-white/25',
-                'focus:outline-none focus:border-[#c9a94e]/40 focus:ring-1 focus:ring-[#c9a94e]/20',
-                'transition-colors duration-200',
-                'min-h-[44px] max-h-[88px] overflow-y-auto',
-                isStreaming && 'opacity-50 cursor-not-allowed'
-              )}
-            />
-          </div>
-
-          {/* Send button */}
-          <motion.button
-            whileHover={!isStreaming && inputValue.trim() ? { scale: 1.05 } : {}}
-            whileTap={!isStreaming && inputValue.trim() ? { scale: 0.95 } : {}}
+        {/* Input row — standard pattern matching ConversationChat */}
+        <div className="flex gap-2 pt-2 border-t border-white/10">
+          <Textarea
+            ref={inputRef}
+            value={inputValue}
+            onChange={(e) => onInputChange(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Share what's on your mind..."
+            disabled={isStreaming}
+            maxLength={500}
+            rows={1}
+            className="min-h-[44px] max-h-[120px] resize-none bg-white/5 border-white/10 text-white/90 placeholder:text-white/25 focus-visible:ring-[#c9a94e]/20 focus-visible:border-[#c9a94e]/40"
+          />
+          <MicrophoneButton
+            onTranscript={onMicTranscript}
+          />
+          <Button
+            type="button"
+            size="icon"
             onClick={onSend}
             disabled={isStreaming || !inputValue.trim()}
-            className={cn(
-              'shrink-0 w-10 h-10 rounded-full flex items-center justify-center self-end mb-[2px]',
-              'transition-all duration-200',
-              inputValue.trim() && !isStreaming
-                ? 'bg-[#c9a94e]/20 border border-[#c9a94e]/40 text-[#c9a94e] hover:bg-[#c9a94e]/30'
-                : 'bg-white/5 border border-white/10 text-white/20 cursor-not-allowed'
-            )}
+            className="flex-shrink-0 h-[44px] w-[44px]"
           >
-            <svg width="20" height="20" viewBox="0 0 16 16" fill="none">
-              <path d="M2 8L14 2L8 14L7 9L2 8Z" fill="currentColor" />
-            </svg>
-          </motion.button>
+            <Send className="h-4 w-4" />
+          </Button>
         </div>
 
-        {/* Forge CTA — shown after 2+ user messages */}
+        {/* Forge CTA — shown after Lyra's wrap-up signal */}
         {canForge && (
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={CONTENT_SPRING}
-            className="space-y-2"
           >
             {isFirstEntry && (
-              <p className="text-xs text-[#c9a94e]/60 text-center">
+              <p className="text-xs text-[#c9a94e]/60 text-center mb-2">
                 Your first card is ready to be forged from today&apos;s conversation
               </p>
             )}
@@ -288,10 +274,8 @@ function ActionBar({
               className={cn(
                 'w-full py-3 rounded-xl font-semibold text-sm',
                 'bg-gradient-to-r from-[#c9a94e] to-[#daa520] text-black',
-                'shadow-lg shadow-[#c9a94e]/20',
-                'hover:shadow-xl hover:shadow-[#c9a94e]/30',
+                'shadow-lg shadow-[#c9a94e]/20 hover:shadow-xl hover:shadow-[#c9a94e]/30',
                 'transition-shadow duration-300',
-                userMsgCount >= 5 && 'animate-pulse'
               )}
             >
               Forge Your Card
@@ -332,7 +316,6 @@ export function ChronicleFlow({
 }: ChronicleFlowProps) {
   const immersive = useImmersiveOptional();
   const setMoodPreset = immersive?.setMoodPreset;
-  const exitFocusMode = immersive?.exitFocusMode;
 
   // Normalise initialPhase to a known ChroniclePhase
   const resolvedInitialPhase = (() => {
@@ -357,11 +340,11 @@ export function ChronicleFlow({
   const readingFired = useRef(false);
   const completeFired = useRef(false);
 
-  const { phase, messages, isStreaming, card, miniReading, streakCount, newBadge, journeyRecorded, error } = state;
+  const { phase, messages, isStreaming, lyraSignaledReady, card, miniReading, streakCount, newBadge, journeyRecorded, error } = state;
 
   const canForge = useMemo(
-    () => userMessageCount(messages) >= 2 && !isStreaming,
-    [messages, isStreaming]
+    () => lyraSignaledReady && !isStreaming,
+    [lyraSignaledReady, isStreaming]
   );
 
   // ── Restore from server state ────────────────────────────────────────
@@ -400,8 +383,7 @@ export function ChronicleFlow({
     };
     const preset = moodMap[phase];
     if (preset) setMoodPreset(preset as Parameters<typeof setMoodPreset>[0]);
-    if (phase === 'complete') exitFocusMode?.();
-  }, [phase, setMoodPreset, exitFocusMode]);
+  }, [phase, setMoodPreset]);
 
   // ── Phase: greeting — push Lyra's greeting message ────────────────────
   // StrictMode-safe: uses cleanup `cancelled` flag instead of a persistent ref guard
@@ -413,7 +395,9 @@ export function ChronicleFlow({
 
     dispatch({ type: 'START_STREAMING' });
 
-    const greeting = getLyraGreeting();
+    const greeting = journeyPosition
+      ? getPathAwareGreeting(journeyPosition.waypoint.name)
+      : getLyraGreeting();
     let i = 0;
 
     function tick() {
@@ -434,7 +418,8 @@ export function ChronicleFlow({
     setTimeout(tick, 18);
 
     return () => { cancelled = true; };
-  }, [phase]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, journeyPosition]);
 
   // ── Phase: reflecting — show a brief message then trigger forge ───────
 
@@ -445,10 +430,10 @@ export function ChronicleFlow({
     const msg = REFLECTING_MESSAGES[Math.floor(Math.random() * REFLECTING_MESSAGES.length)];
     setReflectingMsg(msg);
 
-    // Transition to forging after message shown
+    // Transition to forging after message shown (longer pause for smoother transition)
     const timer = setTimeout(() => {
       dispatch({ type: 'REFLECTING_DONE' });
-    }, 2800);
+    }, 3500);
 
     return () => clearTimeout(timer);
   }, [phase]);
@@ -549,7 +534,48 @@ export function ChronicleFlow({
       });
   }, [deckId, streakCount]);
 
+  // ── Card image polling — polls until imageStatus leaves "generating" ──
+
+  const imagePollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  useEffect(() => {
+    if (!card || card.imageStatus !== 'generating') {
+      if (imagePollRef.current) clearInterval(imagePollRef.current);
+      return;
+    }
+    imagePollRef.current = setInterval(() => {
+      fetch('/api/chronicle/today')
+        .then((r) => r.json())
+        .then((data) => {
+          const updated = data.data?.todayCard;
+          if (updated && updated.imageStatus !== 'generating') {
+            dispatch({ type: 'UPDATE_CARD_IMAGE', imageUrl: updated.imageUrl, imageStatus: updated.imageStatus });
+            if (imagePollRef.current) clearInterval(imagePollRef.current);
+          }
+        })
+        .catch(() => {});
+    }, 3000);
+    return () => { if (imagePollRef.current) clearInterval(imagePollRef.current); };
+  }, [card?.id, card?.imageStatus]);
+
+  // ── Reset one-shot refs when returning to dialogue after error (allows retry) ──
+
+  useEffect(() => {
+    if (phase === 'dialogue' && error) {
+      forgeFired.current = false;
+      reflectingFired.current = false;
+    }
+  }, [phase, error]);
+
   // ── Handlers ─────────────────────────────────────────────────────────
+
+  const handleMicTranscript = useCallback((text: string, isFinal: boolean) => {
+    if (isFinal && text.trim()) {
+      setInputValue((prev) => {
+        const separator = prev.trim() ? ' ' : '';
+        return prev + separator + text;
+      });
+    }
+  }, []);
 
   const handleSend = useCallback(async () => {
     const content = inputValue.trim();
@@ -587,36 +613,43 @@ export function ChronicleFlow({
       }
 
       dispatch({ type: 'STREAM_COMPLETE', content: accumulated });
+
+      // Check if Lyra signaled readiness (2+ exchanges, response doesn't end with a question)
+      const totalUserMsgs = userMessageCount(messages) + 1; // +1 for the just-sent message
+      if (totalUserMsgs >= 2 && !accumulated.trim().endsWith('?')) {
+        dispatch({ type: 'LYRA_READY' });
+      }
     } catch {
       dispatch({ type: 'STREAM_COMPLETE', content: "The connection wavered. Please try again." });
     }
-  }, [inputValue, isStreaming, deckId]);
+  }, [inputValue, isStreaming, deckId, messages]);
 
   const handleForge = useCallback(() => {
     if (!canForge) return;
     dispatch({ type: 'START_REFLECTING' });
   }, [canForge]);
 
-  const handleDeepen = useCallback(() => {
-    if (!card || !journeyPosition) return;
-    try {
-      sessionStorage.setItem('mystech_reading_handoff', JSON.stringify({
-        source: 'chronicle',
-        chronicleCardId: card.id,
-        question: journeyPosition.waypoint.suggestedIntention,
-        deckId,
-      }));
-    } catch { /* sessionStorage unavailable */ }
-    window.location.href = '/readings/new?source=chronicle';
-  }, [card, journeyPosition, deckId]);
-
-  // ── Auto-transition: card_reveal → reading ─────────────────────────
+  // ── Auto-transition: card_reveal → reading (or → /readings/new for journey users) ──
 
   useEffect(() => {
     if (phase !== 'card_reveal') return;
-    const timer = setTimeout(() => dispatch({ type: 'CARD_REVEALED' }), 2000);
+    const timer = setTimeout(() => {
+      if (journeyPosition && card) {
+        try {
+          sessionStorage.setItem('mystech_reading_handoff', JSON.stringify({
+            source: 'chronicle',
+            chronicleCardId: card.id,
+            question: journeyPosition.waypoint.suggestedIntention,
+            deckId,
+          }));
+        } catch { /* sessionStorage unavailable */ }
+        window.location.href = '/readings/new?source=chronicle';
+      } else {
+        dispatch({ type: 'CARD_REVEALED' });
+      }
+    }, 2000);
     return () => clearTimeout(timer);
-  }, [phase]);
+  }, [phase, journeyPosition, card, deckId]);
 
   // ── Zone visibility ──────────────────────────────────────────────────
 
@@ -624,18 +657,19 @@ export function ChronicleFlow({
   const showDialogueZone = isDialogueZoneVisible(phase);
   const isReadingActive = isReadingZoneActive(phase);
 
-  // Card zone: full during forging, half during reveal, compact during reading/complete
+  // Card zone: dominant during forging, half during reveal, compact during reading/complete
   const cardZoneStyle = (() => {
-    if (phase === 'card_forging') return { flex: 1 };
+    if (phase === 'card_forging') return { flex: '0 0 65%' }; // Leave room for reflecting text
     if (phase === 'card_reveal') return { flex: '0 0 50%' };
     if (phase === 'reading' || phase === 'complete') return { flex: '0 0 35%' };
     return { flex: 0 };
   })();
 
-  // Dialogue zone: full during chat/reading, hidden when card is full-screen
+  // Dialogue zone: full during chat/reading, partially visible during forging, hidden during reveal
   const dialogueZoneFlex = (() => {
     if (!showDialogueZone) return 0;
-    if (phase === 'card_forging' || phase === 'card_reveal') return 0;
+    if (phase === 'card_reveal') return 0;
+    if (phase === 'card_forging') return 0.3; // Keep reflecting message partially visible during forge
     return 1;
   })();
 
@@ -643,20 +677,6 @@ export function ChronicleFlow({
 
   return (
     <div className="-mx-4 sm:-mx-6 lg:-mx-8 -mt-6 h-[100dvh] flex flex-col overflow-hidden relative">
-      {/* ── Journey indicator bar ── */}
-      {journeyPosition && (
-        <div className="absolute top-0 left-0 right-0 z-10 px-4 py-1.5 bg-white/5 backdrop-blur-sm border-b border-white/5">
-          <p className="text-[10px] text-[#c9a94e]/70 text-center truncate">
-            {journeyPosition.path.name} &gt; {journeyPosition.retreat.name} · {journeyPosition.waypoint.name}
-            {journeyPosition.waypoint.requiredReadings > 1 && (
-              <span className="text-white/30 ml-1.5">
-                {journeyPosition.waypointProgress.readingCount}/{journeyPosition.waypoint.requiredReadings}
-              </span>
-            )}
-          </p>
-        </div>
-      )}
-
       {/* ── CARD ZONE — always mounted, resizes ── */}
       <motion.div
         layout
@@ -690,7 +710,13 @@ export function ChronicleFlow({
             <OracleCard
               card={toCard(card)}
               size={phase === 'card_reveal' ? 'md' : 'sm'}
+              hideTitle={phase !== 'card_reveal'}
             />
+            {phase !== 'card_reveal' && (
+              <p className="text-sm font-semibold text-white/90 text-center mt-1 max-w-[140px] leading-snug">
+                {card.title}
+              </p>
+            )}
             {phase === 'card_reveal' && isFirstEntry && (
               <motion.p
                 initial={{ opacity: 0 }}
@@ -708,7 +734,7 @@ export function ChronicleFlow({
       {/* ── DIALOGUE ZONE — always mounted, resizes ── */}
       <motion.div
         layout
-        className="min-h-0 overflow-hidden"
+        className="min-h-0 overflow-hidden flex flex-col"
         animate={{
           flex: dialogueZoneFlex,
           opacity: showDialogueZone ? 1 : 0,
@@ -718,7 +744,8 @@ export function ChronicleFlow({
           delay: showDialogueZone ? 0.1 : 0,
         }}
       >
-        <div className="h-full overflow-y-auto px-4 pt-24 pb-2">
+        <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-2 flex flex-col pt-4">
+          <div className="flex-1" />{/* pushes content to bottom when conversation is short */}
           {/* Reflecting message */}
           {phase === 'reflecting' && reflectingMsg && (
             <motion.div
@@ -757,7 +784,7 @@ export function ChronicleFlow({
                 showMiniReading={isReadingActive}
               />
 
-              {/* Complete: badge + summary */}
+              {/* Complete: badge + Deepen CTA */}
               {phase === 'complete' && (
                 <motion.div
                   initial={{ opacity: 0, y: 8 }}
@@ -777,42 +804,6 @@ export function ChronicleFlow({
                     )}
                   </AnimatePresence>
 
-                  {/* Completion note */}
-                  <GlassPanel className="p-4 text-center space-y-1">
-                    <p className="text-[#c9a94e] text-xs font-medium tracking-wider uppercase">
-                      Today&apos;s Chronicle Complete
-                    </p>
-                    <p className="text-white/40 text-xs">
-                      {isFirstEntry
-                        ? "Your Chronicle has begun. Come back tomorrow to continue your practice."
-                        : "Your card has been added to your Chronicle."}
-                    </p>
-                  </GlassPanel>
-
-                  {/* Journey progress notice */}
-                  {journeyRecorded && journeyPosition && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ ...CONTENT_SPRING, delay: 0.6 }}
-                      className="rounded-xl bg-white/5 border border-[#c9a94e]/20 p-3 text-xs text-white/60 text-center"
-                    >
-                      <span className="text-[#c9a94e]">{journeyPosition.waypoint.name}</span> — reading recorded for your journey
-                    </motion.div>
-                  )}
-
-                  {/* Deepen with full reading CTA */}
-                  {journeyPosition && card && (
-                    <motion.button
-                      initial={{ opacity: 0, y: 4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ ...CONTENT_SPRING, delay: 0.8 }}
-                      onClick={handleDeepen}
-                      className="w-full py-3 rounded-xl text-sm font-medium border border-white/10 bg-white/5 text-white/70 hover:text-white/90 hover:border-white/20 transition-colors"
-                    >
-                      Deepen with a Full Reading →
-                    </motion.button>
-                  )}
                 </motion.div>
               )}
             </div>
@@ -843,13 +834,13 @@ export function ChronicleFlow({
           <ActionBar
             phase={phase}
             inputValue={inputValue}
-            userMsgCount={userMessageCount(messages)}
             isStreaming={isStreaming}
             canForge={canForge}
             isFirstEntry={isFirstEntry}
             onInputChange={setInputValue}
             onSend={handleSend}
             onForge={handleForge}
+            onMicTranscript={handleMicTranscript}
           />
         </div>
       </motion.div>

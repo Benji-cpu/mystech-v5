@@ -17,6 +17,7 @@ export interface MockRetreat {
   description: string;
   theme: string;
   retreatLens: string;
+  suggestedIntention: string;
   waypoints: MockWaypoint[];
 }
 
@@ -46,6 +47,7 @@ export const MOCK_RETREAT: MockRetreat = {
   description:
     "The journey begins with awareness. Before you can transform, you must see where you stand — the masks you wear, the stories you tell yourself, and the quiet call to something deeper.",
   theme: "Self-awareness and the call to inner work",
+  suggestedIntention: "To see myself more clearly and honor what I find",
   retreatLens:
     "This retreat focuses on the initial awakening — recognizing the call to inner work and beginning to see oneself clearly.",
   waypoints: [

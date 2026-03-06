@@ -1,6 +1,7 @@
 "use client";
 
 import { useReducer, useEffect, useRef, useCallback, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { BookOpen, X } from "lucide-react";
@@ -12,7 +13,7 @@ import { useReadingPresentation } from "@/hooks/use-reading-presentation";
 import { useResponsiveCardSize, getRevealTiming } from "@/hooks/use-responsive-card-size";
 import { useVoicePreferences } from "@/hooks/use-voice-preferences";
 import { useTextToSpeech } from "@/hooks/use-text-to-speech";
-import { getCardNarration } from "@/components/guide/lyra-constants";
+import { getCardNarration, GUIDED_READING_CLOSE, GUIDED_READING_ENTER_CTA } from "@/components/guide/lyra-constants";
 import { LyraSigil } from "@/components/guide/lyra-sigil";
 
 import { DeckSelector } from "./deck-selector";
@@ -89,16 +90,37 @@ interface ReadingFlowProps {
   userPlan?: PlanType;
   /** @deprecated Use userPlan instead */
   userRole?: string;
+  /** When true, setup zone is bypassed and reading begins automatically */
+  guided?: boolean;
+  /** Pre-selected deck ID for guided mode */
+  guidedDeckId?: string;
+  /** Called after the user clicks "Enter your sanctuary" in guided mode */
+  onInitiationComplete?: () => void;
 }
 
 // ── Component ──────────────────────────────────────────────────────────
 
-export function ReadingFlow({ decks, userPlan, userRole }: ReadingFlowProps) {
+export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, onInitiationComplete }: ReadingFlowProps) {
+  const router = useRouter();
+  const [isChronicleHandoff] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return new URLSearchParams(window.location.search).get('source') === 'chronicle';
+  });
   const [state, dispatch] = useReducer(
     readingFlowReducer,
     initialReadingFlowState
   );
   const { setMoodPreset, exitFocusMode } = useImmersive();
+
+  // Default guided completion handler — marks initiation complete + navigates to dashboard
+  const handleInitiationComplete = useCallback(async () => {
+    if (onInitiationComplete) {
+      onInitiationComplete();
+      return;
+    }
+    await fetch("/api/onboarding/complete", { method: "POST" });
+    router.push("/dashboard?initiated=true");
+  }, [onInitiationComplete, router]);
   const defaultsRestored = useRef(false);
 
   const {
@@ -134,9 +156,34 @@ export function ReadingFlow({ decks, userPlan, userRole }: ReadingFlowProps) {
   const isCelticCross = selectedSpread === "celtic_cross";
   const isCelticPresenting = isCelticCross && isPresenting;
 
+  // ── Guided mode: auto-select deck + spread and begin after brief delay ──
+
+  const guidedAutoStarted = useRef(false);
+  useEffect(() => {
+    if (!guided || guidedAutoStarted.current) return;
+    guidedAutoStarted.current = true;
+
+    const deckToUse = guidedDeckId
+      ? decks.find((d) => d.id === guidedDeckId)
+      : decks[0];
+
+    if (!deckToUse) return;
+
+    dispatch({ type: "SELECT_DECK", deckId: deckToUse.id });
+    dispatch({ type: "SELECT_SPREAD", spread: "three_card" });
+
+    // Brief Lyra "attentive" moment before beginning
+    const timer = setTimeout(() => {
+      dispatch({ type: "BEGIN_READING" });
+    }, 1500);
+    return () => clearTimeout(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [guided, guidedDeckId, decks.length]);
+
   // ── Restore defaults from localStorage (or Chronicle handoff) ────────
 
   useEffect(() => {
+    if (guided) return; // Guided mode handles its own setup above
     if (defaultsRestored.current) return;
     defaultsRestored.current = true;
 
@@ -336,6 +383,16 @@ export function ReadingFlow({ decks, userPlan, userRole }: ReadingFlowProps) {
 
   useEffect(() => {
     if (journeyFetched.current) return;
+
+    // Don't fetch journey context for chronicle handoff readings — the chronicle
+    // already recorded today's waypoint reading, and setting journeyWaypointId
+    // would trigger canAdvanceWaypoint() to block same-day follow-on readings.
+    const searchParams = new URLSearchParams(window.location.search);
+    if (searchParams.get('source') === 'chronicle') {
+      journeyFetched.current = true;
+      return;
+    }
+
     journeyFetched.current = true;
     fetch("/api/paths/progress")
       .then((res) => res.json())
@@ -671,12 +728,12 @@ export function ReadingFlow({ decks, userPlan, userRole }: ReadingFlowProps) {
 
   return (
     <div className="-mx-4 sm:-mx-6 lg:-mx-8 -mt-6 h-[100dvh] flex flex-col overflow-hidden">
-      {/* ── ZONE 1: SETUP ZONE — collapses after begin ── */}
+      {/* ── ZONE 1: SETUP ZONE — collapses after begin; hidden in guided mode ── */}
       <motion.div
         layout
         animate={{
-          height: isInSetup ? "auto" : 0,
-          opacity: isInSetup ? 1 : 0,
+          height: isInSetup && !guided ? "auto" : 0,
+          opacity: isInSetup && !guided ? 1 : 0,
         }}
         transition={SPRINGS.zone}
         className="overflow-hidden shrink-0"
@@ -780,16 +837,30 @@ export function ReadingFlow({ decks, userPlan, userRole }: ReadingFlowProps) {
             />
           )}
 
-          {/* Question input — hidden when journey context provides the intention */}
-          {isSectionVisible("intention") && !(journeyPosition && state.journeyPathId && state.journeySuggestedIntention) && (
-            <IntentionInput
-              question={question}
-              onChange={(q) => dispatch({ type: "SET_QUESTION", question: q })}
-              collapsible
-              expanded={activeSection === "intention"}
-              onToggleExpanded={() => handleSectionToggle("intention")}
-              className="mb-6"
-            />
+          {/* Question input — read-only for chronicle handoffs, hidden when journey context provides intention */}
+          {isSectionVisible("intention") && (
+            isChronicleHandoff && question ? (
+              <motion.div
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                className="mb-6 px-4 py-3 rounded-xl bg-white/5 border border-[#c9a94e]/30"
+              >
+                <p className="text-[10px] text-[#c9a94e]/60 uppercase tracking-wider mb-1.5">Your Question</p>
+                <p className="text-sm text-white/80 italic leading-relaxed">&ldquo;{question}&rdquo;</p>
+              </motion.div>
+            ) : (
+              !(journeyPosition && state.journeyPathId && state.journeySuggestedIntention) && (
+                <IntentionInput
+                  question={question}
+                  onChange={(q) => dispatch({ type: "SET_QUESTION", question: q })}
+                  collapsible
+                  expanded={activeSection === "intention"}
+                  onToggleExpanded={() => handleSectionToggle("intention")}
+                  className="mb-6"
+                />
+              )
+            )
           )}
 
           {/* Error message */}
@@ -986,6 +1057,8 @@ export function ReadingFlow({ decks, userPlan, userRole }: ReadingFlowProps) {
               readingId={readingId}
               isLastCard={presentingCardIndex >= drawnCards.length - 1}
               journeyPathId={state.journeyPathId ?? undefined}
+              guided={guided}
+              onInitiationComplete={handleInitiationComplete}
             />
           )}
         </div>

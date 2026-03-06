@@ -37,6 +37,7 @@ export type ChronicleState = {
   phase: ChroniclePhase;
   messages: ChronicleMessage[];
   isStreaming: boolean;
+  lyraSignaledReady: boolean;
   card: ChronicleCard | null;
   miniReading: string | null;
   streakCount: number;
@@ -65,8 +66,10 @@ export type ChronicleAction =
   | { type: 'READING_COMPLETE'; miniReading: string }
   | { type: 'COMPLETE'; streakCount: number; newBadge: ChronicleBadgeNotice | null; journeyRecorded?: boolean }
   | { type: 'SKIP_TO_COMPLETE'; streakCount: number }
+  | { type: 'LYRA_READY' }
   | { type: 'SET_ERROR'; error: string }
-  | { type: 'RESTORE'; messages: ChronicleMessage[]; card: ChronicleCard | null; miniReading: string | null; phase: ChroniclePhase };
+  | { type: 'RESTORE'; messages: ChronicleMessage[]; card: ChronicleCard | null; miniReading: string | null; phase: ChroniclePhase }
+  | { type: 'UPDATE_CARD_IMAGE'; imageUrl: string | null; imageStatus: string };
 
 // ── Initial state ────────────────────────────────────────────────────────
 
@@ -74,6 +77,7 @@ export const initialChronicleState: ChronicleState = {
   phase: 'idle',
   messages: [],
   isStreaming: false,
+  lyraSignaledReady: false,
   card: null,
   miniReading: null,
   streakCount: 0,
@@ -141,7 +145,7 @@ export function chronicleReducer(
       return { ...state, phase: 'card_reveal', card: action.card, error: null };
 
     case 'FORGE_ERROR':
-      return { ...state, phase: 'dialogue', error: action.error };
+      return { ...state, phase: 'dialogue', error: action.error, lyraSignaledReady: false };
 
     case 'CARD_REVEALED':
       return { ...state, phase: 'reading' };
@@ -176,6 +180,9 @@ export function chronicleReducer(
         isStreaming: false,
       };
 
+    case 'LYRA_READY':
+      return { ...state, lyraSignaledReady: true };
+
     case 'SET_ERROR':
       return { ...state, error: action.error, isStreaming: false };
 
@@ -186,6 +193,13 @@ export function chronicleReducer(
         messages: action.messages,
         card: action.card,
         miniReading: action.miniReading,
+      };
+
+    case 'UPDATE_CARD_IMAGE':
+      if (!state.card) return state;
+      return {
+        ...state,
+        card: { ...state.card, imageUrl: action.imageUrl, imageStatus: action.imageStatus },
       };
 
     default:
@@ -202,7 +216,7 @@ export function isCardZoneVisible(phase: ChroniclePhase): boolean {
 
 /** True when the dialogue zone should be visible */
 export function isDialogueZoneVisible(phase: ChroniclePhase): boolean {
-  return phase === 'greeting' || phase === 'dialogue' || phase === 'reflecting' || phase === 'reading' || phase === 'complete';
+  return phase === 'greeting' || phase === 'dialogue' || phase === 'reflecting' || phase === 'card_forging' || phase === 'reading' || phase === 'complete';
 }
 
 /** True when the mini-reading text is the main content (dialogue zone is reading) */

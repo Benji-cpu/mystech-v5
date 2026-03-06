@@ -23,7 +23,6 @@ import { PageHeader } from "@/components/layout/page-header";
 import { InProgressDecks } from "@/components/dashboard/in-progress-decks";
 import { OverviewCollapsible } from "@/components/dashboard/overview-collapsible";
 import { LyraGreeting } from "@/components/guide/lyra-greeting";
-import { LyraOnboardingGate } from "@/components/guide/lyra-onboarding";
 import { ProfileSettingsCollapsible } from "@/components/settings/profile-settings-collapsible";
 import { ChronicleNudge } from "@/components/chronicle/chronicle-nudge";
 import { ProfileAccordion } from "@/components/profile/profile-accordion";
@@ -176,7 +175,6 @@ export default async function ProfilePage() {
 
   return (
     <AnimatedPage className="space-y-8 p-4 sm:p-6 lg:p-8">
-      <LyraOnboardingGate />
       <AnimatedItem>
         <PageHeader
           title={`Welcome, ${user.name ?? "Seeker"}`}

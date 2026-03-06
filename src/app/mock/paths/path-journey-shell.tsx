@@ -22,7 +22,6 @@ import {
 import { TrailMap } from "./trail-map";
 import { OverviewZone } from "./zones/overview-zone";
 import { WaypointZone } from "./zones/waypoint-zone";
-import { IntentionZone } from "./zones/intention-zone";
 import { ReadingZone } from "./zones/reading-zone";
 import { ReflectionZone } from "./zones/reflection-zone";
 import { RetreatCompleteZone } from "./zones/retreat-complete-zone";
@@ -56,25 +55,12 @@ export function PathJourneyShell() {
     dispatch({ type: "BEGIN_JOURNEY" });
   }, []);
 
-  const handleProceedToIntention = useCallback(() => {
-    dispatch({ type: "SET_INTENTION" });
-  }, []);
-
   const handleSetUserIntention = useCallback((text: string) => {
     dispatch({ type: "SET_USER_INTENTION", text });
   }, []);
 
   const handleUseSuggestedIntention = useCallback(() => {
-    if (!currentWaypoint) return;
-    dispatch({ type: "SET_USER_INTENTION", text: currentWaypoint.suggestedIntention });
-  }, [currentWaypoint]);
-
-  const handleConfirmIntention = useCallback(() => {
-    dispatch({ type: "CONFIRM_INTENTION" });
-  }, []);
-
-  const handleSetUserQuestion = useCallback((text: string) => {
-    dispatch({ type: "SET_USER_QUESTION", text });
+    dispatch({ type: "SET_USER_INTENTION", text: MOCK_RETREAT.suggestedIntention });
   }, []);
 
   const handleDrawCards = useCallback(() => {
@@ -133,23 +119,14 @@ export function PathJourneyShell() {
   const getCTA = (): CTAConfig => {
     switch (phase) {
       case "overview":
-        return { label: "Begin Today's Step", onClick: handleBeginJourney };
-      case "waypoint":
-        return { label: "Set My Intention", onClick: handleProceedToIntention };
-      case "intention":
         return {
-          label: "Continue to Reading",
-          onClick: handleConfirmIntention,
+          label: "Begin Journey",
+          onClick: handleBeginJourney,
           disabled: !state.userIntention.trim(),
         };
+      case "waypoint":
+        return { label: "Draw Your Cards", onClick: handleDrawCards };
       case "reading":
-        if (subPhase === "questioning") {
-          return {
-            label: "Draw Your Cards",
-            onClick: handleDrawCards,
-            disabled: !state.userQuestion.trim(),
-          };
-        }
         if (subPhase === "revealing" && allRevealed) {
           return { label: "Interpret My Cards", onClick: handleBeginInterpretation };
         }
@@ -205,7 +182,7 @@ export function PathJourneyShell() {
       {/* ── SCENE ZONE — always mounted, main content area ── */}
       <motion.div
         layout
-        className="min-h-0 overflow-hidden overflow-y-auto"
+        className="min-h-0 overflow-hidden"
         animate={{ flex: `1 1 ${zones.scene}` }}
         transition={SPRING}
       >
@@ -223,6 +200,10 @@ export function PathJourneyShell() {
             <OverviewZone
               path={MOCK_PATH}
               retreat={MOCK_RETREAT}
+              userIntention={state.userIntention}
+              onSetUserIntention={handleSetUserIntention}
+              suggestedIntention={MOCK_RETREAT.suggestedIntention}
+              onUseSuggested={handleUseSuggestedIntention}
               onBeginJourney={handleBeginJourney}
             />
           </motion.div>
@@ -241,28 +222,7 @@ export function PathJourneyShell() {
               <WaypointZone
                 waypoint={currentWaypoint}
                 waypointIndex={currentWaypointIndex}
-                onProceedToIntention={handleProceedToIntention}
-              />
-            )}
-          </motion.div>
-
-          {/* Intention — always mounted */}
-          <motion.div
-            layout
-            animate={{
-              height: phase === "intention" ? "auto" : 0,
-              opacity: phase === "intention" ? 1 : 0,
-            }}
-            transition={SPRING}
-            className="overflow-hidden"
-          >
-            {currentWaypoint && (
-              <IntentionZone
-                suggestedIntention={currentWaypoint.suggestedIntention}
-                waypointName={currentWaypoint.name}
-                userIntention={state.userIntention}
-                onSetUserIntention={handleSetUserIntention}
-                onUseSuggested={handleUseSuggestedIntention}
+                onDrawCards={handleDrawCards}
               />
             )}
           </motion.div>
@@ -278,13 +238,10 @@ export function PathJourneyShell() {
             className="overflow-hidden flex-1 min-h-0"
           >
             <ReadingZone
-              subPhase={phase === "reading" ? (subPhase as "questioning" | "drawing" | "revealing" | "interpreting" | "complete" | null) : null}
+              subPhase={phase === "reading" ? (subPhase as "drawing" | "revealing" | "interpreting" | "complete" | null) : null}
               cards={state.drawnCards}
               revealedIndices={state.revealedCardIndices}
               interpretationText={state.interpretationText}
-              userIntention={state.userIntention}
-              userQuestion={state.userQuestion}
-              onSetUserQuestion={handleSetUserQuestion}
               onRevealCard={handleRevealCard}
             />
           </motion.div>

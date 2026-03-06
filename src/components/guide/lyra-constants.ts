@@ -231,6 +231,66 @@ export const LYRA_ONBOARDING_MESSAGES = [
   "We'll start by creating your first deck together. There's no rush — think of it as a conversation.",
 ] as const;
 
+// ── THE INITIATION (new onboarding arc) ────────────────────────────────
+
+export const INITIATION_WELCOME_STEPS = [
+  {
+    text: "Hello. I'm Lyra — your guide in the cards. This won't be like anything you've tried before.",
+    label: "A new kind of oracle",
+  },
+  {
+    text: "The cards we'll create won't be borrowed from someone else's deck. They'll be drawn from your own life — your experiences, your symbols, your story.",
+    label: "Your story, made visible",
+  },
+  {
+    text: "Before we begin, I have one question for you. Just one. Take a moment before you answer.",
+    label: "One question",
+  },
+] as const;
+
+export const INITIATION_QUESTION_PROMPT =
+  "What part of your life would you most like to understand better right now?";
+
+export const INITIATION_GENERATING_MESSAGES = [
+  "Reading the threads of what you shared...",
+  "Choosing a visual language that fits your path...",
+  "Shaping the cards around your words...",
+  "Naming what wants to be named...",
+  "Weaving the symbols together...",
+  "Almost ready...",
+] as const;
+
+export const INITIATION_ART_STYLE_REVEAL_TEMPLATE =
+  "Lyra senses {name} speaks to your path.";
+
+export function buildArtStyleRevealMessage(artStyleName: string): string {
+  return INITIATION_ART_STYLE_REVEAL_TEMPLATE.replace("{name}", artStyleName);
+}
+
+export const INITIATION_ARRIVAL_MESSAGES = [
+  "Your first reading is complete. The cards have shown you something — let it settle.",
+  "The cards have spoken. Welcome to your sanctuary.",
+  "Your first reading is done. This is only the beginning.",
+] as const;
+
+// ── GUIDED READING POSITION NARRATION ─────────────────────────────────
+
+export const GUIDED_READING_POSITION_NARRATION: Record<string, string> = {
+  // Three-card spread — past/present/future framing
+  Past: "This first card holds the seed of where you are now. Let it show you what you've been carrying.",
+  Present: "This card is your present — the ground you're standing on right now.",
+  Future: "This last card points toward what is emerging. Not fixed — but possible.",
+  // Three-card spread — mind/body/spirit framing
+  Mind: "Your mind has been working on something. This card reflects that current of thought.",
+  Body: "This card speaks to your body — the wisdom held in your physical experience right now.",
+  Spirit: "This final card points to your deeper knowing. What your spirit already understands.",
+};
+
+export const GUIDED_READING_CLOSE =
+  "Your first reading is complete. The cards have shown you a glimpse of your story. There is always more — come back when you're ready.";
+
+export const GUIDED_READING_ENTER_CTA = "Enter your sanctuary";
+
 /**
  * Get a narration string for a card reveal, substituting the card title.
  */

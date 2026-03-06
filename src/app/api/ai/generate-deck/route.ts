@@ -341,6 +341,13 @@ export async function POST(request: NextRequest) {
     generationPrompt: userPrompt,
   });
 
+  // Mark deck as completed after text generation — images are fire-and-forget
+  // This allows guided readings to start immediately without waiting for images
+  await db
+    .update(decks)
+    .set({ status: "completed" })
+    .where(eq(decks.id, deck.id));
+
   // Increment credits for created cards
   await incrementCredits(user.id, plan, generatedCards.length);
 

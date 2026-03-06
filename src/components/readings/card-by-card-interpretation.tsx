@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { LyraSigil } from "@/components/guide/lyra-sigil";
 import Link from "next/link";
 import { ObstacleProposal } from "./obstacle-proposal";
+import { GUIDED_READING_CLOSE, GUIDED_READING_ENTER_CTA } from "@/components/guide/lyra-constants";
 import type { Card } from "@/types";
 
 // ── Types ──────────────────────────────────────────────────────────────
@@ -50,6 +51,10 @@ interface CardByCardInterpretationProps {
   isLastCard?: boolean;
   /** Journey path ID — when set, enables obstacle card proposals */
   journeyPathId?: string;
+  /** When true, shows Lyra's guided completion UI instead of "View Reading" link */
+  guided?: boolean;
+  /** Called when user clicks "Enter your sanctuary" in guided mode */
+  onInitiationComplete?: () => void;
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────
@@ -82,6 +87,8 @@ export function CardByCardInterpretation({
   readingId,
   isLastCard,
   journeyPathId,
+  guided,
+  onInitiationComplete,
 }: CardByCardInterpretationProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -201,8 +208,29 @@ export function CardByCardInterpretation({
           </motion.div>
         )}
 
-        {/* View Complete Reading — appears when last card section is complete */}
-        {isCurrentSectionComplete && isLastCard && readingId && (
+        {/* Guided completion — Lyra closing message + "Enter your sanctuary" */}
+        {isCurrentSectionComplete && isLastCard && guided && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            className="flex flex-col items-center gap-4 pt-6 pb-20 text-center"
+          >
+            <LyraSigil size="sm" state="attentive" />
+            <p className="text-sm text-amber-200/80 italic font-serif max-w-xs leading-relaxed">
+              {GUIDED_READING_CLOSE}
+            </p>
+            <button
+              onClick={onInitiationComplete}
+              className="flex items-center gap-2 px-6 py-2.5 rounded-xl font-medium text-sm bg-gradient-to-r from-[#c9a94e] to-[#b89840] text-[#0a0118] shadow-lg shadow-[#c9a94e]/20 hover:shadow-xl hover:shadow-[#c9a94e]/30 transition-all duration-300"
+            >
+              {GUIDED_READING_ENTER_CTA}
+            </button>
+          </motion.div>
+        )}
+
+        {/* View Complete Reading — appears when last card section is complete (non-guided) */}
+        {isCurrentSectionComplete && isLastCard && readingId && !guided && (
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
