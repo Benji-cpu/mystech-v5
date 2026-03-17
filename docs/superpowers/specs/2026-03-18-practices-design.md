@@ -6,7 +6,7 @@ Audio-guided meditation practices tied to path waypoints. Users hear short speec
 
 MysTech v5 has a Paths feature where users follow structured sequences (Path > Retreat > Waypoint). Each waypoint currently requires readings to advance. Practices add a second requirement: a guided audio meditation that must be completed before waypoint progression.
 
-The existing TTS infrastructure (Google Chirp3-HD-Leda voice, `useTextToSpeech` hook, `AudioQueue`, `/api/voice/tts` route) handles speech synthesis. What's missing is the sequencing layer: alternating speech and silence segments into a cohesive meditation experience.
+The existing TTS infrastructure (Google Chirp3-HD-Leda voice, `AudioQueue`, `/api/voice/tts` route) handles speech synthesis. What's missing is the sequencing layer: alternating speech and silence segments into a cohesive meditation experience.
 
 ## Core Concept: Segment Timeline
 
@@ -36,35 +36,51 @@ A **PracticePlayer** walks through segments sequentially: for speech, it calls T
 | Column | Drizzle Type | DB Column | Notes |
 |--------|-------------|-----------|-------|
 | id | text | id | PK, CUID2 via `createId()` |
-| waypointId | text, nullable | waypoint_id | FK to `waypoints`. Nullable for future standalone practices |
-| userId | text, nullable | user_id | null = shared template; set = AI-personalized for specific user |
+| waypointId | text, nullable | waypoint_id | FK to `waypoints` (`onDelete: "cascade"`). Nullable for future standalone practices |
+| userId | text, nullable | user_id | FK to `users` (`onDelete: "cascade"`). null = shared template; set = AI-personalized for specific user |
 | title | text | title | e.g. "Grounding in the Present" |
 | description | text | description | Shown before starting |
 | targetDurationMin | integer | target_duration_min | 10, 15, 20, or 30 |
-| sortOrder | integer | sort_order | Unique constraint on (waypoint_id, user_id, sort_order) |
+| sortOrder | integer | sort_order | Default 0. Ordering handled in application code (no DB unique constraint, since NULL userId complicates SQL UNIQUE) |
 | createdAt | timestamp | created_at | Default now() |
+
+**Indexes:** `practice_waypoint_id_idx` on `waypointId`, `practice_user_id_idx` on `userId`.
 
 ### `practiceSegments` table
 
 | Column | Drizzle Type | DB Column | Notes |
 |--------|-------------|-----------|-------|
 | id | text | id | PK, CUID2 |
-| practiceId | text | practice_id | FK to `practices` |
+| practiceId | text | practice_id | FK to `practices` (`onDelete: "cascade"`) |
 | segmentType | text | segment_type | `'speech'` or `'pause'` |
 | text | text, nullable | text | Speech content. Null for pause segments |
 | durationMs | integer, nullable | duration_ms | Pause duration in ms. Null for speech segments (duration determined by TTS output) |
+| estimatedDurationMs | integer, nullable | estimated_duration_ms | For speech segments: estimated TTS audio duration (word count * ~400ms/word). Used for progress bar calculation before playback. Null for pause segments. |
 | sortOrder | integer | sort_order | Playback order within the practice |
+
+**Indexes:** `practice_segment_practice_id_idx` on `practiceId`.
 
 ### `userPracticeProgress` table
 
 | Column | Drizzle Type | DB Column | Notes |
 |--------|-------------|-----------|-------|
 | id | text | id | PK, CUID2 |
-| userId | text | user_id | FK |
-| practiceId | text | practice_id | FK to `practices` |
+| userId | text | user_id | FK to `users` (`onDelete: "cascade"`) |
+| practiceId | text | practice_id | FK to `practices` (`onDelete: "cascade"`) |
 | completedAt | timestamp, nullable | completed_at | When first completed |
 | lastPlayedAt | timestamp, nullable | last_played_at | Updated on every play (including replays) |
-| playCount | integer | play_count | Default 0, incremented on each completion |
+| playCount | integer | play_count | Default 0. Set to 1 on first completion, incremented on subsequent completions |
+
+**Constraints:** `unique().on(t.userId, t.practiceId)` — one progress row per user per practice.
+**Indexes:** `user_practice_progress_user_id_idx` on `userId`.
+
+### Design Decisions
+
+**One practice per waypoint (Phase 1):** Each waypoint has exactly one template practice. The `sortOrder` column exists for future extensibility (multiple practices per waypoint), but Phase 1 assumes one-to-one.
+
+**Practice TTS is exempt from voice character billing.** Practice speech is curated content integral to the path experience, not an optional reading enhancement. TTS usage for practices does not count against `voiceCharactersUsed`. This prevents practices from consuming the user's voice quota.
+
+**Voice selection:** Practices always use the default Leda voice (`DEFAULT_VOICE_ID`), ignoring user voice preferences. This ensures consistent guide persona across all practice audio.
 
 ## Player Architecture
 
@@ -104,7 +120,7 @@ interface UsePracticePlayerReturn {
 }
 ```
 
-Internally composes the existing `useTextToSpeech` hook for TTS playback, adding segment sequencing and pause timer logic.
+**Composes `AudioQueue` directly** (not `useTextToSpeech`). The `useTextToSpeech` hook is designed for streaming token-by-token synthesis with a `SentenceBuffer`, which practices don't need. Building directly on `AudioQueue` gives cleaner control over segment-by-segment playback and avoids `AbortController` conflicts with the pre-caching strategy.
 
 ### Pre-Caching Strategy
 
@@ -113,6 +129,14 @@ While the current segment plays (speech or pause), fetch TTS audio for the next 
 ### Error Handling
 
 If a TTS call fails: retry once, then skip the speech segment and show the text on-screen as a visual fallback. Continue to the next segment. Practice is never aborted due to a single segment failure. Pause segments are pure timers with no failure mode.
+
+### Screen Wake Lock
+
+Acquire a Wake Lock (`navigator.wakeLock.request('screen')`) when a practice starts playing. Release on completion or stop. This prevents the device from sleeping during a 10-30 minute meditation. Falls back gracefully on unsupported browsers (no lock, practice still works).
+
+### Navigation Away
+
+If the user navigates away mid-practice, the practice resets to the beginning. No mid-practice resume capability in Phase 1. A `beforeunload` warning is shown if the practice is in `playing` or `paused` state.
 
 ## UI Design
 
@@ -187,7 +211,16 @@ Current: waypoint advances when `readingsCompleted >= requiredReadings`.
 
 New: waypoint advances when `readingsCompleted >= requiredReadings` **AND** waypoint's practice is marked complete in `userPracticeProgress`.
 
-`recordPathReading()` in `queries-paths.ts` must be updated to check practice completion when evaluating waypoint advancement.
+### Waypoint Completion Query
+
+Both `recordPathReading()` and the practice completion endpoint must check the full waypoint completion condition. The check:
+
+1. Query `practices` for the template practice at this waypoint (`waypointId = X AND userId IS NULL`)
+2. If no practice exists for this waypoint, treat the practice requirement as auto-satisfied (avoids deadlocking users at unseeded waypoints)
+3. If a practice exists, check `userPracticeProgress` for a row with `completedAt IS NOT NULL` for either the template practice or a personalized version at the same waypoint
+4. Combine with reading count check: `readingsCompleted >= requiredReadings AND (no practice exists OR practice completed)`
+
+Whichever event happens last (final reading or practice completion) triggers the waypoint advancement. Both handlers call the same shared `checkAndAdvanceWaypoint()` function to prevent double-advancement — the function uses the existing transaction pattern to atomically check and update.
 
 ### Seeding
 
@@ -197,11 +230,13 @@ New: waypoint advances when `readingsCompleted >= requiredReadings` **AND** wayp
 
 ### Phase 1 (MVP)
 - Schema: `practices`, `practiceSegments`, `userPracticeProgress` tables
-- `usePracticePlayer` hook with segment sequencing and pause timers
+- `usePracticePlayer` hook with segment sequencing and pause timers (composes `AudioQueue` directly)
 - Practice screen UI (persistent shell, three zones)
 - Pre-authored practices for first retreat of each path (~12-15)
-- Waypoint progression gate (practice required)
-- API routes: GET practice by waypoint, POST mark complete
+- Waypoint progression gate (practice required, with graceful fallback for unseeded waypoints)
+- API routes: GET practice by waypoint (includes progress), POST mark complete
+- Screen wake lock during playback
+- Navigation-away warning
 
 ### Phase 2
 - AI personalization for Pro users
@@ -213,22 +248,24 @@ New: waypoint advances when `readingsCompleted >= requiredReadings` **AND** wayp
 - Practice recommendations on dashboard
 - Background ambient audio layers (nature sounds, singing bowls)
 - ElevenLabs voice option for Pro tier
+- Audio blob caching for replays (reduces TTS costs on replay)
+- Mid-practice resume capability
 
 ## Files Affected
 
 ### New Files
-- `src/lib/db/schema.ts` — Add 3 new tables
-- `src/hooks/use-practice-player.ts` — Segment timeline player hook
+- `src/hooks/use-practice-player.ts` — Segment timeline player hook (composes AudioQueue)
 - `src/components/practices/practice-screen.tsx` — Full-screen practice UI
 - `src/components/practices/practice-controls.tsx` — Play/pause/stop controls
 - `src/components/practices/pause-timer.tsx` — Visual countdown for pause segments
-- `src/app/api/practices/[waypointId]/route.ts` — GET practice data
+- `src/app/api/practices/[waypointId]/route.ts` — GET practice data + progress
 - `src/app/api/practices/complete/route.ts` — POST mark practice complete
 - `src/lib/ai/prompts/practice-generation.ts` — AI personalization prompt (Phase 2)
 - `scripts/seed-practices.ts` — Seed practice content
 
 ### Modified Files
-- `src/lib/db/queries-paths.ts` — Update waypoint completion check
+- `src/lib/db/schema.ts` — Add 3 new tables (practices, practiceSegments, userPracticeProgress)
+- `src/lib/db/queries-paths.ts` — Add `checkAndAdvanceWaypoint()`, update waypoint completion check
 - `src/app/(app)/paths/[pathId]/page.tsx` — Add practice entry point to waypoint view
 - `src/components/paths/retreat-map.tsx` — Show practice completion state
 - `scripts/seed-paths.ts` — Integrate practice seeding
