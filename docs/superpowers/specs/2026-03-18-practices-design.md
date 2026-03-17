@@ -78,9 +78,9 @@ A **PracticePlayer** walks through segments sequentially: for speech, it calls T
 
 **One practice per waypoint (Phase 1):** Each waypoint has exactly one template practice. The `sortOrder` column exists for future extensibility (multiple practices per waypoint), but Phase 1 assumes one-to-one.
 
-**Practice TTS is exempt from voice character billing.** Practice speech is curated content integral to the path experience, not an optional reading enhancement. TTS usage for practices does not count against `voiceCharactersUsed`. This prevents practices from consuming the user's voice quota.
+**Practice TTS is exempt from voice character billing.** Practice speech is curated content integral to the path experience, not an optional reading enhancement. Implementation: a dedicated `POST /api/practices/tts` route calls the TTS provider directly (same `GoogleTTSProvider`), bypassing the billing checks in `/api/voice/tts`. This route is auth-protected and only accepts `practiceId` + `segmentId` as parameters (server-side lookup of text), preventing misuse as a general TTS bypass.
 
-**Voice selection:** Practices always use the default Leda voice (`DEFAULT_VOICE_ID`), ignoring user voice preferences. This ensures consistent guide persona across all practice audio.
+**Voice selection:** Practices always use the default Leda voice (`DEFAULT_VOICE_ID`) at speed `1.0`, ignoring user voice preferences and speed settings. This ensures consistent guide persona and predictable `estimatedDurationMs` calculations (word count * ~400ms/word at 1.0x speed).
 
 ## Player Architecture
 
@@ -122,6 +122,8 @@ interface UsePracticePlayerReturn {
 
 **Composes `AudioQueue` directly** (not `useTextToSpeech`). The `useTextToSpeech` hook is designed for streaming token-by-token synthesis with a `SentenceBuffer`, which practices don't need. Building directly on `AudioQueue` gives cleaner control over segment-by-segment playback and avoids `AbortController` conflicts with the pre-caching strategy.
 
+**Single-buffer-per-segment constraint:** The hook enqueues exactly one audio buffer per speech segment into `AudioQueue`. It does NOT pre-enqueue the next speech buffer. Instead, the next speech audio is pre-fetched and held in memory, then enqueued only after the current segment finishes. The hook detects segment completion by observing `AudioQueue`'s state transition from `playing` to `idle` via the `onStateChange` callback. This ensures the pause segment runs between speech segments rather than being skipped by chained audio playback.
+
 ### Pre-Caching Strategy
 
 While the current segment plays (speech or pause), fetch TTS audio for the next speech segment in the background. Each speech chunk is short (~200-500 characters), well within the 2000-character TTS limit and fast to synthesize.
@@ -136,7 +138,7 @@ Acquire a Wake Lock (`navigator.wakeLock.request('screen')`) when a practice sta
 
 ### Navigation Away
 
-If the user navigates away mid-practice, the practice resets to the beginning. No mid-practice resume capability in Phase 1. A `beforeunload` warning is shown if the practice is in `playing` or `paused` state.
+If the user navigates away mid-practice, the practice resets to the beginning. No mid-practice resume capability in Phase 1. On desktop, a `beforeunload` warning is shown if the practice is in `playing` or `paused` state. **Known limitation:** `beforeunload` is unreliable on iOS Safari and some mobile browsers. As a supplementary approach, intercept in-app navigation via Next.js router events to show an in-app "Leave practice?" confirmation dialog for navigation within the app. External navigation (closing the browser) on mobile may bypass the warning — this is acceptable since the practice simply resets on next visit.
 
 ## UI Design
 
@@ -203,6 +205,72 @@ Generated personalized practices are stored permanently. No re-generation on rep
 
 If AI generation fails, fall back to the template version with a subtle "standard version" indicator.
 
+## API Routes
+
+### `GET /api/practices/[waypointId]`
+
+Returns the practice for a waypoint, including segments and the current user's progress. For Pro users, returns their personalized version if one exists, otherwise the template.
+
+```typescript
+// Response shape
+{
+  data: {
+    practice: {
+      id: string
+      title: string
+      description: string
+      targetDurationMin: number
+      isPersonalized: boolean // true if this is the user's AI-generated version
+      segments: {
+        id: string
+        segmentType: 'speech' | 'pause'
+        text: string | null
+        durationMs: number | null
+        estimatedDurationMs: number | null
+        sortOrder: number
+      }[]
+    } | null  // null if no practice exists for this waypoint
+    progress: {
+      completedAt: string | null
+      lastPlayedAt: string | null
+      playCount: number
+    } | null  // null if user has never started this practice
+  }
+}
+```
+
+### `POST /api/practices/complete`
+
+Marks a practice as completed. Creates or updates the `userPracticeProgress` row.
+
+```typescript
+// Request body
+{ practiceId: string }
+
+// Behavior:
+// - If no progress row exists: create with completedAt = now, lastPlayedAt = now, playCount = 1
+// - If progress row exists but completedAt is null: set completedAt = now, lastPlayedAt = now, playCount = 1
+// - If progress row exists and completedAt is set (replay): update lastPlayedAt = now, increment playCount
+// - After updating progress: call checkAndAdvanceWaypoint()
+```
+
+### `POST /api/practices/tts`
+
+Practice-specific TTS endpoint that bypasses voice character billing.
+
+```typescript
+// Request body
+{ practiceId: string, segmentId: string }
+
+// Behavior:
+// - Auth required
+// - Server-side lookup: fetch segment text from DB using practiceId + segmentId
+// - Verify the segment belongs to the given practice (prevents tampering)
+// - Synthesize with GoogleTTSProvider using DEFAULT_VOICE_ID at speed 1.0
+// - Returns audio/mpeg binary (same format as /api/voice/tts)
+// - Does NOT increment voiceCharactersUsed
+```
+
 ## Path Progression Integration
 
 ### Updated Waypoint Completion Rule
@@ -220,7 +288,7 @@ Both `recordPathReading()` and the practice completion endpoint must check the f
 3. If a practice exists, check `userPracticeProgress` for a row with `completedAt IS NOT NULL` for either the template practice or a personalized version at the same waypoint
 4. Combine with reading count check: `readingsCompleted >= requiredReadings AND (no practice exists OR practice completed)`
 
-Whichever event happens last (final reading or practice completion) triggers the waypoint advancement. Both handlers call the same shared `checkAndAdvanceWaypoint()` function to prevent double-advancement — the function uses the existing transaction pattern to atomically check and update.
+Whichever event happens last (final reading or practice completion) triggers the waypoint advancement. Both handlers call the same shared `checkAndAdvanceWaypoint()` function to prevent double-advancement. This function wraps its read-check-write in `db.transaction(async (tx) => { ... })` to atomically verify the completion conditions and update status, preventing the race condition where simultaneous reading + practice completion could both pass the check before either writes.
 
 ### Seeding
 
@@ -260,8 +328,9 @@ Whichever event happens last (final reading or practice completion) triggers the
 - `src/components/practices/pause-timer.tsx` — Visual countdown for pause segments
 - `src/app/api/practices/[waypointId]/route.ts` — GET practice data + progress
 - `src/app/api/practices/complete/route.ts` — POST mark practice complete
+- `src/app/api/practices/tts/route.ts` — Practice-specific TTS (billing-exempt)
 - `src/lib/ai/prompts/practice-generation.ts` — AI personalization prompt (Phase 2)
-- `scripts/seed-practices.ts` — Seed practice content
+- `scripts/seed-practices.ts` — Seed practice content (independent script, reads waypointIds from DB after path seeding)
 
 ### Modified Files
 - `src/lib/db/schema.ts` — Add 3 new tables (practices, practiceSegments, userPracticeProgress)
