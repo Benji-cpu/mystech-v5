@@ -10,10 +10,11 @@ import {
   getChronicleSettings,
   getChronicleKnowledge,
   getUserPlan,
+  getUserDisplayName,
 } from "@/lib/db/queries";
 import { getUserPlanFromRole } from "@/lib/usage";
 import { buildChronicleMiniReadingPrompt } from "@/lib/ai/prompts/chronicle";
-import { getJourneyPosition } from "@/lib/db/queries-journey";
+import { getPathPosition } from "@/lib/db/queries-paths";
 import { eq } from "drizzle-orm";
 import type { ApiResponse } from "@/types";
 
@@ -78,10 +79,11 @@ export async function POST() {
   const isPro = plan !== "free";
   const model = plan === "free" ? geminiModel : geminiProModel;
 
-  const [knowledge, settings, journeyPosition] = await Promise.all([
+  const [knowledge, settings, pathPosition, userName] = await Promise.all([
     getChronicleKnowledge(user.id),
     getChronicleSettings(deck.id),
-    getJourneyPosition(user.id),
+    getPathPosition(user.id),
+    getUserDisplayName(user.id),
   ]);
 
   const prompt = buildChronicleMiniReadingPrompt({
@@ -90,11 +92,12 @@ export async function POST() {
     knowledge,
     streakCount: settings?.streakCount ?? 0,
     isPro,
-    journeyContext: journeyPosition
+    userName,
+    journeyContext: pathPosition
       ? {
-          waypointName: journeyPosition.waypoint.name,
-          retreatName: journeyPosition.retreat.name,
-          waypointLens: journeyPosition.waypoint.waypointLens,
+          waypointName: pathPosition.waypoint.name,
+          retreatName: pathPosition.retreat.name,
+          waypointLens: pathPosition.waypoint.waypointLens,
         }
       : null,
   });

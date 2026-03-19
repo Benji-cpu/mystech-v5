@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Textarea } from '@/components/ui/textarea';
-import type { MockWaypoint } from '../path-journey-data';
+import type { MockWaypoint } from '../path-mock-data';
 
 // ── Check circle icon ─────────────────────────────────────────────────────────
 

@@ -1,13 +1,11 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback } from "react";
 import { OracleCard } from "@/components/cards/oracle-card";
 import { CardDetailModal } from "@/components/cards/card-detail-modal";
 import { CardFeedbackButton } from "@/components/cards/card-feedback-button";
-import { cn } from "@/lib/utils";
+import { useCardDetailModal } from "@/hooks/use-card-detail-modal";
 import type { Card, CardFeedbackType } from "@/types";
-
-type FilterTab = "all" | "oracle" | "journey";
 
 interface DeckCardGridProps {
   cards: Card[];
@@ -16,8 +14,7 @@ interface DeckCardGridProps {
 }
 
 export function DeckCardGrid({ cards, onRetryImage, feedbackMap }: DeckCardGridProps) {
-  const [selectedCard, setSelectedCard] = useState<Card | null>(null);
-  const [activeTab, setActiveTab] = useState<FilterTab>("all");
+  const { selectedCard, openCard, modalProps } = useCardDetailModal<Card>();
   const [localFeedback, setLocalFeedback] = useState<Record<string, CardFeedbackType>>(
     feedbackMap ?? {}
   );
@@ -37,17 +34,6 @@ export function DeckCardGrid({ cards, onRetryImage, feedbackMap }: DeckCardGridP
     []
   );
 
-  const hasJourneyCards = useMemo(
-    () => cards.some((c) => c.cardType === "obstacle" || c.cardType === "threshold"),
-    [cards]
-  );
-
-  const filteredCards = useMemo(() => {
-    if (activeTab === "all") return cards;
-    if (activeTab === "oracle") return cards.filter((c) => c.cardType === "general");
-    return cards.filter((c) => c.cardType === "obstacle" || c.cardType === "threshold");
-  }, [cards, activeTab]);
-
   // Derive current card from live cards prop so modal reflects optimistic updates
   const currentSelectedCard = selectedCard
     ? cards.find((c) => c.id === selectedCard.id) ?? selectedCard
@@ -63,37 +49,13 @@ export function DeckCardGrid({ cards, onRetryImage, feedbackMap }: DeckCardGridP
 
   return (
     <>
-      {/* Filter tabs — only show if deck has journey cards */}
-      {hasJourneyCards && (
-        <div className="flex gap-1.5 mb-4">
-          {([
-            { key: "all", label: "All" },
-            { key: "oracle", label: "Oracle" },
-            { key: "journey", label: "Journey" },
-          ] as const).map(({ key, label }) => (
-            <button
-              key={key}
-              onClick={() => setActiveTab(key)}
-              className={cn(
-                "px-3 py-1.5 rounded-lg text-xs font-medium transition-colors",
-                activeTab === key
-                  ? "bg-white/10 text-white"
-                  : "text-white/40 hover:text-white/60"
-              )}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      )}
-
       <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-        {filteredCards.map((card) => (
+        {cards.map((card) => (
           <div key={card.id} className="relative group">
             <OracleCard
               card={card}
               size="fill"
-              onClick={() => setSelectedCard(card)}
+              onClick={() => openCard(card)}
               onRetryImage={
                 onRetryImage ? () => onRetryImage(card.id) : undefined
               }
@@ -113,10 +75,10 @@ export function DeckCardGrid({ cards, onRetryImage, feedbackMap }: DeckCardGridP
       </div>
 
       <CardDetailModal
+        {...modalProps}
         card={currentSelectedCard}
-        open={!!selectedCard}
-        onOpenChange={(open) => !open && setSelectedCard(null)}
         onRetryImage={onRetryImage}
+        showFeedback
         feedbackMap={localFeedback}
         onFeedbackChange={handleFeedbackChange}
       />

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth/helpers";
-import { getAllPaths } from "@/lib/db/queries-journey";
+import { getAllPaths, getAllCircles } from "@/lib/db/queries-paths";
 import type { ApiResponse, Path } from "@/types";
 
 export async function GET() {
@@ -13,15 +13,24 @@ export async function GET() {
   }
 
   try {
-    const rows = await getAllPaths();
+    const [rows, allCircles] = await Promise.all([
+      getAllPaths(),
+      getAllCircles(),
+    ]);
 
-    const data: Path[] = rows.map((p) => ({
+    // Build circle name lookup
+    const circleNameMap = new Map(allCircles.map((c) => [c.id, c.name]));
+
+    const data: (Path & { circleName: string | null })[] = rows.map((p) => ({
       id: p.id,
       name: p.name,
       description: p.description,
       themes: p.themes as string[],
       symbolicVocabulary: p.symbolicVocabulary as string[],
       interpretiveLens: p.interpretiveLens,
+      circleId: p.circleId,
+      circleName: p.circleId ? circleNameMap.get(p.circleId) ?? null : null,
+      imageUrl: p.imageUrl,
       isPreset: p.isPreset,
       createdBy: p.createdBy,
       isPublic: p.isPublic,

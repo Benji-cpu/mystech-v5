@@ -1,7 +1,5 @@
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 import { db } from "@/lib/db";
 import { decks } from "@/lib/db/schema";
 import { requireAuth } from "@/lib/auth/helpers";
@@ -93,14 +91,6 @@ export default async function DeckEditPage({ params }: DeckEditPageProps) {
 
   return (
     <div className="max-w-2xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
-      <Link
-        href={`/decks/${deckId}`}
-        className="inline-flex items-center gap-1 text-sm text-white/40 hover:text-white/70 transition-colors"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Back to Deck
-      </Link>
-
       <div>
         <h1 className="text-2xl font-bold text-white/90">Edit Deck</h1>
         <p className="text-sm text-muted-foreground mt-1">

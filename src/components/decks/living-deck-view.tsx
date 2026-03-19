@@ -6,6 +6,7 @@ import { LivingDeckCardGenerator } from "./living-deck-card-generator";
 import { OracleCard } from "@/components/cards/oracle-card";
 import { CardDetailModal } from "@/components/cards/card-detail-modal";
 import { CardFeedbackButton } from "@/components/cards/card-feedback-button";
+import { useCardDetailModal } from "@/hooks/use-card-detail-modal";
 import { Pen, Wand2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -27,7 +28,7 @@ export function LivingDeckView({
   feedbackMap,
 }: LivingDeckViewProps) {
   const [cards, setCards] = useState(initialCards);
-  const [selectedCard, setSelectedCard] = useState<CardType | null>(null);
+  const { selectedCard, openCard, modalProps } = useCardDetailModal<CardType>();
   const [canGenerate, setCanGenerate] = useState(initialCanGenerate);
   const [mode, setMode] = useState<LivingDeckGenerationMode>(initialMode);
   const [savingMode, setSavingMode] = useState(false);
@@ -134,7 +135,7 @@ export function LivingDeckView({
                 <OracleCard
                   card={card}
                   size="fill"
-                  onClick={() => setSelectedCard(card)}
+                  onClick={() => openCard(card)}
                 />
                 <div className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                   <CardFeedbackButton
@@ -154,9 +155,9 @@ export function LivingDeckView({
       )}
 
       <CardDetailModal
+        {...modalProps}
         card={currentSelectedCard}
-        open={!!selectedCard}
-        onOpenChange={(open) => !open && setSelectedCard(null)}
+        showFeedback
         feedbackMap={feedbackMap}
       />
     </div>

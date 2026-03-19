@@ -2,12 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { generateObject } from "ai";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { readings, readingCards, readingJourneyContext, cards } from "@/lib/db/schema";
+import { readings, readingCards, readingPathContext, cards } from "@/lib/db/schema";
 import { getCurrentUser } from "@/lib/auth/helpers";
 import { geminiModel } from "@/lib/ai/gemini";
 import { detectObstacleCandidate } from "@/lib/ai/obstacle-detection";
 import { buildObstacleCardPrompt } from "@/lib/ai/prompts/obstacle-card";
-import { getPathById } from "@/lib/db/queries-journey";
+import { getPathById } from "@/lib/db/queries-paths";
 import { eq, and } from "drizzle-orm";
 import type { ApiResponse } from "@/types";
 
@@ -47,8 +47,8 @@ export async function GET(request: NextRequest, { params }: Params) {
   // Check journey context
   const [journeyCtx] = await db
     .select()
-    .from(readingJourneyContext)
-    .where(eq(readingJourneyContext.readingId, readingId));
+    .from(readingPathContext)
+    .where(eq(readingPathContext.readingId, readingId));
 
   if (!journeyCtx) {
     return NextResponse.json({ success: true, data: { proposal: null } });

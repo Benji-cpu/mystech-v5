@@ -1,8 +1,17 @@
 import { db } from "@/lib/db";
-import { decks, cards, artStyles, readings, readingCards, conversations, deckMetadata, subscriptions, users, userProfiles, deckAdoptions, cardFeedback, livingDeckSettings, chronicleSettings, chronicleEntries, chronicleKnowledge, astrologyProfiles } from "@/lib/db/schema";
+import { decks, cards, artStyles, readings, readingCards, retreatCards, conversations, deckMetadata, subscriptions, users, userProfiles, deckAdoptions, cardFeedback, livingDeckSettings, chronicleSettings, chronicleEntries, chronicleKnowledge, astrologyProfiles, emergenceEvents } from "@/lib/db/schema";
 import { eq, and, asc, count, ne, desc, gte, gt, sql, isNotNull } from "drizzle-orm";
-import type { Deck, DeckWithOwner, DraftDeckWithPhase, JourneyPhase, DraftCard, PlanType, UserProfile, UserContextProfile, ReadingLength, CardFeedbackType, VoicePreferences, VoiceSpeed, ChronicleEntry, ChronicleSettings, ChronicleKnowledge, ChronicleInterests, ChronicleBadge, AstrologyProfile, ActivityItem } from "@/types";
+import type { Deck, DeckWithOwner, DraftDeckWithPhase, JourneyPhase, DraftCard, PlanType, UserProfile, UserContextProfile, ReadingLength, CardFeedbackType, VoicePreferences, VoiceSpeed, ChronicleEntry, ChronicleSettings, ChronicleKnowledge, ChronicleInterests, ChronicleBadge, AstrologyProfile, ActivityItem, EmergenceEvent } from "@/types";
 import { getBadgeById } from "@/lib/chronicle/badges";
+
+export async function getUserDisplayName(userId: string): Promise<string> {
+  const [row] = await db
+    .select({ displayName: users.displayName, name: users.name })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+  return row?.displayName?.trim() || row?.name?.trim() || "Seeker";
+}
 
 export async function getDeckByIdForUser(deckId: string, userId: string) {
   const [deck] = await db
@@ -133,6 +142,7 @@ export async function getReadingCardsWithData(readingId: string) {
       position: readingCards.position,
       positionName: readingCards.positionName,
       cardId: readingCards.cardId,
+      retreatCardId: readingCards.retreatCardId,
       personCardId: readingCards.personCardId,
       createdAt: readingCards.createdAt,
       card: {
@@ -150,9 +160,25 @@ export async function getReadingCardsWithData(readingId: string) {
         createdAt: cards.createdAt,
         updatedAt: cards.updatedAt,
       },
+      retreatCard: {
+        id: retreatCards.id,
+        retreatId: retreatCards.retreatId,
+        cardType: retreatCards.cardType,
+        source: retreatCards.source,
+        title: retreatCards.title,
+        meaning: retreatCards.meaning,
+        guidance: retreatCards.guidance,
+        imageUrl: retreatCards.imageUrl,
+        imagePrompt: retreatCards.imagePrompt,
+        imageStatus: retreatCards.imageStatus,
+        originContext: retreatCards.originContext,
+        createdAt: retreatCards.createdAt,
+        updatedAt: retreatCards.updatedAt,
+      },
     })
     .from(readingCards)
     .leftJoin(cards, eq(readingCards.cardId, cards.id))
+    .leftJoin(retreatCards, eq(readingCards.retreatCardId, retreatCards.id))
     .where(eq(readingCards.readingId, readingId))
     .orderBy(asc(readingCards.position));
 }
@@ -382,6 +408,7 @@ export async function getSharedReadingByToken(token: string) {
       position: readingCards.position,
       positionName: readingCards.positionName,
       cardId: readingCards.cardId,
+      retreatCardId: readingCards.retreatCardId,
       personCardId: readingCards.personCardId,
       createdAt: readingCards.createdAt,
       card: {
@@ -399,9 +426,25 @@ export async function getSharedReadingByToken(token: string) {
         createdAt: cards.createdAt,
         updatedAt: cards.updatedAt,
       },
+      retreatCard: {
+        id: retreatCards.id,
+        retreatId: retreatCards.retreatId,
+        cardType: retreatCards.cardType,
+        source: retreatCards.source,
+        title: retreatCards.title,
+        meaning: retreatCards.meaning,
+        guidance: retreatCards.guidance,
+        imageUrl: retreatCards.imageUrl,
+        imagePrompt: retreatCards.imagePrompt,
+        imageStatus: retreatCards.imageStatus,
+        originContext: retreatCards.originContext,
+        createdAt: retreatCards.createdAt,
+        updatedAt: retreatCards.updatedAt,
+      },
     })
     .from(readingCards)
     .leftJoin(cards, eq(readingCards.cardId, cards.id))
+    .leftJoin(retreatCards, eq(readingCards.retreatCardId, retreatCards.id))
     .where(eq(readingCards.readingId, reading.id))
     .orderBy(asc(readingCards.position));
 
@@ -1328,4 +1371,165 @@ export async function getUserActivityFeed(userId: string, limit = 15): Promise<A
   // Sort by timestamp DESC and limit
   items.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
   return items.slice(0, limit);
+}
+
+// ── Seeker Context for Autonomous Obstacle Detection ──────────────────
+
+export interface SeekerContext {
+  emotionalPatterns: { pattern: string; frequency: number }[];
+  recentMoods: string[];
+  previousObstacles: { title: string; meaning: string }[];
+  knowledgeSummary: string | null;
+  lifeContext: string | null;
+}
+
+export async function getSeekerContextForGeneration(userId: string): Promise<SeekerContext | null> {
+  const [knowledgeResult, moodsResult, obstaclesResult, profileResult] = await Promise.all([
+    // 1. Chronicle knowledge → emotional patterns + summary
+    db
+      .select({
+        emotionalPatterns: chronicleKnowledge.emotionalPatterns,
+        summary: chronicleKnowledge.summary,
+      })
+      .from(chronicleKnowledge)
+      .where(eq(chronicleKnowledge.userId, userId))
+      .limit(1),
+
+    // 2. Recent chronicle moods (last 7 completed entries)
+    db
+      .select({ mood: chronicleEntries.mood })
+      .from(chronicleEntries)
+      .where(and(eq(chronicleEntries.userId, userId), eq(chronicleEntries.status, "completed"), isNotNull(chronicleEntries.mood)))
+      .orderBy(desc(chronicleEntries.createdAt))
+      .limit(7),
+
+    // 3. Existing obstacle cards in user's decks
+    db
+      .select({ title: cards.title, meaning: cards.meaning })
+      .from(cards)
+      .innerJoin(decks, eq(cards.deckId, decks.id))
+      .where(and(eq(decks.userId, userId), eq(cards.cardType, "obstacle")))
+      .orderBy(desc(cards.createdAt))
+      .limit(10),
+
+    // 4. User profile → lifeContext
+    db
+      .select({ lifeContext: userProfiles.lifeContext })
+      .from(userProfiles)
+      .where(eq(userProfiles.userId, userId))
+      .limit(1),
+  ]);
+
+  const knowledge = knowledgeResult[0];
+  const rawPatterns = (knowledge?.emotionalPatterns ?? []) as { pattern: string; frequency: number; lastSeen: string }[];
+  const emotionalPatterns = rawPatterns
+    .sort((a, b) => b.frequency - a.frequency)
+    .slice(0, 10)
+    .map(({ pattern, frequency }) => ({ pattern, frequency }));
+
+  const recentMoods = moodsResult
+    .map((r) => r.mood)
+    .filter((m): m is string => !!m);
+
+  const previousObstacles = obstaclesResult.map(({ title, meaning }) => ({ title, meaning }));
+
+  const knowledgeSummary = knowledge?.summary ?? null;
+  const lifeContext = profileResult[0]?.lifeContext ?? null;
+
+  // Return null if there's truly nothing — new user with no data
+  const hasData = emotionalPatterns.length > 0 || recentMoods.length > 0 || previousObstacles.length > 0 || knowledgeSummary || lifeContext;
+  if (!hasData) return null;
+
+  return { emotionalPatterns, recentMoods, previousObstacles, knowledgeSummary, lifeContext };
+}
+
+// ── Emergence events ────────────────────────────────────────────────────
+
+export async function getPendingEmergenceEvent(userId: string): Promise<EmergenceEvent | null> {
+  const [event] = await db
+    .select()
+    .from(emergenceEvents)
+    .where(
+      and(
+        eq(emergenceEvents.userId, userId),
+        eq(emergenceEvents.status, "ready")
+      )
+    )
+    .orderBy(asc(emergenceEvents.createdAt))
+    .limit(1);
+  return (event as EmergenceEvent) ?? null;
+}
+
+export async function getEmergenceEventHistory(userId: string, limit = 20): Promise<EmergenceEvent[]> {
+  return db
+    .select()
+    .from(emergenceEvents)
+    .where(eq(emergenceEvents.userId, userId))
+    .orderBy(desc(emergenceEvents.createdAt))
+    .limit(limit) as Promise<EmergenceEvent[]>;
+}
+
+export async function createEmergenceEvent(data: {
+  userId: string;
+  deckId: string;
+  eventType: string;
+  detectedPattern: string;
+  patternFrequency: number;
+  relevantExcerpts?: string[];
+  aiEvidence?: string;
+  confidence?: number;
+}): Promise<EmergenceEvent> {
+  const [event] = await db
+    .insert(emergenceEvents)
+    .values({
+      userId: data.userId,
+      deckId: data.deckId,
+      eventType: data.eventType,
+      status: "pending",
+      detectedPattern: data.detectedPattern,
+      patternFrequency: data.patternFrequency,
+      relevantExcerpts: data.relevantExcerpts ?? [],
+      aiEvidence: data.aiEvidence ?? null,
+      confidence: data.confidence ?? null,
+    })
+    .returning();
+  return event as EmergenceEvent;
+}
+
+export async function getEmergenceEventForUser(
+  eventId: string,
+  userId: string
+): Promise<EmergenceEvent | null> {
+  const [event] = await db
+    .select()
+    .from(emergenceEvents)
+    .where(and(eq(emergenceEvents.id, eventId), eq(emergenceEvents.userId, userId)))
+    .limit(1);
+  return event ? (event as EmergenceEvent) : null;
+}
+
+export async function hasEmergenceEventToday(userId: string): Promise<boolean> {
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const [row] = await db
+    .select({ id: emergenceEvents.id })
+    .from(emergenceEvents)
+    .where(
+      and(
+        eq(emergenceEvents.userId, userId),
+        gte(emergenceEvents.createdAt, todayStart)
+      )
+    )
+    .limit(1);
+  return !!row;
+}
+
+export async function updateEmergenceEvent(
+  id: string,
+  data: Partial<Pick<EmergenceEvent, "status" | "cardId" | "lyraMessage" | "deliveredAt">>
+): Promise<void> {
+  await db
+    .update(emergenceEvents)
+    .set(data)
+    .where(eq(emergenceEvents.id, id));
 }

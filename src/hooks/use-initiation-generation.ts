@@ -3,6 +3,8 @@
 import { useState } from "react";
 import type { PresetArtStyleName } from "@/lib/ai/prompts/onboarding";
 
+export type GenerationStage = "selecting_style" | "generating_deck" | "finalizing";
+
 interface InitiationGenerationResult {
   deckId: string;
   deckTitle: string;
@@ -14,6 +16,7 @@ export function useInitiationGeneration() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<InitiationGenerationResult | null>(null);
+  const [stage, setStage] = useState<GenerationStage | null>(null);
 
   async function generate(userInput: string): Promise<InitiationGenerationResult | null> {
     setIsGenerating(true);
@@ -22,6 +25,7 @@ export function useInitiationGeneration() {
 
     try {
       // Step 1: Ask AI to pick the art style
+      setStage("selecting_style");
       const styleRes = await fetch("/api/onboarding/select-art-style", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -37,6 +41,7 @@ export function useInitiationGeneration() {
       const artStyleId: string = styleJson.data?.artStyleId ?? "";
 
       // Step 2: Generate deck with 3 cards using the selected style
+      setStage("generating_deck");
       const deckRes = await fetch("/api/ai/generate-deck", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -57,6 +62,7 @@ export function useInitiationGeneration() {
       const { deckId, title: deckTitle } = deckJson.data;
 
       // Step 3: Fire-and-forget image generation
+      setStage("finalizing");
       fetch("/api/ai/generate-images-batch", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -76,8 +82,9 @@ export function useInitiationGeneration() {
       return null;
     } finally {
       setIsGenerating(false);
+      setStage(null);
     }
   }
 
-  return { generate, isGenerating, error, result };
+  return { generate, isGenerating, error, result, stage };
 }

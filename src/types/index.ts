@@ -39,12 +39,22 @@ export type DeckWithOwner = Deck & {
 };
 
 // Card types
-export type CardImageStatus = 'pending' | 'generating' | 'completed' | 'failed';
+export type CardImageStatus = 'pending' | 'generating' | 'completed' | 'failed' | 'none';
 export type CardFeedbackType = 'loved' | 'dismissed';
 export type CardType = 'general' | 'obstacle' | 'threshold';
 
+export const ORIGIN_SOURCE = {
+  RETREAT_COMPLETION: 'retreat_completion',
+  OBSTACLE_DETECTION: 'obstacle_detection',
+  CHRONICLE_EMERGENCE: 'chronicle_emergence',
+  DECK_CREATION: 'deck_creation',
+} as const;
+export type OriginSource = typeof ORIGIN_SOURCE[keyof typeof ORIGIN_SOURCE];
+
 export type CardOriginContext = {
-  source: 'retreat_completion' | 'obstacle_detection' | 'chronicle' | 'deck_creation';
+  source: OriginSource;
+  circleId?: string;
+  circleName?: string;
   pathId?: string;
   pathName?: string;
   retreatId?: string;
@@ -70,6 +80,30 @@ export type Card = {
   originContext: CardOriginContext | null;
   createdAt: Date;
 };
+
+// Retreat card types (path content — separate from user deck cards)
+export type RetreatCardSource = 'seed' | 'ai_generated' | 'obstacle_detection';
+
+export type RetreatCard = {
+  id: string;
+  retreatId: string;
+  cardType: 'obstacle' | 'threshold';
+  source: RetreatCardSource;
+  title: string;
+  meaning: string;
+  guidance: string;
+  imageUrl: string | null;
+  imagePrompt: string | null;
+  imageStatus: CardImageStatus;
+  sortOrder: number;
+  userId: string | null;
+  originContext: CardOriginContext | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+/** Minimal shape for CardDetailModal — both Card and RetreatCard satisfy this */
+export type CardDetailData = Pick<Card, 'id' | 'title' | 'meaning' | 'guidance' | 'imageUrl' | 'imageStatus' | 'cardType' | 'originContext'>;
 
 // Art style types
 export type ArtStyle = {
@@ -118,6 +152,7 @@ export type ReadingCard = {
   position: number;
   positionName: string;
   cardId: string | null;
+  retreatCardId: string | null;
   personCardId: string | null;
 };
 
@@ -308,6 +343,7 @@ export type AstrologicalReadingContext = {
 // Chronicle types
 export type ChroniclePhase =
   | 'idle'
+  | 'emergence_reveal'
   | 'greeting'
   | 'dialogue'
   | 'reflecting'
@@ -382,7 +418,45 @@ export type ChronicleBadgeDefinition = {
   lyraMessage: string;
 };
 
-// ── Paths / Journey types ──────────────────────────────────────────────
+// ── Circle types ────────────────────────────────────────────────────────
+
+export type CircleStatus = 'locked' | 'active' | 'completed';
+
+export type Circle = {
+  id: string;
+  name: string;
+  description: string;
+  sortOrder: number;
+  circleNumber: number;
+  themes: string[];
+  iconKey: string;
+  imageUrl: string | null;
+  estimatedDays: number | null;
+  isPreset: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type CircleWithPaths = Circle & {
+  paths: Path[];
+};
+
+export type UserCircleProgress = {
+  id: string;
+  userId: string;
+  circleId: string;
+  status: CircleStatus;
+  pathsCompleted: number;
+  startedAt: Date | null;
+  completedAt: Date | null;
+};
+
+export type CirclePosition = {
+  circle: Circle;
+  circleProgress: UserCircleProgress;
+};
+
+// ── Path types ──────────────────────────────────────────────────────────
 
 export type PathStatus = 'active' | 'completed' | 'paused';
 
@@ -393,6 +467,8 @@ export type Path = {
   themes: string[];
   symbolicVocabulary: string[];
   interpretiveLens: string;
+  circleId: string | null;
+  imageUrl: string | null;
   isPreset: boolean;
   createdBy: string | null;
   isPublic: boolean;
@@ -434,6 +510,7 @@ export type UserPathProgress = {
   id: string;
   userId: string;
   pathId: string;
+  circleProgressId: string | null;
   status: PathStatus;
   currentRetreatId: string | null;
   currentWaypointId: string | null;
@@ -454,6 +531,7 @@ export type UserRetreatProgress = {
   artifactThemes: string[];
   artifactImageUrl: string | null;
   thresholdCardId: string | null;
+  thresholdRetreatCardId: string | null;
 };
 
 export type UserWaypointProgress = {
@@ -467,8 +545,9 @@ export type UserWaypointProgress = {
   completedAt: Date | null;
 };
 
-export type ReadingJourneyContext = {
+export type ReadingPathContext = {
   readingId: string;
+  circleId: string | null;
   pathId: string;
   retreatId: string;
   waypointId: string;
@@ -483,7 +562,9 @@ export type PathWithRetreats = Path & {
   retreats: (Retreat & { waypoints: Waypoint[] })[];
 };
 
-export type JourneyPosition = {
+export type PathPosition = {
+  circle: Circle | null;
+  circleProgress: UserCircleProgress | null;
   path: Path;
   retreat: Retreat;
   waypoint: Waypoint;
@@ -492,7 +573,45 @@ export type JourneyPosition = {
   waypointProgress: UserWaypointProgress;
 };
 
-export type CardJourneyMemory = {
+// ── Practice types ──────────────────────────────────────────────────────
+
+export type PracticeSegmentType = 'speech' | 'pause';
+
+export type Practice = {
+  id: string;
+  waypointId: string | null;
+  userId: string | null;
+  title: string;
+  description: string;
+  targetDurationMin: number;
+  sortOrder: number;
+  createdAt: Date;
+};
+
+export type PracticeSegment = {
+  id: string;
+  practiceId: string;
+  segmentType: PracticeSegmentType;
+  text: string | null;
+  durationMs: number | null;
+  estimatedDurationMs: number | null;
+  sortOrder: number;
+};
+
+export type UserPracticeProgress = {
+  id: string;
+  userId: string;
+  practiceId: string;
+  completedAt: Date | null;
+  lastPlayedAt: Date | null;
+  playCount: number;
+};
+
+export type PracticeWithSegments = Practice & {
+  segments: PracticeSegment[];
+};
+
+export type CardPathMemory = {
   cardTitle: string;
   retreatName: string;
   waypointName: string;
@@ -500,7 +619,9 @@ export type CardJourneyMemory = {
   readingDate: Date;
 };
 
-export type JourneyContextForPrompt = {
+export type PathContextForPrompt = {
+  circleName: string | null;
+  circleNumber: number | null;
   pathName: string;
   pathLens: string;
   retreatName: string;
@@ -508,8 +629,37 @@ export type JourneyContextForPrompt = {
   waypointName: string;
   waypointLens: string;
   suggestedIntention: string;
-  cardsRemember: CardJourneyMemory[];
+  cardsRemember: CardPathMemory[];
 };
+
+// ── Onboarding milestone types ──────────────────────────────────────────
+
+export type OnboardingMilestone =
+  // Stage 0
+  | 'initiation_complete'
+  // Stage 1: Getting oriented
+  | 'nav_tutorial_seen'
+  | 'dashboard_tour_seen'
+  | 'first_deck_explored'
+  // Stage 2: Deepening
+  | 'second_reading_complete'
+  | 'spread_types_introduced'
+  | 'art_styles_introduced'
+  // Stage 3: Daily Practice
+  | 'chronicle_introduced'
+  | 'first_chronicle_entry'
+  | 'streak_concept_seen'
+  // Stage 4: Going Deeper
+  | 'paths_introduced'
+  | 'astrology_introduced'
+  | 'first_path_activated'
+  | 'astrology_setup_complete'
+  // Stage 5: Mastery
+  | 'sharing_introduced'
+  | 'pro_features_introduced'
+  | 'custom_art_style_introduced';
+
+export type OnboardingStage = 0 | 1 | 2 | 3 | 4 | 5;
 
 // Activity feed types
 export type CelestialEventType =
@@ -536,6 +686,27 @@ export type ActivityItem = {
 );
 
 export type ActivityItemWithTemporal = ActivityItem & { isFuture: boolean };
+
+// Emergence event types
+export type EmergenceEventType = 'obstacle' | 'threshold';
+export type EmergenceEventStatus = 'pending' | 'generating' | 'ready' | 'delivered' | 'dismissed';
+
+export type EmergenceEvent = {
+  id: string;
+  userId: string;
+  deckId: string;
+  eventType: EmergenceEventType;
+  status: EmergenceEventStatus;
+  detectedPattern: string;
+  patternFrequency: number;
+  relevantExcerpts: string[];
+  cardId: string | null;
+  lyraMessage: string | null;
+  aiEvidence: string | null;
+  confidence: number | null;
+  createdAt: Date;
+  deliveredAt: Date | null;
+};
 
 export type ChronicleDashboardStatus = {
   hasChronicle: boolean;

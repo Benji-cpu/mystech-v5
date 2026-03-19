@@ -1,8 +1,12 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { Check, X } from "lucide-react";
-import type { DraftCard } from "@/types";
+import { Button } from "@/components/ui/button";
+import { Check, X, Pencil } from "lucide-react";
+import { CardDetailModal } from "@/components/cards/card-detail-modal";
+import { useCardDetailModal } from "@/hooks/use-card-detail-modal";
+import { draftToCardDetail } from "./draft-card-utils";
+import type { DraftCard, CardDetailData } from "@/types";
 
 interface DraftReviewGridProps {
   cards: DraftCard[];
@@ -15,7 +19,10 @@ export function DraftReviewGrid({
   onToggle,
   onEdit,
 }: DraftReviewGridProps) {
+  const { openCard, modalProps } = useCardDetailModal<CardDetailData>();
+
   return (
+    <>
     <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
       {cards.map((card) => (
         <div
@@ -28,7 +35,7 @@ export function DraftReviewGrid({
           )}
           onClick={() => {
             if (!card.removed) {
-              onEdit(card);
+              openCard(draftToCardDetail(card));
             }
           }}
         >
@@ -51,6 +58,18 @@ export function DraftReviewGrid({
               <Check className="h-3 w-3" />
             )}
           </button>
+
+          {/* Edit button (bottom-right) */}
+          {!card.removed && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute bottom-2 right-2 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+              onClick={(e) => { e.stopPropagation(); onEdit(card); }}
+            >
+              <Pencil className="h-3 w-3" />
+            </Button>
+          )}
 
           {/* Card number */}
           <span className="text-[10px] text-muted-foreground mb-1">
@@ -83,5 +102,7 @@ export function DraftReviewGrid({
         </div>
       ))}
     </div>
+    <CardDetailModal {...modalProps} />
+    </>
   );
 }

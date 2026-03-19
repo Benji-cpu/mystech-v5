@@ -3,9 +3,9 @@
 
 export type ChroniclePhase =
   | 'idle'
+  | 'emergence_reveal'
   | 'greeting'
   | 'dialogue'
-  | 'reflecting'
   | 'card_forging'
   | 'card_reveal'
   | 'reading'
@@ -33,6 +33,17 @@ export type ChronicleBadgeNotice = {
 
 // ── State shape ─────────────────────────────────────────────────────────
 
+export type EmergenceCardData = {
+  id: string;
+  title: string;
+  meaning: string;
+  guidance: string;
+  imageUrl: string | null;
+  imageStatus: string;
+  cardType: 'obstacle' | 'threshold';
+  detectedPattern: string;
+};
+
 export type ChronicleState = {
   phase: ChroniclePhase;
   messages: ChronicleMessage[];
@@ -44,6 +55,9 @@ export type ChronicleState = {
   newBadge: ChronicleBadgeNotice | null;
   journeyRecorded: boolean;
   error: string | null;
+  emergenceCard: EmergenceCardData | null;
+  emergenceMessage: string | null;
+  emergenceAcknowledged: boolean;
 };
 
 // ── Actions ─────────────────────────────────────────────────────────────
@@ -55,8 +69,6 @@ export type ChronicleAction =
   | { type: 'START_STREAMING' }
   | { type: 'STREAM_TOKEN'; token: string }
   | { type: 'STREAM_COMPLETE'; content: string }
-  | { type: 'START_REFLECTING' }
-  | { type: 'REFLECTING_DONE' }
   | { type: 'START_FORGING' }
   | { type: 'FORGE_COMPLETE'; card: ChronicleCard }
   | { type: 'FORGE_ERROR'; error: string }
@@ -68,8 +80,11 @@ export type ChronicleAction =
   | { type: 'SKIP_TO_COMPLETE'; streakCount: number }
   | { type: 'LYRA_READY' }
   | { type: 'SET_ERROR'; error: string }
+  | { type: 'STREAM_CANCEL'; error: string }
   | { type: 'RESTORE'; messages: ChronicleMessage[]; card: ChronicleCard | null; miniReading: string | null; phase: ChroniclePhase }
-  | { type: 'UPDATE_CARD_IMAGE'; imageUrl: string | null; imageStatus: string };
+  | { type: 'UPDATE_CARD_IMAGE'; imageUrl: string | null; imageStatus: string }
+  | { type: 'START_EMERGENCE'; card: EmergenceCardData; message: string }
+  | { type: 'EMERGENCE_ACKNOWLEDGED' };
 
 // ── Initial state ────────────────────────────────────────────────────────
 
@@ -84,6 +99,9 @@ export const initialChronicleState: ChronicleState = {
   newBadge: null,
   journeyRecorded: false,
   error: null,
+  emergenceCard: null,
+  emergenceMessage: null,
+  emergenceAcknowledged: false,
 };
 
 // ── Reducer ──────────────────────────────────────────────────────────────
@@ -131,12 +149,6 @@ export function chronicleReducer(
       }
       return { ...state, messages: msgs, isStreaming: false };
     }
-
-    case 'START_REFLECTING':
-      return { ...state, phase: 'reflecting', isStreaming: false };
-
-    case 'REFLECTING_DONE':
-      return { ...state, phase: 'card_forging' };
 
     case 'START_FORGING':
       return { ...state, phase: 'card_forging', error: null };
@@ -186,6 +198,16 @@ export function chronicleReducer(
     case 'SET_ERROR':
       return { ...state, error: action.error, isStreaming: false };
 
+    case 'STREAM_CANCEL': {
+      // Remove the blank assistant message pushed by START_STREAMING
+      const msgs = [...state.messages];
+      const last = msgs[msgs.length - 1];
+      if (last?.role === 'assistant' && !last.content) {
+        msgs.pop();
+      }
+      return { ...state, messages: msgs, isStreaming: false, error: action.error };
+    }
+
     case 'RESTORE':
       return {
         ...state,
@@ -202,6 +224,22 @@ export function chronicleReducer(
         card: { ...state.card, imageUrl: action.imageUrl, imageStatus: action.imageStatus },
       };
 
+    case 'START_EMERGENCE':
+      return {
+        ...state,
+        phase: 'emergence_reveal',
+        emergenceCard: action.card,
+        emergenceMessage: action.message,
+      };
+
+    case 'EMERGENCE_ACKNOWLEDGED':
+      return {
+        ...state,
+        phase: 'greeting',
+        emergenceAcknowledged: true,
+        // Keep emergenceCard and emergenceMessage — needed for greeting/dialogue context
+      };
+
     default:
       return state;
   }
@@ -211,12 +249,12 @@ export function chronicleReducer(
 
 /** True when the card zone should be visible */
 export function isCardZoneVisible(phase: ChroniclePhase): boolean {
-  return phase === 'card_forging' || phase === 'card_reveal' || phase === 'reading' || phase === 'complete';
+  return phase === 'emergence_reveal' || phase === 'card_forging' || phase === 'card_reveal' || phase === 'reading' || phase === 'complete';
 }
 
 /** True when the dialogue zone should be visible */
 export function isDialogueZoneVisible(phase: ChroniclePhase): boolean {
-  return phase === 'greeting' || phase === 'dialogue' || phase === 'reflecting' || phase === 'card_forging' || phase === 'reading' || phase === 'complete';
+  return phase === 'emergence_reveal' || phase === 'greeting' || phase === 'dialogue' || phase === 'card_forging' || phase === 'reading' || phase === 'complete';
 }
 
 /** True when the mini-reading text is the main content (dialogue zone is reading) */

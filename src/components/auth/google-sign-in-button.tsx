@@ -14,7 +14,7 @@ export function GoogleSignInButton() {
 
   return (
     <Button
-      className="w-full"
+      className="w-full min-w-[200px]"
       variant="outline"
       onClick={handleClick}
       disabled={isLoading}

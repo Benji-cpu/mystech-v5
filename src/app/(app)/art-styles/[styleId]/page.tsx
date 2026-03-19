@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Pencil, Sparkles } from "lucide-react";
+import { Pencil, Sparkles } from "lucide-react";
 import { db } from "@/lib/db";
 import { artStyles, artStyleShares } from "@/lib/db/schema";
 import { requireAuth } from "@/lib/auth/helpers";
@@ -49,15 +49,6 @@ export default async function StyleDetailPage({
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-2xl mx-auto space-y-6">
-      {/* Back link */}
-      <Link
-        href="/art-styles"
-        className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Back to Art Styles
-      </Link>
-
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-1">

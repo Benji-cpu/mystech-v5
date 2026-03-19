@@ -2,20 +2,17 @@ import { generateObject } from "ai";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import {
-  cards,
-  decks,
+  retreatCards,
   readings,
-  readingJourneyContext,
+  readingPathContext,
   retreats,
   paths,
   userRetreatProgress,
 } from "@/lib/db/schema";
 import { geminiModel } from "@/lib/ai/gemini";
-import { generateCardImage } from "@/lib/ai/image-generation";
-import { getArtStyleById } from "@/lib/db/queries";
-import { getPreferredDeckForPathCards } from "@/lib/db/queries-journey";
 import { buildThresholdCardPrompt } from "@/lib/ai/prompts/threshold-card";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
+import { ORIGIN_SOURCE } from "@/types";
 
 const ThresholdCardSchema = z.object({
   title: z.string().describe("The card title — evocative, feels like an achievement"),
@@ -29,13 +26,6 @@ export async function generateThresholdCard(
   retreatId: string,
   retreatProgressId: string
 ) {
-  // Find target deck
-  const targetDeck = await getPreferredDeckForPathCards(userId, retreatId);
-  if (!targetDeck) {
-    console.error("[threshold-card] No target deck found for user:", userId);
-    return;
-  }
-
   // Fetch retreat + path info
   const [retreat] = await db
     .select()
@@ -57,13 +47,13 @@ export async function generateThresholdCard(
     })
     .from(readings)
     .innerJoin(
-      readingJourneyContext,
-      eq(readings.id, readingJourneyContext.readingId)
+      readingPathContext,
+      eq(readings.id, readingPathContext.readingId)
     )
     .where(
       and(
         eq(readings.userId, userId),
-        eq(readingJourneyContext.retreatId, retreatId)
+        eq(readingPathContext.retreatId, retreatId)
       )
     );
 
@@ -77,13 +67,6 @@ export async function generateThresholdCard(
     })
     .join("\n\n");
 
-  // Get art style name for the deck
-  let artStyleName: string | undefined;
-  if (targetDeck.artStyleId) {
-    const style = await getArtStyleById(targetDeck.artStyleId);
-    artStyleName = style?.name;
-  }
-
   // Generate the card
   const prompt = buildThresholdCardPrompt({
     retreatName: retreat.name,
@@ -91,7 +74,6 @@ export async function generateThresholdCard(
     retreatLens: retreat.retreatLens,
     pathName: path.name,
     readingSummaries,
-    artStyleName,
   });
 
   const { object: generated } = await generateObject({
@@ -101,27 +83,21 @@ export async function generateThresholdCard(
     maxOutputTokens: 2000,
   });
 
-  // Determine next card number
-  const [countResult] = await db
-    .select({ count: sql<number>`count(*)::int` })
-    .from(cards)
-    .where(eq(cards.deckId, targetDeck.id));
-  const nextCardNumber = (countResult?.count ?? 0) + 1;
-
-  // Insert card with threshold type
+  // Insert into retreatCards (not user deck cards)
   const [card] = await db
-    .insert(cards)
+    .insert(retreatCards)
     .values({
-      deckId: targetDeck.id,
-      cardNumber: nextCardNumber,
+      retreatId,
+      cardType: "threshold",
+      source: "ai_generated",
       title: generated.title,
       meaning: generated.meaning,
       guidance: generated.guidance,
       imagePrompt: generated.imagePrompt,
-      imageStatus: "generating",
-      cardType: "threshold",
+      imageStatus: "pending",
+      userId,
       originContext: {
-        source: "retreat_completion",
+        source: ORIGIN_SOURCE.RETREAT_COMPLETION,
         pathId: path.id,
         pathName: path.name,
         retreatId: retreat.id,
@@ -131,28 +107,11 @@ export async function generateThresholdCard(
     })
     .returning();
 
-  // Increment deck card count
-  await db
-    .update(decks)
-    .set({
-      cardCount: sql`${decks.cardCount} + 1`,
-      updatedAt: new Date(),
-    })
-    .where(eq(decks.id, targetDeck.id));
-
-  // Link threshold card to retreat progress
+  // Link threshold card to retreat progress via new FK
   await db
     .update(userRetreatProgress)
-    .set({ thresholdCardId: card.id })
+    .set({ thresholdRetreatCardId: card.id })
     .where(eq(userRetreatProgress.id, retreatProgressId));
-
-  // Fire-and-forget image generation — no credit deduction
-  const artStylePrompt = targetDeck.artStyleId
-    ? (await getArtStyleById(targetDeck.artStyleId))?.stylePrompt ?? ""
-    : "";
-  generateCardImage(card.id, generated.imagePrompt, artStylePrompt, targetDeck.id).catch(
-    (err) => console.error("[threshold-card] image generation error:", err)
-  );
 
   return card;
 }

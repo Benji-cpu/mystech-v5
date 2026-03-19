@@ -11,6 +11,7 @@ import {
   date,
 } from "drizzle-orm/pg-core";
 import { createId } from "@paralleldrive/cuid2";
+import type { OriginSource, CardOriginContext } from "@/types";
 
 export const users = pgTable("user", {
   id: text("id")
@@ -159,18 +160,7 @@ export const cards = pgTable(
     imagePrompt: text("image_prompt"),
     imageStatus: text("image_status").notNull().default("pending"),
     cardType: text("card_type").notNull().default("general"), // "general" | "obstacle" | "threshold"
-    originContext: jsonb("origin_context").$type<{
-      source: 'retreat_completion' | 'obstacle_detection' | 'chronicle' | 'deck_creation';
-      pathId?: string;
-      pathName?: string;
-      retreatId?: string;
-      retreatName?: string;
-      waypointId?: string;
-      waypointName?: string;
-      detectedPattern?: string;
-      readingIds?: string[];
-      forgedAt?: string;
-    }>(),
+    originContext: jsonb("origin_context").$type<CardOriginContext>(),
     chronicleEntryId: text("chronicle_entry_id"), // FK added after chronicleEntries is defined
     createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
@@ -365,6 +355,7 @@ export const readingCards = pgTable(
     position: integer("position").notNull(),
     positionName: text("position_name").notNull(),
     cardId: text("card_id").references(() => cards.id, { onDelete: "set null" }),
+    retreatCardId: text("retreat_card_id").references(() => retreatCards.id, { onDelete: "set null" }),
     personCardId: text("person_card_id"),
     createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
   },
@@ -469,7 +460,7 @@ export const userProfiles = pgTable("user_profile", {
   voiceId: text("voice_id"),
   contextSummary: text("context_summary"),
   contextVersion: integer("context_version").default(0).notNull(),
-  activePathId: text("active_path_id"), // FK to paths — nullable, user's current journey Path
+  activePathId: text("active_path_id"), // FK to paths — nullable, user's current active Path
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
 });
@@ -528,9 +519,27 @@ export const readingAstrology = pgTable("reading_astrology", {
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
 });
 
-// ── Paths (Spiritual Journey Framework) ──────────────────────────────
+// ── Circles & Paths ──────────────────────────────────────────────
 
-// Path definitions (3 presets initially)
+// Circles — mastery tiers that group multiple Paths
+export const circles = pgTable("circle", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => createId()),
+  name: text("name").notNull(),
+  description: text("description").notNull(),
+  sortOrder: integer("sort_order").notNull().default(0),
+  circleNumber: integer("circle_number").notNull(),
+  themes: jsonb("themes").$type<string[]>().notNull().default([]),
+  iconKey: text("icon_key").notNull().default("circle"),
+  imageUrl: text("image_url"),
+  estimatedDays: integer("estimated_days"),
+  isPreset: boolean("is_preset").default(true).notNull(),
+  createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
+});
+
+// Path definitions (grouped within Circles)
 export const paths = pgTable("path", {
   id: text("id")
     .primaryKey()
@@ -543,6 +552,10 @@ export const paths = pgTable("path", {
     .notNull()
     .default([]),
   interpretiveLens: text("interpretive_lens").notNull(),
+  circleId: text("circle_id").references(() => circles.id, {
+    onDelete: "set null",
+  }),
+  imageUrl: text("image_url"),
   isPreset: boolean("is_preset").default(false).notNull(),
   createdBy: text("created_by").references(() => users.id, {
     onDelete: "set null",
@@ -600,6 +613,30 @@ export const waypoints = pgTable(
   (t) => [index("waypoint_retreat_id_idx").on(t.retreatId)]
 );
 
+// User circle progress — tracks mastery tier advancement
+export const userCircleProgress = pgTable(
+  "user_circle_progress",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    circleId: text("circle_id")
+      .notNull()
+      .references(() => circles.id, { onDelete: "cascade" }),
+    status: text("status").notNull().default("locked"), // "locked" | "active" | "completed"
+    pathsCompleted: integer("paths_completed").notNull().default(0),
+    startedAt: timestamp("started_at", { mode: "date" }),
+    completedAt: timestamp("completed_at", { mode: "date" }),
+  },
+  (t) => [
+    unique().on(t.userId, t.circleId),
+    index("user_circle_progress_user_id_idx").on(t.userId),
+  ]
+);
+
 // User path progress — tracks active Path + position
 export const userPathProgress = pgTable(
   "user_path_progress",
@@ -613,6 +650,10 @@ export const userPathProgress = pgTable(
     pathId: text("path_id")
       .notNull()
       .references(() => paths.id, { onDelete: "cascade" }),
+    circleProgressId: text("circle_progress_id").references(
+      () => userCircleProgress.id,
+      { onDelete: "set null" }
+    ),
     status: text("status").notNull().default("active"), // "active" | "completed" | "paused"
     currentRetreatId: text("current_retreat_id"),
     currentWaypointId: text("current_waypoint_id"),
@@ -648,7 +689,8 @@ export const userRetreatProgress = pgTable(
     artifactSummary: text("artifact_summary"),
     artifactThemes: jsonb("artifact_themes").$type<string[]>().default([]),
     artifactImageUrl: text("artifact_image_url"),
-    thresholdCardId: text("threshold_card_id"), // FK to cards — linked after threshold card is forged
+    thresholdCardId: text("threshold_card_id"), // FK to cards — legacy, kept for backward compat
+    thresholdRetreatCardId: text("threshold_retreat_card_id"), // FK to retreatCards — new target for threshold cards
   },
   (t) => [
     unique().on(t.userId, t.retreatId),
@@ -684,11 +726,12 @@ export const userWaypointProgress = pgTable(
   ]
 );
 
-// Reading journey context — snapshots Path/Retreat/Waypoint lens at reading time
-export const readingJourneyContext = pgTable("reading_journey_context", {
+// Reading path context — snapshots Circle/Path/Retreat/Waypoint lens at reading time
+export const readingPathContext = pgTable("reading_journey_context", {
   readingId: text("reading_id")
     .primaryKey()
     .references(() => readings.id, { onDelete: "cascade" }),
+  circleId: text("circle_id"),
   pathId: text("path_id").notNull(),
   retreatId: text("retreat_id").notNull(),
   waypointId: text("waypoint_id").notNull(),
@@ -698,6 +741,127 @@ export const readingJourneyContext = pgTable("reading_journey_context", {
   waypointIntentionSnapshot: text("waypoint_intention_snapshot").notNull(),
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
 });
+
+// Retreat cards — pre-authored obstacle cards + user-earned threshold/obstacle cards
+// Separate from user deck cards; displayed on path detail and mixed into path readings
+export const retreatCards = pgTable(
+  "retreat_card",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    retreatId: text("retreat_id")
+      .notNull()
+      .references(() => retreats.id, { onDelete: "cascade" }),
+    cardType: text("card_type").notNull(), // "obstacle" | "threshold"
+    source: text("source").notNull(), // "seed" | "ai_generated" | "obstacle_detection"
+    title: text("title").notNull(),
+    meaning: text("meaning").notNull(),
+    guidance: text("guidance").notNull(),
+    imageUrl: text("image_url"),
+    imagePrompt: text("image_prompt"),
+    imageStatus: text("image_status").default("pending"),
+    sortOrder: integer("sort_order").default(0),
+    userId: text("user_id").references(() => users.id, { onDelete: "cascade" }),
+    originContext: jsonb("origin_context").$type<CardOriginContext>(),
+    createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
+  },
+  (t) => [
+    index("retreat_card_retreat_id_idx").on(t.retreatId),
+    index("retreat_card_user_id_idx").on(t.userId),
+  ]
+);
+
+// ── Practices ────────────────────────────────────────────────────────
+
+// Practice definitions — audio-guided meditations attached to waypoints
+export const practices = pgTable(
+  "practice",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    waypointId: text("waypoint_id").references(() => waypoints.id, {
+      onDelete: "cascade",
+    }),
+    userId: text("user_id").references(() => users.id, {
+      onDelete: "cascade",
+    }),
+    title: text("title").notNull(),
+    description: text("description").notNull(),
+    targetDurationMin: integer("target_duration_min").notNull(),
+    sortOrder: integer("sort_order").notNull().default(0),
+    createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+  },
+  (t) => [
+    index("practice_waypoint_id_idx").on(t.waypointId),
+    index("practice_user_id_idx").on(t.userId),
+  ]
+);
+
+// Practice segments — ordered speech/pause chunks within a practice
+export const practiceSegments = pgTable(
+  "practice_segment",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    practiceId: text("practice_id")
+      .notNull()
+      .references(() => practices.id, { onDelete: "cascade" }),
+    segmentType: text("segment_type").notNull(), // 'speech' | 'pause'
+    text: text("text"),
+    durationMs: integer("duration_ms"),
+    estimatedDurationMs: integer("estimated_duration_ms"),
+    sortOrder: integer("sort_order").notNull(),
+  },
+  (t) => [index("practice_segment_practice_id_idx").on(t.practiceId)]
+);
+
+// User practice progress — tracks completion and replays
+export const userPracticeProgress = pgTable(
+  "user_practice_progress",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    practiceId: text("practice_id")
+      .notNull()
+      .references(() => practices.id, { onDelete: "cascade" }),
+    completedAt: timestamp("completed_at", { mode: "date" }),
+    lastPlayedAt: timestamp("last_played_at", { mode: "date" }),
+    playCount: integer("play_count").notNull().default(0),
+  },
+  (t) => [
+    unique().on(t.userId, t.practiceId),
+    index("user_practice_progress_user_id_idx").on(t.userId),
+  ]
+);
+
+// ── Onboarding milestones ──────────────────────────────────────────────
+
+export const userMilestones = pgTable(
+  "user_milestone",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    milestone: text("milestone").notNull(),
+    completedAt: timestamp("completed_at", { mode: "date" }).defaultNow().notNull(),
+    metadata: jsonb("metadata"),
+  },
+  (t) => [
+    unique().on(t.userId, t.milestone),
+    index("user_milestone_user_id_idx").on(t.userId),
+  ]
+);
 
 // Generation logs (admin)
 export const generationLogs = pgTable(
@@ -731,5 +895,36 @@ export const generationLogs = pgTable(
     index("generation_log_deck_id_idx").on(t.deckId),
     index("generation_log_reading_id_idx").on(t.readingId),
     index("generation_log_created_at_idx").on(t.createdAt),
+  ]
+);
+
+// ── Emergence events ────────────────────────────────────────────────────
+
+export const emergenceEvents = pgTable(
+  "emergence_event",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    deckId: text("deck_id")
+      .notNull()
+      .references(() => decks.id, { onDelete: "cascade" }),
+    eventType: text("event_type").notNull(), // "obstacle" | "threshold"
+    status: text("status").notNull().default("pending"), // "pending" | "generating" | "ready" | "delivered" | "dismissed"
+    detectedPattern: text("detected_pattern").notNull(),
+    patternFrequency: integer("pattern_frequency").notNull(),
+    relevantExcerpts: jsonb("relevant_excerpts").$type<string[]>().default([]),
+    cardId: text("card_id").references(() => cards.id, { onDelete: "set null" }),
+    lyraMessage: text("lyra_message"),
+    aiEvidence: text("ai_evidence"),
+    confidence: integer("confidence"),
+    createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+    deliveredAt: timestamp("delivered_at", { mode: "date" }),
+  },
+  (t) => [
+    index("emergence_event_user_status_idx").on(t.userId, t.status),
   ]
 );

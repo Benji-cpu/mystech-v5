@@ -87,7 +87,9 @@ export function LyraSigil({
   return (
     <span
       className={cn(
-        "inline-flex items-center justify-center",
+        "inline-flex items-center justify-center rounded-full",
+        state === "dormant" && "shadow-[0_0_10px_rgba(201,169,78,0.15)]",
+        state === "attentive" && "shadow-[0_0_14px_rgba(201,169,78,0.2)]",
         state === "speaking" && "shadow-[0_0_20px_rgba(201,169,78,0.3)]",
         className
       )}

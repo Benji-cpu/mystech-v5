@@ -3,7 +3,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useImmersive } from "./immersive-provider";
 import { RadialNav } from "./radial-nav";
-import { BackPill } from "./back-pill";
 import { Sparkles } from "lucide-react";
 
 export function FloatingOrb() {
@@ -19,9 +18,6 @@ export function FloatingOrb() {
 
   return (
     <>
-      {/* Back pill for depth navigation */}
-      <BackPill />
-
       {/* Radial nav items */}
       <AnimatePresence>
         {isOrbExpanded && <RadialNav />}

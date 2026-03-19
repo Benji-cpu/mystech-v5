@@ -49,7 +49,12 @@ export function LyraGreeting({
     >
       <p className="text-sm text-muted-foreground inline-flex items-center gap-2">
         <LyraSigil size="sm" state="attentive" className="shrink-0" />
-        <span>{greeting}</span>
+        <span>
+          {userName && userName !== "Seeker" && (
+            <span className="text-[#c9a94e]/80">{userName}, </span>
+          )}
+          {greeting}
+        </span>
       </p>
 
       {hasCelestial && (

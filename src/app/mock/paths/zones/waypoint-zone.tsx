@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import type { MockWaypoint } from '../path-journey-data';
+import type { MockWaypoint } from '../path-mock-data';
 
 interface WaypointZoneProps {
   waypoint: MockWaypoint;

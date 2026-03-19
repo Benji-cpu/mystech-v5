@@ -14,6 +14,11 @@ export const generatedCardSchema = z.object({
     .describe(
       "Concise visual scene description (2-3 sentences) for oracle card image generation. Describe subjects, symbols, and composition only — NOT art style or technique."
     ),
+  cardType: z
+    .enum(["general", "obstacle"])
+    .optional()
+    .default("general")
+    .describe("Card type: 'general' for normal cards, 'obstacle' for cards representing personal challenges or shadow patterns"),
 });
 
 export const generatedDeckSchema = z.object({

@@ -14,7 +14,9 @@ import {
   LYRA_SIMPLE_CREATE,
   LYRA_QUICK_CREATE_PROMPTS,
   LYRA_FORGING_MESSAGES,
+  LYRA_OBSTACLE_REVEAL,
 } from "@/components/guide/lyra-constants";
+import { LyraForging } from "@/components/guide/lyra-forging";
 import { AnimatePresence, motion } from "framer-motion";
 import type { ArtStyle } from "@/types";
 
@@ -39,6 +41,7 @@ interface WizardState {
   artStyleId: string;
   generatedTitle: string | null;
   generatedDeckId: string | null;
+  obstacleCount: number;
 }
 
 type WizardAction =
@@ -50,7 +53,7 @@ type WizardAction =
   | { type: "NEXT" }
   | { type: "BACK" }
   | { type: "START_FORGING" }
-  | { type: "FORGE_COMPLETE"; title: string; deckId: string }
+  | { type: "FORGE_COMPLETE"; title: string; deckId: string; obstacleCount: number }
   | { type: "FORGE_ERROR" };
 
 const PHASE_ORDER: Phase[] = ["card_count", "art_style", "vision"];
@@ -111,6 +114,7 @@ function reducer(state: WizardState, action: WizardAction): WizardState {
         phase: "reveal",
         generatedTitle: action.title,
         generatedDeckId: action.deckId,
+        obstacleCount: action.obstacleCount,
       };
 
     case "FORGE_ERROR":
@@ -356,6 +360,7 @@ function VisionStep({
           />
         </div>
       </div>
+
     </motion.div>
   );
 }
@@ -363,15 +368,6 @@ function VisionStep({
 // ── View: Forging ────────────────────────────────────────────────────────────
 
 function ForgingView() {
-  const [messageIndex, setMessageIndex] = useState(0);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setMessageIndex((prev) => (prev + 1) % LYRA_FORGING_MESSAGES.length);
-    }, 3500);
-    return () => clearInterval(interval);
-  }, []);
-
   return (
     <motion.div
       key="forging"
@@ -379,58 +375,16 @@ function ForgingView() {
       initial="initial"
       animate="animate"
       exit="exit"
-      className="flex flex-col items-center justify-center py-12 gap-8"
+      className="py-8"
     >
-      {/* Pulsing glow ring */}
-      <div className="relative flex items-center justify-center">
-        <motion.div
-          className="h-20 w-20 rounded-full border-2 border-[#c9a94e]/40"
-          animate={{
-            boxShadow: [
-              "0 0 20px rgba(201, 169, 78, 0.15)",
-              "0 0 40px rgba(201, 169, 78, 0.35)",
-              "0 0 20px rgba(201, 169, 78, 0.15)",
-            ],
-            borderColor: [
-              "rgba(201, 169, 78, 0.3)",
-              "rgba(201, 169, 78, 0.6)",
-              "rgba(201, 169, 78, 0.3)",
-            ],
-          }}
-          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-        />
-        <motion.div
-          className="absolute h-10 w-10 rounded-full bg-[#c9a94e]/10"
-          animate={{
-            scale: [1, 1.2, 1],
-            opacity: [0.3, 0.6, 0.3],
-          }}
-          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-        />
-      </div>
-
-      {/* Rotating status text */}
-      <div className="h-6 flex items-center justify-center">
-        <AnimatePresence mode="wait">
-          <motion.p
-            key={messageIndex}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.4, ease: "easeInOut" }}
-            className="text-white/50 text-sm text-center"
-          >
-            {LYRA_FORGING_MESSAGES[messageIndex]}
-          </motion.p>
-        </AnimatePresence>
-      </div>
+      <LyraForging messages={LYRA_FORGING_MESSAGES} />
     </motion.div>
   );
 }
 
 // ── View: Reveal ─────────────────────────────────────────────────────────────
 
-function RevealView({ title }: { title: string }) {
+function RevealView({ title, obstacleCount }: { title: string; obstacleCount: number }) {
   return (
     <motion.div
       key="reveal"
@@ -463,6 +417,18 @@ function RevealView({ title }: { title: string }) {
       >
         {title}
       </motion.h2>
+
+      {/* Obstacle reveal whisper */}
+      {obstacleCount > 0 && obstacleCount <= 3 && (
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.8, duration: 0.6 }}
+          className="text-white/40 text-sm italic text-center px-6 max-w-sm"
+        >
+          {LYRA_OBSTACLE_REVEAL[obstacleCount - 1]}
+        </motion.p>
+      )}
     </motion.div>
   );
 }
@@ -485,6 +451,7 @@ export function SimpleCreateForm({
     artStyleId: presets[0]?.id ?? "",
     generatedTitle: null,
     generatedDeckId: null,
+    obstacleCount: 0,
   });
 
   const { generate, error } = useDeckGeneration();
@@ -517,7 +484,7 @@ export function SimpleCreateForm({
     });
 
     if (result) {
-      dispatch({ type: "FORGE_COMPLETE", title: result.title, deckId: result.deckId });
+      dispatch({ type: "FORGE_COMPLETE", title: result.title, deckId: result.deckId, obstacleCount: result.obstacleCount });
     } else {
       dispatch({ type: "FORGE_ERROR" });
     }
@@ -579,7 +546,7 @@ export function SimpleCreateForm({
           {state.phase === "forging" && <ForgingView />}
 
           {state.phase === "reveal" && state.generatedTitle && (
-            <RevealView title={state.generatedTitle} />
+            <RevealView title={state.generatedTitle} obstacleCount={state.obstacleCount} />
           )}
         </AnimatePresence>
       </div>

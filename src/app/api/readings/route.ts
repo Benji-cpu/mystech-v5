@@ -7,8 +7,9 @@ import {
   getCardsForDeck,
   getDeckByIdForUser,
   getUserPlan,
+  getUserTotalReadingCount,
 } from "@/lib/db/queries";
-import { getJourneyPosition, recordJourneyReading, canAdvanceWaypoint } from "@/lib/db/queries-journey";
+import { getPathPosition, recordPathReading, canAdvanceWaypoint, getRetreatObstacleCards } from "@/lib/db/queries-paths";
 import { PLAN_LIMITS, SPREAD_POSITIONS } from "@/lib/constants";
 import { getUserPlanFromRole, checkDailyReadings } from "@/lib/usage";
 import { shuffle } from "@/lib/shuffle";
@@ -17,6 +18,7 @@ import { z } from "zod";
 import { geminiModel } from "@/lib/ai/gemini";
 import { buildChroniclePositionPrompt } from "@/lib/ai/prompts/chronicle";
 import { eq, and } from "drizzle-orm";
+import { completeMilestone } from "@/lib/onboarding/milestones";
 import type { ApiResponse, SpreadType } from "@/types";
 
 const VALID_SPREAD_TYPES: SpreadType[] = [
@@ -190,6 +192,37 @@ export async function POST(request: NextRequest) {
   primaryDeck = deckResults[0]!;
   mark("card fetch");
 
+  // ── Merge retreat obstacle cards into pool for journey readings ──────
+  // Track which drawn cards came from retreatCards so we set the right FK
+  const retreatCardIds = new Set<string>();
+
+  if (journeyRetreatId) {
+    try {
+      const obstacleCards = await getRetreatObstacleCards(journeyRetreatId, user.id);
+      for (const rc of obstacleCards) {
+        retreatCardIds.add(rc.id);
+        // Map retreat card to same shape as deck cards for the draw pool
+        allDeckCards.push({
+          id: rc.id,
+          deckId: resolvedDeckIds[0], // placeholder — not used for insertion
+          cardNumber: 0,
+          title: rc.title,
+          meaning: rc.meaning,
+          guidance: rc.guidance,
+          imageUrl: rc.imageUrl,
+          imagePrompt: rc.imagePrompt,
+          imageStatus: rc.imageStatus ?? "pending",
+          createdAt: rc.createdAt,
+          updatedAt: rc.updatedAt,
+          chronicleEntryId: null,
+        } as (typeof allDeckCards)[number]);
+      }
+    } catch (err) {
+      console.error("[readings] Failed to fetch retreat obstacle cards:", err);
+    }
+  }
+  mark("retreat cards");
+
   const positions = SPREAD_POSITIONS[typedSpread];
 
   // If a Chronicle card will be injected it occupies one slot, so the pool
@@ -319,12 +352,16 @@ export async function POST(request: NextRequest) {
     })
     .returning();
 
-  const readingCardValues = positions.map((pos, i) => ({
-    readingId: reading.id,
-    position: pos.position,
-    positionName: pos.name,
-    cardId: drawn[i].id,
-  }));
+  const readingCardValues = positions.map((pos, i) => {
+    const isRetreatCard = retreatCardIds.has(drawn[i].id);
+    return {
+      readingId: reading.id,
+      position: pos.position,
+      positionName: pos.name,
+      cardId: isRetreatCard ? null : drawn[i].id,
+      retreatCardId: isRetreatCard ? drawn[i].id : null,
+    };
+  });
 
   const insertedCards = await db
     .insert(readingCards)
@@ -333,20 +370,27 @@ export async function POST(request: NextRequest) {
 
   mark("db insert");
 
+  // Auto-fire onboarding milestone for 2nd reading (non-blocking)
+  getUserTotalReadingCount(user.id).then((totalCount) => {
+    if (totalCount >= 2) {
+      completeMilestone(user.id, "second_reading_complete").catch(() => {});
+    }
+  }).catch(() => {});
+
   // Record journey progress if this reading has journey context
   if (journeyPathId && journeyRetreatId && journeyWaypointId) {
     try {
-      const journeyPosition = await getJourneyPosition(user.id);
+      const pathPosition = await getPathPosition(user.id);
       if (
-        journeyPosition &&
-        journeyPosition.path.id === journeyPathId &&
-        journeyPosition.retreat.id === journeyRetreatId &&
-        journeyPosition.waypoint.id === journeyWaypointId
+        pathPosition &&
+        pathPosition.path.id === journeyPathId &&
+        pathPosition.retreat.id === journeyRetreatId &&
+        pathPosition.waypoint.id === journeyWaypointId
       ) {
-        await recordJourneyReading(user.id, reading.id, journeyPosition);
+        await recordPathReading(user.id, reading.id, pathPosition);
       }
     } catch (err) {
-      console.error("[readings] Journey recording failed:", err);
+      console.error("[readings] Path recording failed:", err);
       // Non-fatal — the reading was still created successfully
     }
   }

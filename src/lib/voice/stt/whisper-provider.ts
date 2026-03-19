@@ -4,6 +4,11 @@ import { blobToFloat32Array } from "./whisper-audio";
 const MODEL_ID = "onnx-community/whisper-tiny";
 const CHUNK_DURATION_MS = 3000;
 
+/** BCP 47 → ISO 639-1: "en-US" → "en", "fr-FR" → "fr" */
+function normalizeLanguageCode(lang: string): string {
+  return lang.split("-")[0].toLowerCase();
+}
+
 // Singleton pipeline — shared across provider instances, loaded once
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let pipelinePromise: Promise<any> | null = null;
@@ -16,12 +21,15 @@ export class WhisperProvider implements STTProvider {
   private stream: MediaStream | null = null;
   private accumulatedText: string[] = [];
   private isActive = false;
+  private processingQueue: Promise<void> = Promise.resolve();
   private chunkInterval: ReturnType<typeof setInterval> | null = null;
+  private finalized = false;
 
   async start(callbacks: STTCallbacks, lang = "en"): Promise<void> {
     this.callbacks = callbacks;
     this.accumulatedText = [];
     this.isActive = true;
+    this.finalized = false;
 
     // Load model if not yet loaded
     const pipeline = await this.ensurePipeline(callbacks);
@@ -41,37 +49,39 @@ export class WhisperProvider implements STTProvider {
     this.stream = stream;
     callbacks.onStatusChange("listening");
 
-    // Record in chunks — each chunk gets transcribed independently
-    this.startChunkedRecording(stream, pipeline, lang, callbacks);
+    // Determine MIME type once
+    const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+      ? "audio/webm;codecs=opus"
+      : MediaRecorder.isTypeSupported("audio/webm")
+        ? "audio/webm"
+        : "audio/mp4";
+
+    // Start first recording cycle
+    this.startRecorderCycle(stream, mimeType, pipeline, lang, callbacks);
+
+    // Periodically stop recorder to produce complete, decodable blobs.
+    // Each stop() triggers onstop which immediately restarts a new cycle.
+    this.chunkInterval = setInterval(() => {
+      if (this.mediaRecorder?.state === "recording") {
+        this.mediaRecorder.stop();
+      }
+    }, CHUNK_DURATION_MS);
   }
 
   stop(): void {
+    if (!this.isActive) return;
     this.isActive = false;
 
+    // Stop the periodic chunk interval
     if (this.chunkInterval) {
       clearInterval(this.chunkInterval);
       this.chunkInterval = null;
     }
 
+    // Stop the recorder — triggers onstop which will finalize (not restart)
     if (this.mediaRecorder?.state === "recording") {
       this.mediaRecorder.stop();
     }
-    this.mediaRecorder = null;
-
-    if (this.stream) {
-      this.stream.getTracks().forEach((t) => t.stop());
-      this.stream = null;
-    }
-
-    // Emit final accumulated text
-    if (this.accumulatedText.length > 0 && this.callbacks) {
-      const fullText = this.accumulatedText.join(" ").trim();
-      if (fullText) {
-        this.callbacks.onTranscript(fullText, true);
-      }
-    }
-
-    this.callbacks?.onStatusChange("idle");
   }
 
   dispose(): void {
@@ -107,7 +117,7 @@ export class WhisperProvider implements STTProvider {
         );
 
         return pipe;
-      } catch (err) {
+      } catch {
         pipelinePromise = null;
         callbacks.onError("Failed to load speech recognition model");
         callbacks.onStatusChange("error");
@@ -118,57 +128,80 @@ export class WhisperProvider implements STTProvider {
     return pipelinePromise;
   }
 
-  private startChunkedRecording(
+  /**
+   * Starts a single recording cycle. Each cycle produces one complete blob
+   * on stop, which is independently decodable (has full container headers).
+   * The interval in start() periodically calls stop() to trigger cycles.
+   */
+  private startRecorderCycle(
     stream: MediaStream,
+    mimeType: string,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     pipeline: any,
     lang: string,
     callbacks: STTCallbacks
   ): void {
-    let chunks: Blob[] = [];
-
-    // Choose a MIME type the browser supports
-    const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-      ? "audio/webm;codecs=opus"
-      : MediaRecorder.isTypeSupported("audio/webm")
-        ? "audio/webm"
-        : "audio/mp4";
-
     const recorder = new MediaRecorder(stream, { mimeType });
     this.mediaRecorder = recorder;
 
+    const chunks: Blob[] = [];
+
     recorder.ondataavailable = (e) => {
-      if (e.data.size > 0) {
-        chunks.push(e.data);
-      }
+      if (e.data.size > 0) chunks.push(e.data);
     };
 
-    recorder.onstop = async () => {
-      if (chunks.length === 0 || !this.isActive) return;
+    recorder.onerror = (event) => {
+      console.warn("[Whisper] MediaRecorder error:", event);
+      callbacks.onError("Microphone recording failed. Please try again.");
+      this.isActive = false;
+    };
 
+    recorder.onstop = () => {
       const blob = new Blob(chunks, { type: mimeType });
-      chunks = [];
 
-      await this.transcribeChunk(blob, pipeline, lang, callbacks);
-
-      // Restart recording if still active
+      // Restart IMMEDIATELY if still active (minimizes audio gap)
       if (this.isActive && this.stream) {
-        try {
-          recorder.start();
-        } catch {
-          // Stream may have been stopped
-        }
+        this.startRecorderCycle(stream, mimeType, pipeline, lang, callbacks);
+      }
+
+      // Always transcribe — never discard the final chunk
+      if (blob.size > 0) {
+        this.processingQueue = this.processingQueue.then(() =>
+          this.transcribeChunk(blob, pipeline, lang, callbacks)
+        );
+      }
+
+      // If no longer active, finalize after all transcription completes
+      if (!this.isActive) {
+        this.processingQueue.then(() => this.finalize());
       }
     };
 
+    // No timeslice — produces a single complete blob when stop() is called
     recorder.start();
+  }
 
-    // Stop and restart the recorder every CHUNK_DURATION_MS to get chunks
-    this.chunkInterval = setInterval(() => {
-      if (recorder.state === "recording" && this.isActive) {
-        recorder.stop();
+  /** Clean up mic, emit final text, transition to idle. Guarded against double-call. */
+  private finalize(): void {
+    if (this.finalized) return;
+    this.finalized = true;
+
+    // Release microphone
+    if (this.stream) {
+      this.stream.getTracks().forEach((t) => t.stop());
+      this.stream = null;
+    }
+    this.mediaRecorder = null;
+
+    // Emit final accumulated text
+    if (this.accumulatedText.length > 0 && this.callbacks) {
+      const fullText = this.accumulatedText.join(" ").trim();
+      if (fullText) {
+        this.callbacks.onTranscript(fullText, true);
       }
-    }, CHUNK_DURATION_MS);
+    }
+
+    this.callbacks?.onStatusChange("idle");
   }
 
   private async transcribeChunk(
@@ -187,7 +220,7 @@ export class WhisperProvider implements STTProvider {
       if (audioData.length < 1600) return; // less than 0.1s
 
       const result = await pipeline(audioData, {
-        language: lang,
+        language: normalizeLanguageCode(lang),
         task: "transcribe",
       });
 
@@ -199,8 +232,9 @@ export class WhisperProvider implements STTProvider {
         const fullText = this.accumulatedText.join(" ").trim();
         callbacks.onTranscript(fullText, true);
       }
-    } catch {
-      // Non-fatal: skip this chunk, keep listening
+    } catch (err) {
+      console.warn("[Whisper] Transcription error for chunk:", err);
+      callbacks.onError("Speech wasn't captured. Try speaking louder or closer to the mic.");
     } finally {
       if (this.isActive) {
         callbacks.onStatusChange("listening");

@@ -1,12 +1,12 @@
 "use client";
 
 import { MockImmersiveShell } from "@/components/mock/mock-immersive-shell";
-import { PathJourneyShell } from "./path-journey-shell";
+import { PathFlowShell } from "./path-flow-shell";
 
-export default function PathJourneyPage() {
+export default function PathFlowPage() {
   return (
     <MockImmersiveShell>
-      <PathJourneyShell />
+      <PathFlowShell />
     </MockImmersiveShell>
   );
 }

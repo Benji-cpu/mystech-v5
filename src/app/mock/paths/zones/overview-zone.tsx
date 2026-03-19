@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Textarea } from '@/components/ui/textarea';
-import type { MockPath, MockRetreat } from '../path-journey-data';
+import type { MockPath, MockRetreat } from '../path-mock-data';
 
 interface OverviewZoneProps {
   path: MockPath;
@@ -12,7 +12,7 @@ interface OverviewZoneProps {
   onSetUserIntention: (text: string) => void;
   suggestedIntention: string;
   onUseSuggested: () => void;
-  onBeginJourney: () => void;
+  onBeginPath: () => void;
   className?: string;
 }
 
@@ -45,7 +45,7 @@ export function OverviewZone({
   onSetUserIntention,
   suggestedIntention,
   onUseSuggested,
-  onBeginJourney,
+  onBeginPath,
   className,
 }: OverviewZoneProps) {
   const charCount = userIntention.length;
@@ -79,7 +79,7 @@ export function OverviewZone({
       <motion.div variants={itemVariants} className="flex flex-col gap-2">
         {/* Lyra prompt */}
         <p className="text-xs italic text-white/40 text-center">
-          Set your intention for this journey
+          Set your intention for this path
         </p>
 
         {/* Suggested intention */}

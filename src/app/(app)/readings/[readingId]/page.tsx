@@ -8,7 +8,6 @@ import {
 import { notFound } from "next/navigation";
 import { ReviewSpreadLayout } from "@/components/readings/review-spread-layout";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LYRA_READING_DETAIL } from "@/components/guide/lyra-constants";
 import { ReadingInterpretation } from "@/components/readings/reading-interpretation";
@@ -24,6 +23,7 @@ import type {
   SpreadType,
   CardImageStatus,
   CardType,
+  CardOriginContext,
   ReadingFeedback as FeedbackType,
 } from "@/types";
 
@@ -81,25 +81,30 @@ async function ReadingDetailContent({
       <ReviewSpreadLayout
         spreadType={spreadType}
         cards={cardsWithData
-          .filter((rc) => rc.card)
-          .map((rc) => ({
-            id: rc.id,
-            card: {
-              id: rc.card!.id,
-              deckId: rc.card!.deckId,
-              cardNumber: rc.card!.cardNumber,
-              title: rc.card!.title,
-              meaning: rc.card!.meaning,
-              guidance: rc.card!.guidance,
-              imageUrl: rc.card!.imageUrl,
-              imagePrompt: rc.card!.imagePrompt,
-              imageStatus: rc.card!.imageStatus as CardImageStatus,
-              cardType: (rc.card!.cardType ?? 'general') as CardType,
-              originContext: rc.card!.originContext ?? null,
-              createdAt: rc.card!.createdAt,
-            },
-            positionName: rc.positionName,
-          }))}
+          .filter((rc) => rc.card?.id || rc.retreatCard?.id)
+          .map((rc) => {
+            // Coalesce deck card or retreat card into unified Card shape
+            const c = rc.card?.id ? rc.card : null;
+            const r = rc.retreatCard?.id ? rc.retreatCard : null;
+            return {
+              id: rc.id,
+              card: {
+                id: (c?.id ?? r?.id)!,
+                deckId: c?.deckId ?? "",
+                cardNumber: c?.cardNumber ?? 0,
+                title: (c?.title ?? r?.title)!,
+                meaning: (c?.meaning ?? r?.meaning)!,
+                guidance: (c?.guidance ?? r?.guidance)!,
+                imageUrl: c?.imageUrl ?? r?.imageUrl ?? null,
+                imagePrompt: c?.imagePrompt ?? r?.imagePrompt ?? null,
+                imageStatus: (c?.imageStatus ?? r?.imageStatus ?? "pending") as CardImageStatus,
+                cardType: ((c?.cardType ?? r?.cardType) ?? "general") as CardType,
+                originContext: ((c ? c.originContext : r?.originContext) ?? null) as CardOriginContext | null,
+                createdAt: (c?.createdAt ?? r?.createdAt)!,
+              },
+              positionName: rc.positionName,
+            };
+          })}
       />
 
       {/* Interpretation */}
@@ -144,14 +149,6 @@ export default async function ReadingViewPage({
     <AnimatedPage className="p-4 sm:p-6 lg:p-8">
       {/* Header - renders immediately */}
       <AnimatedItem className="mb-8">
-        <Link
-          href="/readings"
-          className="inline-flex items-center gap-1 text-sm text-white/40 hover:text-white/70 transition-colors mb-4"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to Readings
-        </Link>
-
         <div className="flex items-start justify-between">
           <div>
             <h1 className="text-2xl font-bold text-white/90">

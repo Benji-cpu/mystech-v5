@@ -53,12 +53,12 @@ export function PathCard({ path, progress, isActive, className }: PathCardProps)
 
   const buttonLabel =
     status === 'completed'
-      ? 'View Journey'
+      ? 'View Path'
       : status === 'active'
         ? 'Continue'
         : status === 'paused'
           ? 'Resume'
-          : 'Begin Journey';
+          : 'Begin Path';
 
   // Placeholder progress percentage — in a real implementation
   // this would derive from waypoint completion counts

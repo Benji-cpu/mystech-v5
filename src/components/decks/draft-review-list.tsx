@@ -4,7 +4,10 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Check, X, Pencil } from "lucide-react";
-import type { DraftCard } from "@/types";
+import { CardDetailModal } from "@/components/cards/card-detail-modal";
+import { useCardDetailModal } from "@/hooks/use-card-detail-modal";
+import { draftToCardDetail } from "./draft-card-utils";
+import type { DraftCard, CardDetailData } from "@/types";
 
 interface DraftReviewListProps {
   cards: DraftCard[];
@@ -17,21 +20,29 @@ export function DraftReviewList({
   onToggle,
   onEdit,
 }: DraftReviewListProps) {
+  const { openCard, modalProps } = useCardDetailModal<CardDetailData>();
+
   return (
+    <>
     <div className="space-y-2">
       {cards.map((card) => (
         <div
           key={card.cardNumber}
           className={cn(
-            "flex items-start gap-3 rounded-lg border p-3 transition-colors",
+            "flex items-start gap-3 rounded-lg border p-3 transition-colors cursor-pointer",
             card.removed
               ? "border-red-500/20 bg-red-500/5 opacity-60"
-              : "border-border/50 bg-card"
+              : "border-border/50 bg-card hover:border-[#c9a94e]/30"
           )}
+          onClick={() => {
+            if (!card.removed) {
+              openCard(draftToCardDetail(card));
+            }
+          }}
         >
           {/* Toggle button */}
           <button
-            onClick={() => onToggle(card.cardNumber)}
+            onClick={(e) => { e.stopPropagation(); onToggle(card.cardNumber); }}
             className={cn(
               "flex-shrink-0 mt-0.5 h-6 w-6 rounded-md border flex items-center justify-center transition-colors",
               card.removed
@@ -80,7 +91,7 @@ export function DraftReviewList({
               variant="ghost"
               size="icon"
               className="flex-shrink-0 h-8 w-8"
-              onClick={() => onEdit(card)}
+              onClick={(e) => { e.stopPropagation(); onEdit(card); }}
             >
               <Pencil className="h-3.5 w-3.5" />
             </Button>
@@ -88,5 +99,7 @@ export function DraftReviewList({
         </div>
       ))}
     </div>
+    <CardDetailModal {...modalProps} />
+    </>
   );
 }

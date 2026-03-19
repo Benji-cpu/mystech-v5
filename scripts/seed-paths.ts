@@ -26,6 +26,13 @@ type WaypointSeed = {
   waypointLens: string;
 };
 
+type ObstacleCardSeed = {
+  title: string;
+  meaning: string;
+  guidance: string;
+  imagePrompt: string;
+};
+
 type RetreatSeed = {
   name: string;
   description: string;
@@ -33,6 +40,7 @@ type RetreatSeed = {
   retreatLens: string;
   estimatedReadings: number;
   waypoints: WaypointSeed[];
+  obstacleCards?: ObstacleCardSeed[];
 };
 
 type PathSeed = {
@@ -119,6 +127,20 @@ const PATHS: PathSeed[] = [
               "The cards here act as mirrors. Emphasize honest self-reflection without judgment. Look for what the seeker might be avoiding or what they're ready to acknowledge. This is the moment before the dive — standing at the edge of deeper self-knowledge.",
           },
         ],
+        obstacleCards: [
+          {
+            title: "The Comfortable Mask",
+            meaning: "Resistance to seeing beyond the persona — the familiar identity feels safe, and deeper inquiry feels threatening.",
+            guidance: "Notice when you reach for a rehearsed answer instead of a felt truth. The mask isn't your enemy — but clinging to it is.",
+            imagePrompt: "An ornate porcelain mask resting on a velvet cushion, one side cracked to reveal golden light streaming through. Soft purple shadows surround it.",
+          },
+          {
+            title: "The Rational Shield",
+            meaning: "Intellectualizing instead of feeling — using analysis as armor against vulnerability.",
+            guidance: "When you catch yourself explaining away an emotion, pause. Drop from the head to the heart, even for a moment.",
+            imagePrompt: "A crystalline geometric shield hovering in space, refracting light into cold prismatic patterns. Behind it, a warm ember glows faintly, barely visible.",
+          },
+        ],
       },
       {
         name: "Shadow Dance",
@@ -164,6 +186,20 @@ const PATHS: PathSeed[] = [
               "How can I hold both my light and my darkness with grace?",
             waypointLens:
               "Look for wholeness and paradox. The cards speak to the seeker's capacity to embrace contradiction. Integration means expanding — becoming large enough to contain multitudes. Reference earlier waypoints if Cards Remember provides them.",
+          },
+        ],
+        obstacleCards: [
+          {
+            title: "The Projection Mirror",
+            meaning: "Seeing your shadow in others — attributing your own rejected qualities to the people around you.",
+            guidance: "When someone triggers a strong reaction, ask: what part of me am I seeing reflected? The mirror never lies.",
+            imagePrompt: "A dark mirror standing in mist, reflecting not the viewer but a shadowy figure with outstretched hands. Golden threads connect them across the glass.",
+          },
+          {
+            title: "The Inner Critic's Throne",
+            meaning: "Self-judgment masquerading as self-improvement — using harsh inner dialogue as a way to avoid real transformation.",
+            guidance: "The inner critic speaks loudly, but it speaks from fear. Listen for the fear beneath the judgment, and address that instead.",
+            imagePrompt: "An imposing stone throne carved with severe faces, sitting in a dark chamber. A single candle nearby casts warm light that softens the stone's edges.",
           },
         ],
       },
@@ -222,6 +258,14 @@ const PATHS: PathSeed[] = [
               "The Sovereign archetype speaks to authority, responsibility, and self-governance. Where does the seeker need to claim their power? Where have they been abdicating the throne of their own life? Read with themes of maturity, leadership, and purposeful choice.",
           },
         ],
+        obstacleCards: [
+          {
+            title: "The Favorite Archetype",
+            meaning: "Over-identifying with one archetype while neglecting others — becoming the perpetual Sage while starving the Lover, or the eternal Warrior avoiding the Inner Child.",
+            guidance: "Which archetype feels uncomfortable? That's the one calling for your attention. Wholeness requires all voices at the table.",
+            imagePrompt: "A council chamber with five ornate chairs in a circle. One throne is brightly lit and worn smooth from use; the others gather dust in shadow. A single candle beckons from the darkest chair.",
+          },
+        ],
       },
       {
         name: "The Descent",
@@ -269,6 +313,20 @@ const PATHS: PathSeed[] = [
               "The ascent and reintegration. Cards speak to how the seeker can embody their transformation in practical, daily life. The treasure from the depths must be lived, not just understood. Look for bridge themes between inner work and outer action.",
           },
         ],
+        obstacleCards: [
+          {
+            title: "The Premature Ascent",
+            meaning: "Rising from the depths before the transformation is complete — bypassing grief, rushing past discomfort, or declaring victory too soon.",
+            guidance: "The underworld has its own timing. If you feel the urge to 'get over it,' that's the signal to go deeper, not to leave.",
+            imagePrompt: "A figure climbing a rope out of a deep cave, but golden treasures still glow in the unseen depths below. The rope frays where urgency has worn it thin.",
+          },
+          {
+            title: "The Familiar Abyss",
+            meaning: "Becoming attached to the darkness — romanticizing suffering or using pain as identity rather than passage.",
+            guidance: "The descent is a passage, not a home. When darkness becomes comfortable, it may be avoidance of the return wearing a spiritual disguise.",
+            imagePrompt: "A deep, warm cocoon woven from dark silk threads in an underground cavern. Faint light from an opening above is ignored. Comfort and confinement intertwined.",
+          },
+        ],
       },
       {
         name: "Individuation",
@@ -305,6 +363,14 @@ const PATHS: PathSeed[] = [
               "Who am I becoming as I embrace all of who I am?",
             waypointLens:
               "The Self — capital S — is speaking. Interpret the cards as reflections of the seeker's emerging wholeness. What does their integrated self look like? How does it move in the world? This reading should feel like a benediction — honoring the journey traveled and the person who emerged from it.",
+          },
+        ],
+        obstacleCards: [
+          {
+            title: "The Spiritual Perfectionist",
+            meaning: "Treating wholeness as a destination rather than a process — believing you must be 'fully integrated' before you can live fully.",
+            guidance: "Individuation is not a final state. You are whole now, and also still becoming. Both are true simultaneously.",
+            imagePrompt: "A mosaic being assembled on a table, some pieces perfectly placed and others still scattered. The incomplete mosaic already forms a beautiful image. Golden light falls across it.",
           },
         ],
       },
@@ -382,6 +448,20 @@ const PATHS: PathSeed[] = [
               "Somatic mindfulness. Each card points to a bodily experience — tension, ease, energy, numbness. Where does the seeker live in their body? Where have they checked out? Interpret through embodiment, sensation, and the intelligence of the physical form.",
           },
         ],
+        obstacleCards: [
+          {
+            title: "The Busy Mind",
+            meaning: "Addiction to mental activity — filling every moment with thoughts, plans, or analysis to avoid the simplicity of being present.",
+            guidance: "Busyness is not productivity; it's often avoidance. Notice the gap between thoughts. It's already there, waiting.",
+            imagePrompt: "A whirlwind of glowing symbols, words, and geometric shapes swirling around a calm center. In the eye of the storm, a single lotus bud waits untouched.",
+          },
+          {
+            title: "The Escape Hatch",
+            meaning: "Habitual avoidance of the present moment — reaching for phone, fantasy, substance, or distraction whenever stillness appears.",
+            guidance: "Notice the reaching. Before you grab the distraction, feel what you're trying to escape. That feeling is the doorway.",
+            imagePrompt: "A translucent door floating in a peaceful garden, leading to a chaotic marketplace of lights and noise. Wildflowers bloom on the garden side, unnoticed.",
+          },
+        ],
       },
       {
         name: "The Witnessing Eye",
@@ -427,6 +507,14 @@ const PATHS: PathSeed[] = [
               "What opens up when I stop trying to control my experience?",
             waypointLens:
               "Expansiveness and openness. The cards point toward the spacious quality of pure awareness. Interpret with a sense of vastness — the seeker is not their thoughts, emotions, or circumstances. They are the awareness in which all of these arise and pass.",
+          },
+        ],
+        obstacleCards: [
+          {
+            title: "The Spiritual Achiever",
+            meaning: "Turning meditation and awareness into another performance metric — striving for 'better' mindfulness instead of simply being.",
+            guidance: "There is no trophy for the best observer. When you notice yourself grading your practice, that noticing IS the practice.",
+            imagePrompt: "A golden trophy cup sitting on a meditation cushion, reflecting the meditator's frustrated face. Around it, incense smoke curls peacefully, indifferent to achievement.",
           },
         ],
       },
@@ -476,6 +564,14 @@ const PATHS: PathSeed[] = [
               "Paradox: stillness within flow. The cards reveal what is enduring in the seeker's experience — not permanent things, but the awareness itself that witnesses change. What is the still point around which the seeker's life turns?",
           },
         ],
+        obstacleCards: [
+          {
+            title: "The Clinging Hand",
+            meaning: "Grasping at what is passing — refusing to release relationships, phases, or versions of self that have completed their season.",
+            guidance: "Open your hand. What leaves was never yours to keep. What stays does so freely, and that is the deeper gift.",
+            imagePrompt: "A hand gripping a handful of autumn leaves, some crumbling to golden dust between the fingers. Below, a stream carries petals peacefully into the distance.",
+          },
+        ],
       },
       {
         name: "Compassion's Gate",
@@ -523,6 +619,14 @@ const PATHS: PathSeed[] = [
               "The broadest compassion. Interpret the cards as invitations to extend loving-kindness — to the seeker themselves, to loved ones, to neutral people, to difficult people, and to all beings. The reading should feel like a metta meditation: warm, expansive, and unconditionally kind.",
           },
         ],
+        obstacleCards: [
+          {
+            title: "The Hardened Heart",
+            meaning: "Closing down in the face of pain — building walls around the heart in the name of self-protection, cutting off empathy.",
+            guidance: "A heart that cannot be broken is a heart that cannot feel. Let the cracks stay open; that's where the light enters.",
+            imagePrompt: "A stone fortress shaped like a human heart, with thick walls and a sealed iron gate. Through tiny cracks in the masonry, warm golden light streams outward into the dark.",
+          },
+        ],
       },
       {
         name: "Beginner's Mind",
@@ -559,6 +663,14 @@ const PATHS: PathSeed[] = [
               "Where is the sacred hiding in my ordinary life?",
             waypointLens:
               "The culmination of the mindfulness path. Interpret with awareness that every card, every symbol, every moment is already sacred. There is nowhere to go and nothing to achieve. The cards celebrate the seeker's journey and point them back to the miracle of this present moment.",
+          },
+        ],
+        obstacleCards: [
+          {
+            title: "The Expert's Burden",
+            meaning: "Accumulated knowledge becoming a barrier — 'I already know this' closing the door on genuine discovery.",
+            guidance: "Every moment you've 'been here before' is actually the first time this exact moment has occurred. Can you meet it that way?",
+            imagePrompt: "A towering stack of ancient books blocking a window. Beyond the books, visible through gaps in the pages, a sunrise paints the sky in colors no book has ever described.",
           },
         ],
       },
@@ -636,6 +748,20 @@ const PATHS: PathSeed[] = [
               "The cards reveal not answers but the seeker's deepest question — the one that animates their seeking. In mysticism, the question is more important than the answer. Interpret as an excavation of the seeker's core spiritual longing. What are they really looking for beneath all the surface-level questions?",
           },
         ],
+        obstacleCards: [
+          {
+            title: "The Meaning-Maker",
+            meaning: "Forcing every experience into a spiritual narrative — demanding signs, interpreting everything as a message, unable to let mystery be mystery.",
+            guidance: "Not every coincidence is a sign. Sometimes the deepest mystical act is letting things be exactly what they are, without needing them to mean something.",
+            imagePrompt: "Hands arranging constellation maps over a starry sky, drawing lines between stars that resist connection. Some stars glow brighter when left unnamed and unconnected.",
+          },
+          {
+            title: "The Hungry Ghost",
+            meaning: "Craving peak experiences — chasing visions, altered states, and spiritual highs instead of integrating the quiet revelations of ordinary awareness.",
+            guidance: "The veil doesn't part on demand. It opens to those who wait without demanding, and closes on those who grasp.",
+            imagePrompt: "A translucent figure reaching through a shimmering curtain, grasping at dancing lights that slip through its fingers. Behind it, a steady warm glow illuminates the ground it ignores.",
+          },
+        ],
       },
       {
         name: "Contemplation",
@@ -681,6 +807,14 @@ const PATHS: PathSeed[] = [
               "What prayer is my life praying without words?",
             waypointLens:
               "The cards as wordless prayer. Interpret with the understanding that the seeker's entire life is a prayer — their actions, their longings, their suffering, their joy. What is the prayer their life is praying? Move beyond language into the territory of pure intention and presence.",
+          },
+        ],
+        obstacleCards: [
+          {
+            title: "The Noisy Temple",
+            meaning: "Filling contemplative space with spiritual content — reading, studying, discussing instead of simply being present in silence.",
+            guidance: "Put down the book. The silence you're avoiding is the teaching you're seeking.",
+            imagePrompt: "An ancient temple interior with towering bookshelves blocking the windows. In the center, an empty cushion glows softly where sunlight finds its way through a crack between the books.",
           },
         ],
       },
@@ -730,6 +864,20 @@ const PATHS: PathSeed[] = [
               "The turning point of the dark night. Interpret the cards as evidence of grace operating in the darkness. What the seeker thinks is absence is actually a more refined presence. The fact that they notice the absence of the sacred proves their connection to it. Let the reading be a gentle revelation that grace has been here all along.",
           },
         ],
+        obstacleCards: [
+          {
+            title: "The False Dawn",
+            meaning: "Mistaking spiritual bypassing for emergence — declaring the dark night over before the purification is complete, grasping at premature light.",
+            guidance: "Real dawn arrives on its own. If you have to convince yourself it's morning, it's still night. Stay. The true light will be unmistakable.",
+            imagePrompt: "A horizon where artificial lights mimic a sunrise, but the true sky remains dark with stars. A path leads past the false glow toward genuine dawn barely visible at the edge.",
+          },
+          {
+            title: "The Spiritual Emergency Exit",
+            meaning: "Abandoning the path entirely when the sacred feels absent — concluding that faith was foolish, practice was pointless, the journey a mistake.",
+            guidance: "The desire to quit IS the dark night doing its work. This is not the end of faith — it's faith being refined in fire.",
+            imagePrompt: "A glowing EXIT sign mounted in a cavernous dark space. The light from the sign illuminates the walls, revealing intricate ancient paintings that can only be seen in this darkness.",
+          },
+        ],
       },
       {
         name: "Sacred Union",
@@ -777,6 +925,14 @@ const PATHS: PathSeed[] = [
               "The pinnacle of mystical experience. Interpret with non-dual awareness. The cards do not point to something separate from the seeker — they are the seeker seeing themselves. The reading itself becomes a moment of union. Let the language dissolve subject-object boundaries: not 'the card means this about you' but 'you and the card are reflecting the same light.'",
           },
         ],
+        obstacleCards: [
+          {
+            title: "The Spiritual Ego",
+            meaning: "The ego co-opting the journey of dissolution — 'I am one with everything' becoming another identity to defend rather than a lived reality.",
+            guidance: "The one who claims union is not united. True oneness has no one left to announce it. Let the experience be, without owning it.",
+            imagePrompt: "A radiant figure standing on a mountaintop, arms wide, casting a shadow that reveals a smaller figure clutching a crown. The mountain itself dissolves into light at the edges.",
+          },
+        ],
       },
       {
         name: "The Return",
@@ -813,6 +969,14 @@ const PATHS: PathSeed[] = [
               "How am I being called to serve from the fullness of what I've received?",
             waypointLens:
               "The culmination of the mystical path. Interpret the cards as invitations to service — not duty-driven service but service that flows from the mystic's realization of unity. How does the seeker's journey equip them to serve? What gift are they being asked to bring back to the world? Let the reading be a commissioning — a sacred sending-forth.",
+          },
+        ],
+        obstacleCards: [
+          {
+            title: "The Mountaintop Exile",
+            meaning: "Preferring transcendence over engagement — using spiritual realization as a reason to withdraw from the messy, beautiful, imperfect world.",
+            guidance: "The highest teaching is chopping wood and carrying water. If your realization doesn't work at the grocery store, it's not complete.",
+            imagePrompt: "A glowing figure sitting in meditation atop a crystal mountain, while far below a village full of warm lights and open doors awaits. A winding path connects them, overgrown but passable.",
           },
         ],
       },
@@ -885,6 +1049,27 @@ async function seed() {
 
         console.log(`      Waypoint: ${waypointData.name}`);
       }
+
+      // Insert seed obstacle cards for this retreat
+      if (retreatData.obstacleCards && retreatData.obstacleCards.length > 0) {
+        for (let cardIndex = 0; cardIndex < retreatData.obstacleCards.length; cardIndex++) {
+          const cardData = retreatData.obstacleCards[cardIndex];
+          await db.insert(schema.retreatCards).values({
+            id: createId(),
+            retreatId,
+            cardType: "obstacle",
+            source: "seed",
+            title: cardData.title,
+            meaning: cardData.meaning,
+            guidance: cardData.guidance,
+            imagePrompt: cardData.imagePrompt,
+            imageStatus: "pending",
+            sortOrder: cardIndex,
+            userId: null,
+          });
+          console.log(`      Obstacle Card: ${cardData.title}`);
+        }
+      }
     }
 
     console.log();
@@ -893,15 +1078,17 @@ async function seed() {
   // Count totals
   let totalRetreats = 0;
   let totalWaypoints = 0;
+  let totalObstacleCards = 0;
   for (const path of PATHS) {
     totalRetreats += path.retreats.length;
     for (const retreat of path.retreats) {
       totalWaypoints += retreat.waypoints.length;
+      totalObstacleCards += retreat.obstacleCards?.length ?? 0;
     }
   }
 
   console.log(
-    `Done! Seeded ${PATHS.length} paths, ${totalRetreats} retreats, ${totalWaypoints} waypoints.`
+    `Done! Seeded ${PATHS.length} paths, ${totalRetreats} retreats, ${totalWaypoints} waypoints, ${totalObstacleCards} obstacle cards.`
   );
 }
 

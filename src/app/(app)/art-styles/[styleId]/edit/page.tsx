@@ -1,6 +1,4 @@
 import { notFound } from "next/navigation";
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 import { db } from "@/lib/db";
 import { artStyles } from "@/lib/db/schema";
 import { requireAuth } from "@/lib/auth/helpers";
@@ -30,14 +28,6 @@ export default async function EditArtStylePage({
 
   return (
     <div className="p-6 max-w-lg mx-auto space-y-6">
-      <Link
-        href={`/art-styles/${style.id}`}
-        className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Back to {style.name}
-      </Link>
-
       <div>
         <h1 className="text-2xl font-bold">Edit Style</h1>
         <p className="text-sm text-muted-foreground mt-1">

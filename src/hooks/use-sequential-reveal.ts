@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 
 type RevealState = "hidden" | "revealing" | "revealed";
 
@@ -23,6 +23,14 @@ export function useSequentialReveal({
     Array(cardCount).fill("hidden")
   );
   const [isAnyRevealing, setIsAnyRevealing] = useState(false);
+
+  useEffect(() => {
+    if (cardCount === 0) return;
+    setCardStates((prev) => {
+      if (prev.length === cardCount) return prev;
+      return Array(cardCount).fill("hidden");
+    });
+  }, [cardCount]);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const revealNext = useCallback(() => {
@@ -51,6 +59,31 @@ export function useSequentialReveal({
     });
   }, [isAnyRevealing, revealDuration]);
 
+  /** Reveal a specific card by index, skipping the sequential guard. */
+  const revealAt = useCallback((index: number) => {
+    setCardStates((prev) => {
+      if (index < 0 || index >= prev.length) return prev;
+      if (prev[index] !== "hidden") return prev; // already revealing/revealed
+
+      const next = [...prev];
+      next[index] = "revealing";
+
+      setIsAnyRevealing(true);
+
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      timeoutRef.current = setTimeout(() => {
+        setCardStates((inner) => {
+          const updated = [...inner];
+          updated[index] = "revealed";
+          return updated;
+        });
+        setIsAnyRevealing(false);
+      }, revealDuration);
+
+      return next;
+    });
+  }, [revealDuration]);
+
   const allRevealed = cardStates.every((s) => s === "revealed");
   const revealedCount = cardStates.filter((s) => s === "revealed").length;
 
@@ -64,6 +97,7 @@ export function useSequentialReveal({
   return {
     cardStates,
     revealNext,
+    revealAt,
     isAnyRevealing,
     allRevealed,
     revealedCount,

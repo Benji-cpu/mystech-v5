@@ -2,25 +2,44 @@
 
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { Compass, Sparkles } from 'lucide-react';
+import { Compass, Sparkles, Clock } from 'lucide-react';
 
 interface JourneyContextBannerProps {
+  circleName?: string | null;
+  circleNumber?: number | null;
   pathName: string;
   retreatName: string;
   waypointName: string;
   suggestedIntention: string;
   waypointIndex?: number;
   totalWaypoints?: number;
+  pacingBlocked?: boolean;
+  nextAvailableAt?: string;
   className?: string;
 }
 
+function formatNextAvailable(dateStr: string): string {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffMs = date.getTime() - now.getTime();
+  const diffHours = Math.ceil(diffMs / (1000 * 60 * 60));
+
+  if (diffHours <= 1) return 'in about an hour';
+  if (diffHours < 24) return `in about ${diffHours} hours`;
+  return 'tomorrow';
+}
+
 export function JourneyContextBanner({
+  circleName,
+  circleNumber,
   pathName,
   retreatName,
   waypointName,
   suggestedIntention,
   waypointIndex,
   totalWaypoints,
+  pacingBlocked,
+  nextAvailableAt,
   className,
 }: JourneyContextBannerProps) {
   const hasProgress = waypointIndex !== undefined && totalWaypoints !== undefined;
@@ -33,7 +52,7 @@ export function JourneyContextBanner({
       className={cn(
         'relative overflow-hidden rounded-xl',
         'bg-white/5 backdrop-blur-xl',
-        'border border-[#c9a94e]/30',
+        pacingBlocked ? 'border border-white/10' : 'border border-[#c9a94e]/30',
         'shadow-lg shadow-purple-900/20',
         'p-4',
         className
@@ -43,16 +62,23 @@ export function JourneyContextBanner({
       <div className="absolute inset-0 bg-gradient-to-br from-[#c9a94e]/5 via-transparent to-purple-500/5 pointer-events-none" />
 
       <div className="relative z-10">
+        {/* Circle label */}
+        {circleName && circleNumber && (
+          <p className="text-[10px] text-white/30 uppercase tracking-wider font-medium mb-0.5 ml-6">
+            Circle {circleNumber}: {circleName}
+          </p>
+        )}
+
         {/* Journey position — prominent display */}
         <div className="flex items-center gap-2 mb-1">
-          <Compass className="h-4 w-4 text-[color:var(--gold)] shrink-0" />
-          <span className="text-sm font-semibold text-foreground tracking-wide">
+          <Compass className={cn('h-4 w-4 shrink-0', pacingBlocked ? 'text-white/40' : 'text-[color:var(--gold)]')} />
+          <span className={cn('text-sm font-semibold tracking-wide', pacingBlocked ? 'text-white/60' : 'text-foreground')}>
             {pathName} Path
           </span>
         </div>
 
         {/* Breadcrumb position */}
-        <p className="text-xs text-[#c9a94e]/80 font-medium mb-3 ml-6">
+        <p className={cn('text-xs font-medium mb-3 ml-6', pacingBlocked ? 'text-white/30' : 'text-[#c9a94e]/80')}>
           {retreatName}
           {hasProgress && (
             <span className="text-muted-foreground">
@@ -85,18 +111,37 @@ export function JourneyContextBanner({
           </div>
         )}
 
-        {/* The intention IS the question — displayed prominently */}
-        <div className={cn(
-          'flex items-start gap-2.5 px-3 py-2.5',
-          'rounded-lg',
-          'border border-[#c9a94e]/20',
-          'bg-[#c9a94e]/5'
-        )}>
-          <Sparkles className="h-4 w-4 text-[color:var(--gold)] shrink-0 mt-0.5" />
-          <p className="text-sm text-[#c9a94e] italic font-medium leading-relaxed">
-            &ldquo;{suggestedIntention}&rdquo;
-          </p>
-        </div>
+        {pacingBlocked ? (
+          /* Pacing-blocked: muted info message */
+          <div className={cn(
+            'flex items-start gap-2.5 px-3 py-2.5',
+            'rounded-lg',
+            'border border-white/10',
+            'bg-white/5'
+          )}>
+            <Clock className="h-4 w-4 text-white/40 shrink-0 mt-0.5" />
+            <p className="text-sm text-white/50 leading-relaxed">
+              Your next waypoint reading opens{' '}
+              <span className="text-white/70 font-medium">
+                {nextAvailableAt ? formatNextAvailable(nextAvailableAt) : 'tomorrow'}
+              </span>
+              . You can still do a casual reading now.
+            </p>
+          </div>
+        ) : (
+          /* Normal: the intention IS the question */
+          <div className={cn(
+            'flex items-start gap-2.5 px-3 py-2.5',
+            'rounded-lg',
+            'border border-[#c9a94e]/20',
+            'bg-[#c9a94e]/5'
+          )}>
+            <Sparkles className="h-4 w-4 text-[color:var(--gold)] shrink-0 mt-0.5" />
+            <p className="text-sm text-[#c9a94e] italic font-medium leading-relaxed">
+              &ldquo;{suggestedIntention}&rdquo;
+            </p>
+          </div>
+        )}
       </div>
     </motion.div>
   );

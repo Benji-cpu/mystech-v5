@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ScrollText, Flame, Settings2 } from "lucide-react";
@@ -9,8 +8,9 @@ import { GlassPanel } from "@/components/ui/glass-panel";
 import { GoldButton } from "@/components/ui/gold-button";
 import { LyraSigil } from "@/components/guide/lyra-sigil";
 import { CardDetailModal } from "@/components/cards/card-detail-modal";
+import { useCardDetailModal } from "@/hooks/use-card-detail-modal";
 import { getBadgeById } from "@/lib/chronicle/badges";
-import type { Card, CardImageStatus, ChronicleBadge } from "@/types";
+import type { CardDetailData, CardImageStatus, ChronicleBadge } from "@/types";
 
 const SPRING = { type: "spring" as const, stiffness: 300, damping: 30 };
 
@@ -49,28 +49,23 @@ interface ChronicleDeckDetailProps {
   className?: string;
 }
 
-function toCard(data: {
+function toCardDetail(data: {
   cardId: string;
   cardTitle: string;
   cardMeaning: string;
   cardGuidance: string;
   cardImageUrl: string | null;
   cardImageStatus: string;
-  deckId?: string;
-}): Card {
+}): CardDetailData {
   return {
     id: data.cardId,
-    deckId: data.deckId ?? "",
-    cardNumber: 0,
     title: data.cardTitle,
     meaning: data.cardMeaning,
     guidance: data.cardGuidance,
     imageUrl: data.cardImageUrl,
-    imagePrompt: null,
     imageStatus: (data.cardImageStatus ?? "pending") as CardImageStatus,
-    cardType: 'general' as const,
+    cardType: 'general',
     originContext: null,
-    createdAt: new Date(),
   };
 }
 
@@ -86,7 +81,7 @@ export function ChronicleDeckDetail({
   entries,
   className,
 }: ChronicleDeckDetailProps) {
-  const [selectedCard, setSelectedCard] = useState<Card | null>(null);
+  const { openCard, modalProps } = useCardDetailModal<CardDetailData>();
 
   return (
     <div className={cn("space-y-6", className)}>
@@ -118,15 +113,14 @@ export function ChronicleDeckDetail({
               type="button"
               className="flex items-start gap-4 w-full text-left cursor-pointer group"
               onClick={() =>
-                setSelectedCard(
-                  toCard({
+                openCard(
+                  toCardDetail({
                     cardId: todayCard.id,
                     cardTitle: todayCard.title,
                     cardMeaning: todayCard.meaning,
                     cardGuidance: todayCard.guidance,
                     cardImageUrl: todayCard.imageUrl,
                     cardImageStatus: todayCard.imageStatus,
-                    deckId,
                   })
                 )
               }
@@ -223,15 +217,14 @@ export function ChronicleDeckDetail({
               onClick={
                 entry.cardId && entry.cardTitle
                   ? () =>
-                      setSelectedCard(
-                        toCard({
+                      openCard(
+                        toCardDetail({
                           cardId: entry.cardId!,
                           cardTitle: entry.cardTitle!,
                           cardMeaning: entry.cardMeaning ?? "",
                           cardGuidance: entry.cardGuidance ?? "",
                           cardImageUrl: entry.cardImageUrl,
                           cardImageStatus: entry.cardImageStatus ?? "pending",
-                          deckId,
                         })
                       )
                   : undefined
@@ -280,11 +273,7 @@ export function ChronicleDeckDetail({
       )}
 
       {/* Card detail modal */}
-      <CardDetailModal
-        card={selectedCard}
-        open={!!selectedCard}
-        onOpenChange={(open) => !open && setSelectedCard(null)}
-      />
+      <CardDetailModal {...modalProps} />
     </div>
   );
 }

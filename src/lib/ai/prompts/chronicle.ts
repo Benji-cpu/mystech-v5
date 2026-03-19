@@ -44,13 +44,24 @@ export function buildChronicleGreeting({
   recentEntries,
   knowledge,
   milestoneBadge,
+  userName,
+  journeyContext,
+  emergenceContext,
 }: {
   timeOfDay: "morning" | "afternoon" | "evening" | "night";
   streakCount: number;
   recentEntries?: { mood: string | null; themes: string[]; cardTitle?: string }[];
   knowledge?: ChronicleKnowledge | null;
   milestoneBadge?: { name: string; lyraMessage: string } | null;
+  userName?: string;
+  journeyContext?: { waypointName: string; waypointLens: string } | null;
+  emergenceContext?: { cardTitle: string; cardType: string; detectedPattern: string } | null;
 }): string {
+  // Emergence-aware greeting replaces normal greeting
+  if (emergenceContext) {
+    return `Now that you've seen **${emergenceContext.cardTitle}**, let's sit with what it stirred. Where does ${emergenceContext.detectedPattern} show up for you today — or is something else asking for attention?`;
+  }
+
   const parts: string[] = [];
 
   // Milestone greeting takes priority
@@ -79,9 +90,40 @@ export function buildChronicleGreeting({
     parts.push(`${streakCount} days running — your Chronicle grows richer.`);
   }
 
-  // Reference patterns from knowledge
-  if (knowledge?.summary) {
-    parts.push("I've been noticing some threads in your story...");
+  // Reference specific patterns from knowledge
+  if (knowledge) {
+    const now = new Date();
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+    // Check for recurring emotional pattern
+    const topEmotional = knowledge.emotionalPatterns
+      ?.filter((p) => p.frequency >= 3 && new Date(p.lastSeen) >= sevenDaysAgo)
+      .sort((a, b) => b.frequency - a.frequency)[0];
+
+    if (topEmotional) {
+      parts.push(
+        `${topEmotional.pattern.charAt(0).toUpperCase() + topEmotional.pattern.slice(1)} has been present in ${topEmotional.frequency} of our recent conversations.`
+      );
+    }
+
+    // Check for recurring symbol
+    const topSymbol = knowledge.recurringSymbols?.find((s) => s.count >= 3);
+    if (topSymbol && !topEmotional) {
+      parts.push(`The image of ${topSymbol.symbol} keeps returning to your words.`);
+    }
+
+    // Check for mood streak (3+ days of same mood via recent entries)
+    if (recentEntries && recentEntries.length >= 3) {
+      const moods = recentEntries.slice(0, 3).map((e) => e.mood).filter(Boolean);
+      if (moods.length === 3 && moods.every((m) => m === moods[0])) {
+        parts.push(`Three days of ${moods[0]} now — there's something here worth sitting with.`);
+      }
+    }
+  }
+
+  // Blend journey waypoint focus when on an active path
+  if (journeyContext) {
+    parts.push(`Today we walk with "${journeyContext.waypointName}."`);
   }
 
   return parts.join(" ");
@@ -94,6 +136,8 @@ export function buildChronicleConversationContext({
   recentEntries,
   interests,
   journeyContext,
+  userName,
+  emergenceContext,
 }: {
   knowledge?: ChronicleKnowledge | null;
   recentEntries?: { mood: string | null; themes: string[]; entryDate: string }[];
@@ -106,8 +150,18 @@ export function buildChronicleConversationContext({
     retreatLens: string;
     waypointLens: string;
   } | null;
+  userName?: string;
+  emergenceContext?: {
+    cardTitle: string;
+    cardType: string;
+    detectedPattern: string;
+  } | null;
 }): string {
   const parts: string[] = [];
+
+  if (userName && userName !== "Seeker") {
+    parts.push(`The seeker's name is ${userName}. Address them by name occasionally but naturally — not every response.`);
+  }
 
   if (knowledge?.summary) {
     parts.push(`About this seeker:\n${knowledge.summary}`);
@@ -136,6 +190,14 @@ export function buildChronicleConversationContext({
     if (recentMoods.length > 0) {
       parts.push(`Recent moods: ${recentMoods.join(", ")}`);
     }
+  }
+
+  if (emergenceContext) {
+    parts.push(
+      `Emergence context: Before today's conversation, the seeker was shown an emergence card: "${emergenceContext.cardTitle}" (${emergenceContext.cardType}), ` +
+      `arising from the pattern: ${emergenceContext.detectedPattern}. They acknowledged it. Reference this naturally — connect their sharing ` +
+      `back to this theme when organic, but don't over-reference it. Let them lead.`
+    );
   }
 
   if (journeyContext) {
@@ -242,6 +304,7 @@ export function buildChronicleMiniReadingPrompt({
   streakCount,
   isPro,
   journeyContext,
+  userName,
 }: {
   card: { title: string; meaning: string; guidance: string };
   conversation: { role: string; content: string }[];
@@ -249,6 +312,7 @@ export function buildChronicleMiniReadingPrompt({
   streakCount: number;
   isPro: boolean;
   journeyContext?: { waypointName: string; retreatName: string; waypointLens: string } | null;
+  userName?: string;
 }): string {
   const conversationText = conversation
     .map((m) => `${m.role === "user" ? "Seeker" : "Lyra"}: ${m.content}`)
@@ -266,6 +330,11 @@ export function buildChronicleMiniReadingPrompt({
     pathContext = `\nPath waypoint: "${journeyContext.waypointName}" in ${journeyContext.retreatName}. ${journeyContext.waypointLens}\n`;
   }
 
+  let nameContext = "";
+  if (userName && userName !== "Seeker") {
+    nameContext = `\nThe seeker's name is ${userName}. You may use it once naturally.\n`;
+  }
+
   return `Today's Chronicle card has been forged:
 Card: "${card.title}"
 Meaning: ${card.meaning}
@@ -273,7 +342,7 @@ Guidance: ${card.guidance}
 
 Today's conversation:
 ${conversationText}
-${knowledgeContext}${pathContext}
+${knowledgeContext}${pathContext}${nameContext}
 Write a mini-reading (${depth}) connecting today's card to the seeker's journey. Reference specific moments from today's conversation. ${isPro && streakCount > 7 ? "You may reference patterns you've noticed across their Chronicle." : ""}
 
 Speak as Lyra — warm, direct, insightful. No headers or formatting.`;

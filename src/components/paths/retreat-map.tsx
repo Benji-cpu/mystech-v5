@@ -1,22 +1,33 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { WaypointProgress } from '@/components/paths/waypoint-progress';
 import { RetreatArtifactCard } from '@/components/paths/retreat-artifact-card';
+import { OracleCard } from '@/components/cards/oracle-card';
+import { CardDetailModal } from '@/components/cards/card-detail-modal';
+import { useCardDetailModal } from '@/hooks/use-card-detail-modal';
 import {
   CheckCircle2,
   Circle,
   ChevronDown,
   Milestone,
   BookOpen,
+  Shield,
+  Loader2,
 } from 'lucide-react';
-import type { Retreat, Waypoint, UserRetreatProgress, UserWaypointProgress } from '@/types';
+import type { Retreat, Waypoint, RetreatCard, UserRetreatProgress, UserWaypointProgress, CardDetailData } from '@/types';
 
 interface RetreatWithWaypoints extends Retreat {
   waypoints: Waypoint[];
 }
+
+type PracticeProgressEntry = {
+  practiceId: string;
+  completed: boolean;
+  playCount: number;
+};
 
 interface RetreatMapProps {
   retreats: RetreatWithWaypoints[];
@@ -24,10 +35,60 @@ interface RetreatMapProps {
   currentWaypointId: string | null;
   retreatProgressList: UserRetreatProgress[];
   waypointProgressMap: Record<string, UserWaypointProgress[]>;
+  practiceProgressMap?: Map<string, PracticeProgressEntry>;
   className?: string;
 }
 
 type RetreatState = 'completed' | 'active' | 'future';
+
+function RetreatChallenges({ retreatId }: { retreatId: string }) {
+  const [cards, setCards] = useState<RetreatCard[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { openCard, modalProps } = useCardDetailModal<CardDetailData>();
+
+  useEffect(() => {
+    fetch(`/api/retreats/${retreatId}/cards`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && data.data) setCards(data.data);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [retreatId]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center gap-2 py-3 px-2 text-white/30">
+        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        <span className="text-xs">Loading challenges...</span>
+      </div>
+    );
+  }
+
+  if (cards.length === 0) return null;
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-1.5 px-1">
+        <Shield className="h-3.5 w-3.5 text-amber-400/70" />
+        <p className="text-[11px] text-white/35 uppercase tracking-wider font-medium">
+          Challenges of This Retreat
+        </p>
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        {cards.map((card) => (
+          <div key={card.id} className="space-y-1 cursor-pointer" onClick={() => openCard(card)}>
+            <OracleCard card={card} size="fill" />
+            <p className="text-[10px] text-white/30 truncate px-0.5">
+              {card.title}
+            </p>
+          </div>
+        ))}
+      </div>
+      <CardDetailModal {...modalProps} />
+    </div>
+  );
+}
 
 export function RetreatMap({
   retreats,
@@ -35,6 +96,7 @@ export function RetreatMap({
   currentWaypointId,
   retreatProgressList,
   waypointProgressMap,
+  practiceProgressMap,
   className,
 }: RetreatMapProps) {
   // Auto-expand the active retreat on mount
@@ -190,7 +252,9 @@ export function RetreatMap({
                       }
                       waypointProgressList={waypointProgressList}
                       retreatState={state}
+                      practiceProgressMap={practiceProgressMap}
                     />
+                    <RetreatChallenges retreatId={retreat.id} />
                     {retreatProgress && state === 'completed' && (
                       <RetreatArtifactCard
                         retreatId={retreat.id}

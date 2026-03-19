@@ -1,6 +1,6 @@
 import { z } from "zod";
-import type { SpreadType, ReadingLength, AstrologicalReadingContext, JourneyContextForPrompt } from "@/types";
-import { buildJourneyContextSection } from "./journey-context";
+import type { SpreadType, ReadingLength, AstrologicalReadingContext, PathContextForPrompt } from "@/types";
+import { buildPathContextSection } from "./journey-context";
 
 // ── Zod schema for structured interpretation (streamObject) ───────────
 
@@ -49,7 +49,7 @@ export const ReadingInterpretationSchema = z.object({
 
 export type ReadingInterpretation = z.infer<typeof ReadingInterpretationSchema>;
 
-export function buildReadingSystemPrompt(readingLength: ReadingLength = 'brief'): string {
+export function buildReadingSystemPrompt(readingLength: ReadingLength = 'brief', userName?: string): string {
   const voiceModifiers: Record<ReadingLength, string> = {
     brief: `You are razor-sharp and efficient. Every word earns its place. Short, punchy sentences. No flowery preambles — get straight to the heart of what the cards reveal.`,
     standard: `You are concise and impactful. Every sentence carries weight.`,
@@ -89,35 +89,35 @@ Formatting rules (CRITICAL — follow exactly):
 
 Card type awareness:
 - When a card is marked OBSTACLE: treat it as a mirror showing a pattern the seeker circles around. Speak with compassion but directness about what this pattern teaches.
-- When a card is marked THRESHOLD: honor it as a milestone earned through practice. Reference the passage it represents and speak with reverence for the journey it commemorates.`;
+- When a card is marked THRESHOLD: honor it as a milestone earned through practice. Reference the passage it represents and speak with reverence for the journey it commemorates.${userName && userName !== "Seeker" ? `\n\nThe seeker's name is ${userName}. You may address them by name once or twice naturally — not every paragraph.` : ""}`;
 }
 
 // Backward-compat: default to brief
 export const READING_INTERPRETATION_SYSTEM_PROMPT = buildReadingSystemPrompt('brief');
 
-// Token budgets account for JSON structure overhead (~500-800 tokens for keys,
-// delimiters, astroResonance fields, etc.) on top of the actual prose content.
+// Token budgets are set generously high so the model never truncates mid-sentence.
+// The prompt/system instructions control actual length — maxTokens is just a safety ceiling.
 export const STRUCTURE_TARGETS: Record<ReadingLength, Record<SpreadType, { paragraphs: number; maxTokens: number }>> = {
   brief: {
-    single:       { paragraphs: 1, maxTokens: 600 },
-    three_card:   { paragraphs: 2, maxTokens: 1200 },
-    five_card:    { paragraphs: 3, maxTokens: 2000 },
-    celtic_cross: { paragraphs: 4, maxTokens: 4000 },
-    daily:        { paragraphs: 1, maxTokens: 600 },
+    single:       { paragraphs: 1, maxTokens: 4000 },
+    three_card:   { paragraphs: 2, maxTokens: 8000 },
+    five_card:    { paragraphs: 3, maxTokens: 12000 },
+    celtic_cross: { paragraphs: 4, maxTokens: 16000 },
+    daily:        { paragraphs: 1, maxTokens: 4000 },
   },
   standard: {
-    single:       { paragraphs: 2, maxTokens: 1000 },
-    three_card:   { paragraphs: 3, maxTokens: 2000 },
-    five_card:    { paragraphs: 5, maxTokens: 3500 },
-    celtic_cross: { paragraphs: 7, maxTokens: 6000 },
-    daily:        { paragraphs: 2, maxTokens: 1000 },
+    single:       { paragraphs: 2, maxTokens: 6000 },
+    three_card:   { paragraphs: 3, maxTokens: 10000 },
+    five_card:    { paragraphs: 5, maxTokens: 14000 },
+    celtic_cross: { paragraphs: 7, maxTokens: 20000 },
+    daily:        { paragraphs: 2, maxTokens: 6000 },
   },
   deep: {
-    single:       { paragraphs: 3, maxTokens: 1500 },
-    three_card:   { paragraphs: 5, maxTokens: 3000 },
-    five_card:    { paragraphs: 7, maxTokens: 5000 },
-    celtic_cross: { paragraphs: 10, maxTokens: 8000 },
-    daily:        { paragraphs: 3, maxTokens: 1500 },
+    single:       { paragraphs: 3, maxTokens: 8000 },
+    three_card:   { paragraphs: 5, maxTokens: 14000 },
+    five_card:    { paragraphs: 7, maxTokens: 20000 },
+    celtic_cross: { paragraphs: 10, maxTokens: 30000 },
+    daily:        { paragraphs: 3, maxTokens: 8000 },
   },
 };
 
@@ -148,6 +148,7 @@ export function buildReadingInterpretationPrompt({
   astroContext,
   chronicleContext,
   journeyContext,
+  userName,
 }: {
   spreadType: SpreadType;
   question: string | null;
@@ -161,7 +162,8 @@ export function buildReadingInterpretationPrompt({
     entryDate: string;
     knowledgeSummary: string | null;
   };
-  journeyContext?: JourneyContextForPrompt;
+  journeyContext?: PathContextForPrompt;
+  userName?: string;
 }): string {
   const questionSection = question
     ? `The seeker's question: "${question}"`
@@ -180,6 +182,11 @@ export function buildReadingInterpretationPrompt({
     .join("\n\n");
 
   const { paragraphs } = STRUCTURE_TARGETS[readingLength][spreadType];
+
+  let nameSection = "";
+  if (userName && userName !== "Seeker") {
+    nameSection = `\nThe seeker's name is ${userName}.\n`;
+  }
 
   let contextSection = "";
   if (userContext) {
@@ -260,11 +267,11 @@ When interpreting this card, honor its personal origin — reference the fact th
   }
 
   const journeySection = journeyContext
-    ? buildJourneyContextSection(journeyContext)
+    ? buildPathContextSection(journeyContext)
     : "";
 
   return `Interpret this ${spreadType.replace("_", " ")} reading.
-${contextSection}
+${nameSection}${contextSection}
 ${questionSection}
 
 Cards drawn:

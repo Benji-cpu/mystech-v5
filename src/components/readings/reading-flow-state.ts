@@ -237,6 +237,7 @@ export function isSetupPhase(phase: ReadingPhase): boolean {
 
 export function isCardPhase(phase: ReadingPhase): boolean {
   return (
+    phase === "creating" ||
     phase === "drawing" ||
     phase === "presenting" ||
     phase === "complete"

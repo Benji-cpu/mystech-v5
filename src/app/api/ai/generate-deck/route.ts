@@ -3,7 +3,7 @@ import { generateObject } from "ai";
 import { db } from "@/lib/db";
 import { decks, cards, deckMetadata } from "@/lib/db/schema";
 import { getCurrentUser } from "@/lib/auth/helpers";
-import { getDeckByIdForUser, getDeckMetadata, getArtStyleById, getUserPlan, getUserCardPreferences } from "@/lib/db/queries";
+import { getDeckByIdForUser, getDeckMetadata, getArtStyleById, getUserPlan, getUserCardPreferences, getSeekerContextForGeneration } from "@/lib/db/queries";
 import { geminiModel, geminiProModel } from "@/lib/ai/gemini";
 import { generatedDeckSchema, type GeneratedCard } from "@/lib/ai/schemas";
 import {
@@ -18,7 +18,7 @@ import { logGeneration } from "@/lib/ai/logging";
 import { resolvePrompt } from "@/lib/ai/prompts/resolve";
 import { getUserPlanFromRole, checkCredits, incrementCredits } from "@/lib/usage";
 import { eq } from "drizzle-orm";
-import type { ApiResponse, Anchor, DraftCard } from "@/types";
+import { ORIGIN_SOURCE, type ApiResponse, type Anchor, type DraftCard } from "@/types";
 
 const MAX_RETRIES = 2;
 
@@ -235,9 +235,12 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  const preferences = await getUserCardPreferences(user.id);
+  const [preferences, seekerContext] = await Promise.all([
+    getUserCardPreferences(user.id),
+    getSeekerContextForGeneration(user.id),
+  ]);
 
-  const userPrompt = buildDeckGenerationUserPrompt(resolvedVision, cardCount, artStyleName, artStyleDescription, preferences);
+  const userPrompt = buildDeckGenerationUserPrompt(resolvedVision, cardCount, artStyleName, artStyleDescription, preferences, seekerContext);
   const simpleSystemPrompt = await resolvePrompt("DECK_GENERATION_SYSTEM_PROMPT", role);
 
   // Generate card definitions with retries BEFORE creating deck
@@ -332,7 +335,10 @@ export async function POST(request: NextRequest) {
       guidance: card.guidance,
       imagePrompt: card.imagePrompt,
       imageStatus: "pending",
-      cardType: "general",
+      cardType: card.cardType ?? "general",
+      ...(card.cardType === "obstacle"
+        ? { originContext: { source: ORIGIN_SOURCE.DECK_CREATION } }
+        : {}),
     }))
   );
 
@@ -351,8 +357,10 @@ export async function POST(request: NextRequest) {
   // Increment credits for created cards
   await incrementCredits(user.id, plan, generatedCards.length);
 
-  return NextResponse.json<ApiResponse<{ deckId: string; title: string }>>(
-    { success: true, data: { deckId: deck.id, title: deckTitle } },
+  const obstacleCount = generatedCards.filter(c => c.cardType === "obstacle").length;
+
+  return NextResponse.json<ApiResponse<{ deckId: string; title: string; obstacleCount: number }>>(
+    { success: true, data: { deckId: deck.id, title: deckTitle, obstacleCount } },
     { status: 201 }
   );
 }

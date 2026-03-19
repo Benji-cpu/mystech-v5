@@ -20,7 +20,7 @@ import {
 } from "@/lib/db/queries";
 import { getUserPlanFromRole, checkCredits, incrementCredits } from "@/lib/usage";
 import { buildChronicleCardPrompt } from "@/lib/ai/prompts/chronicle";
-import { getJourneyPosition } from "@/lib/db/queries-journey";
+import { getPathPosition } from "@/lib/db/queries-paths";
 import { eq, sql } from "drizzle-orm";
 import type { ApiResponse } from "@/types";
 
@@ -94,12 +94,12 @@ export async function POST() {
   }
 
   // Gather generation context
-  const [existingCards, knowledge, preferences, settings, journeyPosition] = await Promise.all([
+  const [existingCards, knowledge, preferences, settings, pathPosition] = await Promise.all([
     getRecentChronicleCards(deck.id, 15),
     getChronicleKnowledge(user.id),
     getUserCardPreferences(user.id),
     getChronicleSettings(deck.id),
-    getJourneyPosition(user.id),
+    getPathPosition(user.id),
   ]);
 
   // Resolve art style name
@@ -116,10 +116,10 @@ export async function POST() {
     knowledge,
     preferences,
     artStyleName,
-    journeyContext: journeyPosition
+    journeyContext: pathPosition
       ? {
-          waypointName: journeyPosition.waypoint.name,
-          waypointLens: journeyPosition.waypoint.waypointLens,
+          waypointName: pathPosition.waypoint.name,
+          waypointLens: pathPosition.waypoint.waypointLens,
         }
       : null,
   });

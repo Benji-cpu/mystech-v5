@@ -37,11 +37,18 @@ function PathIcon({ iconKey, className }: { iconKey: string; className?: string 
   }
 }
 
+type PracticeProgressEntry = {
+  practiceId: string;
+  completed: boolean;
+  playCount: number;
+};
+
 interface PathDetailProps {
   path: PathWithRetreats;
   pathProgress: UserPathProgress | null;
   retreatProgressList: UserRetreatProgress[];
   waypointProgressMap: Record<string, UserWaypointProgress[]>;
+  practiceProgressMap?: Map<string, PracticeProgressEntry>;
   className?: string;
 }
 
@@ -50,6 +57,7 @@ export function PathDetail({
   pathProgress,
   retreatProgressList,
   waypointProgressMap,
+  practiceProgressMap,
   className,
 }: PathDetailProps) {
   const router = useRouter();
@@ -183,6 +191,7 @@ export function PathDetail({
             currentWaypointId={pathProgress?.currentWaypointId ?? null}
             retreatProgressList={retreatProgressList}
             waypointProgressMap={waypointProgressMap}
+            practiceProgressMap={practiceProgressMap}
           />
         </div>
       </AnimatedItem>

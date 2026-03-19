@@ -1,17 +1,19 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth/helpers";
 import {
-  getJourneyPosition,
+  getPathPosition,
   getAllUserPathProgress,
   getRetreatProgressForPath,
   getWaypointProgressForRetreat,
-} from "@/lib/db/queries-journey";
+  getUserCircleProgressAll,
+} from "@/lib/db/queries-paths";
 import type {
   ApiResponse,
-  JourneyPosition,
+  PathPosition,
   UserPathProgress,
   UserRetreatProgress,
   UserWaypointProgress,
+  UserCircleProgress,
 } from "@/types";
 
 type ProgressStats = {
@@ -25,7 +27,7 @@ type PathProgressWithStats = UserPathProgress & {
   retreatProgress: UserRetreatProgress[];
 };
 
-type JourneyProgressResponse = {
+type PathProgressResponse = {
   position: {
     pathId: string;
     pathName: string;
@@ -37,8 +39,11 @@ type JourneyProgressResponse = {
     requiredReadings: number;
     readingCount: number;
     nextAvailableAt: string | null;
+    circleName: string | null;
+    circleNumber: number | null;
   } | null;
   allProgress: PathProgressWithStats[];
+  circleProgress: UserCircleProgress[];
 };
 
 export async function GET() {
@@ -51,9 +56,10 @@ export async function GET() {
   }
 
   try {
-    const [journeyPosition, allPathProgress] = await Promise.all([
-      getJourneyPosition(user.id),
+    const [pathPosition, allPathProgress, allCircleProgress] = await Promise.all([
+      getPathPosition(user.id),
       getAllUserPathProgress(user.id),
+      getUserCircleProgressAll(user.id),
     ]);
 
     // Build per-path progress detail with stats, fetching retreat + waypoint
@@ -91,6 +97,7 @@ export async function GET() {
           id: pp.id,
           userId: pp.userId,
           pathId: pp.pathId,
+          circleProgressId: pp.circleProgressId ?? null,
           status: pp.status as UserPathProgress["status"],
           currentRetreatId: pp.currentRetreatId,
           currentWaypointId: pp.currentWaypointId,
@@ -115,6 +122,7 @@ export async function GET() {
               artifactThemes: (rp.artifactThemes as string[]) ?? [],
               artifactImageUrl: rp.artifactImageUrl,
               thresholdCardId: rp.thresholdCardId ?? null,
+              thresholdRetreatCardId: rp.thresholdRetreatCardId ?? null,
             })
           ),
         };
@@ -122,11 +130,11 @@ export async function GET() {
     );
 
     // Build the compact position object consumed by the reading setup UI.
-    let position: JourneyProgressResponse["position"] = null;
+    let position: PathProgressResponse["position"] = null;
 
-    if (journeyPosition) {
-      const { path, retreat, waypoint, waypointProgress } =
-        journeyPosition as JourneyPosition;
+    if (pathPosition) {
+      const { path, retreat, waypoint, waypointProgress, circle } =
+        pathPosition as PathPosition;
 
       const wpNextAt = (waypointProgress as { nextAvailableAt?: Date | null }).nextAvailableAt ?? null;
 
@@ -141,22 +149,25 @@ export async function GET() {
         requiredReadings: waypoint.requiredReadings,
         readingCount: waypointProgress.readingCount,
         nextAvailableAt: wpNextAt ? wpNextAt.toISOString() : null,
+        circleName: circle?.name ?? null,
+        circleNumber: circle?.circleNumber ?? null,
       };
     }
 
-    const data: JourneyProgressResponse = {
+    const data: PathProgressResponse = {
       position,
       allProgress: allProgressWithStats,
+      circleProgress: allCircleProgress,
     };
 
-    return NextResponse.json<ApiResponse<JourneyProgressResponse>>({
+    return NextResponse.json<ApiResponse<PathProgressResponse>>({
       success: true,
       data,
     });
   } catch (error) {
     console.error("[GET /api/paths/progress]", error);
     return NextResponse.json<ApiResponse<never>>(
-      { success: false, error: "Failed to load journey progress" },
+      { success: false, error: "Failed to load path progress" },
       { status: 500 }
     );
   }

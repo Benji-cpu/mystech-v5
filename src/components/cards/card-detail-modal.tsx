@@ -11,13 +11,14 @@ import { Loader2, AlertCircle, RotateCcw } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CardFeedbackButton } from "@/components/cards/card-feedback-button";
 import { CARD_TYPE_CONFIG } from "@/components/cards/card-type-config";
-import type { Card, CardFeedbackType, CardType } from "@/types";
+import { ORIGIN_SOURCE, type CardDetailData, type CardFeedbackType, type CardType } from "@/types";
 
 interface CardDetailModalProps {
-  card: Card | null;
+  card: CardDetailData | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onRetryImage?: (cardId: string) => void;
+  showFeedback?: boolean;
   feedbackMap?: Record<string, CardFeedbackType>;
   onFeedbackChange?: (cardId: string, feedback: CardFeedbackType | null) => void;
 }
@@ -27,6 +28,7 @@ export function CardDetailModal({
   open,
   onOpenChange,
   onRetryImage,
+  showFeedback = false,
   feedbackMap,
   onFeedbackChange,
 }: CardDetailModalProps) {
@@ -121,14 +123,16 @@ export function CardDetailModal({
                 {card.originContext && (
                   <div className="mt-3 pt-3 border-t border-white/5">
                     <p className="text-[10px] uppercase tracking-wider text-white/30 mb-1">
-                      Journey Origin
+                      {card.originContext.source === ORIGIN_SOURCE.CHRONICLE_EMERGENCE ? 'Emerged from Pattern' : 'Journey Origin'}
                     </p>
                     <p className="text-xs text-white/50">
-                      {card.originContext.retreatName
-                        ? `Forged during: ${card.originContext.retreatName} retreat`
-                        : card.originContext.source === 'obstacle_detection'
-                          ? `Pattern detected: ${card.originContext.detectedPattern ?? 'recurring card'}`
-                          : 'Earned through practice'}
+                      {card.originContext.source === ORIGIN_SOURCE.CHRONICLE_EMERGENCE
+                        ? `✦ ${card.originContext.detectedPattern ?? 'Emerged from your Chronicle'}`
+                        : card.originContext.retreatName
+                          ? `Forged during: ${card.originContext.retreatName} retreat`
+                          : card.originContext.source === ORIGIN_SOURCE.OBSTACLE_DETECTION
+                            ? `Pattern detected: ${card.originContext.detectedPattern ?? 'recurring card'}`
+                            : 'Earned through practice'}
                     </p>
                   </div>
                 )}
@@ -143,13 +147,15 @@ export function CardDetailModal({
         </p>
 
         {/* Feedback button */}
-        <div className="flex justify-center mt-2">
-          <CardFeedbackButton
-            cardId={card.id}
-            initialFeedback={feedbackMap?.[card.id] ?? null}
-            onFeedbackChange={onFeedbackChange}
-          />
-        </div>
+        {showFeedback && (
+          <div className="flex justify-center mt-2">
+            <CardFeedbackButton
+              cardId={card.id}
+              initialFeedback={feedbackMap?.[card.id] ?? null}
+              onFeedbackChange={onFeedbackChange}
+            />
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );
@@ -159,7 +165,7 @@ function CardImage({
   card,
   onRetryImage,
 }: {
-  card: Card;
+  card: CardDetailData;
   onRetryImage?: (cardId: string) => void;
 }) {
   if (card.imageStatus === "completed" && card.imageUrl) {
@@ -169,6 +175,12 @@ function CardImage({
         alt={card.title}
         className="h-full w-full object-cover"
       />
+    );
+  }
+
+  if (card.imageStatus === "none") {
+    return (
+      <div className="h-full w-full bg-gradient-to-b from-[#1a0530] via-[#0a0118] to-[#1a0530]" />
     );
   }
 

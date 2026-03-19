@@ -14,8 +14,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Send } from 'lucide-react';
 import { MicrophoneButton } from '@/components/voice/microphone-button';
-import { LyraSigil } from '@/components/guide/lyra-sigil';
 import { useImmersiveOptional } from '@/components/immersive/immersive-provider';
+import { useTextToSpeech } from '@/hooks/use-text-to-speech';
+import { useVoicePreferences } from '@/hooks/use-voice-preferences';
+import { useVoiceInput } from '@/hooks/use-voice-input';
 
 import {
   chronicleReducer,
@@ -28,42 +30,27 @@ import {
 } from './use-chronicle-state';
 import { ChronicleDialogue } from './chronicle-dialogue';
 import { CardForgingAnimation } from './card-forging-animation';
+import { EmergenceReveal } from './emergence-reveal';
 import { OracleCard } from '@/components/cards/oracle-card';
+import { buildChronicleGreeting } from '@/lib/ai/prompts/chronicle';
 
-import type { Card, CardImageStatus, ChronicleEntry, ChronicleSettings, JourneyPosition } from '@/types';
+import type { Card, CardImageStatus, CardType, ChronicleEntry, ChronicleKnowledge, ChronicleSettings, EmergenceEvent, PathPosition } from '@/types';
 
 // ── Springs ──────────────────────────────────────────────────────────────
 
 const ZONE_SPRING = { type: 'spring' as const, stiffness: 300, damping: 30 };
 const CONTENT_SPRING = { type: 'spring' as const, stiffness: 280, damping: 28 };
 
-// ── Greeting messages by time of day ─────────────────────────────────────
+// ── Time of day helper ───────────────────────────────────────────────────
 
-function getLyraGreeting(): string {
+function getTimeOfDay(): "morning" | "afternoon" | "evening" | "night" {
   const hour = new Date().getHours();
-  if (hour < 5)  return "The night holds its breath. What stirs within you at this quiet hour?";
-  if (hour < 12) return "Good morning. The day is fresh with possibility. What threads of your life shall we explore today?";
-  if (hour < 17) return "The afternoon light bends to listen. How have the hours been weaving themselves for you today?";
-  if (hour < 21) return "As evening descends, I am here. What has today placed in your hands — or taken away?";
-  return "The night deepens. Before you rest, let us tend to the threads of today. What wishes to be known?";
+  if (hour < 5) return "night";
+  if (hour < 12) return "morning";
+  if (hour < 17) return "afternoon";
+  if (hour < 21) return "evening";
+  return "night";
 }
-
-function getPathAwareGreeting(waypointName: string): string {
-  const hour = new Date().getHours();
-  if (hour < 5) return `The night is still. Today's waypoint — "${waypointName}" — waits for your reflection.`;
-  if (hour < 12) return `Good morning. Your path continues today through "${waypointName}." What has this theme been stirring in you?`;
-  if (hour < 17) return `The afternoon bends to listen. Today we walk with "${waypointName}." What comes to mind?`;
-  if (hour < 21) return `As evening descends, let us tend to "${waypointName}." What has the day revealed about this theme?`;
-  return `The night deepens. Before you rest, let us sit with "${waypointName}." What wishes to be known?`;
-}
-
-// ── Reflecting messages ───────────────────────────────────────────────────
-
-const REFLECTING_MESSAGES = [
-  "I see the threads of what you have shared... let me weave them into something tangible for you.",
-  "The patterns are coming together. Something is taking shape from the essence of today...",
-  "I am gathering the wisdom from our exchange, distilling it into a card born of this moment.",
-];
 
 // ── Props ─────────────────────────────────────────────────────────────────
 
@@ -81,7 +68,11 @@ interface ChronicleFlowProps {
   } | null;
   initialPhase: string;
   isFirstEntry?: boolean;
-  journeyPosition: JourneyPosition | null;
+  journeyPosition: PathPosition | null;
+  userName?: string;
+  knowledge?: ChronicleKnowledge | null;
+  recentEntries?: { mood: string | null; themes: string[]; cardTitle?: string }[];
+  pendingEmergence?: EmergenceEvent | null;
 }
 
 // ── ChronicleCard → Card adapter ──────────────────────────────────────────
@@ -178,6 +169,8 @@ interface ActionBarProps {
   onSend: () => void;
   onForge: () => void;
   onMicTranscript: (text: string, isFinal: boolean) => void;
+  onMicListeningChange: (isListening: boolean) => void;
+  onEmergenceAcknowledge?: () => void;
 }
 
 function ActionBar({
@@ -190,6 +183,8 @@ function ActionBar({
   isFirstEntry,
   onForge,
   onMicTranscript,
+  onMicListeningChange,
+  onEmergenceAcknowledge,
 }: ActionBarProps) {
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -200,7 +195,30 @@ function ActionBar({
     }
   };
 
-  if (phase === 'greeting' || phase === 'reflecting' || phase === 'card_forging') {
+  if (phase === 'emergence_reveal') {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={CONTENT_SPRING}
+      >
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={onEmergenceAcknowledge}
+          className={cn(
+            'w-full py-3 rounded-xl font-semibold text-sm',
+            'bg-white/10 border border-white/20 text-white/90',
+            'hover:bg-white/15 transition-colors duration-200',
+          )}
+        >
+          I See This
+        </motion.button>
+      </motion.div>
+    );
+  }
+
+  if (phase === 'greeting' || phase === 'card_forging') {
     return (
       <div className="h-11 flex items-center justify-center">
         <motion.div
@@ -237,12 +255,13 @@ function ActionBar({
             onKeyDown={handleKeyDown}
             placeholder="Share what's on your mind..."
             disabled={isStreaming}
-            maxLength={500}
+            maxLength={2000}
             rows={1}
             className="min-h-[44px] max-h-[120px] resize-none bg-white/5 border-white/10 text-white/90 placeholder:text-white/25 focus-visible:ring-[#c9a94e]/20 focus-visible:border-[#c9a94e]/40"
           />
           <MicrophoneButton
             onTranscript={onMicTranscript}
+            onListeningChange={onMicListeningChange}
           />
           <Button
             type="button"
@@ -254,6 +273,9 @@ function ActionBar({
             <Send className="h-4 w-4" />
           </Button>
         </div>
+        {inputValue.length > 1600 && (
+          <span className="text-xs text-white/30 text-right block">{inputValue.length}/2000</span>
+        )}
 
         {/* Forge CTA — shown after Lyra's wrap-up signal */}
         {canForge && (
@@ -313,13 +335,25 @@ export function ChronicleFlow({
   initialPhase,
   isFirstEntry = false,
   journeyPosition,
+  userName,
+  knowledge,
+  recentEntries,
+  pendingEmergence,
 }: ChronicleFlowProps) {
   const immersive = useImmersiveOptional();
   const setMoodPreset = immersive?.setMoodPreset;
 
+  // TTS integration
+  const { preferences: voicePrefs } = useVoicePreferences();
+  const tts = useTextToSpeech({
+    voiceId: voicePrefs.voiceId ?? undefined,
+    speed: voicePrefs.speed,
+    enabled: voicePrefs.enabled,
+  });
+
   // Normalise initialPhase to a known ChroniclePhase
   const resolvedInitialPhase = (() => {
-    const valid = ['idle', 'greeting', 'dialogue', 'reflecting', 'card_forging', 'card_reveal', 'reading', 'complete'];
+    const valid = ['idle', 'emergence_reveal', 'greeting', 'dialogue', 'card_forging', 'card_reveal', 'reading', 'complete'];
     return valid.includes(initialPhase) ? (initialPhase as ChronicleState['phase']) : 'idle';
   })();
 
@@ -331,16 +365,15 @@ export function ChronicleFlow({
   });
 
   const [inputValue, setInputValue] = useState('');
-  const [reflectingMsg, setReflectingMsg] = useState('');
   const [showBadge, setShowBadge] = useState(true);
+  const [emergenceCardRevealed, setEmergenceCardRevealed] = useState(false);
 
   // Refs for one-shot effects
-  const reflectingFired = useRef(false);
   const forgeFired = useRef(false);
   const readingFired = useRef(false);
   const completeFired = useRef(false);
 
-  const { phase, messages, isStreaming, lyraSignaledReady, card, miniReading, streakCount, newBadge, journeyRecorded, error } = state;
+  const { phase, messages, isStreaming, lyraSignaledReady, card, miniReading, streakCount, newBadge, journeyRecorded, error, emergenceCard, emergenceMessage, emergenceAcknowledged } = state;
 
   const canForge = useMemo(
     () => lyraSignaledReady && !isStreaming,
@@ -373,9 +406,9 @@ export function ChronicleFlow({
     if (!setMoodPreset) return;
     const moodMap: Record<string, string> = {
       idle: 'default',
+      emergence_reveal: emergenceCard?.cardType === 'threshold' ? 'golden' : 'reading-setup',
       greeting: 'reading-setup',
       dialogue: 'reading-setup',
-      reflecting: 'midnight',
       card_forging: 'forging',
       card_reveal: 'golden',
       reading: 'card-reveal',
@@ -383,7 +416,57 @@ export function ChronicleFlow({
     };
     const preset = moodMap[phase];
     if (preset) setMoodPreset(preset as Parameters<typeof setMoodPreset>[0]);
-  }, [phase, setMoodPreset]);
+  }, [phase, setMoodPreset, emergenceCard?.cardType]);
+
+  // ── Emergence: check for pending emergence on mount ─────────────────
+  const emergenceFired = useRef(false);
+
+  useEffect(() => {
+    if (emergenceFired.current) return;
+    if (!pendingEmergence || pendingEmergence.status !== 'ready' || !pendingEmergence.cardId) return;
+    // Only trigger emergence if we're about to start (idle or greeting phase, no conversation yet)
+    if (resolvedInitialPhase !== 'greeting' && resolvedInitialPhase !== 'idle') return;
+
+    emergenceFired.current = true;
+
+    // Fetch the emergence card data
+    fetch(`/api/cards/${pendingEmergence.cardId}`)
+      .then((res) => res.ok ? res.json() : null)
+      .then((data) => {
+        if (!data?.success || !data.data) return;
+        const c = data.data;
+        dispatch({
+          type: 'START_EMERGENCE',
+          card: {
+            id: c.id,
+            title: c.title,
+            meaning: c.meaning,
+            guidance: c.guidance,
+            imageUrl: c.imageUrl,
+            imageStatus: c.imageStatus,
+            cardType: c.cardType,
+            detectedPattern: pendingEmergence.detectedPattern,
+          },
+          message: pendingEmergence.lyraMessage ?? '',
+        });
+
+        // Fire-and-forget: mark as delivered
+        fetch('/api/chronicle/emergence/deliver', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ eventId: pendingEmergence.id }),
+        }).catch(() => {});
+      })
+      .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ── Safety net: if emergence reveal animation callback never fires ────
+  useEffect(() => {
+    if (phase !== 'emergence_reveal' || emergenceCardRevealed) return;
+    const timeout = setTimeout(() => setEmergenceCardRevealed(true), 8000);
+    return () => clearTimeout(timeout);
+  }, [phase, emergenceCardRevealed]);
 
   // ── Phase: greeting — push Lyra's greeting message ────────────────────
   // StrictMode-safe: uses cleanup `cancelled` flag instead of a persistent ref guard
@@ -395,9 +478,26 @@ export function ChronicleFlow({
 
     dispatch({ type: 'START_STREAMING' });
 
-    const greeting = journeyPosition
-      ? getPathAwareGreeting(journeyPosition.waypoint.name)
-      : getLyraGreeting();
+    const greeting = buildChronicleGreeting({
+      timeOfDay: getTimeOfDay(),
+      streakCount: settings?.streakCount ?? 0,
+      recentEntries,
+      knowledge,
+      userName,
+      journeyContext: journeyPosition
+        ? { waypointName: journeyPosition.waypoint.name, waypointLens: journeyPosition.waypoint.waypointLens }
+        : null,
+      emergenceContext: emergenceAcknowledged && emergenceCard
+        ? { cardTitle: emergenceCard.title, cardType: emergenceCard.cardType, detectedPattern: emergenceCard.detectedPattern }
+        : null,
+    });
+
+    // Speak the full greeting while it typewriters visually
+    if (voicePrefs.enabled) {
+      tts.stop();
+      tts.speak(greeting);
+    }
+
     let i = 0;
 
     function tick() {
@@ -419,23 +519,6 @@ export function ChronicleFlow({
 
     return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, journeyPosition]);
-
-  // ── Phase: reflecting — show a brief message then trigger forge ───────
-
-  useEffect(() => {
-    if (phase !== 'reflecting' || reflectingFired.current) return;
-    reflectingFired.current = true;
-
-    const msg = REFLECTING_MESSAGES[Math.floor(Math.random() * REFLECTING_MESSAGES.length)];
-    setReflectingMsg(msg);
-
-    // Transition to forging after message shown (longer pause for smoother transition)
-    const timer = setTimeout(() => {
-      dispatch({ type: 'REFLECTING_DONE' });
-    }, 3500);
-
-    return () => clearTimeout(timer);
   }, [phase]);
 
   // ── Phase: card_forging — call forge API ──────────────────────────────
@@ -469,6 +552,7 @@ export function ChronicleFlow({
     readingFired.current = true;
 
     dispatch({ type: 'START_READING' });
+    tts.stop(); // Stop any previous TTS before starting reading
 
     fetch('/api/chronicle/today/reading', {
       method: 'POST',
@@ -493,6 +577,13 @@ export function ChronicleFlow({
           const chunk = decoder.decode(value, { stream: true });
           accumulated += chunk;
           dispatch({ type: 'READING_STREAM_TOKEN', token: chunk });
+          if (voicePrefs.enabled) {
+            tts.pushToken(chunk);
+          }
+        }
+
+        if (voicePrefs.enabled) {
+          tts.flush();
         }
 
         dispatch({ type: 'READING_COMPLETE', miniReading: accumulated });
@@ -562,20 +653,18 @@ export function ChronicleFlow({
   useEffect(() => {
     if (phase === 'dialogue' && error) {
       forgeFired.current = false;
-      reflectingFired.current = false;
     }
   }, [phase, error]);
 
   // ── Handlers ─────────────────────────────────────────────────────────
 
-  const handleMicTranscript = useCallback((text: string, isFinal: boolean) => {
-    if (isFinal && text.trim()) {
-      setInputValue((prev) => {
-        const separator = prev.trim() ? ' ' : '';
-        return prev + separator + text;
-      });
-    }
-  }, []);
+  // useVoiceInput snapshots pre-speech text when mic activates, then replaces
+  // correctly with each cumulative Whisper update (avoids duplicate text)
+  const { handleTranscript: handleMicTranscript, handleListeningChange: handleMicListeningChange } = useVoiceInput({
+    value: inputValue,
+    onChange: setInputValue,
+    maxLength: 2000,
+  });
 
   const handleSend = useCallback(async () => {
     const content = inputValue.trim();
@@ -584,16 +673,21 @@ export function ChronicleFlow({
     setInputValue('');
     dispatch({ type: 'ADD_USER_MESSAGE', content });
     dispatch({ type: 'START_STREAMING' });
+    tts.stop(); // Stop any previous TTS before new response
 
     try {
       const res = await fetch('/api/chronicle/today/message', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: content, deckId }),
+        body: JSON.stringify({
+          message: content,
+          deckId,
+          emergenceEventId: emergenceAcknowledged ? pendingEmergence?.id : undefined,
+        }),
       });
 
       if (!res.ok) {
-        dispatch({ type: 'STREAM_COMPLETE', content: "I am having trouble hearing you. Please try again." });
+        dispatch({ type: 'STREAM_CANCEL', error: "Something went wrong. Please try again." });
         return;
       }
 
@@ -610,6 +704,13 @@ export function ChronicleFlow({
         const chunk = decoder.decode(value, { stream: true });
         accumulated += chunk;
         dispatch({ type: 'STREAM_TOKEN', token: chunk });
+        if (voicePrefs.enabled) {
+          tts.pushToken(chunk);
+        }
+      }
+
+      if (voicePrefs.enabled) {
+        tts.flush();
       }
 
       dispatch({ type: 'STREAM_COMPLETE', content: accumulated });
@@ -620,13 +721,13 @@ export function ChronicleFlow({
         dispatch({ type: 'LYRA_READY' });
       }
     } catch {
-      dispatch({ type: 'STREAM_COMPLETE', content: "The connection wavered. Please try again." });
+      dispatch({ type: 'STREAM_CANCEL', error: "The connection wavered. Please try again." });
     }
-  }, [inputValue, isStreaming, deckId, messages]);
+  }, [inputValue, isStreaming, deckId, messages, emergenceAcknowledged, pendingEmergence?.id]);
 
   const handleForge = useCallback(() => {
     if (!canForge) return;
-    dispatch({ type: 'START_REFLECTING' });
+    dispatch({ type: 'START_FORGING' });
   }, [canForge]);
 
   // ── Auto-transition: card_reveal → reading (or → /readings/new for journey users) ──
@@ -657,9 +758,10 @@ export function ChronicleFlow({
   const showDialogueZone = isDialogueZoneVisible(phase);
   const isReadingActive = isReadingZoneActive(phase);
 
-  // Card zone: dominant during forging, half during reveal, compact during reading/complete
+  // Card zone: dominant during forging, half during reveal/emergence, compact during reading/complete
   const cardZoneStyle = (() => {
-    if (phase === 'card_forging') return { flex: '0 0 65%' }; // Leave room for reflecting text
+    if (phase === 'emergence_reveal') return { flex: '0 0 55%' };
+    if (phase === 'card_forging') return { flex: '1 1 auto' };
     if (phase === 'card_reveal') return { flex: '0 0 50%' };
     if (phase === 'reading' || phase === 'complete') return { flex: '0 0 35%' };
     return { flex: 0 };
@@ -669,24 +771,34 @@ export function ChronicleFlow({
   const dialogueZoneFlex = (() => {
     if (!showDialogueZone) return 0;
     if (phase === 'card_reveal') return 0;
-    if (phase === 'card_forging') return 0.3; // Keep reflecting message partially visible during forge
+    if (phase === 'card_forging') return 0;
     return 1;
   })();
 
   // ── Render ────────────────────────────────────────────────────────────
 
   return (
-    <div className="-mx-4 sm:-mx-6 lg:-mx-8 -mt-6 h-[100dvh] flex flex-col overflow-hidden relative">
+    <div className="-mx-4 sm:-mx-6 lg:-mx-8 -mt-6 -mb-6 h-[100dvh] flex flex-col overflow-hidden relative">
       {/* ── CARD ZONE — always mounted, resizes ── */}
       <motion.div
         layout
-        className="min-h-0 overflow-hidden flex items-center justify-center px-4"
+        className="min-h-0 overflow-hidden flex items-center justify-center px-4 pt-14"
         animate={{
           ...cardZoneStyle,
           opacity: showCardZone ? 1 : 0,
         }}
         transition={ZONE_SPRING}
       >
+        {/* Emergence card — shown during emergence_reveal with full animation */}
+        {phase === 'emergence_reveal' && emergenceCard && (
+          <div className="absolute inset-0">
+            <EmergenceReveal
+              card={emergenceCard}
+              onCardRevealed={() => setEmergenceCardRevealed(true)}
+            />
+          </div>
+        )}
+
         {/* Forging animation */}
         <div
           className={cn(
@@ -705,7 +817,7 @@ export function ChronicleFlow({
             initial={{ opacity: 0, scale: 0.85 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={CONTENT_SPRING}
-            className="absolute flex flex-col items-center gap-3"
+            className="absolute inset-0 flex flex-col items-center justify-center gap-3"
           >
             <OracleCard
               card={toCard(card)}
@@ -745,25 +857,20 @@ export function ChronicleFlow({
         }}
       >
         <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-2 flex flex-col pt-4">
-          <div className="flex-1" />{/* pushes content to bottom when conversation is short */}
-          {/* Reflecting message */}
-          {phase === 'reflecting' && reflectingMsg && (
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="flex items-start gap-3 py-4"
-            >
-              <LyraSigil size="sm" state="speaking" />
-              <div className="flex-1 rounded-2xl px-4 py-3 bg-purple-950/60 border border-purple-500/15 text-sm text-white/80 leading-relaxed rounded-tl-sm">
-                {reflectingMsg}
-                <motion.span
-                  animate={{ opacity: [1, 0] }}
-                  transition={{ duration: 0.7, repeat: Infinity }}
-                  className="inline-block w-0.5 h-3.5 bg-[#c9a94e] ml-0.5 align-text-bottom"
-                />
-              </div>
-            </motion.div>
+          {/* Emergence reveal message — only shown after card animation completes */}
+          {phase === 'emergence_reveal' && emergenceMessage && emergenceCardRevealed && (
+            <div className="flex flex-col gap-4 py-2">
+              <div className="flex-1" />
+              <ChronicleDialogue
+                messages={[{ role: 'assistant', content: emergenceMessage }]}
+                isStreaming={false}
+              />
+            </div>
           )}
+
+          {(phase === 'greeting' || phase === 'dialogue') && (
+            <div className="flex-1" />
+          )}{/* pushes content to bottom when conversation is short */}
 
           {/* Chat messages */}
           {(phase === 'greeting' || phase === 'dialogue') && (
@@ -841,6 +948,8 @@ export function ChronicleFlow({
             onSend={handleSend}
             onForge={handleForge}
             onMicTranscript={handleMicTranscript}
+            onMicListeningChange={handleMicListeningChange}
+            onEmergenceAcknowledge={() => dispatch({ type: 'EMERGENCE_ACKNOWLEDGED' })}
           />
         </div>
       </motion.div>

@@ -8,6 +8,7 @@ import { eq, and, asc } from "drizzle-orm";
 import { DeckHeader } from "@/components/decks/deck-header";
 import { DeckViewClient } from "@/components/decks/deck-view-client";
 import { ChronicleDeckDetail } from "@/components/chronicle/chronicle-deck-detail";
+import { FirstDeckHint } from "@/components/guide/first-deck-hint";
 import { AnimatedPage } from "@/components/ui/animated-page";
 import { AnimatedItem } from "@/components/ui/animated-item";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -251,6 +252,8 @@ export default async function DeckViewPage({ params }: DeckViewPageProps) {
           ownerName={ownerName}
         />
       </AnimatedItem>
+      {/* First-visit hint for new users */}
+      <FirstDeckHint />
       {/* Card grid is the expensive part — suspend it so the header paints first */}
       <Suspense fallback={<DeckCardGridSkeleton />}>
         <DeckCardGrid deckId={deckId} userId={user.id!} deck={deckData} />

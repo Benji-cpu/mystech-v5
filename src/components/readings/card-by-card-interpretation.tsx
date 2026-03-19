@@ -152,13 +152,71 @@ export function CardByCardInterpretation({
         </span>
       </div>
 
+      {/* Progress indicator — hidden for single-card readings */}
+      {drawnCards.length > 1 && (
+        <div className="flex items-center gap-2 mb-4">
+          {drawnCards.length <= 6 ? (
+            <div className="flex items-center gap-1.5">
+              {drawnCards.map((_, idx) => (
+                <motion.div
+                  key={idx}
+                  animate={{
+                    width: idx === presentingCardIndex ? 16 : 6,
+                    opacity: idx < presentingCardIndex ? 0.5 : idx === presentingCardIndex ? 1 : 0.2,
+                  }}
+                  transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                  className="h-1.5 rounded-full bg-[#c9a94e]"
+                />
+              ))}
+            </div>
+          ) : (
+            <span className="text-xs text-[#c9a94e]/70 font-medium">
+              Card {presentingCardIndex + 1} of {drawnCards.length}
+            </span>
+          )}
+          <span className="text-xs text-white/30">
+            · {drawnCards[presentingCardIndex]?.positionName}
+          </span>
+        </div>
+      )}
+
       {/* Card sections — show 0 through presentingCardIndex */}
       <div className="space-y-6">
         <AnimatePresence mode="popLayout">
           {sections.slice(0, presentingCardIndex + 1).map((section, idx) => {
-            if (!section?.text) return null;
             const drawnCard = drawnCards[idx];
             const isCurrentCard = idx === presentingCardIndex;
+
+            if (!section?.text) {
+              return (
+                <motion.div
+                  key={`section-${idx}`}
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                >
+                  <p className="text-[#c9a94e] text-xs font-medium tracking-wider uppercase mb-1">
+                    {section?.positionName || drawnCard?.positionName || `Position ${idx + 1}`}
+                  </p>
+                  {drawnCard && (
+                    <p className="text-white/80 text-sm font-semibold mb-2">
+                      {drawnCard.card.title}
+                    </p>
+                  )}
+                  {isCurrentCard && isStreaming ? (
+                    <div className="flex items-center gap-2">
+                      <span className="inline-block w-1.5 h-4 bg-[#c9a94e]/70 animate-pulse" />
+                      <span className="text-sm text-white/40 italic">Lyra is reading...</span>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-white/40 italic">
+                      The cards whisper softly here... Lyra&apos;s interpretation was interrupted.
+                    </p>
+                  )}
+                </motion.div>
+              );
+            }
+
             const showCursor = isCurrentCard && isStreaming && !isCurrentSectionComplete;
 
             return (

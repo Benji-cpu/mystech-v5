@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth/helpers";
-import { getPathWithRetreatsAndWaypoints } from "@/lib/db/queries-journey";
+import { getPathWithRetreatsAndWaypoints } from "@/lib/db/queries-paths";
 import type { ApiResponse, PathWithRetreats } from "@/types";
 
 type Params = { params: Promise<{ pathId: string }> };

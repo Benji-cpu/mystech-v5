@@ -1,4 +1,4 @@
-import { getCardJourneyHistory } from "@/lib/db/queries-journey";
+import { getCardPathHistory } from "@/lib/db/queries-paths";
 
 export type ObstacleProposal = {
   triggerCardTitle: string;
@@ -20,7 +20,7 @@ export async function detectObstacleCandidate(
 ): Promise<ObstacleProposal | null> {
   if (cardIds.length === 0) return null;
 
-  const journeyHistory = await getCardJourneyHistory(
+  const journeyHistory = await getCardPathHistory(
     userId,
     cardIds,
     readingId,

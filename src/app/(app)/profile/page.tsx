@@ -16,6 +16,7 @@ import {
   getUserActivityFeed,
 } from "@/lib/db/queries";
 import { getUserPlanFromRole, getOrCreateUsageRecord, checkDailyReadings } from "@/lib/usage";
+import { resolveUserName } from "@/lib/auth/get-user-name";
 import { PLAN_LIMITS } from "@/lib/constants";
 import { getCurrentCelestialContext } from "@/lib/astrology/birth-chart";
 import { buildUnifiedFeed, splitFeedByCategory } from "@/lib/activity/build-unified-feed";
@@ -177,7 +178,7 @@ export default async function ProfilePage() {
     <AnimatedPage className="space-y-8 p-4 sm:p-6 lg:p-8">
       <AnimatedItem>
         <PageHeader
-          title={`Welcome, ${user.name ?? "Seeker"}`}
+          title={`Welcome, ${resolveUserName(user)}`}
           subtitle="Your profile and command center. Overview, settings, and account in one place."
           icon={User}
         />
@@ -186,7 +187,7 @@ export default async function ProfilePage() {
       <Suspense fallback={<ProfileContentSkeleton />}>
         <ProfileContent
           userId={user.id!}
-          userName={user.name ?? "Seeker"}
+          userName={resolveUserName(user)}
           userRole={(user as { role?: string }).role}
         />
       </Suspense>

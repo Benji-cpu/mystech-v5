@@ -6,6 +6,8 @@ import { cn } from "@/lib/utils";
 import { Lock, ChevronDown } from "lucide-react";
 import { PLAN_LIMITS, SPREAD_POSITIONS } from "@/lib/constants";
 import { SpreadPreviewSVG } from "./spread-preview-svg";
+import { ContextualHint } from "@/components/guide/contextual-hint";
+import { useOnboarding } from "@/components/guide/onboarding-provider";
 import type { PlanType, SpreadType } from "@/types";
 
 interface SpreadSelectorProps {
@@ -79,6 +81,8 @@ export function SpreadSelector({
     }
   };
 
+  const { hasMilestone, completeMilestone, stage } = useOnboarding();
+
   const effectivePlan: PlanType =
     userPlan ?? (userRole === "admin" ? "admin" : "free");
   const allowedSpreads = PLAN_LIMITS[effectivePlan].spreads as readonly string[];
@@ -86,8 +90,20 @@ export function SpreadSelector({
   const selectedLabel =
     SPREAD_OPTIONS.find((s) => s.type === selectedSpread)?.label ?? null;
 
+  // Show spread hint at stage 2+ if not yet seen
+  const showSpreadHint =
+    stage >= 2 && !hasMilestone("spread_types_introduced");
+
   const content = (
     <>
+      {showSpreadHint && (
+        <ContextualHint
+          message="Ready for more depth? Try a five-card spread for a richer reading."
+          autoDismissMs={10000}
+          onDismiss={() => completeMilestone("spread_types_introduced")}
+          className="mb-3"
+        />
+      )}
       {/* Mobile: compact list with dot previews */}
       <div className="space-y-2 sm:hidden">
         {SPREAD_OPTIONS.map((spread, idx) => {

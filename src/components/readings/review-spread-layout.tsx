@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
 import { OracleCard } from "@/components/cards/oracle-card";
 import { CardDetailModal } from "@/components/cards/card-detail-modal";
+import { useCardDetailModal } from "@/hooks/use-card-detail-modal";
 import { useResponsiveCardSize } from "@/hooks/use-responsive-card-size";
 import { SPREAD_LAYOUT_POSITIONS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
@@ -370,10 +370,10 @@ export function ReviewSpreadLayout({
     false
   );
 
-  const [selectedCard, setSelectedCard] = useState<Card | null>(null);
+  const { openCard, modalProps } = useCardDetailModal<Card>();
 
   const handleCardClick = (rc: ReviewCardData) => {
-    setSelectedCard(rc.card);
+    openCard(rc.card);
   };
 
   // Fall back to grid if card count doesn't match expected spread
@@ -381,11 +381,7 @@ export function ReviewSpreadLayout({
     return (
       <div className={cn(className)}>
         <FallbackGrid cards={cards} cardWidth={cardWidth} onCardClick={handleCardClick} />
-        <CardDetailModal
-          card={selectedCard}
-          open={!!selectedCard}
-          onOpenChange={(open) => !open && setSelectedCard(null)}
-        />
+        <CardDetailModal {...modalProps} />
       </div>
     );
   }
@@ -419,11 +415,7 @@ export function ReviewSpreadLayout({
         />
       )}
 
-      <CardDetailModal
-        card={selectedCard}
-        open={!!selectedCard}
-        onOpenChange={(open) => !open && setSelectedCard(null)}
-      />
+      <CardDetailModal {...modalProps} />
     </div>
   );
 }

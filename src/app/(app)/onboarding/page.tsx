@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { requireAuth } from "@/lib/auth/helpers";
+import { requireAuth, isAdmin } from "@/lib/auth/helpers";
 import { db } from "@/lib/db";
 import { users, decks, readings, artStyles } from "@/lib/db/schema";
 import { eq, and, ne, count } from "drizzle-orm";
@@ -8,6 +8,11 @@ import type { PresetArtStyleName } from "@/lib/ai/prompts/onboarding";
 
 export default async function OnboardingPage() {
   const user = await requireAuth();
+
+  // Admin bypass — always start at welcome for full arc testing
+  if (isAdmin(user as { role?: string })) {
+    return <InitiationShell initialPhase="welcome" />;
+  }
 
   // Check if initiation is already complete
   const [userData] = await db

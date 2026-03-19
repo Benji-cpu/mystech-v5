@@ -1,14 +1,13 @@
 "use client";
 
-import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Loader2, AlertCircle, RotateCcw } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CARD_TYPE_CONFIG } from "@/components/cards/card-type-config";
-import type { Card, CardType } from "@/types";
+import { ORIGIN_SOURCE, type CardDetailData, type CardType } from "@/types";
 
 interface OracleCardProps {
-  card: Card;
+  card: CardDetailData;
   onRetryImage?: () => void;
   size?: "sm" | "md" | "lg" | "fill";
   onClick?: () => void;
@@ -29,91 +28,42 @@ export function OracleCard({
   onClick,
   hideTitle,
 }: OracleCardProps) {
-  const [isFlipped, setIsFlipped] = useState(false);
-
   const cardType = (card.cardType ?? 'general') as CardType;
   const typeConfig = CARD_TYPE_CONFIG[cardType];
   const TypeIcon = typeConfig.icon;
   const isSpecial = cardType !== 'general';
 
-  const handleClick = () => {
-    if (onClick) {
-      onClick();
-      return;
-    }
-    setIsFlipped(!isFlipped);
-  };
-
   return (
     <div
-      className={cn("perspective-1000", sizeClasses[size])}
-      onClick={handleClick}
+      className={cn(sizeClasses[size], onClick && "cursor-pointer")}
+      onClick={onClick}
     >
-      <div
-        className={cn(
-          "relative aspect-[2/3] cursor-pointer transition-transform duration-500",
-          "[transform-style:preserve-3d]",
-          isFlipped && "[transform:rotateY(180deg)]"
+      <div className={cn(
+        "relative aspect-[2/3] rounded-xl overflow-hidden border bg-card shadow-lg",
+        typeConfig.borderClass,
+        typeConfig.glowClass,
+      )}>
+        <CardImage card={card} onRetryImage={onRetryImage} />
+        {isSpecial && (
+          <div className={cn(
+            "absolute top-2 left-2 z-10 flex h-6 w-6 items-center justify-center rounded-full",
+            typeConfig.badgeClass,
+          )}>
+            <TypeIcon className="h-3 w-3" />
+          </div>
         )}
-      >
-        {/* Front */}
-        <div className={cn(
-          "absolute inset-0 rounded-xl overflow-hidden border bg-card shadow-lg [backface-visibility:hidden]",
-          typeConfig.borderClass,
-          typeConfig.glowClass,
-        )}>
-          <CardImage card={card} onRetryImage={onRetryImage} />
-          {isSpecial && (
-            <div className={cn(
-              "absolute top-2 left-2 z-10 flex h-6 w-6 items-center justify-center rounded-full",
-              typeConfig.badgeClass,
-            )}>
-              <TypeIcon className="h-3 w-3" />
-            </div>
-          )}
-          {!hideTitle && (
-            <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-3 pt-8">
-              <h3 className="text-sm font-semibold text-white leading-tight">
-                {card.title}
-              </h3>
-            </div>
-          )}
-        </div>
-
-        {/* Back */}
-        <div className={cn(
-          "absolute inset-0 rounded-xl overflow-hidden border bg-card shadow-lg [backface-visibility:hidden] [transform:rotateY(180deg)]",
-          typeConfig.borderClass,
-          typeConfig.glowClass,
-        )}>
-          <div className="flex flex-col h-full p-4 overflow-y-auto bg-gradient-to-b from-[#0a0118] to-[#1a0530]">
-            {isSpecial && (
-              <p className="text-[9px] uppercase tracking-wider text-muted-foreground mb-1 flex items-center gap-1">
-                <TypeIcon className="h-2.5 w-2.5" />
-                {typeConfig.label}
-              </p>
-            )}
-            <h3 className="text-sm font-semibold text-[#c9a94e] mb-2">
+        {card.originContext?.source === ORIGIN_SOURCE.CHRONICLE_EMERGENCE && (
+          <span className="absolute top-2 right-2 z-10 text-[#c9a94e]/40 text-xs leading-none" aria-label="Emerged from pattern">
+            ✦
+          </span>
+        )}
+        {!hideTitle && (
+          <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-3 pt-8">
+            <h3 className="text-sm font-semibold text-white leading-tight">
               {card.title}
             </h3>
-            <div className="mb-3">
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
-                Meaning
-              </p>
-              <p className="text-xs text-foreground/90 leading-relaxed">
-                {card.meaning}
-              </p>
-            </div>
-            <div>
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
-                Guidance
-              </p>
-              <p className="text-xs text-foreground/80 leading-relaxed italic">
-                {card.guidance}
-              </p>
-            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
@@ -123,7 +73,7 @@ function CardImage({
   card,
   onRetryImage,
 }: {
-  card: Card;
+  card: CardDetailData;
   onRetryImage?: () => void;
 }) {
   if (card.imageStatus === "completed" && card.imageUrl) {
@@ -133,6 +83,12 @@ function CardImage({
         alt={card.title}
         className="h-full w-full object-cover"
       />
+    );
+  }
+
+  if (card.imageStatus === "none") {
+    return (
+      <div className="h-full w-full bg-gradient-to-b from-[#1a0530] via-[#0a0118] to-[#1a0530]" />
     );
   }
 

@@ -1,17 +1,26 @@
 'use client';
 
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { CheckCircle2, Circle, Dot } from 'lucide-react';
-import type { Waypoint, UserWaypointProgress } from '@/types';
+import { CheckCircle2, Circle, Dot, Headphones } from 'lucide-react';
+import { PracticeScreen } from '@/components/practices/practice-screen';
+import type { Waypoint, UserWaypointProgress, PracticeWithSegments } from '@/types';
 
 type RetreatState = 'completed' | 'active' | 'future';
+
+type PracticeProgressEntry = {
+  practiceId: string;
+  completed: boolean;
+  playCount: number;
+};
 
 interface WaypointProgressProps {
   waypoints: Waypoint[];
   currentWaypointId: string | null;
   waypointProgressList: UserWaypointProgress[];
   retreatState: RetreatState;
+  practiceProgressMap?: Map<string, PracticeProgressEntry>;
   className?: string;
 }
 
@@ -20,6 +29,7 @@ export function WaypointProgress({
   currentWaypointId,
   waypointProgressList,
   retreatState,
+  practiceProgressMap,
   className,
 }: WaypointProgressProps) {
   const progressByWaypointId = new Map(
@@ -42,6 +52,7 @@ export function WaypointProgress({
 
           const readingsDone = progress?.readingCount ?? 0;
           const readingsRequired = waypoint.requiredReadings;
+          const practiceProgress = practiceProgressMap?.get(waypoint.id) ?? null;
 
           return (
             <motion.div
@@ -136,11 +147,91 @@ export function WaypointProgress({
                     />
                   </div>
                 )}
+
+                {/* Practice callout — show when readings met, practice exists but not completed */}
+                {isCurrent && practiceProgress && !practiceProgress.completed && readingsDone >= readingsRequired && (
+                  <PracticeCallout waypointId={waypoint.id} />
+                )}
+
+                {/* Practice completed indicator */}
+                {practiceProgress?.completed && (
+                  <div className="mt-1.5 flex items-center gap-1.5">
+                    <Headphones className="h-3 w-3 text-emerald-400/70" />
+                    <span className="text-[10px] text-emerald-400/70">
+                      Practice complete{practiceProgress.playCount > 1 ? ` (${practiceProgress.playCount}x)` : ''}
+                    </span>
+                  </div>
+                )}
               </div>
             </motion.div>
           );
         })}
       </div>
     </div>
+  );
+}
+
+/**
+ * Practice callout — fetches practice data and opens the practice screen overlay.
+ */
+function PracticeCallout({ waypointId }: { waypointId: string }) {
+  const [practiceData, setPracticeData] = useState<PracticeWithSegments | null>(null);
+  const [showPractice, setShowPractice] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  async function handleBeginPractice() {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/practices/${waypointId}`);
+      const json = await res.json();
+      if (json.success && json.data?.practice) {
+        setPracticeData(json.data.practice);
+        setShowPractice(true);
+      }
+    } catch {
+      // Silently fail
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <>
+      <motion.button
+        onClick={handleBeginPractice}
+        disabled={loading}
+        className={cn(
+          'mt-2 w-full rounded-lg p-2.5',
+          'bg-[#c9a94e]/10 border border-[#c9a94e]/25',
+          'flex items-center gap-2',
+          'hover:bg-[#c9a94e]/15 transition-colors',
+          'disabled:opacity-50',
+        )}
+        whileHover={{ scale: 1.01 }}
+        whileTap={{ scale: 0.99 }}
+      >
+        <Headphones className="h-4 w-4 text-[#c9a94e] shrink-0" />
+        <div className="text-left flex-1">
+          <p className="text-xs text-[#c9a94e] font-medium">
+            {loading ? 'Loading...' : 'Begin Practice'}
+          </p>
+          <p className="text-[10px] text-[#c9a94e]/60">
+            Complete the guided meditation to advance
+          </p>
+        </div>
+      </motion.button>
+
+      {showPractice && practiceData && (
+        <PracticeScreen
+          practice={practiceData}
+          onComplete={() => {
+            setShowPractice(false);
+            // Page will refresh to show updated state
+            window.location.reload();
+          }}
+          onClose={() => setShowPractice(false)}
+        />
+      )}
+    </>
   );
 }

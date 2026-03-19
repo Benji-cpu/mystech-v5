@@ -161,6 +161,13 @@ export const LYRA_FORGING_MESSAGES = [
   "Almost there...",
 ] as const;
 
+// OBSTACLE REVEAL (indexed by obstacleCount - 1)
+export const LYRA_OBSTACLE_REVEAL = [
+  "I sensed something beneath the surface. One card holds a mirror to it.",
+  "There are shadows woven in. I gave them a name \u2014 you'll know them when you see them.",
+  "The deck carries some weight. I named what I sensed \u2014 three cards that ask you to look closer.",
+] as const;
+
 // GENERATION PROGRESS
 export const LYRA_GENERATION = {
   inProgress: "Painting your cards...",
@@ -199,6 +206,38 @@ export const LYRA_DASHBOARD = {
   },
 } as const;
 
+// ── INVITATION MESSAGES (dashboard hero) ─────────────────────────────
+
+export const LYRA_INVITATION_MESSAGES = {
+  createDeck: [
+    "Your deck is waiting to be born. Let's shape it from your own story.",
+    "No borrowed symbols here — let's create cards that are truly yours.",
+    "Every oracle begins with a single deck. Let's make yours.",
+  ],
+  firstReading: [
+    "Your cards are ready to speak. Shall we see what they reveal?",
+    "The deck is alive now. Let's draw and see what surfaces.",
+    "Your first reading is a conversation with yourself. Let's begin.",
+  ],
+  chronicle: {
+    withStreak: (days: number) =>
+      `${days} days and counting. Your Chronicle awaits today's thread.`,
+    noStreak: "Your Chronicle is open. Let's add today's thread.",
+  },
+  continuePath: (waypointName: string) =>
+    `${waypointName} is still unfolding. Pick up where you left off.`,
+  reflective: [
+    "All caught up. The cards are here whenever you need them.",
+    "A quiet moment. Sometimes the best insights arrive uninvited.",
+    "Nothing pressing — just the cards, waiting if you want them.",
+  ],
+  postInitiation: [
+    "Welcome. Your sanctuary is ready.",
+    "You've arrived. This is your space now.",
+    "The cards know you. Let's see where they lead.",
+  ],
+} as const;
+
 // PATHS
 export const LYRA_PATHS = {
   subtitle:
@@ -235,16 +274,16 @@ export const LYRA_ONBOARDING_MESSAGES = [
 
 export const INITIATION_WELCOME_STEPS = [
   {
-    text: "Hello. I'm Lyra — your guide in the cards. This won't be like anything you've tried before.",
-    label: "A new kind of oracle",
+    text: "I'm Lyra. I've watched a great many people try to understand themselves through borrowed symbols, other people's archetypes. What we're going to do is different.",
+    label: "",
   },
   {
-    text: "The cards we'll create won't be borrowed from someone else's deck. They'll be drawn from your own life — your experiences, your symbols, your story.",
-    label: "Your story, made visible",
+    text: "Your deck won't come from a tradition. It will come from your life — your specific experiences, your particular symbols, what has shaped you. Cards no one else has.",
+    label: "",
   },
   {
-    text: "Before we begin, I have one question for you. Just one. Take a moment before you answer.",
-    label: "One question",
+    text: "But first I need to understand what brought you here. One question — the rest will follow from it.",
+    label: "",
   },
 ] as const;
 
@@ -260,8 +299,25 @@ export const INITIATION_GENERATING_MESSAGES = [
   "Almost ready...",
 ] as const;
 
+export const INITIATION_STAGE_MESSAGES: Record<string, readonly string[]> = {
+  selecting_style: [
+    "Reading the threads...",
+    "Sensing the right imagery...",
+    "Choosing a visual language...",
+  ],
+  generating_deck: [
+    "Shaping the cards...",
+    "Naming what wants to be named...",
+    "Weaving the symbols...",
+  ],
+  finalizing: [
+    "Almost ready...",
+    "Your deck is taking form...",
+  ],
+} as const;
+
 export const INITIATION_ART_STYLE_REVEAL_TEMPLATE =
-  "Lyra senses {name} speaks to your path.";
+  "You're drawn to {name}. Let it guide the imagery.";
 
 export function buildArtStyleRevealMessage(artStyleName: string): string {
   return INITIATION_ART_STYLE_REVEAL_TEMPLATE.replace("{name}", artStyleName);

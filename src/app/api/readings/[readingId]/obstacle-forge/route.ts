@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { cards, decks, readings, readingJourneyContext } from "@/lib/db/schema";
+import { retreatCards, readings, readingPathContext } from "@/lib/db/schema";
 import { getCurrentUser } from "@/lib/auth/helpers";
-import { getPreferredDeckForPathCards, getPathById } from "@/lib/db/queries-journey";
-import { getArtStyleById } from "@/lib/db/queries";
-import { generateCardImage } from "@/lib/ai/image-generation";
-import { eq, and, sql } from "drizzle-orm";
-import type { ApiResponse, Card } from "@/types";
+import { getPathById } from "@/lib/db/queries-paths";
+import { eq, and } from "drizzle-orm";
+import { ORIGIN_SOURCE, type ApiResponse, type RetreatCard } from "@/types";
 
 type Params = { params: Promise<{ readingId: string }> };
 
@@ -53,42 +51,27 @@ export async function POST(request: NextRequest, { params }: Params) {
   // Get journey context
   const [journeyCtx] = await db
     .select()
-    .from(readingJourneyContext)
-    .where(eq(readingJourneyContext.readingId, readingId));
-
-  // Find target deck
-  const targetDeck = await getPreferredDeckForPathCards(user.id, retreatId);
-  if (!targetDeck) {
-    return NextResponse.json<ApiResponse<never>>(
-      { success: false, error: "No suitable deck found" },
-      { status: 400 }
-    );
-  }
+    .from(readingPathContext)
+    .where(eq(readingPathContext.readingId, readingId));
 
   // Get path info for origin context
   const path = journeyCtx ? await getPathById(journeyCtx.pathId) : null;
 
-  // Determine next card number
-  const [countResult] = await db
-    .select({ count: sql<number>`count(*)::int` })
-    .from(cards)
-    .where(eq(cards.deckId, targetDeck.id));
-  const nextCardNumber = (countResult?.count ?? 0) + 1;
-
-  // Insert obstacle card — no credit deduction
+  // Insert into retreatCards (not user deck cards)
   const [card] = await db
-    .insert(cards)
+    .insert(retreatCards)
     .values({
-      deckId: targetDeck.id,
-      cardNumber: nextCardNumber,
+      retreatId,
+      cardType: "obstacle",
+      source: "obstacle_detection",
       title,
       meaning,
       guidance,
       imagePrompt,
-      imageStatus: "generating",
-      cardType: "obstacle",
+      imageStatus: "pending",
+      userId: user.id,
       originContext: {
-        source: "obstacle_detection",
+        source: ORIGIN_SOURCE.OBSTACLE_DETECTION,
         pathId: journeyCtx?.pathId,
         pathName: path?.name,
         retreatId,
@@ -99,39 +82,25 @@ export async function POST(request: NextRequest, { params }: Params) {
     })
     .returning();
 
-  // Increment deck card count
-  await db
-    .update(decks)
-    .set({
-      cardCount: sql`${decks.cardCount} + 1`,
-      updatedAt: new Date(),
-    })
-    .where(eq(decks.id, targetDeck.id));
-
-  // Fire-and-forget image generation — no credit deduction
-  const artStylePrompt = targetDeck.artStyleId
-    ? (await getArtStyleById(targetDeck.artStyleId))?.stylePrompt ?? ""
-    : "";
-  generateCardImage(card.id, imagePrompt, artStylePrompt, targetDeck.id).catch(
-    (err) => console.error("[obstacle-forge] image generation error:", err)
-  );
-
-  const data: Card = {
+  const data: RetreatCard = {
     id: card.id,
-    deckId: card.deckId,
-    cardNumber: card.cardNumber,
+    retreatId: card.retreatId,
+    cardType: card.cardType as RetreatCard["cardType"],
+    source: card.source as RetreatCard["source"],
     title: card.title,
     meaning: card.meaning,
     guidance: card.guidance,
     imageUrl: card.imageUrl,
     imagePrompt: card.imagePrompt,
-    imageStatus: card.imageStatus as Card["imageStatus"],
-    cardType: card.cardType as Card["cardType"],
-    originContext: card.originContext ?? null,
+    imageStatus: (card.imageStatus ?? "pending") as RetreatCard["imageStatus"],
+    sortOrder: card.sortOrder ?? 0,
+    userId: card.userId,
+    originContext: card.originContext as RetreatCard["originContext"],
     createdAt: card.createdAt,
+    updatedAt: card.updatedAt,
   };
 
-  return NextResponse.json<ApiResponse<Card>>(
+  return NextResponse.json<ApiResponse<RetreatCard>>(
     { success: true, data },
     { status: 201 }
   );

@@ -6,7 +6,7 @@ import { db } from "@/lib/db";
 import { artStyles } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import {
-  ONBOARDING_ART_STYLE_SYSTEM_PROMPT,
+  buildArtStyleSystemPrompt,
   buildArtStyleSelectionPrompt,
   ART_STYLE_SCHEMA,
   type PresetArtStyleName,
@@ -34,13 +34,20 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  if (userInput.trim().length < 10) {
+    return NextResponse.json<ApiResponse<never>>(
+      { success: false, error: "userInput must be at least 10 characters" },
+      { status: 400 }
+    );
+  }
+
   let artStyleName: PresetArtStyleName = FALLBACK_STYLE;
 
   try {
     const result = await generateObject({
       model: geminiModel,
       schema: ART_STYLE_SCHEMA,
-      system: ONBOARDING_ART_STYLE_SYSTEM_PROMPT,
+      system: buildArtStyleSystemPrompt(),
       prompt: buildArtStyleSelectionPrompt(userInput),
     });
     artStyleName = result.object.artStyleName;

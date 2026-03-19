@@ -7,6 +7,9 @@ import { PageTransitionWrapper } from "./page-transition-wrapper";
 import { FloatingOrb } from "./floating-orb";
 import { FocusHeader } from "./focus-header";
 import { PromptFabProvider } from "@/components/admin/prompt-fab";
+import { OnboardingProvider } from "@/components/guide/onboarding-provider";
+import { NavTutorial } from "@/components/guide/nav-tutorial";
+import type { OnboardingMilestone, OnboardingStage } from "@/types";
 
 const AmbientBackground = dynamic(
   () =>
@@ -24,31 +27,44 @@ interface ImmersiveShellProps {
     image?: string | null;
     role?: string;
   };
+  initialMilestones?: OnboardingMilestone[];
+  initialStage?: OnboardingStage;
 }
 
-export function ImmersiveShell({ children, user }: ImmersiveShellProps) {
+export function ImmersiveShell({
+  children,
+  user,
+  initialMilestones,
+  initialStage,
+}: ImmersiveShellProps) {
   return (
     <ImmersiveProvider>
-      <div className="relative min-h-dvh">
-        {/* Background: fixed, full bleed, z-0 */}
-        <div className="fixed inset-0 z-0 bg-[#0a0118]">
-          <AmbientBackground />
-        </div>
+      <OnboardingProvider
+        initialMilestones={initialMilestones}
+        initialStage={initialStage}
+      >
+        <div className="relative min-h-dvh">
+          {/* Background: fixed, full bleed, z-0 */}
+          <div className="fixed inset-0 z-0 bg-[#0a0118]">
+            <AmbientBackground />
+          </div>
 
-        {/* Content: above background, scrollable, z-10 */}
-        <div className="relative z-10 min-h-dvh">
-          <PageTransitionWrapper>
-            <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
-              {children}
-            </main>
-          </PageTransitionWrapper>
-        </div>
+          {/* Content: above background, scrollable, z-10 */}
+          <div className="relative z-10 min-h-dvh">
+            <PageTransitionWrapper>
+              <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
+                {children}
+              </main>
+            </PageTransitionWrapper>
+          </div>
 
-        {/* Navigation: fixed overlay — FloatingOrb (z-50) or FocusHeader (z-40), mutually exclusive */}
-        <FloatingOrb />
-        <FocusHeader />
-        <PromptFabProvider />
-      </div>
+          {/* Navigation: fixed overlay — FloatingOrb (z-50) or FocusHeader (z-40), mutually exclusive */}
+          <FloatingOrb />
+          <FocusHeader />
+          <NavTutorial />
+          <PromptFabProvider />
+        </div>
+      </OnboardingProvider>
     </ImmersiveProvider>
   );
 }

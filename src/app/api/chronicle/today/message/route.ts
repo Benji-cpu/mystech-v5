@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { streamText } from "ai";
 import { db } from "@/lib/db";
-import { chronicleEntries } from "@/lib/db/schema";
+import { chronicleEntries, cards } from "@/lib/db/schema";
 import { getCurrentUser } from "@/lib/auth/helpers";
 import { geminiModel, geminiProModel } from "@/lib/ai/gemini";
 import {
@@ -10,8 +10,10 @@ import {
   getChronicleSettings,
   getChronicleKnowledge,
   getRecentChronicleEntries,
+  getUserDisplayName,
+  getUserPlan,
+  getEmergenceEventForUser,
 } from "@/lib/db/queries";
-import { getUserPlan } from "@/lib/db/queries";
 import { getUserPlanFromRole } from "@/lib/usage";
 import {
   CHRONICLE_CONVERSATION_SYSTEM_PROMPT,
@@ -19,7 +21,7 @@ import {
 } from "@/lib/ai/prompts/chronicle";
 import { eq } from "drizzle-orm";
 import { createId } from "@paralleldrive/cuid2";
-import { getJourneyPosition } from "@/lib/db/queries-journey";
+import { getPathPosition } from "@/lib/db/queries-paths";
 import type { ChronicleConversationMessage } from "@/types";
 
 export const maxDuration = 60;
@@ -33,11 +35,21 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { message } = body as { message?: string };
+  const { message, emergenceEventId } = body as {
+    message?: string;
+    emergenceEventId?: string;
+  };
 
   if (!message?.trim()) {
     return new Response(
       JSON.stringify({ error: "message is required" }),
+      { status: 400 }
+    );
+  }
+
+  if (message.length > 2000) {
+    return new Response(
+      JSON.stringify({ error: "Message too long (max 2000 characters)" }),
       { status: 400 }
     );
   }
@@ -108,12 +120,33 @@ export async function POST(request: NextRequest) {
     .where(eq(chronicleEntries.id, entry.id));
 
   // Build context for Lyra
-  const [knowledge, recentEntries, settings, journeyPosition] = await Promise.all([
+  const [knowledge, recentEntries, settings, pathPosition, userName] = await Promise.all([
     getChronicleKnowledge(user.id),
     getRecentChronicleEntries(user.id, 5),
     getChronicleSettings(deck.id),
-    getJourneyPosition(user.id),
+    getPathPosition(user.id),
+    getUserDisplayName(user.id),
   ]);
+
+  // Resolve emergence context server-side from DB (never trust client data)
+  let emergenceContext: { cardTitle: string; cardType: string; detectedPattern: string } | null = null;
+  if (emergenceEventId) {
+    const event = await getEmergenceEventForUser(emergenceEventId, user.id);
+    if (event && (event.status === 'ready' || event.status === 'delivered') && event.cardId) {
+      const [cardRow] = await db
+        .select({ title: cards.title, cardType: cards.cardType })
+        .from(cards)
+        .where(eq(cards.id, event.cardId))
+        .limit(1);
+      if (cardRow) {
+        emergenceContext = {
+          cardTitle: cardRow.title,
+          cardType: cardRow.cardType,
+          detectedPattern: event.detectedPattern,
+        };
+      }
+    }
+  }
 
   const contextInjection = buildChronicleConversationContext({
     knowledge,
@@ -123,16 +156,18 @@ export async function POST(request: NextRequest) {
       entryDate: e.entryDate,
     })),
     interests: settings?.interests ?? null,
-    journeyContext: journeyPosition
+    userName,
+    journeyContext: pathPosition
       ? {
-          pathName: journeyPosition.path.name,
-          retreatName: journeyPosition.retreat.name,
-          waypointName: journeyPosition.waypoint.name,
-          pathLens: journeyPosition.path.interpretiveLens,
-          retreatLens: journeyPosition.retreat.retreatLens,
-          waypointLens: journeyPosition.waypoint.waypointLens,
+          pathName: pathPosition.path.name,
+          retreatName: pathPosition.retreat.name,
+          waypointName: pathPosition.waypoint.name,
+          pathLens: pathPosition.path.interpretiveLens,
+          retreatLens: pathPosition.retreat.retreatLens,
+          waypointLens: pathPosition.waypoint.waypointLens,
         }
       : null,
+    emergenceContext,
   });
 
   // Build messages array for AI

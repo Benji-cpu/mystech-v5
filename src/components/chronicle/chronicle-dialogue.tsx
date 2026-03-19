@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { LyraSigil } from '@/components/guide/lyra-sigil';
@@ -14,6 +14,11 @@ interface ChronicleDialogueProps {
   className?: string;
 }
 
+// ── Collapsible threshold ────────────────────────────────────────────────
+
+const COLLAPSE_THRESHOLD = 300;
+const PREVIEW_LENGTH = 250;
+
 // ── Message bubble ────────────────────────────────────────────────────────
 
 interface MessageBubbleProps {
@@ -25,6 +30,12 @@ interface MessageBubbleProps {
 function MessageBubble({ message, isLast, isStreaming }: MessageBubbleProps) {
   const isAssistant = message.role === 'assistant';
   const showCursor = isAssistant && isLast && isStreaming;
+  const isLong = !isAssistant && message.content.length > COLLAPSE_THRESHOLD;
+  const [expanded, setExpanded] = useState(false);
+
+  const displayContent = isLong && !expanded
+    ? message.content.slice(0, PREVIEW_LENGTH) + '...'
+    : message.content;
 
   return (
     <motion.div
@@ -32,13 +43,13 @@ function MessageBubble({ message, isLast, isStreaming }: MessageBubbleProps) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ type: 'spring', stiffness: 300, damping: 30 }}
       className={cn(
-        'flex gap-2.5 max-w-[88%]',
+        'flex gap-3 max-w-[88%]',
         isAssistant ? 'self-start items-start' : 'self-end flex-row-reverse'
       )}
     >
       {/* Lyra avatar — only for assistant messages */}
       {isAssistant && (
-        <div className="shrink-0 mt-1">
+        <div className="shrink-0 mt-1.5 w-8 h-8 flex items-center justify-center">
           <LyraSigil
             size="sm"
             state={isLast && isStreaming ? 'speaking' : 'dormant'}
@@ -55,13 +66,21 @@ function MessageBubble({ message, isLast, isStreaming }: MessageBubbleProps) {
             : 'bg-[#c9a94e]/12 border border-[#c9a94e]/20 text-white/90 rounded-tr-sm'
         )}
       >
-        <span className="whitespace-pre-wrap">{message.content}</span>
+        <span className="whitespace-pre-wrap">{displayContent}</span>
         {showCursor && (
           <motion.span
             animate={{ opacity: [1, 0] }}
             transition={{ duration: 0.7, repeat: Infinity }}
             className="inline-block w-0.5 h-3.5 bg-[#c9a94e] ml-0.5 align-text-bottom"
           />
+        )}
+        {isLong && (
+          <button
+            onClick={() => setExpanded(!expanded)}
+            className="block mt-1.5 text-xs text-[#c9a94e]/60 hover:text-[#c9a94e]/90 transition-colors"
+          >
+            {expanded ? 'Show less' : 'Read more'}
+          </button>
         )}
       </div>
     </motion.div>

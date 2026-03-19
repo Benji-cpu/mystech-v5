@@ -1,6 +1,6 @@
 "use client";
 
-import { useReducer, useEffect, useRef, useCallback, useMemo, useState } from "react";
+import { useReducer, useEffect, useRef, useCallback, useMemo, useState, type CSSProperties } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -19,6 +19,7 @@ import { LyraSigil } from "@/components/guide/lyra-sigil";
 import { DeckSelector } from "./deck-selector";
 import { SpreadSelector } from "./spread-selector";
 import { IntentionInput } from "./intention-input";
+import { ChronicleContextPanel } from "./chronicle-context-panel";
 import { CeremonySpreadLayout } from "./ceremony-spread-layouts";
 import { CardByCardInterpretation } from "./card-by-card-interpretation";
 import { ReadingFlipCard } from "./reading-flip-card";
@@ -110,7 +111,7 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
     readingFlowReducer,
     initialReadingFlowState
   );
-  const { setMoodPreset, exitFocusMode } = useImmersive();
+  const { setMoodPreset } = useImmersive();
 
   // Default guided completion handler — marks initiation complete + navigates to dashboard
   const handleInitiationComplete = useCallback(async () => {
@@ -237,8 +238,8 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
   const initialActiveSection = useMemo((): SetupSection => {
     const saved = loadDefaults();
     if (decks.length === 1) {
-      // Single deck auto-selected — skip to spreads or intention
-      if (saved?.spreadType) return "intention";
+      // Single deck auto-selected — skip to spreads or collapse all
+      if (saved?.spreadType) return null;
       return "spreads";
     }
     if (!saved || saved.deckIds.length === 0) return "decks";
@@ -247,7 +248,7 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
     );
     if (validDeckIds.length === 0) return "decks";
     if (!saved.spreadType) return "spreads";
-    return "intention";
+    return null;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // only on mount — decks is stable from SSR
 
@@ -283,7 +284,7 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
       !spreadAutoAdvanceFired.current
     ) {
       spreadAutoAdvanceFired.current = true;
-      const timer = setTimeout(() => setActiveSection("intention"), 300);
+      const timer = setTimeout(() => setActiveSection(null), 300);
       return () => clearTimeout(timer);
     }
   }, [selectedSpread, activeSection]);
@@ -306,8 +307,7 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
 
   useEffect(() => {
     setMoodPreset(MOOD_MAP[phase]);
-    if (phase !== "setup") exitFocusMode();
-  }, [phase, setMoodPreset, exitFocusMode]);
+  }, [phase, setMoodPreset]);
 
   // ── Responsive card sizing ─────────────────────────────────────────────
 
@@ -315,6 +315,23 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
   const fullSize = useResponsiveCardSize(actualCardCount, false);
   const compactSize = useResponsiveCardSize(actualCardCount, true);
   const currentSize = isPresenting ? compactSize : fullSize;
+
+  // ── Card zone height — computed from actual card dimensions ───────────
+  const cardZoneStyle = useMemo((): CSSProperties | undefined => {
+    if (!isPresenting || isCelticPresenting) return undefined;
+    const { cardHeight, gap, isMobile } = compactSize;
+    const padding = 48; // 24px breathing room top + bottom
+
+    if (isMobile) {
+      if (selectedSpread === "five_card") {
+        // Mobile 5-card uses 3-row cross layout
+        return { flex: "none", height: cardHeight * 3 + gap * 2 + padding };
+      }
+      // single or three_card — single horizontal row
+      return { flex: "none", height: cardHeight + padding };
+    }
+    return undefined;
+  }, [isPresenting, isCelticPresenting, compactSize, selectedSpread]);
 
   // ── Sequential reveal hook ────────────────────────────────────────────
 
@@ -348,7 +365,10 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
   // ── Chronicle card ────────────────────────────────────────────────────
 
   type ChronicleCardPreview = { id: string; title: string };
+  type ChronicleMessage = { role: "user" | "assistant"; content: string };
   const [todayChronicleCard, setTodayChronicleCard] = useState<ChronicleCardPreview | null>(null);
+  const [chronicleConversation, setChronicleConversation] = useState<ChronicleMessage[] | null>(null);
+  const [chronicleNotes, setChronicleNotes] = useState("");
   const chronicleFetched = useRef(false);
 
   useEffect(() => {
@@ -362,13 +382,16 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
           setTodayChronicleCard(card);
           dispatch({ type: "SET_CHRONICLE_CARD", chronicleCardId: card.id });
         }
+        if (data.success && data.data?.entry?.conversation?.length) {
+          setChronicleConversation(data.data.entry.conversation as ChronicleMessage[]);
+        }
       })
       .catch(() => {});
   }, []);
 
-  // ── Journey position (Path + Retreat + Waypoint) ──────────────────────
+  // ── Path position (Path + Retreat + Waypoint) ──────────────────────
 
-  type JourneyPositionPreview = {
+  type PathPositionPreview = {
     pathId: string;
     pathName: string;
     retreatId: string;
@@ -376,37 +399,51 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
     waypointId: string;
     waypointName: string;
     suggestedIntention: string;
+    nextAvailableAt?: string | null;
+    circleName?: string | null;
+    circleNumber?: number | null;
   };
-  const [journeyPosition, setJourneyPosition] =
-    useState<JourneyPositionPreview | null>(null);
-  const journeyFetched = useRef(false);
+  const [pathPosition, setPathPosition] =
+    useState<PathPositionPreview | null>(null);
+  const [pathPacingBlocked, setPathPacingBlocked] = useState(false);
+  const pathFetched = useRef(false);
 
   useEffect(() => {
-    if (journeyFetched.current) return;
+    if (pathFetched.current) return;
 
-    // Don't fetch journey context for chronicle handoff readings — the chronicle
+    // Don't fetch path context for chronicle handoff readings — the chronicle
     // already recorded today's waypoint reading, and setting journeyWaypointId
     // would trigger canAdvanceWaypoint() to block same-day follow-on readings.
     const searchParams = new URLSearchParams(window.location.search);
     if (searchParams.get('source') === 'chronicle') {
-      journeyFetched.current = true;
+      pathFetched.current = true;
       return;
     }
 
-    journeyFetched.current = true;
+    pathFetched.current = true;
     fetch("/api/paths/progress")
       .then((res) => res.json())
       .then((data) => {
         if (data.success && data.data?.position) {
-          const pos = data.data.position as JourneyPositionPreview;
-          setJourneyPosition(pos);
-          dispatch({
-            type: "SET_JOURNEY_CONTEXT",
-            pathId: pos.pathId,
-            retreatId: pos.retreatId,
-            waypointId: pos.waypointId,
-            suggestedIntention: pos.suggestedIntention,
-          });
+          const pos = data.data.position as PathPositionPreview;
+          setPathPosition(pos);
+
+          // Check if waypoint is pacing-blocked (nextAvailableAt in the future)
+          const nextAt = pos.nextAvailableAt ? new Date(pos.nextAvailableAt) : null;
+          const isPacingBlocked = !!nextAt && new Date() < nextAt;
+
+          if (isPacingBlocked) {
+            // Don't attach path context — let user do a casual reading
+            setPathPacingBlocked(true);
+          } else {
+            dispatch({
+              type: "SET_JOURNEY_CONTEXT",
+              pathId: pos.pathId,
+              retreatId: pos.retreatId,
+              waypointId: pos.waypointId,
+              suggestedIntention: pos.suggestedIntention,
+            });
+          }
         }
       })
       .catch(() => {});
@@ -497,7 +534,12 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
       body: JSON.stringify({
         deckIds: selectedDeckIds,
         spreadType: selectedSpread,
-        question: question.trim() || undefined,
+        question: (() => {
+          const base = question.trim();
+          const extra = chronicleNotes.trim();
+          if (!base) return undefined;
+          return extra ? `${base}\n\nAdditional context: ${extra}` : base;
+        })(),
         chronicleCardId: chronicleCardId ?? undefined,
         journeyPathId: state.journeyPathId ?? undefined,
         journeyRetreatId: state.journeyRetreatId ?? undefined,
@@ -585,36 +627,18 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
 
   // Track whether we've triggered a reveal for the current presentingCardIndex
   const lastRevealTriggered = useRef(-1);
-  // Stable refs to avoid effect re-triggering from object identity changes
-  const isSectionReadyRef = useRef(presentation.isSectionReady);
-  isSectionReadyRef.current = presentation.isSectionReady;
-  const revealNextRef = useRef(reveal.revealNext);
-  revealNextRef.current = reveal.revealNext;
+  // Stable ref to avoid effect re-triggering from object identity changes
+  const revealAtRef = useRef(reveal.revealAt);
+  revealAtRef.current = reveal.revealAt;
 
   useEffect(() => {
     if (phase !== "presenting") return;
     if (lastRevealTriggered.current >= presentingCardIndex) return;
 
-    // Check if the current section is ready, OR streaming ended (partial data — still reveal)
-    if (isSectionReadyRef.current(presentingCardIndex) || !presentation.isStreaming) {
-      lastRevealTriggered.current = presentingCardIndex;
-      revealNextRef.current();
-    }
-  }, [phase, presentingCardIndex, presentation.object, presentation.isStreaming]);
-
-  // ── Fallback: force-reveal first card if section-ready check missed it ──
-  useEffect(() => {
-    if (phase !== "presenting") return;
-    if (lastRevealTriggered.current >= 0) return; // Already revealed at least one card
-
-    const timer = setTimeout(() => {
-      if (lastRevealTriggered.current < 0) {
-        lastRevealTriggered.current = 0;
-        revealNextRef.current();
-      }
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [phase]);
+    // Flip the card immediately when it becomes the active presenting card
+    lastRevealTriggered.current = presentingCardIndex;
+    revealAtRef.current(presentingCardIndex);
+  }, [phase, presentingCardIndex]);
 
   // ── Orchestration: advance to next card when section is complete ──────
 
@@ -728,6 +752,37 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
 
   return (
     <div className="-mx-4 sm:-mx-6 lg:-mx-8 -mt-6 h-[100dvh] flex flex-col overflow-hidden">
+      {/* ── ZONE 0: GUIDED LOADING — only visible in guided mode before reading begins ── */}
+      <motion.div
+        layout
+        animate={{
+          opacity: guided && isInSetup ? 1 : 0,
+          flex: guided && isInSetup ? 1 : 0,
+        }}
+        transition={SPRINGS.zone}
+        className="min-h-0 flex items-center justify-center"
+      >
+        <div className="flex flex-col items-center gap-4 text-center">
+          <motion.div
+            animate={{ opacity: [0.4, 1, 0.4] }}
+            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+            className="text-sm text-white/50 italic font-serif"
+          >
+            Let us begin...
+          </motion.div>
+          <div className="flex gap-1.5">
+            {[0, 1, 2].map((i) => (
+              <motion.div
+                key={i}
+                animate={{ opacity: [0.3, 1, 0.3] }}
+                transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.4 }}
+                className="h-1.5 w-1.5 rounded-full bg-[#c9a94e]"
+              />
+            ))}
+          </div>
+        </div>
+      </motion.div>
+
       {/* ── ZONE 1: SETUP ZONE — collapses after begin; hidden in guided mode ── */}
       <motion.div
         layout
@@ -826,31 +881,33 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
             />
           )}
 
-          {/* Journey context banner — visible once spread selected, non-dismissable */}
-          {isSectionVisible("intention") && journeyPosition && state.journeyPathId && (
+          {/* Path context banner — visible once spread selected, non-dismissable */}
+          {isSectionVisible("intention") && pathPosition && (state.journeyPathId || pathPacingBlocked) && (
             <JourneyContextBanner
-              pathName={journeyPosition.pathName}
-              retreatName={journeyPosition.retreatName}
-              waypointName={journeyPosition.waypointName}
-              suggestedIntention={journeyPosition.suggestedIntention}
+              circleName={pathPosition.circleName}
+              circleNumber={pathPosition.circleNumber}
+              pathName={pathPosition.pathName}
+              retreatName={pathPosition.retreatName}
+              waypointName={pathPosition.waypointName}
+              suggestedIntention={pathPosition.suggestedIntention}
+              pacingBlocked={pathPacingBlocked}
+              nextAvailableAt={pathPosition.nextAvailableAt ?? undefined}
               className="mb-4"
             />
           )}
 
-          {/* Question input — read-only for chronicle handoffs, hidden when journey context provides intention */}
+          {/* Question input — chronicle context panel for handoffs, editable for normal readings */}
           {isSectionVisible("intention") && (
             isChronicleHandoff && question ? (
-              <motion.div
-                initial={{ opacity: 0, y: -4 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                className="mb-6 px-4 py-3 rounded-xl bg-white/5 border border-[#c9a94e]/30"
-              >
-                <p className="text-[10px] text-[#c9a94e]/60 uppercase tracking-wider mb-1.5">Your Question</p>
-                <p className="text-sm text-white/80 italic leading-relaxed">&ldquo;{question}&rdquo;</p>
-              </motion.div>
+              <ChronicleContextPanel
+                conversation={chronicleConversation ?? []}
+                question={question}
+                notes={chronicleNotes}
+                onNotesChange={setChronicleNotes}
+                className="mb-6"
+              />
             ) : (
-              !(journeyPosition && state.journeyPathId && state.journeySuggestedIntention) && (
+              !(pathPosition && state.journeyPathId && state.journeySuggestedIntention) && (
                 <IntentionInput
                   question={question}
                   onChange={(q) => dispatch({ type: "SET_QUESTION", question: q })}
@@ -904,13 +961,13 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
             ? isPresenting
               ? isCelticPresenting
                 ? "0 0 55%"
-                : "0 0 40%"
+                : selectedSpread === "five_card" ? "0 0 36%" : "0 0 30%"
               : "1 1 0%"
             : "0 0 0px",
           opacity: showCards ? 1 : 0,
         }}
         transition={SPRINGS.zone}
-        style={fullSize.isMobile && isPresenting && !isCelticPresenting ? { flex: "0 0 35%" } : undefined}
+        style={cardZoneStyle}
       >
         {/* Status text — only during drawing phase */}
         {statusText && !isPresenting && (

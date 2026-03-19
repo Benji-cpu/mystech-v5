@@ -14,7 +14,7 @@ export function useDeckGeneration() {
 
   async function generate(
     input: GenerateDeckInput
-  ): Promise<{ deckId: string; title: string } | null> {
+  ): Promise<{ deckId: string; title: string; obstacleCount: number } | null> {
     setIsGenerating(true);
     setError(null);
 
@@ -32,7 +32,7 @@ export function useDeckGeneration() {
         return null;
       }
 
-      const { deckId, title } = textJson.data;
+      const { deckId, title, obstacleCount } = textJson.data;
 
       // Phase 2: Trigger batch image generation (fire-and-forget)
       fetch("/api/ai/generate-images-batch", {
@@ -42,7 +42,7 @@ export function useDeckGeneration() {
       });
 
       // Return data — let the caller control navigation
-      return { deckId, title: title ?? "Your Deck" };
+      return { deckId, title: title ?? "Your Deck", obstacleCount: obstacleCount ?? 0 };
     } catch {
       setError("Something went wrong. Please try again.");
       return null;

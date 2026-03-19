@@ -4,6 +4,8 @@ import { motion } from "framer-motion";
 import { Layers, BookOpen, Map, User } from "lucide-react";
 import Link from "next/link";
 import { useImmersive } from "./immersive-provider";
+import { useOnboarding } from "@/components/guide/onboarding-provider";
+import { cn } from "@/lib/utils";
 import type { LucideIcon } from "lucide-react";
 
 interface NavItem {
@@ -63,6 +65,7 @@ function getPosition(angleDeg: number, radius: number) {
 
 export function RadialNav() {
   const { state, closeOrb } = useImmersive();
+  const { navTutorialActive } = useOnboarding();
   const { isOrbExpanded, currentSection } = state;
 
   const items = getRadialItems(currentSection);
@@ -112,7 +115,10 @@ export function RadialNav() {
               <item.icon className="h-5 w-5 text-gold" />
 
               {/* Label tooltip */}
-              <span className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-black/80 px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
+              <span className={cn(
+                "pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-black/80 px-2 py-1 text-xs text-white transition-opacity",
+                navTutorialActive ? "opacity-100" : "opacity-0 group-hover:opacity-100",
+              )}>
                 {item.label}
               </span>
             </Link>

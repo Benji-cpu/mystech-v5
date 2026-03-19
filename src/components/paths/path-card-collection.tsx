@@ -4,8 +4,10 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Shield, Milestone, Loader2 } from "lucide-react";
 import { OracleCard } from "@/components/cards/oracle-card";
+import { CardDetailModal } from "@/components/cards/card-detail-modal";
+import { useCardDetailModal } from "@/hooks/use-card-detail-modal";
 import { cn } from "@/lib/utils";
-import type { Card, CardType } from "@/types";
+import type { RetreatCard, CardType } from "@/types";
 
 interface PathCardCollectionProps {
   pathId: string;
@@ -13,8 +15,9 @@ interface PathCardCollectionProps {
 }
 
 export function PathCardCollection({ pathId, className }: PathCardCollectionProps) {
-  const [cards, setCards] = useState<Card[]>([]);
+  const [cards, setCards] = useState<RetreatCard[]>([]);
   const [loading, setLoading] = useState(true);
+  const { openCard, modalProps } = useCardDetailModal<RetreatCard>();
 
   useEffect(() => {
     fetch(`/api/paths/${pathId}/cards`)
@@ -47,10 +50,10 @@ export function PathCardCollection({ pathId, className }: PathCardCollectionProp
   }
 
   // Group cards by retreat
-  const grouped = new Map<string, { retreatName: string; cards: Card[] }>();
+  const grouped = new Map<string, { retreatName: string; cards: RetreatCard[] }>();
   for (const card of cards) {
     const ctx = card.originContext;
-    const retreatId = ctx?.retreatId ?? "unknown";
+    const retreatId = card.retreatId;
     const retreatName = ctx?.retreatName ?? "Unknown Retreat";
     if (!grouped.has(retreatId)) {
       grouped.set(retreatId, { retreatName, cards: [] });
@@ -86,9 +89,13 @@ export function PathCardCollection({ pathId, className }: PathCardCollectionProp
                 }}
               >
                 <div className="space-y-1">
-                  <OracleCard card={card} size="sm" />
+                  <OracleCard
+                    card={card}
+                    size="sm"
+                    onClick={() => openCard(card)}
+                  />
                   <div className="flex items-center gap-1 px-0.5">
-                    <TypeIcon type={(card.cardType ?? "general") as CardType} />
+                    <TypeIcon type={card.cardType} />
                     <p className="text-[10px] text-white/30 truncate">
                       {card.title}
                     </p>
@@ -99,6 +106,8 @@ export function PathCardCollection({ pathId, className }: PathCardCollectionProp
           </div>
         </div>
       ))}
+
+      <CardDetailModal {...modalProps} />
     </div>
   );
 }

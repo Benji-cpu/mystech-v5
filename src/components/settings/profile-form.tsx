@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSession } from "next-auth/react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { GlassPanel } from "@/components/ui/glass-panel";
@@ -18,6 +19,7 @@ interface ProfileFormProps {
 }
 
 export function ProfileForm({ profile }: ProfileFormProps) {
+  const { update: updateSession } = useSession();
   const [displayName, setDisplayName] = useState(profile.displayName ?? "");
   const [bio, setBio] = useState(profile.bio ?? "");
   const [saving, setSaving] = useState(false);
@@ -48,6 +50,8 @@ export function ProfileForm({ profile }: ProfileFormProps) {
         toast.error(json.error || "Failed to update profile");
         return;
       }
+      // Refresh JWT so displayName is available in session immediately
+      await updateSession();
       toast.success("Profile updated");
     } catch {
       toast.error("Something went wrong");

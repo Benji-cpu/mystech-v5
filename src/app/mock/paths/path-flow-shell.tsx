@@ -7,17 +7,17 @@ import { useMockImmersive, moodPresets } from "@/components/mock/mock-immersive-
 import { MOCK_CARDS } from "@/components/mock/mock-data";
 
 import {
-  pathJourneyReducer,
-  initialPathJourneyState,
+  pathFlowReducer,
+  initialPathFlowState,
   getZoneProportions,
-} from "./path-journey-state";
+} from "./path-flow-state";
 
 import {
   MOCK_PATH,
   MOCK_RETREAT,
   MOCK_INTERPRETATIONS,
   MOCK_ARTIFACT,
-} from "./path-journey-data";
+} from "./path-mock-data";
 
 import { TrailMap } from "./trail-map";
 import { OverviewZone } from "./zones/overview-zone";
@@ -28,8 +28,8 @@ import { RetreatCompleteZone } from "./zones/retreat-complete-zone";
 
 const SPRING = { type: "spring" as const, stiffness: 200, damping: 28 };
 
-export function PathJourneyShell() {
-  const [state, dispatch] = useReducer(pathJourneyReducer, initialPathJourneyState);
+export function PathFlowShell() {
+  const [state, dispatch] = useReducer(pathFlowReducer, initialPathFlowState);
   const { setMood } = useMockImmersive();
 
   const { phase, subPhase, currentWaypointIndex, completedWaypoints, trailProgress } = state;
@@ -51,8 +51,8 @@ export function PathJourneyShell() {
 
   // ── Handlers ────────────────────────────────────────────────────────
 
-  const handleBeginJourney = useCallback(() => {
-    dispatch({ type: "BEGIN_JOURNEY" });
+  const handleBeginPath = useCallback(() => {
+    dispatch({ type: "BEGIN_PATH" });
   }, []);
 
   const handleSetUserIntention = useCallback((text: string) => {
@@ -120,8 +120,8 @@ export function PathJourneyShell() {
     switch (phase) {
       case "overview":
         return {
-          label: "Begin Journey",
-          onClick: handleBeginJourney,
+          label: "Begin Path",
+          onClick: handleBeginPath,
           disabled: !state.userIntention.trim(),
         };
       case "waypoint":
@@ -204,7 +204,7 @@ export function PathJourneyShell() {
               onSetUserIntention={handleSetUserIntention}
               suggestedIntention={MOCK_RETREAT.suggestedIntention}
               onUseSuggested={handleUseSuggestedIntention}
-              onBeginJourney={handleBeginJourney}
+              onBeginPath={handleBeginPath}
             />
           </motion.div>
 

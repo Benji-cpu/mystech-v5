@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Compass, Flower2, Flame, Sparkles, ChevronRight } from 'lucide-react';
-import type { JourneyPosition } from '@/types';
+import type { PathPosition } from '@/types';
 
 function PathIcon({ iconKey, className }: { iconKey: string; className?: string }) {
   const props = { className: cn('h-3.5 w-3.5', className) };
@@ -21,7 +21,7 @@ function PathIcon({ iconKey, className }: { iconKey: string; className?: string 
 }
 
 interface PathBadgeProps {
-  position: JourneyPosition;
+  position: PathPosition;
   className?: string;
 }
 

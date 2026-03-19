@@ -1,226 +1,169 @@
 import { Suspense } from "react";
-import { User } from "lucide-react";
+import Link from "next/link";
+import { Eye } from "lucide-react";
 import { requireAuth, isAdmin } from "@/lib/auth/helpers";
 import {
   getUserDeckCount,
   getUserDraftDecks,
-  getUserPlan,
-  getUserProfile,
   getUserTotalReadingCount,
   getUserChronicleDeck,
   getChronicleSettings,
   getTodayChronicleCard,
-  getUserReadingLength,
-  getVoicePreferences,
-  getAstrologyProfile,
-  getUserActivityFeed,
 } from "@/lib/db/queries";
-import { getUserPlanFromRole, getOrCreateUsageRecord, checkDailyReadings } from "@/lib/usage";
-import { PLAN_LIMITS } from "@/lib/constants";
+import { getPathPosition } from "@/lib/db/queries-paths";
+import { resolveUserName } from "@/lib/auth/get-user-name";
 import { getCurrentCelestialContext } from "@/lib/astrology/birth-chart";
-import { getJourneyPosition } from "@/lib/db/queries-journey";
-import { buildUnifiedFeed, splitFeedByCategory } from "@/lib/activity/build-unified-feed";
-import { PageHeader } from "@/components/layout/page-header";
-import { InProgressDecks } from "@/components/dashboard/in-progress-decks";
-import { LyraGreeting } from "@/components/guide/lyra-greeting";
-import { InitiationArrivalBanner } from "@/components/guide/initiation-arrival-banner";
-import { ChronicleNudge } from "@/components/chronicle/chronicle-nudge";
-import { DashboardAccordion } from "@/components/profile/dashboard-accordion";
-import { AnimatedPage } from "@/components/ui/animated-page";
-import { AnimatedItem } from "@/components/ui/animated-item";
+import { resolveInvitation } from "@/lib/dashboard/resolve-invitation";
+import { resolveBelowFoldCards } from "@/lib/dashboard/resolve-below-fold";
+import { LyraInvitation } from "@/components/dashboard/lyra-invitation";
+import { BelowFoldCards } from "@/components/dashboard/below-fold-cards";
+import { LyraSigil } from "@/components/guide/lyra-sigil";
 import { Skeleton } from "@/components/ui/skeleton";
-import { StaggeredList } from "@/components/ui/staggered-list";
-import type { PlanType } from "@/types";
+import type { InvitationContext } from "@/lib/dashboard/resolve-invitation";
+import type { BelowFoldContext } from "@/lib/dashboard/resolve-below-fold";
+
+// ── Skeleton ─────────────────────────────────────────────────────────
 
 function DashboardContentSkeleton() {
   return (
-    <div className="space-y-8">
-      {/* Lyra greeting skeleton */}
-      <div className="rounded-2xl bg-white/5 border border-white/10 p-4">
-        <Skeleton className="h-4 w-3/4" />
+    <div className="min-h-[calc(100dvh-6rem)] flex flex-col items-center justify-center px-6">
+      <div className="flex flex-col items-center gap-5">
+        <LyraSigil size="xl" state="dormant" />
+        <Skeleton className="h-3 w-12 rounded-full" />
+        <Skeleton className="h-4 w-64 rounded-full" />
+        <Skeleton className="h-11 w-40 rounded-full mt-2" />
       </div>
-
-      {/* Chronicle nudge skeleton */}
-      <div className="rounded-2xl bg-white/5 border border-white/10 p-4">
-        <Skeleton className="h-4 w-48" />
-      </div>
-
-      {/* Today celestial card skeleton */}
-      <div className="rounded-2xl bg-white/5 border border-white/10 border-l-2 border-l-[#c9a94e]/20 p-4 space-y-2">
-        <div className="flex items-center gap-2">
-          <Skeleton className="h-5 w-5 rounded" />
-          <Skeleton className="h-4 w-28" />
-          <Skeleton className="h-3 w-20" />
-        </div>
-        <Skeleton className="h-3 w-64" />
-      </div>
-
-      {/* Celestial Profile skeleton */}
-      <div className="rounded-2xl bg-white/5 border border-white/10 p-5 sm:p-6 space-y-4">
-        <Skeleton className="h-5 w-36" />
-        <div className="flex flex-wrap gap-2">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <Skeleton key={i} className="h-8 w-28 rounded-full" />
-          ))}
-        </div>
-        <Skeleton className="h-3 w-48" />
-      </div>
-
-      {/* Activity feed skeleton */}
-      <div className="space-y-3">
-        <Skeleton className="h-4 w-28" />
-        <div className="space-y-2">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div
-              key={i}
-              className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.03] border border-white/5"
-            >
-              <Skeleton className="h-8 w-8 rounded-lg shrink-0" />
-              <Skeleton className="h-3 flex-1" />
-              <Skeleton className="h-3 w-10 shrink-0" />
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Accordion section skeletons */}
-      {Array.from({ length: 2 }).map((_, i) => (
-        <div key={i} className="rounded-2xl bg-white/5 border border-white/10 p-4 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <Skeleton className="h-4 w-4 rounded" />
-            <Skeleton className="h-4 w-28" />
-          </div>
-          <Skeleton className="h-4 w-4 rounded" />
-        </div>
-      ))}
     </div>
   );
 }
 
+// ── Content ──────────────────────────────────────────────────────────
+
 async function DashboardContent({
   userId,
   userName,
-  userRole,
+  isPostInitiation,
 }: {
   userId: string;
   userName: string;
-  userRole?: string;
+  isPostInitiation: boolean;
 }) {
-  let plan: PlanType = getUserPlanFromRole(userRole);
-  const [deckCount, draftDecks, subPlan, profile, readingCount, readingLength, voicePrefs, astroProfile, activityFeed] =
+  // Parallel fetch — 4 queries
+  const [deckCount, draftDecks, readingCount, chronicleDeck] =
     await Promise.all([
       getUserDeckCount(userId),
       getUserDraftDecks(userId),
-      plan === "free" ? getUserPlan(userId) : Promise.resolve(plan),
-      getUserProfile(userId),
       getUserTotalReadingCount(userId),
-      getUserReadingLength(userId),
-      getVoicePreferences(userId),
-      getAstrologyProfile(userId),
-      getUserActivityFeed(userId, 15),
+      getUserChronicleDeck(userId),
     ]);
-  if (plan === "free" && subPlan === "pro") plan = "pro";
 
-  const [usageRecord, readingStatus, chronicleDeck] = await Promise.all([
-    plan !== "admin" ? getOrCreateUsageRecord(userId, plan) : null,
-    plan !== "admin" ? checkDailyReadings(userId, plan) : null,
-    getUserChronicleDeck(userId),
-  ]);
-
-  // Fetch Chronicle data if deck exists
-  const [chronicleSettings, todayCard, journeyPosition] = chronicleDeck
+  // Conditional fetches for chronicle + path
+  const [chronicleSettings, todayCard, pathPosition] = chronicleDeck
     ? await Promise.all([
         getChronicleSettings(chronicleDeck.id),
         getTodayChronicleCard(userId),
-        getJourneyPosition(userId),
+        getPathPosition(userId),
       ])
-    : [null, null, null];
+    : [null, null, await getPathPosition(userId)];
 
-  const limits = PLAN_LIMITS[plan];
   const celestialContext = getCurrentCelestialContext();
 
-  // Build feed and split into categories
-  const feedItems = buildUnifiedFeed(activityFeed, astroProfile, {
-    futureDays: 7,
-    pastDays: 14,
-    maxCelestialEvents: 6,
-  });
-  const { celestial, activities } = splitFeedByCategory(feedItems);
+  // ── Resolve invitation ──────────────────────────────────────────
+  const invitationCtx: InvitationContext = {
+    userName,
+    deckCount,
+    readingCount,
+    hasChronicle: !!chronicleDeck,
+    completedChronicleToday: !!todayCard,
+    streakCount: chronicleSettings?.streakCount ?? 0,
+    pathPosition: pathPosition
+      ? {
+          pathName: pathPosition.path.name,
+          waypointName: pathPosition.waypoint.name,
+        }
+      : null,
+    moonPhase: celestialContext.moonPhase,
+    moonSign: celestialContext.moonSign,
+    isPostInitiation,
+  };
+
+  const invitation = resolveInvitation(invitationCtx);
+
+  // ── Resolve below-fold cards ────────────────────────────────────
+  const belowFoldCtx: BelowFoldContext = {
+    draftDecks: draftDecks.map((d) => ({ id: d.id, name: d.title })),
+    pathPosition: pathPosition
+      ? {
+          pathName: pathPosition.path.name,
+          waypointName: pathPosition.waypoint.name,
+          retreatName: pathPosition.retreat.name,
+        }
+      : null,
+    completedChronicleToday: !!todayCard,
+    streakCount: chronicleSettings?.streakCount ?? 0,
+    deckCount,
+  };
+
+  const cards = resolveBelowFoldCards(belowFoldCtx);
 
   return (
-    <StaggeredList className="space-y-8">
-      <LyraGreeting
-        userName={userName}
-        deckCount={deckCount}
-        readingCount={readingCount}
-        moonPhase={celestialContext.moonPhase}
-        moonSign={celestialContext.moonSign}
-        sunSign={astroProfile?.sunSign}
-      />
+    <>
+      {/* Full-bleed hero — negative margins counteract <main> padding */}
+      <div className="-mx-4 -mt-6 sm:-mx-6 lg:-mx-8">
+        <LyraInvitation
+          invitation={invitation}
+          userName={userName}
+          hasBelowFold={cards.length > 0}
+        />
+      </div>
 
-      <ChronicleNudge
-        hasChronicle={!!chronicleDeck}
-        deckId={chronicleDeck?.id ?? null}
-        completedToday={!!todayCard}
-        streakCount={chronicleSettings?.streakCount ?? 0}
-        waypointName={journeyPosition?.waypoint.name ?? null}
-      />
-
-      {draftDecks.length > 0 && (
-        <InProgressDecks drafts={draftDecks} />
+      {/* Below-fold contextual cards — back inside normal padding */}
+      {cards.length > 0 && (
+        <div className="mt-8">
+          <BelowFoldCards cards={cards} />
+        </div>
       )}
-
-      <DashboardAccordion
-        defaultOpen={astroProfile ? null : "sanctum"}
-        celestialItems={celestial}
-        activityItems={activities}
-        deckCount={deckCount}
-        plan={plan}
-        creditsUsed={usageRecord?.creditsUsed ?? 0}
-        creditsLimit={limits.credits}
-        readingsToday={readingStatus?.performedToday ?? 0}
-        readingsPerDay={limits.readingsPerDay}
-        isLifetimeCredits={limits.creditsAreLifetime}
-        celestialProfile={astroProfile}
-        profile={profile}
-        settingsPlan={userRole === "admin" ? "admin" : plan}
-        readingLength={readingLength}
-        voicePrefs={voicePrefs}
-      />
-    </StaggeredList>
+    </>
   );
 }
+
+// ── Page ─────────────────────────────────────────────────────────────
 
 interface DashboardPageProps {
   searchParams: Promise<{ initiated?: string }>;
 }
 
-export default async function DashboardPage({ searchParams }: DashboardPageProps) {
+export default async function DashboardPage({
+  searchParams,
+}: DashboardPageProps) {
   const user = await requireAuth();
   const params = await searchParams;
-  const isInitiated = params.initiated === "true";
+  const isPostInitiation = params.initiated === "true";
+  const isAdminUser = isAdmin(user as { role?: string });
+  const userName = resolveUserName(user);
 
   return (
-    <AnimatedPage className="space-y-8 p-4 sm:p-6 lg:p-8">
-      {isInitiated && (
-        <InitiationArrivalBanner />
-      )}
-
-      <AnimatedItem>
-        <PageHeader
-          title={`Welcome, ${user.name ?? "Seeker"}`}
-          subtitle="Your profile and command center. Overview, settings, and account in one place."
-          icon={User}
-        />
-      </AnimatedItem>
-
+    <div className="p-4 sm:p-6 lg:p-8">
       <Suspense fallback={<DashboardContentSkeleton />}>
         <DashboardContent
           userId={user.id!}
-          userName={user.name ?? "Seeker"}
-          userRole={(user as { role?: string }).role}
+          userName={userName}
+          isPostInitiation={isPostInitiation}
         />
       </Suspense>
-    </AnimatedPage>
+
+      {/* Admin preview link — tiny, unobtrusive */}
+      {isAdminUser && (
+        <div className="flex justify-center mt-12">
+          <Link
+            href="/onboarding"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-white/20 hover:text-white/50 border border-white/5 hover:border-white/15 rounded-full transition-colors"
+          >
+            <Eye className="h-3 w-3" />
+            Preview Onboarding
+          </Link>
+        </div>
+      )}
+    </div>
   );
 }

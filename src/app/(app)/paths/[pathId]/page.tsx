@@ -8,13 +8,34 @@ import {
   getUserPathProgress,
   getRetreatProgressForPath,
   getWaypointProgressForRetreat,
-} from "@/lib/db/queries-journey";
+  getPracticeProgressForWaypoints,
+  getCircleById,
+} from "@/lib/db/queries-paths";
 import { PathDetail } from "@/components/paths/path-detail";
 import { Button } from "@/components/ui/button";
 import { AnimatedPage } from "@/components/ui/animated-page";
 import { AnimatedItem } from "@/components/ui/animated-item";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { PathStatus, UserPathProgress, UserRetreatProgress, UserWaypointProgress } from "@/types";
+
+async function CircleBreadcrumb({ pathId }: { pathId: string }) {
+  const [pathData] = await Promise.all([
+    getPathWithRetreatsAndWaypoints(pathId),
+  ]);
+  if (!pathData?.circleId) return null;
+  const circle = await getCircleById(pathData.circleId);
+  if (!circle) return null;
+
+  return (
+    <AnimatedItem>
+      <p className="text-xs text-white/40 -mt-3">
+        <span className="text-[#c9a94e]/60">Circle {circle.circleNumber}: {circle.name}</span>
+        <span className="mx-1.5 text-white/20">/</span>
+        <span>{pathData.name}</span>
+      </p>
+    </AnimatedItem>
+  );
+}
 
 function PathDetailSkeleton() {
   return (
@@ -67,6 +88,11 @@ async function PathDetailContent({ pathId }: { pathId: string }) {
 
   if (!pathData) notFound();
 
+  // Fetch circle info if this path belongs to one
+  const circle = pathData.circleId
+    ? await getCircleById(pathData.circleId)
+    : null;
+
   // Cast DB status strings to typed unions
   const pathProgress: UserPathProgress | null = rawProgress
     ? { ...rawProgress, status: rawProgress.status as PathStatus }
@@ -94,12 +120,21 @@ async function PathDetailContent({ pathId }: { pathId: string }) {
     );
   }
 
+  // Collect all waypoint IDs across all retreats for batch practice query
+  const allWaypointIds = pathData.retreats.flatMap((r) =>
+    r.waypoints.map((w) => w.id)
+  );
+  const practiceProgressMap = allWaypointIds.length > 0
+    ? await getPracticeProgressForWaypoints(user.id!, allWaypointIds)
+    : new Map();
+
   return (
     <PathDetail
       path={pathData}
       pathProgress={pathProgress}
       retreatProgressList={retreatProgressList}
       waypointProgressMap={waypointProgressMap}
+      practiceProgressMap={practiceProgressMap}
     />
   );
 }
@@ -121,6 +156,10 @@ export default async function PathDetailPage({ params }: PathDetailPageProps) {
           </Link>
         </Button>
       </AnimatedItem>
+
+      <Suspense fallback={null}>
+        <CircleBreadcrumb pathId={pathId} />
+      </Suspense>
 
       <Suspense fallback={<PathDetailSkeleton />}>
         <PathDetailContent pathId={pathId} />

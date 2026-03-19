@@ -38,13 +38,13 @@ export default async function LoginPage({
         <div className="absolute right-8 -bottom-6 h-1 w-1 rounded-full bg-primary/25" />
       </div>
 
-      <Card className="relative w-full max-w-sm border-border/50">
+      <Card className="relative w-full border-border/50 md:max-w-sm">
         <CardHeader className="items-center space-y-3 pb-2">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
             <Sparkles className="h-6 w-6 text-primary" />
           </div>
           <div className="text-center">
-            <h1 className="text-2xl font-bold">Welcome to MysTech</h1>
+            <h1 className="text-xl font-bold md:text-2xl">Welcome to MysTech</h1>
             <p className="mt-1 text-sm text-muted-foreground">
               Sign in to begin your mystical journey
             </p>

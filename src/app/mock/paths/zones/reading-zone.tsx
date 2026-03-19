@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { MockCardFront, MockCardBack } from '@/components/mock/mock-card';
 import type { MockCard } from '@/components/mock/mock-data';
-import type { ReadingSubPhase } from '../path-journey-state';
+import type { ReadingSubPhase } from '../path-flow-state';
 
 // ── Card flip item ─────────────────────────────────────────────────────────────
 

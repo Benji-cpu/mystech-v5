@@ -1,4 +1,4 @@
-// Path journey — persistent shell state machine
+// Path flow — persistent shell state machine
 // Pure TypeScript, no React imports
 
 import type { MockCard } from "@/components/mock/mock-data";
@@ -17,7 +17,7 @@ export type ReadingSubPhase = "drawing" | "revealing" | "interpreting" | "comple
 
 // ── State shape ────────────────────────────────────────────────────────
 
-export interface PathJourneyState {
+export interface PathFlowState {
   phase: PathPhase;
   subPhase: ReadingSubPhase | null;
   currentWaypointIndex: number;       // 0, 1, 2
@@ -35,8 +35,8 @@ export interface PathJourneyState {
 
 // ── Actions ────────────────────────────────────────────────────────────
 
-export type PathJourneyAction =
-  | { type: "BEGIN_JOURNEY" }
+export type PathFlowAction =
+  | { type: "BEGIN_PATH" }
   | { type: "ARRIVE_AT_WAYPOINT" }
   | { type: "SET_USER_INTENTION"; text: string }
   | { type: "SET_USER_REFLECTION"; text: string }
@@ -58,7 +58,7 @@ const MOOD_PER_WAYPOINT = ["default", "midnight", "golden"];
 
 // ── Initial state ──────────────────────────────────────────────────────
 
-export const initialPathJourneyState: PathJourneyState = {
+export const initialPathFlowState: PathFlowState = {
   phase: "overview",
   subPhase: null,
   currentWaypointIndex: 0,
@@ -76,12 +76,12 @@ export const initialPathJourneyState: PathJourneyState = {
 
 // ── Reducer ────────────────────────────────────────────────────────────
 
-export function pathJourneyReducer(
-  state: PathJourneyState,
-  action: PathJourneyAction
-): PathJourneyState {
+export function pathFlowReducer(
+  state: PathFlowState,
+  action: PathFlowAction
+): PathFlowState {
   switch (action.type) {
-    case "BEGIN_JOURNEY":
+    case "BEGIN_PATH":
       // Guard: intention must be set
       if (!state.userIntention.trim()) return state;
       return {
@@ -199,7 +199,7 @@ export function pathJourneyReducer(
       };
 
     case "RESET":
-      return { ...initialPathJourneyState };
+      return { ...initialPathFlowState };
 
     default:
       return state;
@@ -212,12 +212,12 @@ export function getTrailPosition(waypointIndex: number): number {
   return WAYPOINT_TRAIL_POSITIONS[waypointIndex] ?? 0;
 }
 
-export function getZoneProportions(state: PathJourneyState) {
+export function getZoneProportions(state: PathFlowState) {
   const { phase, subPhase } = state;
 
   switch (phase) {
     case "overview":
-      return { trail: "30%", scene: "60%", action: "10%" };
+      return { trail: "25%", scene: "65%", action: "10%" };
     case "waypoint":
       return { trail: "20%", scene: "70%", action: "10%" };
     case "reading":

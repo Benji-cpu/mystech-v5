@@ -8,11 +8,14 @@ import {
   getChronicleSettings,
   updateChronicleStreak,
   getUserPlan,
+  getChronicleKnowledge,
 } from "@/lib/db/queries";
-import { getJourneyPosition, recordJourneyReading } from "@/lib/db/queries-journey";
+import { getPathPosition, recordPathReading } from "@/lib/db/queries-paths";
 import { getUserPlanFromRole } from "@/lib/usage";
 import { extractAndMergeKnowledge } from "@/lib/ai/chronicle-knowledge";
+import { analyzeForEmergence } from "@/lib/ai/chronicle-emergence";
 import { eq } from "drizzle-orm";
+import { completeMilestone } from "@/lib/onboarding/milestones";
 import type { ApiResponse, ChronicleBadge, ChronicleBadgeDefinition } from "@/types";
 
 export const maxDuration = 60;
@@ -127,14 +130,28 @@ export async function POST() {
     }
   }
 
-  // ── Journey recording (non-fatal) ──────────────────────────
-  let journeyRecorded = false;
+  // ── Emergence analysis (fire-and-forget, non-blocking) ─────
+  const totalEntries = updatedStreak?.totalEntries ?? 1;
+  if (totalEntries >= 7) {
+    getChronicleKnowledge(user.id).then((knowledge) => {
+      if (knowledge) {
+        analyzeForEmergence(user.id, deck.id, knowledge, totalEntries)
+          .catch((err) => console.error("[chronicle/complete] emergence error:", err));
+      }
+    }).catch((err) => console.error("[chronicle/complete] emergence knowledge fetch error:", err));
+  }
+
+  // Auto-fire first chronicle milestone (non-blocking)
+  completeMilestone(user.id, "first_chronicle_entry").catch(() => {});
+
+  // ── Path recording (non-fatal) ──────────────────────────
+  let pathRecorded = false;
 
   if (entry.cardId) {
     try {
-      const journeyPosition = await getJourneyPosition(user.id);
-      if (journeyPosition) {
-        // Create a 'daily' reading row as a vehicle for recordJourneyReading.
+      const pathPosition = await getPathPosition(user.id);
+      if (pathPosition) {
+        // Create a 'daily' reading row as a vehicle for recordPathReading.
         // Filtered out of /readings list by getUserReadingsWithDeck.
         const [dailyReading] = await db
           .insert(readings)
@@ -142,7 +159,7 @@ export async function POST() {
             userId: user.id,
             deckId: deck.id,
             spreadType: 'daily',
-            question: journeyPosition.waypoint.suggestedIntention,
+            question: pathPosition.waypoint.suggestedIntention,
             interpretation: updatedEntry.miniReading,
           })
           .returning();
@@ -154,11 +171,11 @@ export async function POST() {
           cardId: entry.cardId,
         });
 
-        await recordJourneyReading(user.id, dailyReading.id, journeyPosition);
-        journeyRecorded = true;
+        await recordPathReading(user.id, dailyReading.id, pathPosition);
+        pathRecorded = true;
       }
     } catch (err) {
-      console.error('[chronicle/today/complete] journey recording error:', err);
+      console.error('[chronicle/today/complete] path recording error:', err);
       // Non-fatal — chronicle completion still succeeds
     }
   }
@@ -172,7 +189,7 @@ export async function POST() {
         totalEntries: number;
       };
       newBadge: (ChronicleBadgeDefinition & { earnedAt: string }) | null;
-      journeyRecorded: boolean;
+      pathRecorded: boolean;
     }>
   >({
     success: true,
@@ -186,7 +203,7 @@ export async function POST() {
       newBadge: newBadge
         ? { ...newBadge, earnedAt: new Date().toISOString() }
         : null,
-      journeyRecorded,
+      pathRecorded,
     },
   });
 }

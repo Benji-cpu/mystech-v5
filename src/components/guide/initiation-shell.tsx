@@ -4,21 +4,24 @@ import { useReducer, useEffect, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { LyraSigil } from "./lyra-sigil";
+import { LyraHeader } from "./lyra-header";
 import { LyraNarration } from "./lyra-narration";
 import {
   INITIATION_WELCOME_STEPS,
   INITIATION_QUESTION_PROMPT,
   INITIATION_GENERATING_MESSAGES,
+  INITIATION_STAGE_MESSAGES,
   buildArtStyleRevealMessage,
   GUIDED_READING_ENTER_CTA,
 } from "./lyra-constants";
-import { useInitiationGeneration } from "@/hooks/use-initiation-generation";
+import { useInitiationGeneration, type GenerationStage } from "@/hooks/use-initiation-generation";
 import { PRESET_ART_STYLE_NAMES, type PresetArtStyleName } from "@/lib/ai/prompts/onboarding";
+import { useTextToSpeech } from "@/hooks/use-text-to-speech";
+import { useVoicePreferences } from "@/hooks/use-voice-preferences";
 
 // ── Types ────────────────────────────────────────────────────────────────
 
-type Phase = "welcome" | "question" | "generating" | "reveal";
+type Phase = "voice_consent" | "welcome" | "question" | "generating" | "reveal";
 
 interface InitiationState {
   phase: Phase;
@@ -28,18 +31,26 @@ interface InitiationState {
   deckId: string | null;
   deckTitle: string | null;
   showStylePicker: boolean;
+  voiceEnabled: boolean;
 }
 
 type InitiationAction =
+  | { type: "ENABLE_VOICE" }
+  | { type: "SKIP_VOICE" }
   | { type: "NEXT_WELCOME_STEP" }
   | { type: "GO_TO_QUESTION" }
   | { type: "START_GENERATING" }
   | { type: "REVEAL"; artStyleName: PresetArtStyleName; artStyleId: string; deckId: string; deckTitle: string }
   | { type: "TOGGLE_STYLE_PICKER" }
-  | { type: "SELECT_STYLE"; styleName: PresetArtStyleName };
+  | { type: "SELECT_STYLE"; styleName: PresetArtStyleName }
+  | { type: "RETRY_GENERATION" };
 
 function initiationReducer(state: InitiationState, action: InitiationAction): InitiationState {
   switch (action.type) {
+    case "ENABLE_VOICE":
+      return { ...state, phase: "welcome", voiceEnabled: true };
+    case "SKIP_VOICE":
+      return { ...state, phase: "welcome", voiceEnabled: false };
     case "NEXT_WELCOME_STEP": {
       const nextStep = state.welcomeStep + 1;
       if (nextStep >= INITIATION_WELCOME_STEPS.length) {
@@ -50,6 +61,7 @@ function initiationReducer(state: InitiationState, action: InitiationAction): In
     case "GO_TO_QUESTION":
       return { ...state, phase: "question" };
     case "START_GENERATING":
+      if (state.phase === "generating") return state; // guard against double-submit
       return { ...state, phase: "generating" };
     case "REVEAL":
       return {
@@ -69,37 +81,83 @@ function initiationReducer(state: InitiationState, action: InitiationAction): In
         selectedArtStyleName: action.styleName,
         showStylePicker: false,
       };
+    case "RETRY_GENERATION":
+      return { ...state, phase: "question" };
     default:
       return state;
   }
 }
 
-const initialState: InitiationState = {
-  phase: "welcome",
-  welcomeStep: 0,
-  selectedArtStyleName: null,
-  selectedArtStyleId: null,
-  deckId: null,
-  deckTitle: null,
-  showStylePicker: false,
-};
-
 // ── Sub-components ────────────────────────────────────────────────────────
+
+function VoiceConsentPhase({
+  onAccept,
+  onDecline,
+}: {
+  onAccept: () => void;
+  onDecline: () => void;
+}) {
+  const [narrationDone, setNarrationDone] = useState(false);
+
+  return (
+    <div className="flex flex-col items-center gap-8 text-center max-w-sm mx-auto">
+      <LyraNarration
+        text="Before we begin — would you like me to guide you with my voice?"
+        speed={30}
+        onComplete={() => setNarrationDone(true)}
+      />
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: narrationDone ? 1 : 0 }}
+        transition={{ duration: 0.4 }}
+        className="flex gap-3"
+      >
+        <button
+          onClick={onAccept}
+          className="px-6 py-2.5 rounded-xl bg-[#c9a94e]/20 border border-[#c9a94e]/30 text-[#c9a94e] text-sm font-medium hover:bg-[#c9a94e]/30 transition-colors cursor-pointer"
+        >
+          Yes, please
+        </button>
+        <button
+          onClick={onDecline}
+          className="px-6 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white/50 text-sm hover:bg-white/10 transition-colors cursor-pointer"
+        >
+          Not now
+        </button>
+      </motion.div>
+    </div>
+  );
+}
 
 function WelcomePhase({
   step,
   onNext,
+  voiceEnabled = false,
+  voiceIdle = true,
 }: {
   step: number;
   onNext: () => void;
+  voiceEnabled?: boolean;
+  voiceIdle?: boolean;
 }) {
   const [narrationDone, setNarrationDone] = useState(false);
+  const [timedOut, setTimedOut] = useState(false);
   const isLastStep = step === INITIATION_WELCOME_STEPS.length - 1;
 
   // Reset narrationDone when step changes
   useEffect(() => {
     setNarrationDone(false);
+    setTimedOut(false);
   }, [step]);
+
+  // Safety timeout: force-show button if TTS stays busy >5s after narration completes
+  useEffect(() => {
+    if (!narrationDone || !voiceEnabled || voiceIdle) return;
+    const timer = setTimeout(() => setTimedOut(true), 5000);
+    return () => clearTimeout(timer);
+  }, [narrationDone, voiceEnabled, voiceIdle]);
+
+  const showButton = narrationDone && (!voiceEnabled || voiceIdle || timedOut);
 
   return (
     <div className="flex flex-col items-center gap-8 text-center max-w-sm mx-auto">
@@ -120,10 +178,10 @@ function WelcomePhase({
       <AnimatePresence mode="wait">
         <motion.div
           key={step}
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -12 }}
-          transition={{ type: "spring", stiffness: 300, damping: 30 }}
+          initial={{ opacity: 0, scale: 0.96 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 1.04 }}
+          transition={{ type: "spring", stiffness: 200, damping: 28 }}
         >
           <LyraNarration
             text={INITIATION_WELCOME_STEPS[step].text}
@@ -136,13 +194,13 @@ function WelcomePhase({
       {/* CTA */}
       <motion.button
         initial={{ opacity: 0 }}
-        animate={{ opacity: narrationDone ? 1 : 0 }}
+        animate={{ opacity: showButton ? 1 : 0 }}
         transition={{ duration: 0.4 }}
         onClick={onNext}
-        disabled={!narrationDone}
+        disabled={!showButton}
         className={cn(
           "px-8 py-3 rounded-xl font-medium text-sm transition-all",
-          narrationDone
+          showButton
             ? "bg-white/10 hover:bg-white/15 text-white/80 border border-white/10 cursor-pointer"
             : "cursor-default"
         )}
@@ -155,10 +213,12 @@ function WelcomePhase({
 
 function QuestionPhase({
   onSubmit,
+  initialValue = "",
 }: {
   onSubmit: (input: string) => void;
+  initialValue?: string;
 }) {
-  const [value, setValue] = useState("");
+  const [value, setValue] = useState(initialValue);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -215,15 +275,31 @@ function QuestionPhase({
   );
 }
 
-function GeneratingPhase({ error }: { error: string | null }) {
+function GeneratingPhase({
+  error,
+  onRetry,
+  stage,
+}: {
+  error: string | null;
+  onRetry?: () => void;
+  stage: GenerationStage | null;
+}) {
   const [messageIndex, setMessageIndex] = useState(0);
+
+  // Get stage-specific messages or fall back to generic ones
+  const messages = (stage && INITIATION_STAGE_MESSAGES[stage]) || INITIATION_GENERATING_MESSAGES;
+
+  // Reset message index when stage changes
+  useEffect(() => {
+    setMessageIndex(0);
+  }, [stage]);
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setMessageIndex((i) => (i + 1) % INITIATION_GENERATING_MESSAGES.length);
+      setMessageIndex((i) => (i + 1) % messages.length);
     }, 2800);
     return () => clearInterval(interval);
-  }, []);
+  }, [messages.length]);
 
   return (
     <div className="flex flex-col items-center gap-8 text-center">
@@ -239,18 +315,28 @@ function GeneratingPhase({ error }: { error: string | null }) {
       </div>
 
       {error ? (
-        <p className="text-sm text-destructive">{error}</p>
+        <div className="flex flex-col items-center gap-4">
+          <p className="text-sm text-destructive">{error}</p>
+          {onRetry && (
+            <button
+              onClick={onRetry}
+              className="px-6 py-2.5 rounded-xl bg-[#c9a94e]/20 border border-[#c9a94e]/30 text-[#c9a94e] text-sm font-medium hover:bg-[#c9a94e]/30 transition-colors cursor-pointer"
+            >
+              Try again
+            </button>
+          )}
+        </div>
       ) : (
         <AnimatePresence mode="wait">
           <motion.p
-            key={messageIndex}
+            key={`${stage}-${messageIndex}`}
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
             className="text-sm text-white/60 italic font-serif"
           >
-            {INITIATION_GENERATING_MESSAGES[messageIndex]}
+            {messages[messageIndex]}
           </motion.p>
         </AnimatePresence>
       )}
@@ -265,6 +351,8 @@ function RevealPhase({
   onTogglePicker,
   onSelectStyle,
   onBeginReading,
+  voiceEnabled = false,
+  voiceIdle = true,
 }: {
   artStyleName: PresetArtStyleName;
   deckTitle: string;
@@ -272,9 +360,21 @@ function RevealPhase({
   onTogglePicker: () => void;
   onSelectStyle: (name: PresetArtStyleName) => void;
   onBeginReading: () => void;
+  voiceEnabled?: boolean;
+  voiceIdle?: boolean;
 }) {
   const [narrationDone, setNarrationDone] = useState(false);
+  const [timedOut, setTimedOut] = useState(false);
   const revealMessage = buildArtStyleRevealMessage(artStyleName);
+
+  // Safety timeout: force-show button if TTS stays busy >5s after narration completes
+  useEffect(() => {
+    if (!narrationDone || !voiceEnabled || voiceIdle) return;
+    const timer = setTimeout(() => setTimedOut(true), 5000);
+    return () => clearTimeout(timer);
+  }, [narrationDone, voiceEnabled, voiceIdle]);
+
+  const showButton = narrationDone && (!voiceEnabled || voiceIdle || timedOut);
 
   return (
     <div className="flex flex-col items-center gap-6 text-center max-w-sm mx-auto">
@@ -343,13 +443,15 @@ function RevealPhase({
       {/* Begin reading CTA */}
       <motion.button
         initial={{ opacity: 0 }}
-        animate={{ opacity: narrationDone ? 1 : 0 }}
+        animate={{ opacity: showButton ? 1 : 0 }}
         transition={{ duration: 0.5, delay: 0.3 }}
         onClick={onBeginReading}
+        disabled={!showButton}
         className={cn(
           "w-full py-3 rounded-xl font-medium text-sm transition-all",
           "bg-gradient-to-r from-[#c9a94e] to-[#b89840] text-[#0a0118]",
-          "shadow-lg shadow-[#c9a94e]/20 hover:shadow-xl hover:shadow-[#c9a94e]/30"
+          "shadow-lg shadow-[#c9a94e]/20 hover:shadow-xl hover:shadow-[#c9a94e]/30",
+          !showButton && "opacity-0"
         )}
       >
         {GUIDED_READING_ENTER_CTA.replace("your sanctuary", "your first reading")}
@@ -358,16 +460,10 @@ function RevealPhase({
   );
 }
 
-// ── Phase labels ──────────────────────────────────────────────────────────
-
-const PHASE_LABELS: Record<Phase, string> = {
-  welcome: "The Initiation",
-  question: "The Question",
-  generating: "Shaping your cards...",
-  reveal: "Your deck is ready",
-};
+// ── Phase sigil states ────────────────────────────────────────────────────
 
 const LYRA_SIGIL_STATES: Record<Phase, "dormant" | "attentive" | "speaking"> = {
+  voice_consent: "speaking",
   welcome: "speaking",
   question: "attentive",
   generating: "speaking",
@@ -390,48 +486,133 @@ export function InitiationShell({
   existingArtStyleName,
 }: InitiationShellProps) {
   const router = useRouter();
-  const { generate, isGenerating, error } = useInitiationGeneration();
+  const { generate, isGenerating, error, stage } = useInitiationGeneration();
+  const tts = useTextToSpeech();
+  const { update: updateVoicePrefs } = useVoicePreferences();
+
+  // If resuming at reveal, skip voice_consent. Otherwise start there.
+  const startPhase: Phase = initialPhase === "reveal" ? "reveal" : "voice_consent";
 
   const [state, dispatch] = useReducer(initiationReducer, {
-    ...initialState,
-    phase: initialPhase,
+    phase: startPhase,
+    welcomeStep: 0,
+    selectedArtStyleName: existingArtStyleName ?? null,
+    selectedArtStyleId: null,
     deckId: existingDeckId ?? null,
     deckTitle: existingDeckTitle ?? null,
-    selectedArtStyleName: existingArtStyleName ?? null,
+    showStylePicker: false,
+    voiceEnabled: false,
   });
 
   const userInputRef = useRef<string>("");
+  const submittingRef = useRef(false);
+
+  // Auto-speak welcome messages when voice is enabled
+  useEffect(() => {
+    if (!state.voiceEnabled) return;
+    if (state.phase !== "welcome") return;
+    const text = INITIATION_WELCOME_STEPS[state.welcomeStep].text;
+    tts.speak(text);
+    return () => { tts.stop(); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.phase, state.welcomeStep, state.voiceEnabled]);
+
+  // Stop TTS when leaving welcome phase
+  useEffect(() => {
+    if (state.phase !== "welcome") tts.stop();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.phase]);
+
+  // Speak reveal message when phase becomes reveal
+  useEffect(() => {
+    if (!state.voiceEnabled || state.phase !== "reveal" || !state.selectedArtStyleName) return;
+    const msg = buildArtStyleRevealMessage(state.selectedArtStyleName);
+    tts.speak(msg);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.phase, state.voiceEnabled]);
+
+  const handleVoiceAccept = useCallback(async () => {
+    dispatch({ type: "ENABLE_VOICE" });
+    await updateVoicePrefs({ enabled: true });
+  }, [updateVoicePrefs]);
+
+  const handleVoiceDecline = useCallback(() => {
+    dispatch({ type: "SKIP_VOICE" });
+  }, []);
 
   const handleSkip = useCallback(async () => {
+    tts.stop();
     await fetch("/api/onboarding/complete", { method: "POST" });
     router.push("/dashboard");
-  }, [router]);
+  }, [router, tts]);
 
   const handleQuestionSubmit = useCallback(async (input: string) => {
+    if (submittingRef.current) return; // double-submit guard
+    submittingRef.current = true;
     userInputRef.current = input;
     dispatch({ type: "START_GENERATING" });
 
-    const result = await generate(input);
-    if (result) {
-      dispatch({
-        type: "REVEAL",
-        artStyleName: result.selectedArtStyleName,
-        artStyleId: result.selectedArtStyleId,
-        deckId: result.deckId,
-        deckTitle: result.deckTitle,
-      });
+    try {
+      const result = await generate(input);
+      if (result) {
+        dispatch({
+          type: "REVEAL",
+          artStyleName: result.selectedArtStyleName,
+          artStyleId: result.selectedArtStyleId,
+          deckId: result.deckId,
+          deckTitle: result.deckTitle,
+        });
+      }
+      // Error is shown in generating phase via the error prop
+    } finally {
+      submittingRef.current = false;
     }
-    // Error is shown in generating phase via the error prop
   }, [generate]);
+
+  const handleRetry = useCallback(() => {
+    submittingRef.current = false;
+    dispatch({ type: "RETRY_GENERATION" });
+  }, []);
 
   const handleBeginReading = useCallback(() => {
     if (!state.deckId) return;
+    tts.stop();
     router.push(`/readings/new?guided=true&deckId=${state.deckId}`);
-  }, [state.deckId, router]);
+  }, [state.deckId, router, tts]);
 
   const handleSelectStyle = useCallback((styleName: PresetArtStyleName) => {
     dispatch({ type: "SELECT_STYLE", styleName });
-  }, []);
+
+    // Persist to DB and re-trigger image generation
+    if (state.deckId) {
+      fetch("/api/onboarding/change-art-style", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ deckId: state.deckId, artStyleName: styleName }),
+      })
+        .then((res) => {
+          if (res.ok) {
+            // Fire-and-forget image regeneration
+            fetch("/api/ai/generate-images-batch", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ deckId: state.deckId }),
+            });
+          }
+        })
+        .catch(() => {
+          // Silent catch — local state still updated
+        });
+    }
+  }, [state.deckId]);
+
+  const voiceIdle = tts.state === "idle";
+  const [skipConfirming, setSkipConfirming] = useState(false);
+
+  // Reset skip confirmation on phase change
+  useEffect(() => {
+    setSkipConfirming(false);
+  }, [state.phase]);
 
   const displayArtStyleName = state.selectedArtStyleName;
 
@@ -439,30 +620,23 @@ export function InitiationShell({
     <div className="h-[100dvh] flex flex-col overflow-hidden bg-transparent">
       {/* ── Lyra zone — always mounted ── */}
       <div className="shrink-0 flex flex-col items-center pt-16 pb-6 px-4">
-        <motion.div
-          animate={{ scale: [1, 1.05, 1] }}
-          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-          className="mb-4"
-        >
-          <LyraSigil size="xl" state={LYRA_SIGIL_STATES[state.phase]} />
-        </motion.div>
-
-        <AnimatePresence mode="wait">
-          <motion.p
-            key={state.phase}
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -6 }}
-            transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="text-xs text-white/40 uppercase tracking-widest"
-          >
-            {PHASE_LABELS[state.phase]}
-          </motion.p>
-        </AnimatePresence>
+        <LyraHeader state={LYRA_SIGIL_STATES[state.phase]} size="lg" />
       </div>
 
       {/* ── Content zone — flex-1, phase-controlled ── */}
       <div className="flex-1 min-h-0 overflow-y-auto px-4 flex items-center justify-center">
+        {/* Voice consent phase */}
+        {state.phase === "voice_consent" && (
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            className="w-full"
+          >
+            <VoiceConsentPhase onAccept={handleVoiceAccept} onDecline={handleVoiceDecline} />
+          </motion.div>
+        )}
+
         {/* Welcome phase */}
         <motion.div
           className="w-full"
@@ -475,6 +649,8 @@ export function InitiationShell({
           <WelcomePhase
             step={state.welcomeStep}
             onNext={() => dispatch({ type: "NEXT_WELCOME_STEP" })}
+            voiceEnabled={state.voiceEnabled}
+            voiceIdle={voiceIdle}
           />
         </motion.div>
 
@@ -486,7 +662,7 @@ export function InitiationShell({
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
             className="w-full"
           >
-            <QuestionPhase onSubmit={handleQuestionSubmit} />
+            <QuestionPhase onSubmit={handleQuestionSubmit} initialValue={userInputRef.current} />
           </motion.div>
         )}
 
@@ -498,7 +674,7 @@ export function InitiationShell({
             transition={{ duration: 0.4 }}
             className="w-full"
           >
-            <GeneratingPhase error={isGenerating ? null : (error ?? null)} />
+            <GeneratingPhase error={isGenerating ? null : (error ?? null)} onRetry={handleRetry} stage={stage} />
           </motion.div>
         )}
 
@@ -517,20 +693,54 @@ export function InitiationShell({
               onTogglePicker={() => dispatch({ type: "TOGGLE_STYLE_PICKER" })}
               onSelectStyle={handleSelectStyle}
               onBeginReading={handleBeginReading}
+              voiceEnabled={state.voiceEnabled}
+              voiceIdle={voiceIdle}
             />
           </motion.div>
         )}
       </div>
 
       {/* ── Action zone — skip always visible ── */}
-      <div className="shrink-0 flex justify-center pb-8 pt-4 px-4">
+      <div className="shrink-0 flex justify-center pb-8 pt-4 px-4 min-h-[48px]">
         {state.phase !== "reveal" && (
-          <button
-            onClick={handleSkip}
-            className="text-xs text-white/30 hover:text-white/50 transition-colors"
-          >
-            Skip the initiation
-          </button>
+          <AnimatePresence mode="wait">
+            {!skipConfirming ? (
+              <motion.button
+                key="skip-initial"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                onClick={() => setSkipConfirming(true)}
+                className="text-xs text-white/30 hover:text-white/50 transition-colors"
+              >
+                Skip the initiation
+              </motion.button>
+            ) : (
+              <motion.div
+                key="skip-confirm"
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                className="flex items-center gap-3"
+              >
+                <span className="text-xs text-white/40">Skip the initiation?</span>
+                <button
+                  onClick={handleSkip}
+                  className="text-xs px-3 py-1 rounded-lg bg-white/10 text-white/70 hover:bg-white/15 transition-colors"
+                >
+                  Yes, skip
+                </button>
+                <button
+                  onClick={() => setSkipConfirming(false)}
+                  className="text-xs text-white/30 hover:text-white/50 transition-colors"
+                >
+                  Cancel
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
         )}
       </div>
     </div>

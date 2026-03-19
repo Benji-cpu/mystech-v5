@@ -16,7 +16,10 @@ export default async function NewReadingPage({ searchParams }: NewReadingPagePro
 
   const [rows, resolvedPlan] = await Promise.all([
     getUserCompletedDecks(user.id!),
-    getUserPlan(user.id!),
+    getUserPlan(user.id!).catch((e) => {
+      console.error("[readings/new] getUserPlan failed (db out of sync?):", e);
+      return "free" as PlanType;
+    }),
   ]);
   const plan: PlanType = isAdmin(user) ? "admin" : resolvedPlan;
 

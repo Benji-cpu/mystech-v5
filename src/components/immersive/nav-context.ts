@@ -48,6 +48,9 @@ const routeRules: RouteRule[] = [
   { pattern: /^\/settings\/billing$/, backTarget: "/settings", backLabel: "Settings" },
   { pattern: /^\/settings\/[^/]+$/, backTarget: "/settings", backLabel: "Settings" },
 
+  // Onboarding (focus mode — immersive first-run experience)
+  { pattern: /^\/onboarding$/, backTarget: "/dashboard", backLabel: "Dashboard", focusMode: true },
+
   // Admin sub-pages
   { pattern: /^\/admin\/[^/]+$/, backTarget: "/admin", backLabel: "Admin" },
 ];
@@ -63,12 +66,7 @@ export function getNavContext(pathname: string): NavContext {
   const section = segments[0] ?? null;
   const depth = segments.length;
 
-  // Depth 0 or 1 = top level, no back navigation
-  if (depth <= 1) {
-    return { section, depth, backTarget: null, backLabel: null, focusMode: false, focusTitle: null, focusSubtitle: null };
-  }
-
-  // Check specific rules
+  // Check specific rules FIRST (handles depth-1 focus-mode paths like /onboarding)
   for (const rule of routeRules) {
     if (rule.pattern.test(pathname)) {
       const backTarget = rule.backTarget === "PARENT" ? getParentPath(pathname) : rule.backTarget;
@@ -82,6 +80,11 @@ export function getNavContext(pathname: string): NavContext {
         focusSubtitle: rule.focusSubtitle ?? null,
       };
     }
+  }
+
+  // Depth 0 or 1 = top level, no back navigation (after rule check)
+  if (depth <= 1) {
+    return { section, depth, backTarget: null, backLabel: null, focusMode: false, focusTitle: null, focusSubtitle: null };
   }
 
   // Fallback for unknown deep routes: go to section root

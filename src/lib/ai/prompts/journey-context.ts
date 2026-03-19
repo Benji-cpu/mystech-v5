@@ -1,11 +1,11 @@
-import type { JourneyContextForPrompt, CardJourneyMemory } from "@/types";
+import type { PathContextForPrompt, CardPathMemory } from "@/types";
 
 /**
  * Build the "Cards Remember" section for prompt injection.
  * Shows past appearances of drawn cards within the same Retreat.
  */
 export function buildCardsRememberSection(
-  memories: CardJourneyMemory[]
+  memories: CardPathMemory[]
 ): string {
   if (memories.length === 0) return "";
 
@@ -21,24 +21,28 @@ export function buildCardsRememberSection(
   });
 
   return `
-Cards with journey memory:
+Cards with path memory:
 ${lines.join("\n")}
 
-When interpreting these cards, honor their journey history. Notice continuity, growth, or recurring patterns. Only weave this in where it deepens the reading naturally.`;
+When interpreting these cards, honor their path history. Notice continuity, growth, or recurring patterns. Only weave this in where it deepens the reading naturally.`;
 }
 
 /**
- * Build the full journey context section for the reading interpretation prompt.
+ * Build the full path context section for the reading interpretation prompt.
  * Follows the same pattern as astroContext and chronicleContext.
  */
-export function buildJourneyContextSection(
-  ctx: JourneyContextForPrompt
+export function buildPathContextSection(
+  ctx: PathContextForPrompt
 ): string {
   const cardsRemember = buildCardsRememberSection(ctx.cardsRemember);
 
+  const circleIntro = ctx.circleName && ctx.circleNumber
+    ? `The seeker is in Circle ${ctx.circleNumber}: ${ctx.circleName}, on the ${ctx.pathName} path`
+    : `The seeker is on the ${ctx.pathName} path`;
+
   return `
 
-The seeker is on the ${ctx.pathName} path, currently in the "${ctx.retreatName}" retreat at the "${ctx.waypointName}" waypoint.
+${circleIntro}, currently in the "${ctx.retreatName}" retreat at the "${ctx.waypointName}" waypoint.
 
 Path lens: ${ctx.pathLens}
 
@@ -47,5 +51,5 @@ Retreat focus: ${ctx.retreatLens}
 Waypoint intention: ${ctx.waypointLens}
 ${cardsRemember}
 
-Interpret through the lens of their current journey. The journey context is seasoning, not the main course — the cards and their personal symbolism remain the focus.`;
+Interpret through the lens of their current path. The path context is seasoning, not the main course — the cards and their personal symbolism remain the focus.`;
 }

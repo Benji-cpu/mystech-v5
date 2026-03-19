@@ -4,6 +4,21 @@ import { useRef, useState, useCallback, useEffect } from "react";
 import { SentenceBuffer } from "@/lib/voice/sentence-buffer";
 import { AudioQueue, type AudioQueueState } from "@/lib/voice/audio-queue";
 
+function stripMarkdownForSpeech(text: string): string {
+  return text
+    .replace(/\*\*(.+?)\*\*/g, "$1")     // **bold**
+    .replace(/\*(.+?)\*/g, "$1")         // *italic*
+    .replace(/__(.+?)__/g, "$1")         // __bold__
+    .replace(/_(.+?)_/g, "$1")           // _italic_
+    .replace(/~~(.+?)~~/g, "$1")         // ~~strikethrough~~
+    .replace(/`(.+?)`/g, "$1")           // `code`
+    .replace(/^#{1,6}\s+/gm, "")         // # headers
+    .replace(/\[(.+?)\]\(.+?\)/g, "$1")  // [link](url)
+    .replace(/^\s*[-*+]\s+/gm, "")       // bullet points
+    .replace(/^\s*\d+\.\s+/gm, "")       // numbered lists
+    .trim();
+}
+
 interface UseTextToSpeechOptions {
   voiceId?: string;
   speed?: string;
@@ -16,6 +31,7 @@ export function useTextToSpeech(options: UseTextToSpeechOptions = {}) {
   const audioQueueRef = useRef<AudioQueue | null>(null);
   const sentenceBufferRef = useRef<SentenceBuffer | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const synthesisChainRef = useRef<Promise<void>>(Promise.resolve());
 
   // Initialize audio queue
   const getQueue = useCallback(() => {
@@ -32,11 +48,14 @@ export function useTextToSpeech(options: UseTextToSpeechOptions = {}) {
     async (text: string) => {
       if (!enabled) return;
 
+      const cleanText = stripMarkdownForSpeech(text);
+      if (!cleanText) return;
+
       try {
         const res = await fetch("/api/voice/tts", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text, voiceId, speed }),
+          body: JSON.stringify({ text: cleanText, voiceId, speed }),
           signal: abortRef.current?.signal,
         });
 
@@ -56,7 +75,11 @@ export function useTextToSpeech(options: UseTextToSpeechOptions = {}) {
   const getBuffer = useCallback(() => {
     if (!sentenceBufferRef.current) {
       sentenceBufferRef.current = new SentenceBuffer((sentence) => {
-        synthesizeAndEnqueue(sentence);
+        // Chain synthesis calls so audio is always enqueued in sentence order,
+        // regardless of which TTS fetch completes first
+        synthesisChainRef.current = synthesisChainRef.current.then(() =>
+          synthesizeAndEnqueue(sentence)
+        );
       });
     }
     return sentenceBufferRef.current;
@@ -99,8 +122,9 @@ export function useTextToSpeech(options: UseTextToSpeechOptions = {}) {
     abortRef.current?.abort();
     abortRef.current = null;
     audioQueueRef.current?.stop();
-    // Reset sentence buffer
+    // Reset sentence buffer and synthesis chain
     sentenceBufferRef.current = null;
+    synthesisChainRef.current = Promise.resolve();
   }, []);
 
   // Cleanup on unmount

@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { streamObject } from "ai";
 import { db } from "@/lib/db";
-import { readings, astrologyProfiles, readingAstrology, readingJourneyContext } from "@/lib/db/schema";
+import { readings, astrologyProfiles, readingAstrology, readingPathContext } from "@/lib/db/schema";
 import { getCurrentUser } from "@/lib/auth/helpers";
 import { geminiFreeModel, geminiProModel } from "@/lib/ai/gemini";
 import { logGeneration } from "@/lib/ai/logging";
@@ -10,8 +10,9 @@ import {
   getReadingByIdForUser,
   getReadingCardsWithData,
   getUserReadingContext,
+  getUserDisplayName,
 } from "@/lib/db/queries";
-import { getCardJourneyHistory } from "@/lib/db/queries-journey";
+import { getCardPathHistory } from "@/lib/db/queries-paths";
 import { maybeCompressUserContext } from "@/lib/ai/context-compression";
 import { getCurrentCelestialContext } from "@/lib/astrology/birth-chart";
 import {
@@ -20,7 +21,7 @@ import {
   ReadingInterpretationSchema,
   STRUCTURE_TARGETS,
 } from "@/lib/ai/prompts/reading-interpretation";
-import type { SpreadType, AstrologicalReadingContext, JourneyContextForPrompt } from "@/types";
+import type { SpreadType, AstrologicalReadingContext, PathContextForPrompt } from "@/types";
 
 export const maxDuration = 60;
 
@@ -48,11 +49,12 @@ export async function POST(request: NextRequest) {
   }
 
   // Fetch all data in parallel instead of sequentially
-  const [reading, cardsWithData, userContextWithLength, astroProfileResult] = await Promise.all([
+  const [reading, cardsWithData, userContextWithLength, astroProfileResult, userName] = await Promise.all([
     getReadingByIdForUser(readingId, user.id),
     getReadingCardsWithData(readingId),
     getUserReadingContext(user.id),
     db.select().from(astrologyProfiles).where(eq(astrologyProfiles.userId, user.id)),
+    getUserDisplayName(user.id),
   ]);
   mark("parallel queries");
 
@@ -63,14 +65,18 @@ export async function POST(request: NextRequest) {
   }
 
   const cardsForPrompt = cardsWithData
-    .filter((rc) => rc.card !== null)
-    .map((rc) => ({
-      positionName: rc.positionName,
-      title: rc.card!.title,
-      meaning: rc.card!.meaning,
-      guidance: rc.card!.guidance,
-      cardType: (rc.card!.cardType ?? 'general') as 'general' | 'obstacle' | 'threshold',
-    }));
+    .filter((rc) => rc.card?.id || rc.retreatCard?.id)
+    .map((rc) => {
+      const c = rc.card?.id ? rc.card : null;
+      const r = rc.retreatCard?.id ? rc.retreatCard : null;
+      return {
+        positionName: rc.positionName,
+        title: (c?.title ?? r?.title)!,
+        meaning: (c?.meaning ?? r?.meaning)!,
+        guidance: (c?.guidance ?? r?.guidance)!,
+        cardType: ((c?.cardType ?? r?.cardType) ?? 'general') as 'general' | 'obstacle' | 'threshold',
+      };
+    });
 
   if (cardsForPrompt.length === 0) {
     return new Response(
@@ -99,19 +105,19 @@ export async function POST(request: NextRequest) {
   }
 
   // Build journey context if this reading has a journey context snapshot
-  let journeyContext: JourneyContextForPrompt | undefined;
+  let journeyContext: PathContextForPrompt | undefined;
   const [journeyContextRow] = await db
     .select()
-    .from(readingJourneyContext)
-    .where(eq(readingJourneyContext.readingId, readingId));
+    .from(readingPathContext)
+    .where(eq(readingPathContext.readingId, readingId));
 
   if (journeyContextRow) {
-    // Get card IDs for "Cards Remember" lookup
+    // Get card IDs for "Cards Remember" lookup (deck cards only — retreat cards don't have journey history)
     const cardIds = cardsWithData
       .map((rc) => rc.cardId)
       .filter((id): id is string => id !== null);
 
-    const cardsRemember = await getCardJourneyHistory(
+    const cardsRemember = await getCardPathHistory(
       user.id,
       cardIds,
       readingId,
@@ -119,6 +125,8 @@ export async function POST(request: NextRequest) {
     );
 
     journeyContext = {
+      circleName: null,
+      circleNumber: null,
       pathName: "", // We'll use the snapshot lens text directly
       pathLens: journeyContextRow.pathLensSnapshot,
       retreatName: "", // Filled from snapshot context below
@@ -130,7 +138,7 @@ export async function POST(request: NextRequest) {
     };
 
     // Fetch the actual names for display in the prompt
-    const { paths, retreats, waypoints } = await import("@/lib/db/schema");
+    const { paths, retreats, waypoints, circles } = await import("@/lib/db/schema");
     const [pathRow, retreatRow, waypointRow] = await Promise.all([
       db.select({ name: paths.name }).from(paths).where(eq(paths.id, journeyContextRow.pathId)).then((r) => r[0]),
       db.select({ name: retreats.name }).from(retreats).where(eq(retreats.id, journeyContextRow.retreatId)).then((r) => r[0]),
@@ -139,6 +147,18 @@ export async function POST(request: NextRequest) {
     journeyContext.pathName = pathRow?.name ?? "Unknown Path";
     journeyContext.retreatName = retreatRow?.name ?? "Unknown Retreat";
     journeyContext.waypointName = waypointRow?.name ?? "Unknown Waypoint";
+
+    // Fetch circle name if the reading has circle context
+    if (journeyContextRow.circleId) {
+      const [circleRow] = await db
+        .select({ name: circles.name, circleNumber: circles.circleNumber })
+        .from(circles)
+        .where(eq(circles.id, journeyContextRow.circleId));
+      if (circleRow) {
+        journeyContext.circleName = circleRow.name;
+        journeyContext.circleNumber = circleRow.circleNumber;
+      }
+    }
   }
 
   const prompt = buildReadingInterpretationPrompt({
@@ -149,6 +169,7 @@ export async function POST(request: NextRequest) {
     readingLength,
     astroContext,
     journeyContext,
+    userName,
   });
   const { maxTokens } = STRUCTURE_TARGETS[readingLength][spreadType];
   mark("prompt built");
@@ -156,7 +177,7 @@ export async function POST(request: NextRequest) {
   const role = (user as { role?: string }).role ?? "user";
   const model = role === "admin" ? geminiProModel : geminiFreeModel;
   const readingStart = Date.now();
-  const readingSystemPrompt = buildReadingSystemPrompt(readingLength);
+  const readingSystemPrompt = buildReadingSystemPrompt(readingLength, userName);
 
   mark("stream start");
   const result = streamObject({

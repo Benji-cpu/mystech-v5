@@ -1,4 +1,4 @@
-// Hardcoded data for the Path Journey mock — sourced from seed-paths.ts
+// Hardcoded data for the Path Flow mock — sourced from seed-paths.ts
 
 export interface MockWaypoint {
   id: string;
@@ -35,17 +35,17 @@ export const MOCK_PATH: MockPath = {
   id: "path_archetypal",
   name: "Archetypal",
   description:
-    "Explore the universal patterns of the psyche through Jungian archetypes, shadow work, and the journey toward wholeness.",
+    "Explore the universal patterns of the psyche through Jungian archetypes, shadow work, and the path toward wholeness.",
   themes: ["Self-discovery", "Shadow work", "Individuation"],
   interpretiveLens:
-    "Interpret cards through the lens of Jungian archetypes and the journey toward psychological wholeness.",
+    "Interpret cards through the lens of Jungian archetypes and the path toward psychological wholeness.",
 };
 
 export const MOCK_RETREAT: MockRetreat = {
   id: "retreat_threshold",
   name: "The Threshold",
   description:
-    "The journey begins with awareness. Before you can transform, you must see where you stand — the masks you wear, the stories you tell yourself, and the quiet call to something deeper.",
+    "The path begins with awareness. Before you can transform, you must see where you stand — the masks you wear, the stories you tell yourself, and the quiet call to something deeper.",
   theme: "Self-awareness and the call to inner work",
   suggestedIntention: "To see myself more clearly and honor what I find",
   retreatLens:
@@ -100,7 +100,7 @@ export const MOCK_INTERPRETATIONS: Record<number, string> = {
 
 **The Mirror** in the center position reveals that your inner world is calling for honest examination. Something you once took for granted — a belief, a pattern, a way of being — is asking to be seen with fresh eyes.
 
-**The Wanderer** suggests this call to look deeper is not a crisis but an invitation. You are being drawn toward a journey of self-discovery, one that begins not with dramatic action but with quiet attention.
+**The Wanderer** suggests this call to look deeper is not a crisis but an invitation. You are being drawn toward a path of self-discovery, one that begins not with dramatic action but with quiet attention.
 
 **The Oracle** confirms that the wisdom you seek is already within you. The call you're hearing is your own deeper knowing, rising to the surface. Trust what stirs — it knows the way.
 

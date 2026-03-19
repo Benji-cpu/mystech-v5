@@ -55,8 +55,14 @@ export function ReadingFlipCard({
                 className="w-full h-full object-cover"
               />
             ) : (
-              <div className="w-full h-full bg-gradient-to-b from-[#1a0530] to-[#0a0118] flex items-center justify-center">
-                <span className="text-white/30 text-xs text-center px-2">
+              <div className="w-full h-full bg-gradient-to-b from-[#1a0530] via-[#12022a] to-[#0a0118] flex flex-col items-center justify-center gap-3 p-3">
+                {/* Static gold geometric symbol */}
+                <svg viewBox="0 0 48 48" className="w-1/3 max-w-[48px] opacity-60" fill="none" stroke="#c9a94e" strokeWidth="1">
+                  <circle cx="24" cy="24" r="18" />
+                  <polygon points="24,8 38,32 10,32" />
+                  <circle cx="24" cy="24" r="6" />
+                </svg>
+                <span className="text-white/70 text-xs font-medium text-center px-2 leading-snug">
                   {card.title}
                 </span>
               </div>

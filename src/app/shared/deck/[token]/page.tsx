@@ -1,10 +1,10 @@
 import { getSharedDeckByToken } from "@/lib/db/queries";
 import { auth } from "@/auth";
 import { notFound } from "next/navigation";
-import { OracleCard } from "@/components/cards/oracle-card";
 import { AdoptDeckButton } from "@/components/shared/adopt-deck-button";
+import { SharedDeckCardGrid } from "@/components/shared/shared-deck-card-grid";
 import type { Metadata } from "next";
-import type { Card, CardImageStatus, CardType } from "@/types";
+import type { CardDetailData, CardImageStatus, CardType } from "@/types";
 
 export async function generateMetadata({
   params,
@@ -44,6 +44,17 @@ export default async function SharedDeckPage({
   const session = await auth();
   const isLoggedIn = !!session?.user;
 
+  const cards: CardDetailData[] = deck.cards.map((c) => ({
+    id: c.id,
+    title: c.title,
+    meaning: c.meaning,
+    guidance: c.guidance,
+    imageUrl: c.imageUrl,
+    imageStatus: c.imageStatus as CardImageStatus,
+    cardType: (c.cardType ?? 'general') as CardType,
+    originContext: c.originContext ?? null,
+  }));
+
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
       {/* Header */}
@@ -71,26 +82,7 @@ export default async function SharedDeckPage({
       </div>
 
       {/* Card gallery */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-        {deck.cards.map((c) => {
-          const card: Card = {
-            id: c.id,
-            deckId: c.deckId,
-            cardNumber: c.cardNumber,
-            title: c.title,
-            meaning: c.meaning,
-            guidance: c.guidance,
-            imageUrl: c.imageUrl,
-            imagePrompt: c.imagePrompt,
-            imageStatus: c.imageStatus as CardImageStatus,
-            cardType: (c.cardType ?? 'general') as CardType,
-            originContext: c.originContext ?? null,
-            createdAt: c.createdAt,
-          };
-
-          return <OracleCard key={c.id} card={card} size="fill" />;
-        })}
-      </div>
+      <SharedDeckCardGrid cards={cards} />
     </div>
   );
 }

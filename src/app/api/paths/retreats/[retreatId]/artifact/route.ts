@@ -4,12 +4,12 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import {
   readings,
-  readingJourneyContext,
+  readingPathContext,
   userRetreatProgress,
   retreats,
 } from "@/lib/db/schema";
 import { getCurrentUser } from "@/lib/auth/helpers";
-import { getUserRetreatProgress } from "@/lib/db/queries-journey";
+import { getUserRetreatProgress } from "@/lib/db/queries-paths";
 import { geminiModel } from "@/lib/ai/gemini";
 import { eq, and } from "drizzle-orm";
 import type { ApiResponse } from "@/types";
@@ -18,7 +18,7 @@ const ArtifactSchema = z.object({
   summary: z
     .string()
     .describe(
-      "A 2-3 paragraph reflective summary of the seeker's journey through this retreat"
+      "A 2-3 paragraph reflective summary of the seeker's passage through this retreat"
     ),
   themes: z
     .array(z.string())
@@ -26,7 +26,7 @@ const ArtifactSchema = z.object({
   imagePrompt: z
     .string()
     .describe(
-      "A detailed image prompt capturing the essence of this retreat's journey, suitable for generating a symbolic/artistic illustration"
+      "A detailed image prompt capturing the essence of this retreat's path, suitable for generating a symbolic/artistic illustration"
     ),
 });
 
@@ -91,17 +91,17 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       question: readings.question,
       interpretation: readings.interpretation,
       createdAt: readings.createdAt,
-      waypointLens: readingJourneyContext.waypointLensSnapshot,
+      waypointLens: readingPathContext.waypointLensSnapshot,
     })
     .from(readings)
     .innerJoin(
-      readingJourneyContext,
-      eq(readings.id, readingJourneyContext.readingId)
+      readingPathContext,
+      eq(readings.id, readingPathContext.readingId)
     )
     .where(
       and(
         eq(readings.userId, user.id),
-        eq(readingJourneyContext.retreatId, retreatId)
+        eq(readingPathContext.retreatId, retreatId)
       )
     );
 
@@ -127,7 +127,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const { object } = await generateObject({
       model: geminiModel,
       schema: ArtifactSchema,
-      prompt: `You are Lyra, a wise mystic guide. A seeker has completed the "${retreat.name}" retreat on their spiritual journey.
+      prompt: `You are Lyra, a wise mystic guide. A seeker has completed the "${retreat.name}" retreat on their spiritual path.
 
 Retreat theme: ${retreat.theme}
 Retreat focus: ${retreat.retreatLens}
@@ -136,13 +136,13 @@ They completed ${retreatReadings.length} readings during this retreat:
 
 ${readingSummaries}
 
-Generate a retreat artifact — a reflective summary honoring their journey through this chapter:
+Generate a retreat artifact — a reflective summary honoring their passage through this chapter:
 
-1. Summary: Write 2-3 paragraphs in Lyra's warm, poetic voice reflecting on the seeker's journey through this retreat. Reference specific themes from their readings. Honor what they explored and what emerged. This should feel like a wise companion looking back over the ground covered together.
+1. Summary: Write 2-3 paragraphs in Lyra's warm, poetic voice reflecting on the seeker's passage through this retreat. Reference specific themes from their readings. Honor what they explored and what emerged. This should feel like a wise companion looking back over the ground covered together.
 
 2. Themes: Extract 3-5 key themes that emerged across their readings. Use evocative, specific phrases (not generic words like "growth" — instead, "learning to sit with uncertainty" or "the courage of softness").
 
-3. Image prompt: Create a detailed prompt for generating a symbolic illustration that captures the essence of their journey through this retreat. The image should be mystical, atmospheric, and personally meaningful.`,
+3. Image prompt: Create a detailed prompt for generating a symbolic illustration that captures the essence of their passage through this retreat. The image should be mystical, atmospheric, and personally meaningful.`,
     });
 
     // Save artifact to retreat progress

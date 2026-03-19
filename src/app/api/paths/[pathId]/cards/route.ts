@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth/helpers";
-import { getPathCards } from "@/lib/db/queries-journey";
-import type { ApiResponse, Card } from "@/types";
+import { getPathCards } from "@/lib/db/queries-paths";
+import type { ApiResponse, RetreatCard } from "@/types";
 
 type Params = { params: Promise<{ pathId: string }> };
 
@@ -18,20 +18,23 @@ export async function GET(_request: NextRequest, { params }: Params) {
 
   const rows = await getPathCards(user.id, pathId);
 
-  const cards: Card[] = rows.map((row) => ({
+  const cards: RetreatCard[] = rows.map((row) => ({
     id: row.id,
-    deckId: row.deckId,
-    cardNumber: row.cardNumber,
+    retreatId: row.retreatId,
+    cardType: row.cardType as RetreatCard["cardType"],
+    source: row.source as RetreatCard["source"],
     title: row.title,
     meaning: row.meaning,
     guidance: row.guidance,
     imageUrl: row.imageUrl,
     imagePrompt: row.imagePrompt,
-    imageStatus: row.imageStatus as Card["imageStatus"],
-    cardType: (row.cardType ?? "general") as Card["cardType"],
-    originContext: row.originContext ?? null,
+    imageStatus: (row.imageStatus ?? "pending") as RetreatCard["imageStatus"],
+    sortOrder: row.sortOrder ?? 0,
+    userId: row.userId,
+    originContext: row.originContext as RetreatCard["originContext"],
     createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
   }));
 
-  return NextResponse.json<ApiResponse<Card[]>>({ success: true, data: cards });
+  return NextResponse.json<ApiResponse<RetreatCard[]>>({ success: true, data: cards });
 }
