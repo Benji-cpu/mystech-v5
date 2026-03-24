@@ -8,6 +8,7 @@ import {
   useState,
   useMemo,
 } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Textarea } from '@/components/ui/textarea';
@@ -18,6 +19,8 @@ import { useImmersiveOptional } from '@/components/immersive/immersive-provider'
 import { useTextToSpeech } from '@/hooks/use-text-to-speech';
 import { useVoicePreferences } from '@/hooks/use-voice-preferences';
 import { useVoiceInput } from '@/hooks/use-voice-input';
+import { useCardDetailModal } from '@/hooks/use-card-detail-modal';
+import { CardDetailModal } from '@/components/cards/card-detail-modal';
 
 import {
   chronicleReducer,
@@ -165,13 +168,28 @@ interface ActionBarProps {
   isStreaming: boolean;
   canForge: boolean;
   isFirstEntry: boolean;
+  forgingTransition: boolean;
   onInputChange: (v: string) => void;
   onSend: () => void;
   onForge: () => void;
   onMicTranscript: (text: string, isFinal: boolean) => void;
   onMicListeningChange: (isListening: boolean) => void;
   onEmergenceAcknowledge?: () => void;
+  onContinueToReading?: () => void;
+  progressDuration?: number;
+  progressKey?: number;
 }
+
+function getActionBarCategory(phase: string): string {
+  if (phase === 'greeting' || phase === 'card_forging') return 'loading';
+  if (phase === 'dialogue') return 'input';
+  if (phase === 'emergence_reveal') return 'emergence';
+  if (phase === 'card_reveal') return 'reveal';
+  if (phase === 'reading' || phase === 'complete') return 'empty';
+  return 'empty';
+}
+
+const ACTION_BAR_SPRING = { type: 'spring' as const, stiffness: 300, damping: 28 };
 
 function ActionBar({
   phase,
@@ -185,6 +203,10 @@ function ActionBar({
   onMicTranscript,
   onMicListeningChange,
   onEmergenceAcknowledge,
+  forgingTransition,
+  onContinueToReading,
+  progressDuration = 7,
+  progressKey = 0,
 }: ActionBarProps) {
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -195,134 +217,156 @@ function ActionBar({
     }
   };
 
-  if (phase === 'emergence_reveal') {
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={CONTENT_SPRING}
-      >
-        <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={onEmergenceAcknowledge}
-          className={cn(
-            'w-full py-3 rounded-xl font-semibold text-sm',
-            'bg-white/10 border border-white/20 text-white/90',
-            'hover:bg-white/15 transition-colors duration-200',
-          )}
-        >
-          I See This
-        </motion.button>
-      </motion.div>
-    );
-  }
+  const category = getActionBarCategory(phase);
 
-  if (phase === 'greeting' || phase === 'card_forging') {
-    return (
-      <div className="h-11 flex items-center justify-center">
-        <motion.div
-          animate={{ opacity: [0.3, 0.7, 0.3] }}
-          transition={{ duration: 1.5, repeat: Infinity }}
-          className="flex gap-1.5"
-        >
-          {[0, 1, 2].map((i) => (
-            <div
-              key={i}
-              className="w-1.5 h-1.5 rounded-full bg-[#c9a94e]/50"
-              style={{ animationDelay: `${i * 0.2}s` }}
-            />
-          ))}
-        </motion.div>
-      </div>
-    );
-  }
-
-  if (phase === 'dialogue') {
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={CONTENT_SPRING}
-        className="flex flex-col gap-2"
-      >
-        {/* Input row — standard pattern matching ConversationChat */}
-        <div className="flex gap-2 pt-2 border-t border-white/10">
-          <Textarea
-            ref={inputRef}
-            value={inputValue}
-            onChange={(e) => onInputChange(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Share what's on your mind..."
-            disabled={isStreaming}
-            maxLength={2000}
-            rows={1}
-            className="min-h-[44px] max-h-[120px] resize-none bg-white/5 border-white/10 text-white/90 placeholder:text-white/25 focus-visible:ring-[#c9a94e]/20 focus-visible:border-[#c9a94e]/40"
-          />
-          <MicrophoneButton
-            onTranscript={onMicTranscript}
-            onListeningChange={onMicListeningChange}
-          />
-          <Button
-            type="button"
-            size="icon"
-            onClick={onSend}
-            disabled={isStreaming || !inputValue.trim()}
-            className="flex-shrink-0 h-[44px] w-[44px]"
-          >
-            <Send className="h-4 w-4" />
-          </Button>
-        </div>
-        {inputValue.length > 1600 && (
-          <span className="text-xs text-white/30 text-right block">{inputValue.length}/2000</span>
-        )}
-
-        {/* Forge CTA — shown after Lyra's wrap-up signal */}
-        {canForge && (
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={CONTENT_SPRING}
-          >
-            {isFirstEntry && (
-              <p className="text-xs text-[#c9a94e]/60 text-center mb-2">
-                Your first card is ready to be forged from today&apos;s conversation
-              </p>
-            )}
+  const renderContent = () => {
+    switch (category) {
+      case 'emergence':
+        return (
+          <div>
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              onClick={onForge}
+              onClick={onEmergenceAcknowledge}
               className={cn(
                 'w-full py-3 rounded-xl font-semibold text-sm',
-                'bg-gradient-to-r from-[#c9a94e] to-[#daa520] text-black',
-                'shadow-lg shadow-[#c9a94e]/20 hover:shadow-xl hover:shadow-[#c9a94e]/30',
-                'transition-shadow duration-300',
+                'bg-white/10 border border-white/20 text-white/90',
+                'hover:bg-white/15 transition-colors duration-200',
               )}
             >
-              Forge Your Card
+              I See This
             </motion.button>
-          </motion.div>
-        )}
+          </div>
+        );
+
+      case 'loading':
+        return (
+          <div className="h-11 flex items-center justify-center">
+            <motion.div
+              animate={{ opacity: [0.3, 0.7, 0.3] }}
+              transition={{ duration: 1.5, repeat: Infinity }}
+              className="flex gap-1.5"
+            >
+              {[0, 1, 2].map((i) => (
+                <div
+                  key={i}
+                  className="w-1.5 h-1.5 rounded-full bg-[#c9a94e]/50"
+                  style={{ animationDelay: `${i * 0.2}s` }}
+                />
+              ))}
+            </motion.div>
+          </div>
+        );
+
+      case 'input':
+        return (
+          <div className="flex flex-col gap-2">
+            {/* Input row — standard pattern matching ConversationChat */}
+            <div className="flex gap-2 pt-2 border-t border-white/10">
+              <Textarea
+                ref={inputRef}
+                value={inputValue}
+                onChange={(e) => onInputChange(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Share what's on your mind..."
+                disabled={isStreaming}
+                maxLength={2000}
+                rows={1}
+                className="min-h-[44px] max-h-[120px] resize-none bg-white/5 border-white/10 text-white/90 placeholder:text-white/25 focus-visible:ring-[#c9a94e]/20 focus-visible:border-[#c9a94e]/40"
+              />
+              <MicrophoneButton
+                onTranscript={onMicTranscript}
+                onListeningChange={onMicListeningChange}
+              />
+              <Button
+                type="button"
+                size="icon"
+                onClick={onSend}
+                disabled={isStreaming || !inputValue.trim()}
+                className="flex-shrink-0 h-[44px] w-[44px]"
+              >
+                <Send className="h-4 w-4" />
+              </Button>
+            </div>
+            {inputValue.length > 1600 && (
+              <span className="text-xs text-white/30 text-right block">{inputValue.length}/2000</span>
+            )}
+
+            {/* Forge CTA — shown after Lyra's wrap-up signal */}
+            {canForge && (
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={CONTENT_SPRING}
+              >
+                {isFirstEntry && (
+                  <p className="text-xs text-[#c9a94e]/60 text-center mb-2">
+                    Your first card is ready to be forged from today&apos;s conversation
+                  </p>
+                )}
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={onForge}
+                  className={cn(
+                    'w-full py-3 rounded-xl font-semibold text-sm',
+                    'bg-gradient-to-r from-[#c9a94e] to-[#daa520] text-black',
+                    'shadow-lg shadow-[#c9a94e]/20 hover:shadow-xl hover:shadow-[#c9a94e]/30',
+                    'transition-shadow duration-300',
+                  )}
+                >
+                  Forge Your Card
+                </motion.button>
+              </motion.div>
+            )}
+          </div>
+        );
+
+      case 'reveal':
+        return (
+          <div>
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={onContinueToReading}
+              className={cn(
+                'relative w-auto px-8 py-3 rounded-xl font-semibold text-sm overflow-hidden mx-auto block',
+                'bg-gradient-to-r from-[#c9a94e] to-[#daa520] text-black',
+                'shadow-lg shadow-[#c9a94e]/20',
+              )}
+            >
+              {/* Progress fill */}
+              <motion.div
+                key={progressKey}
+                className="absolute inset-0 bg-white/20 origin-left"
+                initial={{ scaleX: 0 }}
+                animate={{ scaleX: 1 }}
+                transition={{ duration: progressDuration, ease: 'linear' }}
+              />
+              <span className="relative z-10">Continue to Reading</span>
+            </motion.button>
+          </div>
+        );
+
+      case 'empty':
+      default:
+        return <div className="h-11" />;
+    }
+  };
+
+  return (
+    <AnimatePresence mode="wait">
+      <motion.div
+        key={category}
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -4 }}
+        transition={ACTION_BAR_SPRING}
+      >
+        {renderContent()}
       </motion.div>
-    );
-  }
-
-  if (phase === 'card_reveal') {
-    return <div className="h-11" />;
-  }
-
-  if (phase === 'reading') {
-    return (
-      <div className="h-11" />
-    );
-  }
-
-  if (phase === 'complete') {
-    return null;
-  }
-
-  return null;
+    </AnimatePresence>
+  );
 }
 
 // ── Main Chronicle Flow ───────────────────────────────────────────────────
@@ -364,9 +408,21 @@ export function ChronicleFlow({
     streakCount: settings?.streakCount ?? 0,
   });
 
+  const router = useRouter();
   const [inputValue, setInputValue] = useState('');
   const [showBadge, setShowBadge] = useState(true);
   const [emergenceCardRevealed, setEmergenceCardRevealed] = useState(false);
+  const [forgingTransition, setForgingTransition] = useState(false);
+
+  // Card detail modal for card_reveal interaction
+  const { openCard, modalProps } = useCardDetailModal();
+
+  // Pausable card reveal timer
+  const revealTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const remainingMsRef = useRef(7000);
+  const timerStartedAtRef = useRef<number>(0);
+  const [progressKey, setProgressKey] = useState(0);
+  const [progressDuration, setProgressDuration] = useState(7);
 
   // Refs for one-shot effects
   const forgeFired = useRef(false);
@@ -468,54 +524,100 @@ export function ChronicleFlow({
     return () => clearTimeout(timeout);
   }, [phase, emergenceCardRevealed]);
 
-  // ── Phase: greeting — push Lyra's greeting message ────────────────────
-  // StrictMode-safe: uses cleanup `cancelled` flag instead of a persistent ref guard
+  // ── Phase: greeting — stream AI greeting from server ────────────────────
+
+  const greetingFired = useRef(false);
+
+  // Reset greetingFired when returning to greeting after emergence acknowledgement
+  useEffect(() => {
+    if (emergenceAcknowledged && phase === 'greeting') {
+      greetingFired.current = false;
+    }
+  }, [emergenceAcknowledged, phase]);
 
   useEffect(() => {
-    if (phase !== 'greeting') return;
+    if (phase !== 'greeting' || greetingFired.current) return;
+    greetingFired.current = true;
 
     let cancelled = false;
 
     dispatch({ type: 'START_STREAMING' });
+    tts.stop();
 
-    const greeting = buildChronicleGreeting({
-      timeOfDay: getTimeOfDay(),
-      streakCount: settings?.streakCount ?? 0,
-      recentEntries,
-      knowledge,
-      userName,
-      journeyContext: journeyPosition
-        ? { waypointName: journeyPosition.waypoint.name, waypointLens: journeyPosition.waypoint.waypointLens }
-        : null,
-      emergenceContext: emergenceAcknowledged && emergenceCard
-        ? { cardTitle: emergenceCard.title, cardType: emergenceCard.cardType, detectedPattern: emergenceCard.detectedPattern }
-        : null,
-    });
+    fetch(`/api/chronicle/today/greeting?timeOfDay=${getTimeOfDay()}`)
+      .then(async (res) => {
+        if (cancelled) return;
 
-    // Speak the full greeting while it typewriters visually
-    if (voicePrefs.enabled) {
-      tts.stop();
-      tts.speak(greeting);
-    }
+        if (!res.ok) throw new Error('Greeting fetch failed');
 
-    let i = 0;
+        const reader = res.body?.getReader();
+        if (!reader) throw new Error('No reader');
 
-    function tick() {
-      if (cancelled) return;
-      if (i < greeting.length) {
-        dispatch({ type: 'STREAM_TOKEN', token: greeting[i] });
-        i++;
-        setTimeout(tick, 18);
-      } else {
-        dispatch({ type: 'STREAM_COMPLETE', content: greeting });
+        const decoder = new TextDecoder();
+        let accumulated = '';
+
+        // eslint-disable-next-line no-constant-condition
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done || cancelled) break;
+          const chunk = decoder.decode(value, { stream: true });
+          accumulated += chunk;
+          dispatch({ type: 'STREAM_TOKEN', token: chunk });
+          if (voicePrefs.enabled) {
+            tts.pushToken(chunk);
+          }
+        }
+
+        if (cancelled) return;
+
+        if (voicePrefs.enabled) {
+          tts.flush();
+        }
+
+        dispatch({ type: 'STREAM_COMPLETE', content: accumulated });
         setTimeout(() => {
           if (!cancelled) dispatch({ type: 'GREETING_DONE' });
         }, 600);
-      }
-    }
+      })
+      .catch(() => {
+        if (cancelled) return;
 
-    // Small initial delay to let React settle
-    setTimeout(tick, 18);
+        // Fallback: run template-based typewriter
+        const greeting = buildChronicleGreeting({
+          timeOfDay: getTimeOfDay(),
+          streakCount: settings?.streakCount ?? 0,
+          recentEntries,
+          knowledge,
+          userName,
+          journeyContext: journeyPosition
+            ? { waypointName: journeyPosition.waypoint.name, waypointLens: journeyPosition.waypoint.waypointLens }
+            : null,
+          emergenceContext: emergenceAcknowledged && emergenceCard
+            ? { cardTitle: emergenceCard.title, cardType: emergenceCard.cardType, detectedPattern: emergenceCard.detectedPattern }
+            : null,
+        });
+
+        let i = 0;
+        function tick() {
+          if (cancelled) return;
+          if (i < greeting.length) {
+            dispatch({ type: 'STREAM_TOKEN', token: greeting[i] });
+            i++;
+            setTimeout(tick, 18);
+          } else {
+            dispatch({ type: 'STREAM_COMPLETE', content: greeting });
+            setTimeout(() => {
+              if (!cancelled) dispatch({ type: 'GREETING_DONE' });
+            }, 600);
+          }
+        }
+        tick();
+
+        // TTS for fallback
+        if (voicePrefs.enabled) {
+          tts.speak(greeting);
+        }
+      });
 
     return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -727,30 +829,71 @@ export function ChronicleFlow({
 
   const handleForge = useCallback(() => {
     if (!canForge) return;
-    dispatch({ type: 'START_FORGING' });
-  }, [canForge]);
+    // 1. Start exit animation on dialogue + action bar
+    setForgingTransition(true);
+    // 2. Kick off background hue shift immediately
+    if (setMoodPreset) setMoodPreset('forging');
+    // 3. After content fades out, change phase
+    setTimeout(() => {
+      dispatch({ type: 'START_FORGING' });
+    }, 500);
+  }, [canForge, setMoodPreset]);
 
-  // ── Auto-transition: card_reveal → reading (or → /readings/new for journey users) ──
+  // Reset forgingTransition once the phase has actually changed
+  useEffect(() => {
+    if (phase === 'card_forging') {
+      setForgingTransition(false);
+    }
+  }, [phase]);
 
+  // ── Card reveal: transition to reading ──
+
+  const transitionToReading = useCallback(() => {
+    if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
+    if (journeyPosition && card) {
+      try {
+        sessionStorage.setItem('mystech_reading_handoff', JSON.stringify({
+          source: 'chronicle',
+          chronicleCardId: card.id,
+          question: journeyPosition.waypoint.suggestedIntention,
+          deckId,
+        }));
+      } catch { /* sessionStorage unavailable */ }
+      router.push('/readings/new?source=chronicle');
+    } else {
+      dispatch({ type: 'CARD_REVEALED' });
+    }
+  }, [journeyPosition, card, deckId, router]);
+
+  // 7-second pausable auto-timer during card_reveal
   useEffect(() => {
     if (phase !== 'card_reveal') return;
-    const timer = setTimeout(() => {
-      if (journeyPosition && card) {
-        try {
-          sessionStorage.setItem('mystech_reading_handoff', JSON.stringify({
-            source: 'chronicle',
-            chronicleCardId: card.id,
-            question: journeyPosition.waypoint.suggestedIntention,
-            deckId,
-          }));
-        } catch { /* sessionStorage unavailable */ }
-        window.location.href = '/readings/new?source=chronicle';
-      } else {
-        dispatch({ type: 'CARD_REVEALED' });
-      }
-    }, 2000);
-    return () => clearTimeout(timer);
-  }, [phase, journeyPosition, card, deckId]);
+    remainingMsRef.current = 7000;
+    setProgressDuration(7);
+    setProgressKey((k) => k + 1);
+    timerStartedAtRef.current = Date.now();
+    revealTimerRef.current = setTimeout(transitionToReading, 7000);
+    return () => { if (revealTimerRef.current) clearTimeout(revealTimerRef.current); };
+  }, [phase, transitionToReading]);
+
+  // Pause/resume timer when card detail modal opens/closes
+  useEffect(() => {
+    if (phase !== 'card_reveal') return;
+    if (modalProps.open) {
+      // Pause: clear timeout, save remaining
+      if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
+      const elapsed = Date.now() - timerStartedAtRef.current;
+      remainingMsRef.current = Math.max(0, remainingMsRef.current - elapsed);
+    } else if (remainingMsRef.current > 0) {
+      // Resume: restart with remaining time
+      const remaining = remainingMsRef.current;
+      setProgressDuration(remaining / 1000);
+      setProgressKey((k) => k + 1);
+      timerStartedAtRef.current = Date.now();
+      revealTimerRef.current = setTimeout(transitionToReading, remaining);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [modalProps.open]);
 
   // ── Zone visibility ──────────────────────────────────────────────────
 
@@ -762,7 +905,7 @@ export function ChronicleFlow({
   const cardZoneStyle = (() => {
     if (phase === 'emergence_reveal') return { flex: '0 0 55%' };
     if (phase === 'card_forging') return { flex: '1 1 auto' };
-    if (phase === 'card_reveal') return { flex: '0 0 50%' };
+    if (phase === 'card_reveal') return { flex: '0 0 60%' };
     if (phase === 'reading' || phase === 'complete') return { flex: '0 0 35%' };
     return { flex: 0 };
   })();
@@ -799,17 +942,21 @@ export function ChronicleFlow({
           </div>
         )}
 
-        {/* Forging animation */}
-        <div
-          className={cn(
-            'w-full h-full transition-opacity duration-300',
-            phase === 'card_forging' ? 'opacity-100' : 'opacity-0 pointer-events-none h-0'
+        {/* Forging animation — AnimatePresence for smooth enter/exit */}
+        <AnimatePresence>
+          {phase === 'card_forging' && (
+            <motion.div
+              key="forging"
+              className="w-full h-full"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ ...CONTENT_SPRING, duration: 0.2 }}
+            >
+              <CardForgingAnimation />
+            </motion.div>
           )}
-        >
-          {(phase === 'card_forging' || phase === 'card_reveal') && (
-            <CardForgingAnimation />
-          )}
-        </div>
+        </AnimatePresence>
 
         {/* Revealed card — stays in card zone through reveal, reading, and complete */}
         {(phase === 'card_reveal' || phase === 'reading' || phase === 'complete') && card && (
@@ -819,24 +966,32 @@ export function ChronicleFlow({
             transition={CONTENT_SPRING}
             className="absolute inset-0 flex flex-col items-center justify-center gap-3"
           >
-            <OracleCard
-              card={toCard(card)}
-              size={phase === 'card_reveal' ? 'md' : 'sm'}
-              hideTitle={phase !== 'card_reveal'}
-            />
+            <div
+              className={phase === 'card_reveal' ? 'cursor-pointer' : undefined}
+              onClick={phase === 'card_reveal' ? () => openCard(toCard(card)) : undefined}
+            >
+              <OracleCard
+                card={toCard(card)}
+                size={phase === 'card_reveal' ? 'md' : 'sm'}
+                hideTitle={phase !== 'card_reveal'}
+                animated
+              />
+            </div>
             {phase !== 'card_reveal' && (
               <p className="text-sm font-semibold text-white/90 text-center mt-1 max-w-[140px] leading-snug">
                 {card.title}
               </p>
             )}
-            {phase === 'card_reveal' && isFirstEntry && (
+            {phase === 'card_reveal' && (
               <motion.p
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 1 }}
                 className="text-xs text-white/40 text-center max-w-xs"
               >
-                This is your first Chronicle card. Each day you return, another card is added to your deck.
+                {isFirstEntry
+                  ? 'Your first Chronicle card — tap to explore. Each day you return, another is forged.'
+                  : 'Tap to explore your card'}
               </motion.p>
             )}
           </motion.div>
@@ -872,12 +1027,20 @@ export function ChronicleFlow({
             <div className="flex-1" />
           )}{/* pushes content to bottom when conversation is short */}
 
-          {/* Chat messages */}
+          {/* Chat messages — fades out during forging transition */}
           {(phase === 'greeting' || phase === 'dialogue') && (
-            <ChronicleDialogue
-              messages={messages}
-              isStreaming={isStreaming}
-            />
+            <motion.div
+              animate={{
+                opacity: forgingTransition ? 0 : 1,
+                y: forgingTransition ? -12 : 0,
+              }}
+              transition={CONTENT_SPRING}
+            >
+              <ChronicleDialogue
+                messages={messages}
+                isStreaming={isStreaming}
+              />
+            </motion.div>
           )}
 
           {/* Reading phase: mini-reading text (card stays in card zone above) */}
@@ -932,10 +1095,12 @@ export function ChronicleFlow({
         </div>
       </motion.div>
 
-      {/* ── ACTION ZONE — always mounted ── */}
+      {/* ── ACTION ZONE — always mounted, fades during forging transition ── */}
       <motion.div
         layout
         className="shrink-0 p-4 pb-[max(16px,env(safe-area-inset-bottom))]"
+        animate={{ opacity: forgingTransition ? 0 : 1 }}
+        transition={CONTENT_SPRING}
       >
         <div className="max-w-lg mx-auto">
           <ActionBar
@@ -944,15 +1109,22 @@ export function ChronicleFlow({
             isStreaming={isStreaming}
             canForge={canForge}
             isFirstEntry={isFirstEntry}
+            forgingTransition={forgingTransition}
             onInputChange={setInputValue}
             onSend={handleSend}
             onForge={handleForge}
             onMicTranscript={handleMicTranscript}
             onMicListeningChange={handleMicListeningChange}
             onEmergenceAcknowledge={() => dispatch({ type: 'EMERGENCE_ACKNOWLEDGED' })}
+            onContinueToReading={transitionToReading}
+            progressDuration={progressDuration}
+            progressKey={progressKey}
           />
         </div>
       </motion.div>
+
+      {/* Card detail modal for card_reveal interaction */}
+      <CardDetailModal {...modalProps} />
     </div>
   );
 }

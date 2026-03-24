@@ -129,6 +129,94 @@ export function buildChronicleGreeting({
   return parts.join(" ");
 }
 
+// ── AI greeting prompt builder ─────────────────────────────────────────
+
+export function buildChronicleGreetingPrompt({
+  timeOfDay,
+  streakCount,
+  recentEntries,
+  knowledge,
+  userName,
+  journeyContext,
+  emergenceContext,
+}: {
+  timeOfDay: "morning" | "afternoon" | "evening" | "night";
+  streakCount: number;
+  recentEntries?: { mood: string | null; themes: string[]; cardTitle?: string }[];
+  knowledge?: ChronicleKnowledge | null;
+  userName?: string;
+  journeyContext?: { waypointName: string; waypointLens: string } | null;
+  emergenceContext?: { cardTitle: string; cardType: string; detectedPattern: string } | null;
+}): string {
+  const contextLines: string[] = [];
+
+  contextLines.push(`Time of day: ${timeOfDay}`);
+
+  if (streakCount > 1) {
+    contextLines.push(`Streak: ${streakCount} consecutive days`);
+  }
+
+  if (recentEntries?.[0]?.cardTitle) {
+    contextLines.push(`Yesterday's card: "${recentEntries[0].cardTitle}"`);
+  }
+
+  // Recent moods and themes
+  if (recentEntries && recentEntries.length > 0) {
+    const recentMoods = recentEntries.map((e) => e.mood).filter(Boolean);
+    if (recentMoods.length > 0) {
+      contextLines.push(`Recent moods: ${recentMoods.join(", ")}`);
+    }
+    const recentThemes = [...new Set(recentEntries.flatMap((e) => e.themes).filter(Boolean))].slice(0, 6);
+    if (recentThemes.length > 0) {
+      contextLines.push(`Recent themes: ${recentThemes.join(", ")}`);
+    }
+  }
+
+  // Knowledge patterns
+  if (knowledge) {
+    const now = new Date();
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+    const topEmotional = knowledge.emotionalPatterns
+      ?.filter((p) => p.frequency >= 3 && new Date(p.lastSeen) >= sevenDaysAgo)
+      .sort((a, b) => b.frequency - a.frequency)[0];
+
+    if (topEmotional) {
+      contextLines.push(`Recurring emotional pattern: "${topEmotional.pattern}" (${topEmotional.frequency} times in recent conversations)`);
+    }
+
+    const topSymbol = knowledge.recurringSymbols?.find((s) => s.count >= 3);
+    if (topSymbol) {
+      contextLines.push(`Recurring symbol: "${topSymbol.symbol}" (appeared ${topSymbol.count} times)`);
+    }
+  }
+
+  if (journeyContext) {
+    contextLines.push(`Active waypoint: "${journeyContext.waypointName}" — ${journeyContext.waypointLens}`);
+  }
+
+  if (emergenceContext) {
+    contextLines.push(`Emergence card just acknowledged: "${emergenceContext.cardTitle}" (${emergenceContext.cardType}), arising from pattern: ${emergenceContext.detectedPattern}`);
+  }
+
+  const contextBlock = contextLines.map((l) => `- ${l}`).join("\n");
+
+  return `You are Lyra, a warm daily companion who helps seekers chronicle their lives through oracle cards. You speak naturally — warm, direct, insightful, never performatively mystical.
+
+Here is today's context for this seeker:
+${contextBlock}
+
+Write a greeting of exactly 2-3 sentences that opens today's Chronicle session. Weave the available signals into a cohesive invitation — do not list them as separate facts. End with a specific thread for the seeker to pull on: a reflection prompt, an evocative question, or an observation that invites them to respond.
+
+${emergenceContext ? "Anchor the greeting on the emergence card they just acknowledged — connect its pattern to today's opening question." : ""}${journeyContext ? "Let the waypoint's lens color your opening question — help the seeker understand what the waypoint theme means through a concrete, grounded question." : ""}
+
+Rules:
+- Flowing prose only — no markdown, no headers, no asterisks, no bullet points
+- Never address the seeker by name in the greeting
+- Do not mention streak numbers or statistics directly
+- Do not name-drop signals without explaining why they matter`;
+}
+
 // ── Conversation context injection ──────────────────────────────────────
 
 export function buildChronicleConversationContext({
