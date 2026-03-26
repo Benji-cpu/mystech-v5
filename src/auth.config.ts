@@ -2,6 +2,7 @@ import type { NextAuthConfig } from "next-auth";
 import Google from "next-auth/providers/google";
 
 export default {
+  trustHost: true,
   providers: [
     Google({
       clientId: process.env.AUTH_GOOGLE_ID,
@@ -15,11 +16,14 @@ export default {
   callbacks: {
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
-      const isOnApp = nextUrl.pathname.startsWith("/dashboard") ||
+      const isOnApp = nextUrl.pathname.startsWith("/home") ||
+        nextUrl.pathname.startsWith("/dashboard") ||
         nextUrl.pathname.startsWith("/profile") ||
         nextUrl.pathname.startsWith("/decks") ||
         nextUrl.pathname.startsWith("/readings") ||
-        nextUrl.pathname.startsWith("/explore") ||
+        nextUrl.pathname.startsWith("/art-styles") ||
+        nextUrl.pathname.startsWith("/chronicle") ||
+        nextUrl.pathname.startsWith("/paths") ||
         nextUrl.pathname.startsWith("/settings") ||
         nextUrl.pathname.startsWith("/onboarding");
       const isOnAdmin = nextUrl.pathname.startsWith("/admin");
@@ -36,7 +40,7 @@ export default {
       }
 
       if (isOnLogin && isLoggedIn) {
-        return Response.redirect(new URL("/dashboard", nextUrl));
+        return Response.redirect(new URL("/home", nextUrl));
       }
 
       return true;

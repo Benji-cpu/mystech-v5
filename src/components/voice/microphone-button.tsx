@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Mic, MicOff, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useSpeechToText } from "@/hooks/use-speech-to-text";
@@ -74,21 +75,32 @@ export function MicrophoneButton({ onTranscript, onListeningChange, className }:
                 : "Start voice input"
         }
       >
-        {isLoadingModel ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : isProcessing ? (
-          <>
-            <Loader2 className="h-4 w-4 animate-spin" />
-            <span className="absolute inset-0 rounded-lg border-2 border-amber-400 animate-pulse" />
-          </>
-        ) : isListening ? (
-          <>
-            <MicOff className="h-4 w-4" />
-            <span className="absolute inset-0 rounded-lg border-2 border-red-400 animate-pulse" />
-          </>
-        ) : (
-          <Mic className="h-4 w-4" />
-        )}
+        <AnimatePresence mode="popLayout">
+          <motion.span
+            key={isLoadingModel ? 'loading' : isProcessing ? 'processing' : isListening ? 'listening' : 'idle'}
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            transition={{ type: "spring", stiffness: 400, damping: 30 }}
+            className="flex items-center justify-center"
+          >
+            {isLoadingModel ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : isProcessing ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span className="absolute inset-0 rounded-lg border-2 border-amber-400 animate-pulse" />
+              </>
+            ) : isListening ? (
+              <>
+                <Mic className="h-4 w-4" />
+                <span className="absolute inset-0 rounded-lg border-2 border-red-400 animate-pulse" />
+              </>
+            ) : (
+              <Mic className="h-4 w-4" />
+            )}
+          </motion.span>
+        </AnimatePresence>
       </button>
 
       <WhisperDownloadIndicator

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
+import Link from "next/link";
 import { ChevronDown } from "lucide-react";
 import { LyraSigil } from "@/components/guide/lyra-sigil";
 import { LyraNarration } from "@/components/guide/lyra-narration";
@@ -15,6 +16,7 @@ interface LyraInvitationProps {
   className?: string;
 }
 
+const MotionLink = motion.create(Link);
 const spring = { type: "spring" as const, stiffness: 300, damping: 25 };
 
 export function LyraInvitation({
@@ -42,18 +44,8 @@ export function LyraInvitation({
           animate={{ scale: 1, opacity: 1 }}
           transition={spring}
         >
-          <LyraSigil size="xl" state={sigilState} />
+          <LyraSigil size="xl" state={sigilState} showLabel />
         </motion.div>
-
-        {/* Label */}
-        <motion.p
-          className="text-[10px] uppercase tracking-[0.3em] text-primary/70 font-medium"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3, duration: 0.4 }}
-        >
-          Lyra
-        </motion.p>
 
         {/* Narration */}
         <motion.div
@@ -87,8 +79,8 @@ export function LyraInvitation({
 
         {/* CTA */}
         {invitation.ctaHref && (
-          <motion.a
-            href={invitation.ctaHref}
+          <MotionLink
+            href={invitation.ctaHref!}
             className="mt-2 inline-flex items-center justify-center px-8 py-3 rounded-full bg-gradient-to-r from-primary/90 to-amber-600/90 text-black font-semibold text-sm tracking-wide shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-shadow"
             initial={{ opacity: 0, y: 20 }}
             animate={narrationDone ? { opacity: 1, y: 0 } : {}}
@@ -97,7 +89,7 @@ export function LyraInvitation({
             whileTap={{ scale: 0.97 }}
           >
             {invitation.ctaLabel}
-          </motion.a>
+          </MotionLink>
         )}
 
         {/* Scroll indicator */}

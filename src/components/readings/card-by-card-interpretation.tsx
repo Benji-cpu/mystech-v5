@@ -55,6 +55,8 @@ interface CardByCardInterpretationProps {
   guided?: boolean;
   /** Called when user clicks "Enter your sanctuary" in guided mode */
   onInitiationComplete?: () => void;
+  /** When true, shows a countdown progress bar inside the Next Card button */
+  autoAdvanceCountdown?: boolean;
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────
@@ -89,6 +91,7 @@ export function CardByCardInterpretation({
   journeyPathId,
   guided,
   onInitiationComplete,
+  autoAdvanceCountdown,
 }: CardByCardInterpretationProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -248,22 +251,9 @@ export function CardByCardInterpretation({
           })}
         </AnimatePresence>
 
-        {/* Next Card button — appears when current section is complete and not the last card */}
+        {/* Spacer so scroll anchor sits above the sticky button */}
         {isCurrentSectionComplete && !isLastCard && onAdvance && (
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="flex justify-center pt-4"
-          >
-            <button
-              onClick={onAdvance}
-              className="flex items-center gap-2 px-6 py-2.5 rounded-xl font-medium text-sm bg-gradient-to-r from-[#c9a94e] to-[#b89840] text-[#0a0118] shadow-lg shadow-[#c9a94e]/20 hover:shadow-xl hover:shadow-[#c9a94e]/30 transition-all duration-300"
-            >
-              Next Card
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </motion.div>
+          <div className="h-16" />
         )}
 
         {/* Guided completion — Lyra closing message + "Enter your sanctuary" */}
@@ -312,6 +302,38 @@ export function CardByCardInterpretation({
 
       {/* Scroll anchor */}
       <div ref={bottomRef} />
+
+      {/* Sticky Next Card button — always visible at bottom */}
+      {isCurrentSectionComplete && !isLastCard && onAdvance && (
+        <div className="sticky bottom-0 z-10">
+          <div className="bg-gradient-to-t from-[#0a0118] via-[#0a0118]/90 to-transparent pt-6 pb-4">
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              className="flex justify-center"
+            >
+              <button
+                onClick={onAdvance}
+                className="relative flex items-center gap-2 px-6 py-2.5 rounded-xl font-medium text-sm bg-gradient-to-r from-[#c9a94e] to-[#b89840] text-[#0a0118] shadow-lg shadow-[#c9a94e]/20 hover:shadow-xl hover:shadow-[#c9a94e]/30 transition-all duration-300 overflow-hidden"
+              >
+                {autoAdvanceCountdown && (
+                  <motion.div
+                    className="absolute inset-0 bg-[#0a0118]/20 origin-left"
+                    initial={{ scaleX: 0 }}
+                    animate={{ scaleX: 1 }}
+                    transition={{ duration: 1.5, ease: "linear" }}
+                  />
+                )}
+                <span className="relative z-10 flex items-center gap-2">
+                  Next Card
+                  <ChevronRight className="w-4 h-4" />
+                </span>
+              </button>
+            </motion.div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

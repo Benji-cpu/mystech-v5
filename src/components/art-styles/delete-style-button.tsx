@@ -45,7 +45,7 @@ export function DeleteStyleButton({
       }
 
       setOpen(false);
-      router.push("/explore");
+      router.push("/art-styles");
       router.refresh();
     } catch {
       setError("Failed to delete style. Please try again.");

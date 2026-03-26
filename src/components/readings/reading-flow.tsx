@@ -26,7 +26,9 @@ import { ReadingFlipCard } from "./reading-flip-card";
 import { AstrologyBar } from "./astrology-bar";
 import { AstroNudgeBanner } from "@/components/shared/astro-nudge-banner";
 import { JourneyContextBanner } from "./journey-context-banner";
-import type { AstrologyProfile } from "@/types";
+import { useCardDetailModal } from "@/hooks/use-card-detail-modal";
+import { CardDetailModal } from "@/components/cards/card-detail-modal";
+import type { AstrologyProfile, CardImageStatus, CardType } from "@/types";
 
 import {
   readingFlowReducer,
@@ -120,7 +122,7 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
       return;
     }
     await fetch("/api/onboarding/complete", { method: "POST" });
-    router.push("/dashboard?initiated=true");
+    router.push("/home?initiated=true");
   }, [onInitiationComplete, router]);
   const defaultsRestored = useRef(false);
 
@@ -238,8 +240,8 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
   const initialActiveSection = useMemo((): SetupSection => {
     const saved = loadDefaults();
     if (decks.length === 1) {
-      // Single deck auto-selected — skip to spreads or collapse all
-      if (saved?.spreadType) return null;
+      // Single deck auto-selected — skip to spreads or show intention
+      if (saved?.spreadType) return "intention";
       return "spreads";
     }
     if (!saved || saved.deckIds.length === 0) return "decks";
@@ -248,7 +250,7 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
     );
     if (validDeckIds.length === 0) return "decks";
     if (!saved.spreadType) return "spreads";
-    return null;
+    return "intention";
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // only on mount — decks is stable from SSR
 
@@ -320,15 +322,17 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
   const cardZoneStyle = useMemo((): CSSProperties | undefined => {
     if (!isPresenting || isCelticPresenting) return undefined;
     const { cardHeight, gap, isMobile } = compactSize;
-    const padding = 48; // 24px breathing room top + bottom
+    // Extra space for card title + position label below card
+    const labelSpace = 56;
+    const padding = 32; // breathing room top + bottom
 
     if (isMobile) {
       if (selectedSpread === "five_card") {
         // Mobile 5-card uses 3-row cross layout
-        return { flex: "none", height: cardHeight * 3 + gap * 2 + padding };
+        return { flex: "none", height: cardHeight * 3 + gap * 2 + labelSpace + padding };
       }
       // single or three_card — single horizontal row
-      return { flex: "none", height: cardHeight + padding };
+      return { flex: "none", height: cardHeight + labelSpace + padding };
     }
     return undefined;
   }, [isPresenting, isCelticPresenting, compactSize, selectedSpread]);
@@ -364,12 +368,22 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
 
   // ── Chronicle card ────────────────────────────────────────────────────
 
-  type ChronicleCardPreview = { id: string; title: string };
+  type ChronicleCardPreview = {
+    id: string;
+    title: string;
+    meaning: string;
+    guidance: string;
+    imageUrl: string | null;
+    imageStatus: string;
+    cardType: string;
+  };
   type ChronicleMessage = { role: "user" | "assistant"; content: string };
   const [todayChronicleCard, setTodayChronicleCard] = useState<ChronicleCardPreview | null>(null);
   const [chronicleConversation, setChronicleConversation] = useState<ChronicleMessage[] | null>(null);
   const [chronicleNotes, setChronicleNotes] = useState("");
   const chronicleFetched = useRef(false);
+  const { openCard: openChronicleCard, modalProps: chronicleModalProps } = useCardDetailModal();
+  const { openCard: openCeremonyCard, modalProps: ceremonyModalProps } = useCardDetailModal();
 
   useEffect(() => {
     if (chronicleFetched.current) return;
@@ -470,6 +484,14 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
     enabled: voicePrefs.enabled,
   });
 
+  // Surface audio errors to the user
+  useEffect(() => {
+    if (tts.audioError) {
+      toast.error("Audio playback interrupted. You can continue reading without voice.");
+      tts.clearError();
+    }
+  }, [tts.audioError, tts.clearError]);
+
   // Pre-fetch card narration audio
   const preFetchTriggered = useRef(false);
 
@@ -518,6 +540,13 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
 
   // (section TTS effect is defined below, after isCurrentSectionComplete)
   const lastSpokenSection = useRef(-1);
+  const [textZoneVisible, setTextZoneVisible] = useState(false);
+
+  // ── Auto-advance after audio ─────────────────────────────────────────
+  const prevTtsState = useRef(tts.state);
+  const audioSpokenForCard = useRef(-1);
+  const [autoAdvanceCountdown, setAutoAdvanceCountdown] = useState(false);
+  const autoAdvanceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ── API: Create reading ────────────────────────────────────────────────
 
@@ -660,6 +689,12 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
   // ── Manual advance handler ───────────────────────────────────────────
 
   const handleAdvanceCard = useCallback(() => {
+    // Cancel any pending auto-advance
+    if (autoAdvanceTimerRef.current) {
+      clearTimeout(autoAdvanceTimerRef.current);
+      autoAdvanceTimerRef.current = null;
+    }
+    setAutoAdvanceCountdown(false);
     tts.stop();
     const isLastCard = presentingCardIndex >= drawnCards.length - 1;
     if (isLastCard) {
@@ -674,12 +709,57 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
   useEffect(() => {
     if (!voicePrefs.enabled || phase !== "presenting") return;
     if (lastSpokenSection.current >= presentingCardIndex) return;
-    if (!isCurrentSectionComplete) return;
+    if (!isCurrentSectionComplete || !textZoneVisible) return;
     const section = presentation.object?.cardSections?.[presentingCardIndex];
     if (!section?.text) return;
     lastSpokenSection.current = presentingCardIndex;
+    audioSpokenForCard.current = presentingCardIndex;
     tts.speak(section.text);
-  }, [phase, presentingCardIndex, isCurrentSectionComplete, voicePrefs.enabled, presentation.object, tts]);
+  }, [phase, presentingCardIndex, isCurrentSectionComplete, textZoneVisible, voicePrefs.enabled, presentation.object, tts]);
+
+  // Auto-advance detection: playing → idle transition
+  useEffect(() => {
+    const prev = prevTtsState.current;
+    prevTtsState.current = tts.state;
+
+    if (
+      prev === "playing" &&
+      tts.state === "idle" &&
+      voicePrefs.enabled &&
+      isPresentingPhase(phase) &&
+      audioSpokenForCard.current === presentingCardIndex &&
+      isCurrentSectionComplete &&
+      presentingCardIndex < drawnCards.length - 1
+    ) {
+      setAutoAdvanceCountdown(true);
+      autoAdvanceTimerRef.current = setTimeout(() => {
+        setAutoAdvanceCountdown(false);
+        dispatch({ type: "ADVANCE_CARD" });
+      }, 1500);
+    }
+  }, [tts.state, voicePrefs.enabled, phase, presentingCardIndex, drawnCards.length, isCurrentSectionComplete]);
+
+  // Cleanup auto-advance timer when leaving presenting phase or on unmount
+  useEffect(() => {
+    if (!isPresentingPhase(phase)) {
+      if (autoAdvanceTimerRef.current) {
+        clearTimeout(autoAdvanceTimerRef.current);
+        autoAdvanceTimerRef.current = null;
+      }
+      setAutoAdvanceCountdown(false);
+    }
+  }, [phase]);
+
+  useEffect(() => {
+    return () => {
+      if (autoAdvanceTimerRef.current) clearTimeout(autoAdvanceTimerRef.current);
+    };
+  }, []);
+
+  // Reset text zone visibility when leaving presenting phase
+  useEffect(() => {
+    if (!isPresenting) setTextZoneVisible(false);
+  }, [isPresenting]);
 
   // ── Status text (only during drawing phase) ──────────────────────────
 
@@ -751,7 +831,7 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
   // ── Render ────────────────────────────────────────────────────────────
 
   return (
-    <div className="-mx-4 sm:-mx-6 lg:-mx-8 -mt-6 h-[100dvh] flex flex-col overflow-hidden">
+    <div className="-mx-4 sm:-mx-6 lg:-mx-8 -mt-6 -mb-6 h-[100dvh] flex flex-col overflow-hidden pt-20">
       {/* ── ZONE 0: GUIDED LOADING — only visible in guided mode before reading begins ── */}
       <motion.div
         layout
@@ -787,13 +867,13 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
       <motion.div
         layout
         animate={{
-          height: isInSetup && !guided ? "auto" : 0,
+          flex: isInSetup && !guided ? "1 1 0%" : "0 0 0px",
           opacity: isInSetup && !guided ? 1 : 0,
         }}
         transition={SPRINGS.zone}
-        className="overflow-hidden shrink-0"
+        className="min-h-0 overflow-hidden"
       >
-        <div className="px-4 sm:px-6 pt-24 pb-6 max-w-3xl mx-auto w-full overflow-y-auto max-h-[85dvh]">
+        <div className="px-4 sm:px-6 pt-4 pb-6 max-w-3xl mx-auto w-full h-full overflow-y-auto">
           {/* Astrology nudge — hidden once profile exists */}
           {!astroProfile && <AstroNudgeBanner className="mb-4" />}
 
@@ -816,15 +896,31 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
                       : "border-white/10 opacity-60"
                   )}
                 >
-                  <BookOpen className="w-4 h-4 text-[#c9a94e] shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <span className="text-xs text-white/50 leading-none block mb-0.5">
-                      Today&apos;s Chronicle Card
-                    </span>
-                    <span className="text-sm text-white/90 font-medium truncate block">
-                      &ldquo;{todayChronicleCard.title}&rdquo;
-                    </span>
-                  </div>
+                  <button
+                    type="button"
+                    className="flex items-center gap-3 flex-1 min-w-0 text-left"
+                    onClick={() => openChronicleCard({
+                      id: todayChronicleCard.id,
+                      title: todayChronicleCard.title,
+                      meaning: todayChronicleCard.meaning,
+                      guidance: todayChronicleCard.guidance,
+                      imageUrl: todayChronicleCard.imageUrl,
+                      imageStatus: todayChronicleCard.imageStatus as CardImageStatus,
+                      cardType: todayChronicleCard.cardType as CardType,
+                      originContext: null,
+                    })}
+                    aria-label="Preview Chronicle card"
+                  >
+                    <BookOpen className="w-4 h-4 text-[#c9a94e] shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <span className="text-xs text-white/50 leading-none block mb-0.5">
+                        Today&apos;s Chronicle Card
+                      </span>
+                      <span className="text-sm text-white/90 font-medium truncate block">
+                        &ldquo;{todayChronicleCard.title}&rdquo;
+                      </span>
+                    </div>
+                  </button>
                   <button
                     onClick={() => {
                       if (chronicleCardId) {
@@ -865,71 +961,106 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
           )}
 
           {/* Spread selector — visible once decks selected */}
-          {isSectionVisible("spreads") && (
-            <SpreadSelector
-              selectedSpread={selectedSpread}
-              onSelect={(spread) =>
-                dispatch({ type: "SELECT_SPREAD", spread })
-              }
-              deckCardCount={totalCardCount}
-              userPlan={userPlan}
-              userRole={userRole}
-              collapsible
-              expanded={activeSection === "spreads"}
-              onToggleExpanded={() => handleSectionToggle("spreads")}
-              className="mb-4"
-            />
-          )}
+          <AnimatePresence>
+            {isSectionVisible("spreads") && (
+              <motion.div
+                key="spreads"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ type: "spring", stiffness: 200, damping: 25 }}
+              >
+                <SpreadSelector
+                  selectedSpread={selectedSpread}
+                  onSelect={(spread) =>
+                    dispatch({ type: "SELECT_SPREAD", spread })
+                  }
+                  deckCardCount={totalCardCount}
+                  userPlan={userPlan}
+                  userRole={userRole}
+                  collapsible
+                  expanded={activeSection === "spreads"}
+                  onToggleExpanded={() => handleSectionToggle("spreads")}
+                  className="mb-4"
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Path context banner — visible once spread selected, non-dismissable */}
-          {isSectionVisible("intention") && pathPosition && (state.journeyPathId || pathPacingBlocked) && (
-            <JourneyContextBanner
-              circleName={pathPosition.circleName}
-              circleNumber={pathPosition.circleNumber}
-              pathName={pathPosition.pathName}
-              retreatName={pathPosition.retreatName}
-              waypointName={pathPosition.waypointName}
-              suggestedIntention={pathPosition.suggestedIntention}
-              pacingBlocked={pathPacingBlocked}
-              nextAvailableAt={pathPosition.nextAvailableAt ?? undefined}
-              className="mb-4"
-            />
-          )}
+          <AnimatePresence>
+            {isSectionVisible("intention") && pathPosition && (state.journeyPathId || pathPacingBlocked) && (
+              <motion.div
+                key="journey-banner"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ type: "spring", stiffness: 200, damping: 25, delay: 0.1 }}
+              >
+                <JourneyContextBanner
+                  circleName={pathPosition.circleName}
+                  circleNumber={pathPosition.circleNumber}
+                  pathName={pathPosition.pathName}
+                  retreatName={pathPosition.retreatName}
+                  waypointName={pathPosition.waypointName}
+                  suggestedIntention={pathPosition.suggestedIntention}
+                  pacingBlocked={pathPacingBlocked}
+                  nextAvailableAt={pathPosition.nextAvailableAt ?? undefined}
+                  className="mb-4"
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Question input — chronicle context panel for handoffs, editable for normal readings */}
-          {isSectionVisible("intention") && (
-            isChronicleHandoff && question ? (
-              <ChronicleContextPanel
-                conversation={chronicleConversation ?? []}
-                question={question}
-                notes={chronicleNotes}
-                onNotesChange={setChronicleNotes}
-                className="mb-6"
-              />
-            ) : (
-              !(pathPosition && state.journeyPathId && state.journeySuggestedIntention) && (
-                <IntentionInput
-                  question={question}
-                  onChange={(q) => dispatch({ type: "SET_QUESTION", question: q })}
-                  collapsible
-                  expanded={activeSection === "intention"}
-                  onToggleExpanded={() => handleSectionToggle("intention")}
-                  className="mb-6"
-                />
-              )
-            )
-          )}
+          <AnimatePresence>
+            {isSectionVisible("intention") && (
+              <motion.div
+                key="intention"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ type: "spring", stiffness: 200, damping: 25, delay: 0.1 }}
+              >
+                {isChronicleHandoff && question ? (
+                  <ChronicleContextPanel
+                    conversation={chronicleConversation ?? []}
+                    question={question}
+                    notes={chronicleNotes}
+                    onNotesChange={setChronicleNotes}
+                    className="mb-6"
+                  />
+                ) : (
+                  !(pathPosition && state.journeyPathId && state.journeySuggestedIntention) && (
+                    <IntentionInput
+                      question={question}
+                      onChange={(q) => dispatch({ type: "SET_QUESTION", question: q })}
+                      collapsible
+                      expanded={activeSection === "intention"}
+                      onToggleExpanded={() => handleSectionToggle("intention")}
+                      className="mb-6"
+                    />
+                  )
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Error message */}
-          {error && (
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-sm text-destructive text-center mb-4"
-            >
-              {error}
-            </motion.p>
-          )}
+          <AnimatePresence>
+            {error && (
+              <motion.p
+                key="error"
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                transition={{ type: "spring", stiffness: 300, damping: 28 }}
+                className="text-sm text-destructive text-center mb-4"
+              >
+                {error}
+              </motion.p>
+            )}
+          </AnimatePresence>
 
           {/* Begin Reading button */}
           <div className="flex justify-center pb-20">
@@ -955,13 +1086,13 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
       {/* ── ZONE 2: CARD ZONE — always mounted, grows after setup ── */}
       <motion.div
         layout
-        className="min-h-0 overflow-hidden flex flex-col"
+        className="min-h-0 overflow-visible flex flex-col"
         animate={{
           flex: showCards
             ? isPresenting
               ? isCelticPresenting
                 ? "0 0 55%"
-                : selectedSpread === "five_card" ? "0 0 36%" : "0 0 30%"
+                : selectedSpread === "five_card" ? "0 0 45%" : "0 0 40%"
               : "1 1 0%"
             : "0 0 0px",
           opacity: showCards ? 1 : 0,
@@ -992,7 +1123,7 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
         )}
 
         {/* Card spread — stays in layout through all card phases */}
-        <div className="flex-1 min-h-0 flex items-center justify-center px-2">
+        <div className="flex-1 min-h-0 flex items-center justify-center px-2 overflow-visible">
           {showCards && (
             <div className={cn(
               "w-full h-full",
@@ -1033,7 +1164,8 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
                   gap={currentSize.gap}
                   isMobile={currentSize.isMobile}
                   activeCardIndex={activeCardIndex}
-                  showLabels={!isPresenting}
+                  showLabels
+                  onCardClick={openCeremonyCard}
                 />
               </div>
 
@@ -1099,8 +1231,11 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
           ...SPRINGS.zone,
           delay: isPresenting ? 0.2 : 0,
         }}
+        onAnimationComplete={() => {
+          if (isPresenting) setTextZoneVisible(true);
+        }}
       >
-        <div className="h-full overflow-y-auto bg-white/5 backdrop-blur-xl border border-white/10 rounded-t-2xl mx-2 sm:mx-4 p-4 sm:p-6">
+        <div className="relative h-full overflow-y-auto bg-white/5 backdrop-blur-xl border border-white/10 rounded-t-2xl mx-2 sm:mx-4 p-4 sm:p-6">
           {isPresenting && (
             <CardByCardInterpretation
               object={presentation.object}
@@ -1116,10 +1251,14 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
               journeyPathId={state.journeyPathId ?? undefined}
               guided={guided}
               onInitiationComplete={handleInitiationComplete}
+              autoAdvanceCountdown={autoAdvanceCountdown}
             />
           )}
         </div>
       </motion.div>
+      {/* Chronicle card detail modal */}
+      <CardDetailModal {...chronicleModalProps} />
+      <CardDetailModal {...ceremonyModalProps} />
     </div>
   );
 }

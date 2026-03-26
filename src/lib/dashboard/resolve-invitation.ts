@@ -24,10 +24,11 @@ export type InvitationContext = {
   hasChronicle: boolean;
   completedChronicleToday: boolean;
   streakCount: number;
-  pathPosition: { pathName: string; waypointName: string } | null;
+  pathPosition: { pathId: string; pathName: string; waypointName: string } | null;
   moonPhase?: string;
   moonSign?: string;
   isPostInitiation: boolean;
+  lastChronicleCardTitle: string | null;
 };
 
 // ── Helpers ──────────────────────────────────────────────────────────
@@ -91,10 +92,9 @@ export function resolveInvitation(ctx: InvitationContext): Invitation {
     return {
       type: "chronicle",
       greeting: withPrefix(prefix, greeting),
-      subtitle:
-        ctx.streakCount > 0
-          ? `${ctx.streakCount}-day streak`
-          : undefined,
+      subtitle: ctx.lastChronicleCardTitle
+        ? `Last time, ${ctx.lastChronicleCardTitle} guided your thread.`
+        : undefined,
       ctaLabel: "Open Chronicle",
       ctaHref: "/chronicle/today",
     };
@@ -110,7 +110,7 @@ export function resolveInvitation(ctx: InvitationContext): Invitation {
       greeting: withPrefix(prefix, greeting),
       subtitle: ctx.pathPosition.pathName,
       ctaLabel: "Continue",
-      ctaHref: "/paths",
+      ctaHref: `/paths/${ctx.pathPosition.pathId}`,
     };
   }
 

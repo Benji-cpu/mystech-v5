@@ -28,9 +28,10 @@ interface UseTextToSpeechOptions {
 export function useTextToSpeech(options: UseTextToSpeechOptions = {}) {
   const { voiceId, speed = "1.0", enabled = true } = options;
   const [queueState, setQueueState] = useState<AudioQueueState>("idle");
+  const [audioError, setAudioError] = useState<string | null>(null);
   const audioQueueRef = useRef<AudioQueue | null>(null);
   const sentenceBufferRef = useRef<SentenceBuffer | null>(null);
-  const abortRef = useRef<AbortController | null>(null);
+  const activeAbortsRef = useRef<Set<AbortController>>(new Set());
   const synthesisChainRef = useRef<Promise<void>>(Promise.resolve());
 
   // Initialize audio queue
@@ -38,6 +39,7 @@ export function useTextToSpeech(options: UseTextToSpeechOptions = {}) {
     if (!audioQueueRef.current) {
       audioQueueRef.current = new AudioQueue({
         onStateChange: setQueueState,
+        onError: (error) => setAudioError(error),
       });
     }
     return audioQueueRef.current;
@@ -45,7 +47,7 @@ export function useTextToSpeech(options: UseTextToSpeechOptions = {}) {
 
   // Fetch TTS for a single sentence and enqueue
   const synthesizeAndEnqueue = useCallback(
-    async (text: string) => {
+    async (text: string, signal?: AbortSignal) => {
       if (!enabled) return;
 
       const cleanText = stripMarkdownForSpeech(text);
@@ -56,12 +58,14 @@ export function useTextToSpeech(options: UseTextToSpeechOptions = {}) {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ text: cleanText, voiceId, speed }),
-          signal: abortRef.current?.signal,
+          signal,
         });
 
         if (!res.ok) return;
 
         const audioBuffer = await res.arrayBuffer();
+        // Check signal after await — fetch may have completed before abort
+        if (signal?.aborted) return;
         getQueue().enqueue(audioBuffer);
       } catch (err) {
         if (err instanceof Error && err.name === "AbortError") return;
@@ -75,10 +79,16 @@ export function useTextToSpeech(options: UseTextToSpeechOptions = {}) {
   const getBuffer = useCallback(() => {
     if (!sentenceBufferRef.current) {
       sentenceBufferRef.current = new SentenceBuffer((sentence) => {
+        // Capture the current set of active aborts to derive a signal
+        // The most recently created controller is the "owning" one for streaming
+        const aborts = activeAbortsRef.current;
+        const latestAbort = [...aborts].pop();
+        const signal = latestAbort?.signal;
+
         // Chain synthesis calls so audio is always enqueued in sentence order,
         // regardless of which TTS fetch completes first
         synthesisChainRef.current = synthesisChainRef.current.then(() =>
-          synthesizeAndEnqueue(sentence)
+          synthesizeAndEnqueue(sentence, signal)
         );
       });
     }
@@ -104,8 +114,13 @@ export function useTextToSpeech(options: UseTextToSpeechOptions = {}) {
   const speak = useCallback(
     async (text: string) => {
       if (!enabled || !text.trim()) return;
-      abortRef.current = new AbortController();
-      await synthesizeAndEnqueue(text);
+      const controller = new AbortController();
+      activeAbortsRef.current.add(controller);
+      try {
+        await synthesizeAndEnqueue(text, controller.signal);
+      } finally {
+        activeAbortsRef.current.delete(controller);
+      }
     },
     [enabled, synthesizeAndEnqueue]
   );
@@ -119,18 +134,26 @@ export function useTextToSpeech(options: UseTextToSpeechOptions = {}) {
   }, []);
 
   const stop = useCallback(() => {
-    abortRef.current?.abort();
-    abortRef.current = null;
+    // Abort ALL in-flight fetches
+    for (const controller of activeAbortsRef.current) {
+      controller.abort();
+    }
+    activeAbortsRef.current.clear();
     audioQueueRef.current?.stop();
     // Reset sentence buffer and synthesis chain
     sentenceBufferRef.current = null;
     synthesisChainRef.current = Promise.resolve();
   }, []);
 
+  const clearError = useCallback(() => setAudioError(null), []);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      abortRef.current?.abort();
+      for (const controller of activeAbortsRef.current) {
+        controller.abort();
+      }
+      activeAbortsRef.current.clear();
       audioQueueRef.current?.dispose();
     };
   }, []);
@@ -142,9 +165,11 @@ export function useTextToSpeech(options: UseTextToSpeechOptions = {}) {
     play,
     pause,
     stop,
+    clearError,
     isPlaying: queueState === "playing",
     isPaused: queueState === "paused",
     isLoading: queueState === "loading",
     state: queueState,
+    audioError,
   };
 }

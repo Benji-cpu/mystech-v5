@@ -14,6 +14,17 @@ interface ChronicleDialogueProps {
   className?: string;
 }
 
+// ── Inline markdown (bold only) ──────────────────────────────────────────
+
+function renderMarkdown(text: string) {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((part, i) => {
+    const bold = part.match(/^\*\*([^*]+)\*\*$/);
+    if (bold) return <strong key={i} className="font-semibold">{bold[1]}</strong>;
+    return part;
+  });
+}
+
 // ── Collapsible threshold ────────────────────────────────────────────────
 
 const COLLAPSE_THRESHOLD = 300;
@@ -66,7 +77,7 @@ function MessageBubble({ message, isLast, isStreaming }: MessageBubbleProps) {
             : 'bg-[#c9a94e]/12 border border-[#c9a94e]/20 text-white/90 rounded-tr-sm'
         )}
       >
-        <span className="whitespace-pre-wrap">{displayContent}</span>
+        <span className="whitespace-pre-wrap">{renderMarkdown(displayContent)}</span>
         {showCursor && (
           <motion.span
             animate={{ opacity: [1, 0] }}
@@ -112,7 +123,7 @@ function MiniReading({ text, isStreaming }: MiniReadingProps) {
 
       {/* Text */}
       <p className="text-sm text-white/80 leading-relaxed whitespace-pre-wrap">
-        {text}
+        {renderMarkdown(text)}
         {isStreaming && (
           <motion.span
             animate={{ opacity: [1, 0] }}

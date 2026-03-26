@@ -123,8 +123,7 @@ export function ChronicleContextPanel({
           aria-expanded={notesOpen}
         >
           <span className="flex-1 text-xs text-white/50">
-            + Add more context{" "}
-            <span className="text-white/30">(optional)</span>
+            + Anything else to share?
           </span>
           <motion.div
             animate={{ rotate: notesOpen ? 180 : 0 }}
@@ -151,7 +150,7 @@ export function ChronicleContextPanel({
                       onNotesChange(e.target.value);
                     }
                   }}
-                  placeholder="Anything else to share before we begin?"
+                  placeholder="A bit more background, a feeling, a hunch..."
                   className="bg-white/5 border-white/10 text-white/80 placeholder:text-white/30 text-xs resize-none min-h-[80px] focus-visible:ring-[#c9a94e]/30"
                   rows={3}
                 />

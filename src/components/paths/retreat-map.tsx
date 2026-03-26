@@ -125,6 +125,19 @@ export function RetreatMap({
     return 'future';
   }
 
+  if (retreats.length === 0) {
+    return (
+      <div className={cn('flex flex-col items-center justify-center gap-3 py-16 px-6', className)}>
+        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/5 backdrop-blur-xl border border-white/10">
+          <Milestone className="h-5 w-5 text-white/30" />
+        </div>
+        <p className="text-sm text-white/40 text-center">
+          Retreats coming soon — this path is still being charted.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className={cn('relative space-y-2', className)}>
       {/* Vertical connector line */}

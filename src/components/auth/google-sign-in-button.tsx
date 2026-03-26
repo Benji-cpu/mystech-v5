@@ -2,26 +2,24 @@
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
-import { Button } from "@/components/ui/button";
 
 export function GoogleSignInButton() {
   const [isLoading, setIsLoading] = useState(false);
 
   function handleClick() {
     setIsLoading(true);
-    signIn("google", { callbackUrl: "/dashboard" });
+    signIn("google", { callbackUrl: "/home" });
   }
 
   return (
-    <Button
-      className="w-full min-w-[200px]"
-      variant="outline"
+    <button
+      className="flex w-full items-center justify-center gap-3 rounded-lg border border-border bg-card px-4 py-3 text-sm font-medium text-foreground transition-colors hover:bg-accent disabled:opacity-50"
       onClick={handleClick}
       disabled={isLoading}
     >
       {isLoading ? (
         <svg
-          className="mr-2 h-4 w-4 animate-spin"
+          className="h-4 w-4 animate-spin"
           xmlns="http://www.w3.org/2000/svg"
           fill="none"
           viewBox="0 0 24 24"
@@ -41,7 +39,7 @@ export function GoogleSignInButton() {
           />
         </svg>
       ) : (
-        <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
+        <svg className="h-4 w-4" viewBox="0 0 24 24">
           <path
             d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
             fill="#4285F4"
@@ -60,7 +58,7 @@ export function GoogleSignInButton() {
           />
         </svg>
       )}
-      {isLoading ? "Signing in..." : "Sign in with Google"}
-    </Button>
+      {isLoading ? "Connecting..." : "Continue with Google"}
+    </button>
   );
 }

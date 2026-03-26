@@ -16,6 +16,7 @@ interface CeremonySpreadProps {
   isMobile: boolean;
   activeCardIndex: number | null;
   showLabels?: boolean;
+  onCardClick?: (card: Card) => void;
 }
 
 // ── Card wrapper with highlight animation ──────────────────────────────
@@ -29,6 +30,7 @@ function CardSlot({
   isActive,
   activeCardIndex,
   showLabels,
+  onClick,
 }: {
   card: Card;
   positionName: string;
@@ -38,10 +40,12 @@ function CardSlot({
   isActive: boolean;
   activeCardIndex: number | null;
   showLabels: boolean;
+  onClick?: () => void;
 }) {
   return (
     <motion.div
       layout
+      className="p-2"
       animate={{
         scale: isActive ? 1.13 : 1,
         opacity: activeCardIndex !== null && !isActive ? 0.4 : 1,
@@ -56,6 +60,7 @@ function CardSlot({
         cardHeight={cardHeight}
         isActive={isActive}
         showLabel={showLabels}
+        onClick={onClick}
       />
     </motion.div>
   );
@@ -64,7 +69,7 @@ function CardSlot({
 // ── Single Card Layout ─────────────────────────────────────────────────
 
 function SingleLayout(props: CeremonySpreadProps) {
-  const { cards, cardStates, cardWidth, cardHeight, activeCardIndex, showLabels = true } = props;
+  const { cards, cardStates, cardWidth, cardHeight, activeCardIndex, showLabels = true, onCardClick } = props;
   return (
     <div className="flex items-center justify-center h-full">
       <CardSlot
@@ -76,6 +81,7 @@ function SingleLayout(props: CeremonySpreadProps) {
         isActive={activeCardIndex === 0}
         activeCardIndex={activeCardIndex}
         showLabels={showLabels}
+        onClick={onCardClick ? () => onCardClick(cards[0].card) : undefined}
       />
     </div>
   );
@@ -84,7 +90,7 @@ function SingleLayout(props: CeremonySpreadProps) {
 // ── Three Card Layout ──────────────────────────────────────────────────
 
 function ThreeCardLayout(props: CeremonySpreadProps) {
-  const { cards, cardStates, cardWidth, cardHeight, gap, activeCardIndex, showLabels = true } = props;
+  const { cards, cardStates, cardWidth, cardHeight, gap, activeCardIndex, showLabels = true, onCardClick } = props;
   return (
     <div className="flex items-center justify-center h-full" style={{ gap }}>
       {cards.map(({ card, positionName }, idx) => (
@@ -98,6 +104,7 @@ function ThreeCardLayout(props: CeremonySpreadProps) {
           isActive={activeCardIndex === idx}
           activeCardIndex={activeCardIndex}
           showLabels={showLabels}
+          onClick={onCardClick ? () => onCardClick(card) : undefined}
         />
       ))}
     </div>
@@ -107,7 +114,7 @@ function ThreeCardLayout(props: CeremonySpreadProps) {
 // ── Five Card Cross Layout ─────────────────────────────────────────────
 
 function FiveCardCrossLayout(props: CeremonySpreadProps) {
-  const { cards, cardStates, cardWidth, cardHeight, gap, isMobile, activeCardIndex, showLabels = true } = props;
+  const { cards, cardStates, cardWidth, cardHeight, gap, isMobile, activeCardIndex, showLabels = true, onCardClick } = props;
 
   const renderCard = (idx: number) => (
     <CardSlot
@@ -120,6 +127,7 @@ function FiveCardCrossLayout(props: CeremonySpreadProps) {
       isActive={activeCardIndex === idx}
       activeCardIndex={activeCardIndex}
       showLabels={showLabels}
+      onClick={onCardClick ? () => onCardClick(cards[idx].card) : undefined}
     />
   );
 
@@ -170,6 +178,7 @@ function FiveCardCrossLayout(props: CeremonySpreadProps) {
             isActive={activeCardIndex === idx}
             activeCardIndex={activeCardIndex}
             showLabels={showLabels}
+            onClick={onCardClick ? () => onCardClick(card) : undefined}
           />
         </motion.div>
       ))}
@@ -180,7 +189,7 @@ function FiveCardCrossLayout(props: CeremonySpreadProps) {
 // ── Celtic Cross Layout ────────────────────────────────────────────────
 
 function CelticCrossLayout(props: CeremonySpreadProps) {
-  const { cards, cardStates, cardWidth, cardHeight, gap, isMobile, activeCardIndex, showLabels = true } = props;
+  const { cards, cardStates, cardWidth, cardHeight, gap, isMobile, activeCardIndex, showLabels = true, onCardClick } = props;
 
   const renderCard = (idx: number) => (
     <CardSlot
@@ -193,6 +202,7 @@ function CelticCrossLayout(props: CeremonySpreadProps) {
       isActive={activeCardIndex === idx}
       activeCardIndex={activeCardIndex}
       showLabels={showLabels}
+      onClick={onCardClick ? () => onCardClick(cards[idx].card) : undefined}
     />
   );
 
@@ -224,6 +234,7 @@ function CelticCrossLayout(props: CeremonySpreadProps) {
                   cardHeight={cardHeight}
                   isActive={activeCardIndex === 1}
                   showLabel={false}
+                  onClick={onCardClick ? () => onCardClick(cards[1].card) : undefined}
                 />
               </div>
             </div>
@@ -279,6 +290,7 @@ function CelticCrossLayout(props: CeremonySpreadProps) {
             isActive={activeCardIndex === idx}
             activeCardIndex={activeCardIndex}
             showLabels={showLabels}
+            onClick={onCardClick ? () => onCardClick(card) : undefined}
           />
         </motion.div>
       ))}

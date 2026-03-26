@@ -246,15 +246,31 @@ export class WhisperProvider implements STTProvider {
 /** Common Whisper hallucinations on silence/noise */
 function isHallucination(text: string): boolean {
   const normalized = text.toLowerCase().trim();
+
+  // Anchored check: entire text is a single parenthesized or bracketed phrase
+  // e.g. "(whirring)", "(upbeat music)", "[music]", "(audience laughing)"
+  // Won't match "I feel anxious (like really anxious)" because it's not full-string
+  if (/^\(.*\)$/.test(normalized) || /^\[.*\]$/.test(normalized)) {
+    return true;
+  }
+
   const hallucinations = [
     "you",
+    "the",
+    "so",
+    "bye",
+    "bye.",
+    "thank you",
     "thank you.",
+    "thanks for watching",
     "thanks for watching.",
+    "thanks for watching!",
+    "thank you for watching",
     "thank you for watching.",
+    "thank you for watching!",
     "subscribe",
     "like and subscribe",
-    "(silence)",
-    "[silence]",
+    "like and subscribe.",
     "...",
   ];
   return hallucinations.includes(normalized);

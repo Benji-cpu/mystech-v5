@@ -1,13 +1,23 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { useId } from "react";
+import { motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
+
+// ── Types ────────────────────────────────────────────────────────────────
+
+type SigilState = "idle" | "attentive" | "thinking" | "speaking" | "excited";
+type LegacySigilState = "dormant";
+export type SigilStateProp = SigilState | LegacySigilState;
 
 interface LyraSigilProps {
   size?: "sm" | "md" | "lg" | "xl";
-  state?: "dormant" | "attentive" | "speaking";
+  state?: SigilStateProp;
+  showLabel?: boolean;
   className?: string;
 }
+
+// ── Constants ────────────────────────────────────────────────────────────
 
 const sizeMap = {
   sm: 24,
@@ -34,35 +44,107 @@ const connections = [
   { from: "sulafat", to: "zeta" },
 ];
 
+// Thinking state: sequential order tracing constellation shape
+const thinkingOrder = ["vega", "sulafat", "zeta", "delta", "sheliak"];
+
+// Excited state: hand-tuned non-uniform delays per star
+const excitedDelays = [0, 0.4, 0.15, 0.55, 0.3];
+
+// ── Component ────────────────────────────────────────────────────────────
+
 export function LyraSigil({
   size = "md",
-  state = "dormant",
+  state = "idle",
+  showLabel,
   className,
 }: LyraSigilProps) {
+  const filterId = useId();
+  const prefersReducedMotion = useReducedMotion();
   const dimension = sizeMap[size];
   const baseRadius = size === "sm" ? 4.5 : size === "md" ? 5.5 : size === "lg" ? 7 : 9;
 
-  // Animation configurations based on state
+  // Normalize legacy state
+  const normalizedState: SigilState = state === "dormant" ? "idle" : state;
+
   const getStarAnimation = (index: number, star: (typeof stars)[0]) => {
     const baseCy = star.cy;
+    const r = star.id === "vega" ? baseRadius + 1.5 : baseRadius;
     const ease = "easeInOut" as const;
 
-    switch (state) {
-      case "dormant":
+    // Reduced motion: static for idle, subtle opacity-only for others
+    if (prefersReducedMotion) {
+      if (normalizedState === "idle") return { r, opacity: 0.8, cy: baseCy };
+      return {
+        opacity: [0.7, 1, 0.7],
+        r,
+        cy: baseCy,
+        transition: { duration: 3, repeat: Infinity, ease },
+      };
+    }
+
+    switch (normalizedState) {
+      case "idle":
         return {
-          cy: [baseCy, baseCy - 2, baseCy],
+          opacity: [0.6, 0.85, 0.6],
+          r,
+          cy: baseCy,
           transition: { duration: 8, repeat: Infinity, ease, delay: index * 0.3 },
         };
       case "attentive":
         return {
           cy: [baseCy, baseCy - 3, baseCy],
+          r: [r, r * 1.08, r],
+          opacity: [0.8, 1, 0.8],
           transition: { duration: 4, repeat: Infinity, ease, delay: index * 0.2 },
         };
+      case "thinking": {
+        const sequenceIndex = thinkingOrder.indexOf(star.id);
+        const delay = sequenceIndex >= 0 ? sequenceIndex * 0.5 : index * 0.5;
+        return {
+          r: [r, r * 1.4, r],
+          opacity: [0.5, 1, 0.5],
+          cy: baseCy,
+          transition: { duration: 2.5, repeat: Infinity, ease, delay },
+        };
+      }
       case "speaking":
         return {
-          r: [baseRadius, baseRadius * 1.5, baseRadius],
+          r: [r, r * 1.5, r],
           opacity: [0.8, 1, 0.8],
+          cy: baseCy,
           transition: { duration: 1.5, repeat: Infinity, ease, delay: index * 0.15 },
+        };
+      case "excited":
+        return {
+          r: [r, r * 1.6, r],
+          opacity: [0.7, 1, 0.7],
+          cy: baseCy,
+          transition: { duration: 1.0, repeat: Infinity, ease, delay: excitedDelays[index] },
+        };
+      default:
+        return { r, opacity: 0.8, cy: baseCy };
+    }
+  };
+
+  const getLineAnimation = () => {
+    if (prefersReducedMotion) return {};
+
+    switch (normalizedState) {
+      case "speaking":
+      case "excited":
+        return {
+          strokeOpacity: [0.3, 0.7, 0.3],
+          strokeWidth: [1.5, 2.5, 1.5],
+          transition: {
+            duration: normalizedState === "excited" ? 1.0 : 1.5,
+            repeat: Infinity,
+            ease: "easeInOut" as const,
+          },
+        };
+      case "thinking":
+        return {
+          strokeOpacity: [0.2, 0.55, 0.2],
+          transition: { duration: 2.5, repeat: Infinity, ease: "easeInOut" as const },
         };
       default:
         return {};
@@ -70,12 +152,15 @@ export function LyraSigil({
   };
 
   const getOpacity = () => {
-    switch (state) {
-      case "dormant":
+    switch (normalizedState) {
+      case "idle":
         return 0.8;
       case "attentive":
         return 0.9;
+      case "thinking":
+        return 0.95;
       case "speaking":
+      case "excited":
         return 1.0;
       default:
         return 0.8;
@@ -83,15 +168,14 @@ export function LyraSigil({
   };
 
   const getStarById = (id: string) => stars.find((s) => s.id === id);
+  const glowId = `star-glow-${filterId}`;
+  const lineAnim = getLineAnimation();
 
-  return (
+  const sigil = (
     <span
       className={cn(
-        "inline-flex items-center justify-center rounded-full",
-        state === "dormant" && "shadow-[0_0_10px_rgba(201,169,78,0.15)]",
-        state === "attentive" && "shadow-[0_0_14px_rgba(201,169,78,0.2)]",
-        state === "speaking" && "shadow-[0_0_20px_rgba(201,169,78,0.3)]",
-        className
+        "inline-flex items-center justify-center",
+        !showLabel && className
       )}
       style={{ opacity: getOpacity() }}
     >
@@ -101,9 +185,11 @@ export function LyraSigil({
         viewBox="0 0 100 100"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
+        role="img"
+        aria-label="Lyra constellation sigil"
       >
         <defs>
-          <filter id="star-glow" x="-50%" y="-50%" width="200%" height="200%">
+          <filter id={glowId} x="-50%" y="-50%" width="200%" height="200%">
             <feGaussianBlur stdDeviation="2" result="blur" />
             <feMerge>
               <feMergeNode in="blur" />
@@ -126,7 +212,8 @@ export function LyraSigil({
               x2={toStar.cx}
               y2={toStar.cy}
               stroke="rgba(201,169,78,0.55)"
-              strokeWidth="1.5"
+              initial={{ strokeWidth: 1.5, strokeOpacity: 0.55 }}
+              animate={lineAnim}
             />
           );
         })}
@@ -135,15 +222,14 @@ export function LyraSigil({
         {stars.map((star, index) => {
           const r = star.id === "vega" ? baseRadius + 1.5 : baseRadius;
           return (
-            <g key={star.id} filter="url(#star-glow)">
+            <g key={star.id} filter={`url(#${glowId})`}>
               <motion.circle
                 cx={star.cx}
-                cy={star.cy}
-                r={r}
+                initial={{ cy: star.cy, r, opacity: 0.8 }}
                 fill="#c9a94e"
                 animate={getStarAnimation(index, star)}
               />
-              {/* Bright white core */}
+              {/* Bright white core — stays static */}
               <circle
                 cx={star.cx}
                 cy={star.cy}
@@ -156,4 +242,17 @@ export function LyraSigil({
       </svg>
     </span>
   );
+
+  if (showLabel) {
+    return (
+      <div className={cn("flex flex-col items-center gap-2", className)}>
+        {sigil}
+        <span className="text-[10px] text-[#c9a94e]/50 tracking-[0.25em] uppercase">
+          Lyra
+        </span>
+      </div>
+    );
+  }
+
+  return sigil;
 }

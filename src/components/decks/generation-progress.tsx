@@ -43,7 +43,7 @@ export function GenerationProgress({
             </>
           ) : (
             <>
-              <LyraSigil size="sm" state="speaking" />
+              <LyraSigil size="sm" state="thinking" />
               <span className="text-sm font-medium">
                 {percentage >= 80
                   ? LYRA_GENERATION.almostDone

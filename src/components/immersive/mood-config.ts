@@ -8,11 +8,11 @@ export const moodPresets = {
   default:         { primaryHue: 285, sparkleColor: "#c9a94e" },
   "reading-setup": { primaryHue: 280, sparkleColor: "#c9a94e" },
   "card-draw":     { primaryHue: 260, sparkleColor: "#7c9aff" },
-  "card-reveal":   { primaryHue: 50,  sparkleColor: "#ffd700" },
+  "card-reveal":   { primaryHue: 250, sparkleColor: "#ffd700" },
   forging:         { primaryHue: 30,  sparkleColor: "#ff8c00" },
   completion:      { primaryHue: 290, sparkleColor: "#c9a94e" },
   midnight:        { primaryHue: 240, sparkleColor: "#4a6cf7" },
-  golden:          { primaryHue: 45,  sparkleColor: "#ffd700" },
+  golden:          { primaryHue: 315, sparkleColor: "#ffd700" },
 } as const satisfies Record<string, Mood>;
 
 export type MoodPresetName = keyof typeof moodPresets;
@@ -23,7 +23,7 @@ const routeMoods: Record<string, Mood> = {
   "/decks/new": { primaryHue: 30, sparkleColor: "#ff8c00" },
   "/readings": { primaryHue: 280, sparkleColor: "#c9a94e" },
   "/readings/new": { primaryHue: 260, sparkleColor: "#7c9aff" },
-  "/explore": { primaryHue: 240, sparkleColor: "#4a6cf7" },
+  "/art-styles": { primaryHue: 240, sparkleColor: "#4a6cf7" },
   "/settings": { primaryHue: 285, sparkleColor: "#c9a94e" },
   "/admin": { primaryHue: 285, sparkleColor: "#c9a94e" },
 };

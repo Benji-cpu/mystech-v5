@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth/helpers";
 import { db } from "@/lib/db";
+import { withRetry } from "@/lib/db/retry";
 import { cards, decks, chronicleEntries, chronicleSettings } from "@/lib/db/schema";
 import { eq, and, sql } from "drizzle-orm";
 import {
@@ -23,7 +24,9 @@ export async function GET() {
     );
   }
 
-  const deck = await getUserChronicleDeck(user.id);
+  try {
+
+  const deck = await withRetry(() => getUserChronicleDeck(user.id));
   if (!deck) {
     return NextResponse.json<ApiResponse<never>>(
       { success: false, error: "Chronicle deck not found" },
@@ -39,12 +42,14 @@ export async function GET() {
     if (subPlan === "pro") plan = "pro";
   }
 
-  const [entry, settings, todayCard, creditCheck] = await Promise.all([
-    getTodayChronicleEntry(user.id),
-    getChronicleSettings(deck.id),
-    getTodayChronicleCard(user.id),
-    checkCredits(user.id, plan, 1),
-  ]);
+  const [entry, settings, todayCard, creditCheck] = await withRetry(() =>
+    Promise.all([
+      getTodayChronicleEntry(user.id),
+      getChronicleSettings(deck.id),
+      getTodayChronicleCard(user.id),
+      checkCredits(user.id, plan, 1),
+    ])
+  );
 
   // Can generate card if: entry exists with conversation, no card yet, and has credits
   const hasConversation = (entry?.conversation?.length ?? 0) > 0;
@@ -75,6 +80,14 @@ export async function GET() {
       canGenerateCard,
     },
   });
+
+  } catch (error) {
+    console.error("[chronicle/today] GET error:", error);
+    return NextResponse.json<ApiResponse<never>>(
+      { success: false, error: "Failed to load today's chronicle" },
+      { status: 500 }
+    );
+  }
 }
 
 export async function DELETE() {

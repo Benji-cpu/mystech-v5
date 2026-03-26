@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { streamText } from "ai";
 import { db } from "@/lib/db";
+import { withRetry } from "@/lib/db/retry";
 import { chronicleEntries, cards } from "@/lib/db/schema";
 import { getCurrentUser } from "@/lib/auth/helpers";
 import { geminiModel, geminiProModel } from "@/lib/ai/gemini";
@@ -54,7 +55,9 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const deck = await getUserChronicleDeck(user.id);
+  try {
+
+  const deck = await withRetry(() => getUserChronicleDeck(user.id));
   if (!deck) {
     return new Response(
       JSON.stringify({ error: "Chronicle deck not found" }),
@@ -73,7 +76,7 @@ export async function POST(request: NextRequest) {
 
   // Get or create today's entry
   const today = new Date().toISOString().split("T")[0];
-  let entry = await getTodayChronicleEntry(user.id);
+  let entry = await withRetry(() => getTodayChronicleEntry(user.id));
 
   if (!entry) {
     const [created] = await db
@@ -120,13 +123,15 @@ export async function POST(request: NextRequest) {
     .where(eq(chronicleEntries.id, entry.id));
 
   // Build context for Lyra
-  const [knowledge, recentEntries, settings, pathPosition, userName] = await Promise.all([
-    getChronicleKnowledge(user.id),
-    getRecentChronicleEntries(user.id, 5),
-    getChronicleSettings(deck.id),
-    getPathPosition(user.id),
-    getUserDisplayName(user.id),
-  ]);
+  const [knowledge, recentEntries, settings, pathPosition, userName] = await withRetry(() =>
+    Promise.all([
+      getChronicleKnowledge(user.id),
+      getRecentChronicleEntries(user.id, 5),
+      getChronicleSettings(deck.id),
+      getPathPosition(user.id),
+      getUserDisplayName(user.id),
+    ])
+  );
 
   // Resolve emergence context server-side from DB (never trust client data)
   let emergenceContext: { cardTitle: string; cardType: string; detectedPattern: string } | null = null;
@@ -212,4 +217,12 @@ export async function POST(request: NextRequest) {
   });
 
   return result.toTextStreamResponse();
+
+  } catch (error) {
+    console.error("[chronicle/today/message] pre-stream error:", error);
+    return new Response(
+      JSON.stringify({ error: "Failed to process message" }),
+      { status: 500 }
+    );
+  }
 }

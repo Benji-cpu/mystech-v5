@@ -115,7 +115,7 @@ export async function GET(request: NextRequest) {
   const result = streamText({
     model,
     prompt,
-    maxOutputTokens: 150,
+    maxOutputTokens: 300,
     onError: (err) => {
       console.error("[chronicle/today/greeting] stream error:", err);
     },

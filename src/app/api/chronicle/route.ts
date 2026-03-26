@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { withRetry } from "@/lib/db/retry";
 import { decks, chronicleSettings, chronicleKnowledge } from "@/lib/db/schema";
 import { getCurrentUser } from "@/lib/auth/helpers";
 import {
@@ -18,17 +19,21 @@ export async function GET() {
     );
   }
 
-  const deck = await getUserChronicleDeck(user.id);
+  try {
+
+  const deck = await withRetry(() => getUserChronicleDeck(user.id));
   if (!deck) {
     return NextResponse.json<ApiResponse<{ deck: null }>>(
       { success: true, data: { deck: null } }
     );
   }
 
-  const [settings, recentCards] = await Promise.all([
-    getChronicleSettings(deck.id),
-    getRecentChronicleCards(deck.id, 5),
-  ]);
+  const [settings, recentCards] = await withRetry(() =>
+    Promise.all([
+      getChronicleSettings(deck.id),
+      getRecentChronicleCards(deck.id, 5),
+    ])
+  );
 
   return NextResponse.json<
     ApiResponse<{
@@ -46,6 +51,14 @@ export async function GET() {
       recentCards,
     },
   });
+
+  } catch (error) {
+    console.error("[chronicle] GET error:", error);
+    return NextResponse.json<ApiResponse<never>>(
+      { success: false, error: "Failed to load chronicle data" },
+      { status: 500 }
+    );
+  }
 }
 
 export async function POST(request: NextRequest) {

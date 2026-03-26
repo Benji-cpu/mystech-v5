@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { streamObject } from "ai";
 import { db } from "@/lib/db";
-import { readings, astrologyProfiles, readingAstrology, readingPathContext } from "@/lib/db/schema";
+import { readings, astrologyProfiles, readingPathContext } from "@/lib/db/schema";
 import { getCurrentUser } from "@/lib/auth/helpers";
 import { geminiFreeModel, geminiProModel } from "@/lib/ai/gemini";
 import { logGeneration } from "@/lib/ai/logging";
@@ -202,39 +202,6 @@ export async function POST(request: NextRequest) {
           .update(readings)
           .set({ interpretation: fullText, updatedAt: new Date() })
           .where(eq(readings.id, readingId));
-
-        // Save astrology snapshot if astro context was used
-        if (astroContext && object?.astroContext) {
-          const cardAssociations = object.cardSections
-            ?.filter((s) => s?.astroResonance)
-            .map((s) => ({
-              cardTitle: s.positionName,
-              positionName: s.positionName,
-              rulingSign: s.astroResonance!.rulingSign,
-              rulingPlanet: s.astroResonance!.rulingPlanet,
-              elementHarmony: s.astroResonance!.elementHarmony,
-              relevantPlacement: s.astroResonance!.relevantPlacement,
-              astroNote: "",
-            })) ?? [];
-
-          await db
-            .insert(readingAstrology)
-            .values({
-              readingId,
-              moonPhase: astroContext.currentMoonPhase,
-              moonSign: astroContext.currentMoonSign,
-              cardAssociations,
-            })
-            .onConflictDoUpdate({
-              target: readingAstrology.readingId,
-              set: {
-                moonPhase: astroContext.currentMoonPhase,
-                moonSign: astroContext.currentMoonSign,
-                cardAssociations,
-              },
-            })
-            .catch((err) => console.error("[ai/reading] astrology save error:", err));
-        }
 
         await logGeneration({
           userId: user.id,

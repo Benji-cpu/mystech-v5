@@ -967,11 +967,11 @@ export async function getTodayChronicleEntry(userId: string): Promise<ChronicleE
   };
 }
 
-export async function getChronicleEntry(entryId: string): Promise<ChronicleEntry | null> {
+export async function getChronicleEntry(entryId: string, userId: string): Promise<ChronicleEntry | null> {
   const [entry] = await db
     .select()
     .from(chronicleEntries)
-    .where(eq(chronicleEntries.id, entryId));
+    .where(and(eq(chronicleEntries.id, entryId), eq(chronicleEntries.userId, userId)));
   if (!entry) return null;
   return {
     id: entry.id,
@@ -1177,6 +1177,22 @@ export async function getChronicleCompletedEntryCount(userId: string) {
       )
     );
   return result?.count ?? 0;
+}
+
+export async function getLastChronicleCardTitle(userId: string): Promise<string | null> {
+  const [row] = await db
+    .select({ cardTitle: cards.title })
+    .from(chronicleEntries)
+    .leftJoin(cards, eq(chronicleEntries.cardId, cards.id))
+    .where(
+      and(
+        eq(chronicleEntries.userId, userId),
+        eq(chronicleEntries.status, "completed")
+      )
+    )
+    .orderBy(desc(chronicleEntries.completedAt))
+    .limit(1);
+  return row?.cardTitle ?? null;
 }
 
 // --- Astrology profile queries ---

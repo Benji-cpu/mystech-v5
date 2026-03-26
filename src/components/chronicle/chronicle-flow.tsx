@@ -175,17 +175,13 @@ interface ActionBarProps {
   onMicTranscript: (text: string, isFinal: boolean) => void;
   onMicListeningChange: (isListening: boolean) => void;
   onEmergenceAcknowledge?: () => void;
-  onContinueToReading?: () => void;
-  progressDuration?: number;
-  progressKey?: number;
 }
 
 function getActionBarCategory(phase: string): string {
   if (phase === 'greeting' || phase === 'card_forging') return 'loading';
   if (phase === 'dialogue') return 'input';
   if (phase === 'emergence_reveal') return 'emergence';
-  if (phase === 'card_reveal') return 'reveal';
-  if (phase === 'reading' || phase === 'complete') return 'empty';
+  if (phase === 'card_reveal' || phase === 'reading' || phase === 'complete') return 'empty';
   return 'empty';
 }
 
@@ -204,9 +200,6 @@ function ActionBar({
   onMicListeningChange,
   onEmergenceAcknowledge,
   forgingTransition,
-  onContinueToReading,
-  progressDuration = 7,
-  progressKey = 0,
 }: ActionBarProps) {
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -309,7 +302,7 @@ function ActionBar({
                   whileTap={{ scale: 0.98 }}
                   onClick={onForge}
                   className={cn(
-                    'w-full py-3 rounded-xl font-semibold text-sm',
+                    'w-auto px-8 mx-auto block py-3 rounded-xl font-semibold text-sm',
                     'bg-gradient-to-r from-[#c9a94e] to-[#daa520] text-black',
                     'shadow-lg shadow-[#c9a94e]/20 hover:shadow-xl hover:shadow-[#c9a94e]/30',
                     'transition-shadow duration-300',
@@ -319,32 +312,6 @@ function ActionBar({
                 </motion.button>
               </motion.div>
             )}
-          </div>
-        );
-
-      case 'reveal':
-        return (
-          <div>
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={onContinueToReading}
-              className={cn(
-                'relative w-auto px-8 py-3 rounded-xl font-semibold text-sm overflow-hidden mx-auto block',
-                'bg-gradient-to-r from-[#c9a94e] to-[#daa520] text-black',
-                'shadow-lg shadow-[#c9a94e]/20',
-              )}
-            >
-              {/* Progress fill */}
-              <motion.div
-                key={progressKey}
-                className="absolute inset-0 bg-white/20 origin-left"
-                initial={{ scaleX: 0 }}
-                animate={{ scaleX: 1 }}
-                transition={{ duration: progressDuration, ease: 'linear' }}
-              />
-              <span className="relative z-10">Continue to Reading</span>
-            </motion.button>
           </div>
         );
 
@@ -394,6 +361,14 @@ export function ChronicleFlow({
     speed: voicePrefs.speed,
     enabled: voicePrefs.enabled,
   });
+
+  // Refs to avoid stale closures — voicePrefs.enabled and tts callbacks
+  // initialize async and change after effects have already captured them
+  const voiceEnabledRef = useRef(voicePrefs.enabled);
+  const ttsRef = useRef(tts);
+
+  useEffect(() => { voiceEnabledRef.current = voicePrefs.enabled; }, [voicePrefs.enabled]);
+  useEffect(() => { ttsRef.current = tts; }, [tts]);
 
   // Normalise initialPhase to a known ChroniclePhase
   const resolvedInitialPhase = (() => {
@@ -542,7 +517,7 @@ export function ChronicleFlow({
     let cancelled = false;
 
     dispatch({ type: 'START_STREAMING' });
-    tts.stop();
+    ttsRef.current.stop();
 
     fetch(`/api/chronicle/today/greeting?timeOfDay=${getTimeOfDay()}`)
       .then(async (res) => {
@@ -563,15 +538,20 @@ export function ChronicleFlow({
           const chunk = decoder.decode(value, { stream: true });
           accumulated += chunk;
           dispatch({ type: 'STREAM_TOKEN', token: chunk });
-          if (voicePrefs.enabled) {
-            tts.pushToken(chunk);
+          if (voiceEnabledRef.current) {
+            ttsRef.current.pushToken(chunk);
           }
         }
 
         if (cancelled) return;
 
-        if (voicePrefs.enabled) {
-          tts.flush();
+        // Guard against truncated streams — fall back to template if too short
+        if (accumulated.length < 60) {
+          throw new Error('Greeting too short');
+        }
+
+        if (voiceEnabledRef.current) {
+          ttsRef.current.flush();
         }
 
         dispatch({ type: 'STREAM_COMPLETE', content: accumulated });
@@ -597,6 +577,9 @@ export function ChronicleFlow({
             : null,
         });
 
+        // Clear any partial streamed content before fallback
+        dispatch({ type: 'STREAM_COMPLETE', content: '' });
+
         let i = 0;
         function tick() {
           if (cancelled) return;
@@ -614,12 +597,15 @@ export function ChronicleFlow({
         tick();
 
         // TTS for fallback
-        if (voicePrefs.enabled) {
-          tts.speak(greeting);
+        if (voiceEnabledRef.current) {
+          ttsRef.current.speak(greeting);
         }
       });
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+      greetingFired.current = false;
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
 
@@ -654,7 +640,7 @@ export function ChronicleFlow({
     readingFired.current = true;
 
     dispatch({ type: 'START_READING' });
-    tts.stop(); // Stop any previous TTS before starting reading
+    ttsRef.current.stop(); // Stop any previous TTS before starting reading
 
     fetch('/api/chronicle/today/reading', {
       method: 'POST',
@@ -679,13 +665,13 @@ export function ChronicleFlow({
           const chunk = decoder.decode(value, { stream: true });
           accumulated += chunk;
           dispatch({ type: 'READING_STREAM_TOKEN', token: chunk });
-          if (voicePrefs.enabled) {
-            tts.pushToken(chunk);
+          if (voiceEnabledRef.current) {
+            ttsRef.current.pushToken(chunk);
           }
         }
 
-        if (voicePrefs.enabled) {
-          tts.flush();
+        if (voiceEnabledRef.current) {
+          ttsRef.current.flush();
         }
 
         dispatch({ type: 'READING_COMPLETE', miniReading: accumulated });
@@ -750,6 +736,17 @@ export function ChronicleFlow({
     return () => { if (imagePollRef.current) clearInterval(imagePollRef.current); };
   }, [card?.id, card?.imageStatus]);
 
+  // ── Safety timeout: force reveal after 30s if stuck in card_forging with a card ──
+
+  useEffect(() => {
+    if (phase !== 'card_forging' || !card) return;
+    const timeout = setTimeout(() => {
+      // Force transition to card_reveal even if image never arrived
+      dispatch({ type: 'UPDATE_CARD_IMAGE', imageUrl: card.imageUrl, imageStatus: card.imageStatus === 'generating' ? 'failed' : card.imageStatus });
+    }, 30000);
+    return () => clearTimeout(timeout);
+  }, [phase, card]);
+
   // ── Reset one-shot refs when returning to dialogue after error (allows retry) ──
 
   useEffect(() => {
@@ -775,7 +772,7 @@ export function ChronicleFlow({
     setInputValue('');
     dispatch({ type: 'ADD_USER_MESSAGE', content });
     dispatch({ type: 'START_STREAMING' });
-    tts.stop(); // Stop any previous TTS before new response
+    ttsRef.current.stop(); // Stop any previous TTS before new response
 
     try {
       const res = await fetch('/api/chronicle/today/message', {
@@ -806,13 +803,13 @@ export function ChronicleFlow({
         const chunk = decoder.decode(value, { stream: true });
         accumulated += chunk;
         dispatch({ type: 'STREAM_TOKEN', token: chunk });
-        if (voicePrefs.enabled) {
-          tts.pushToken(chunk);
+        if (voiceEnabledRef.current) {
+          ttsRef.current.pushToken(chunk);
         }
       }
 
-      if (voicePrefs.enabled) {
-        tts.flush();
+      if (voiceEnabledRef.current) {
+        ttsRef.current.flush();
       }
 
       dispatch({ type: 'STREAM_COMPLETE', content: accumulated });
@@ -983,16 +980,41 @@ export function ChronicleFlow({
               </p>
             )}
             {phase === 'card_reveal' && (
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 1 }}
-                className="text-xs text-white/40 text-center max-w-xs"
-              >
-                {isFirstEntry
-                  ? 'Your first Chronicle card — tap to explore. Each day you return, another is forged.'
-                  : 'Tap to explore your card'}
-              </motion.p>
+              <>
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 1 }}
+                  className="text-xs text-white/40 text-center max-w-xs"
+                >
+                  {isFirstEntry
+                    ? 'Your first Chronicle card — tap to explore. Each day you return, another is forged.'
+                    : 'Tap to explore your card'}
+                </motion.p>
+                <motion.button
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 1.5, ...CONTENT_SPRING }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={transitionToReading}
+                  className={cn(
+                    'relative w-auto px-8 py-3 rounded-xl font-semibold text-sm overflow-hidden',
+                    'bg-gradient-to-r from-[#c9a94e] to-[#daa520] text-black',
+                    'shadow-lg shadow-[#c9a94e]/20',
+                  )}
+                >
+                  {/* Progress fill */}
+                  <motion.div
+                    key={progressKey}
+                    className="absolute inset-0 bg-white/20 origin-left"
+                    initial={{ scaleX: 0 }}
+                    animate={{ scaleX: 1 }}
+                    transition={{ duration: progressDuration, ease: 'linear' }}
+                  />
+                  <span className="relative z-10">Continue to Reading</span>
+                </motion.button>
+              </>
             )}
           </motion.div>
         )}
@@ -1116,9 +1138,6 @@ export function ChronicleFlow({
             onMicTranscript={handleMicTranscript}
             onMicListeningChange={handleMicListeningChange}
             onEmergenceAcknowledge={() => dispatch({ type: 'EMERGENCE_ACKNOWLEDGED' })}
-            onContinueToReading={transitionToReading}
-            progressDuration={progressDuration}
-            progressKey={progressKey}
           />
         </div>
       </motion.div>

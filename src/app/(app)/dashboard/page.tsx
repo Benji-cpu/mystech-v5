@@ -1,7 +1,5 @@
 import { Suspense } from "react";
-import Link from "next/link";
-import { Eye } from "lucide-react";
-import { requireAuth, isAdmin } from "@/lib/auth/helpers";
+import { requireAuth } from "@/lib/auth/helpers";
 import {
   getUserDeckCount,
   getUserDraftDecks,
@@ -9,29 +7,45 @@ import {
   getUserChronicleDeck,
   getChronicleSettings,
   getTodayChronicleCard,
+  getUserActivityFeed,
 } from "@/lib/db/queries";
 import { getPathPosition } from "@/lib/db/queries-paths";
 import { resolveUserName } from "@/lib/auth/get-user-name";
-import { getCurrentCelestialContext } from "@/lib/astrology/birth-chart";
-import { resolveInvitation } from "@/lib/dashboard/resolve-invitation";
-import { resolveBelowFoldCards } from "@/lib/dashboard/resolve-below-fold";
-import { LyraInvitation } from "@/components/dashboard/lyra-invitation";
-import { BelowFoldCards } from "@/components/dashboard/below-fold-cards";
-import { LyraSigil } from "@/components/guide/lyra-sigil";
+import { DashboardHeader } from "@/components/dashboard/dashboard-header";
+import { QuickAccessGrid } from "@/components/dashboard/quick-access-grid";
+import { RecentActivity } from "@/components/dashboard/recent-activity";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { InvitationContext } from "@/lib/dashboard/resolve-invitation";
-import type { BelowFoldContext } from "@/lib/dashboard/resolve-below-fold";
+import { AnimatedDashboardContent } from "@/components/dashboard/animated-dashboard-content";
+import type { QuickAccessData } from "@/components/dashboard/quick-access-grid";
+import type { ActivityItemWithTemporal } from "@/types";
 
 // ── Skeleton ─────────────────────────────────────────────────────────
 
-function DashboardContentSkeleton() {
+function DashboardSkeleton() {
   return (
-    <div className="min-h-[calc(100dvh-6rem)] flex flex-col items-center justify-center px-6">
-      <div className="flex flex-col items-center gap-5">
-        <LyraSigil size="xl" state="dormant" />
-        <Skeleton className="h-3 w-12 rounded-full" />
-        <Skeleton className="h-4 w-64 rounded-full" />
-        <Skeleton className="h-11 w-40 rounded-full mt-2" />
+    <div className="space-y-6">
+      {/* Header skeleton */}
+      <div className="flex items-center gap-4">
+        <Skeleton className="h-8 w-8 rounded-full" />
+        <div className="space-y-2">
+          <Skeleton className="h-5 w-32 rounded" />
+          <Skeleton className="h-3 w-48 rounded" />
+        </div>
+      </div>
+
+      {/* Grid skeleton */}
+      <div className="grid grid-cols-2 gap-3">
+        {[1, 2, 3, 4].map((i) => (
+          <Skeleton key={i} className="h-[100px] rounded-2xl" />
+        ))}
+      </div>
+
+      {/* Activity skeleton */}
+      <div className="space-y-2">
+        <Skeleton className="h-3 w-24 rounded" />
+        {[1, 2, 3].map((i) => (
+          <Skeleton key={i} className="h-14 rounded-xl" />
+        ))}
       </div>
     </div>
   );
@@ -42,128 +56,64 @@ function DashboardContentSkeleton() {
 async function DashboardContent({
   userId,
   userName,
-  isPostInitiation,
 }: {
   userId: string;
   userName: string;
-  isPostInitiation: boolean;
 }) {
-  // Parallel fetch — 4 queries
-  const [deckCount, draftDecks, readingCount, chronicleDeck] =
+  // Parallel fetch
+  const [deckCount, draftDecks, readingCount, chronicleDeck, pathPosition, activityItems] =
     await Promise.all([
       getUserDeckCount(userId),
       getUserDraftDecks(userId),
       getUserTotalReadingCount(userId),
       getUserChronicleDeck(userId),
+      getPathPosition(userId),
+      getUserActivityFeed(userId, 10),
     ]);
 
-  // Conditional fetches for chronicle + path
-  const [chronicleSettings, todayCard, pathPosition] = chronicleDeck
-    ? await Promise.all([
-        getChronicleSettings(chronicleDeck.id),
-        getTodayChronicleCard(userId),
-        getPathPosition(userId),
-      ])
-    : [null, null, await getPathPosition(userId)];
+  // Conditional chronicle fetch
+  const chronicleSettings = chronicleDeck
+    ? await getChronicleSettings(chronicleDeck.id)
+    : null;
 
-  const celestialContext = getCurrentCelestialContext();
-
-  // ── Resolve invitation ──────────────────────────────────────────
-  const invitationCtx: InvitationContext = {
-    userName,
+  // Quick access grid data
+  const quickAccessData: QuickAccessData = {
+    pathName: pathPosition?.path.name ?? null,
+    pathWaypoint: pathPosition?.waypoint.name ?? null,
     deckCount,
+    draftCount: draftDecks.length,
     readingCount,
+    chronicleStreakCount: chronicleSettings?.streakCount ?? 0,
     hasChronicle: !!chronicleDeck,
-    completedChronicleToday: !!todayCard,
-    streakCount: chronicleSettings?.streakCount ?? 0,
-    pathPosition: pathPosition
-      ? {
-          pathName: pathPosition.path.name,
-          waypointName: pathPosition.waypoint.name,
-        }
-      : null,
-    moonPhase: celestialContext.moonPhase,
-    moonSign: celestialContext.moonSign,
-    isPostInitiation,
   };
 
-  const invitation = resolveInvitation(invitationCtx);
-
-  // ── Resolve below-fold cards ────────────────────────────────────
-  const belowFoldCtx: BelowFoldContext = {
-    draftDecks: draftDecks.map((d) => ({ id: d.id, name: d.title })),
-    pathPosition: pathPosition
-      ? {
-          pathName: pathPosition.path.name,
-          waypointName: pathPosition.waypoint.name,
-          retreatName: pathPosition.retreat.name,
-        }
-      : null,
-    completedChronicleToday: !!todayCard,
-    streakCount: chronicleSettings?.streakCount ?? 0,
-    deckCount,
-  };
-
-  const cards = resolveBelowFoldCards(belowFoldCtx);
+  // Tag activity items with isFuture for the ActivityRow component
+  const now = Date.now();
+  const taggedItems: ActivityItemWithTemporal[] = activityItems.map((item) => ({
+    ...item,
+    isFuture: item.timestamp.getTime() > now,
+  }));
 
   return (
-    <>
-      {/* Full-bleed hero — negative margins counteract <main> padding */}
-      <div className="-mx-4 -mt-6 sm:-mx-6 lg:-mx-8">
-        <LyraInvitation
-          invitation={invitation}
-          userName={userName}
-          hasBelowFold={cards.length > 0}
-        />
-      </div>
-
-      {/* Below-fold contextual cards — back inside normal padding */}
-      {cards.length > 0 && (
-        <div className="mt-8">
-          <BelowFoldCards cards={cards} />
-        </div>
-      )}
-    </>
+    <AnimatedDashboardContent>
+      <DashboardHeader userName={userName} />
+      <QuickAccessGrid data={quickAccessData} className="mt-6" />
+      <RecentActivity items={taggedItems} className="mt-6" />
+    </AnimatedDashboardContent>
   );
 }
 
 // ── Page ─────────────────────────────────────────────────────────────
 
-interface DashboardPageProps {
-  searchParams: Promise<{ initiated?: string }>;
-}
-
-export default async function DashboardPage({
-  searchParams,
-}: DashboardPageProps) {
+export default async function DashboardPage() {
   const user = await requireAuth();
-  const params = await searchParams;
-  const isPostInitiation = params.initiated === "true";
-  const isAdminUser = isAdmin(user as { role?: string });
   const userName = resolveUserName(user);
 
   return (
     <div className="p-4 pb-24 sm:p-6 sm:pb-24 lg:p-8 lg:pb-24">
-      <Suspense fallback={<DashboardContentSkeleton />}>
-        <DashboardContent
-          userId={user.id!}
-          userName={userName}
-          isPostInitiation={isPostInitiation}
-        />
+      <Suspense fallback={<DashboardSkeleton />}>
+        <DashboardContent userId={user.id!} userName={userName} />
       </Suspense>
-
-      {/* Admin preview link — tiny, unobtrusive */}
-      {isAdminUser && (
-        <div className="flex justify-center mt-12">
-          <Link
-            href="/onboarding"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-white/20 hover:text-white/50 border border-white/5 hover:border-white/15 rounded-full transition-colors"
-          >
-            <Eye className="h-3 w-3" />
-            Preview Onboarding
-          </Link>
-        </div>
-      )}
     </div>
   );
 }

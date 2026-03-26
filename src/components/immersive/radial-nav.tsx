@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Layers, BookOpen, Map, User } from "lucide-react";
+import { Layers, BookOpen, Map, User, Home } from "lucide-react";
 import Link from "next/link";
 import { useImmersive } from "./immersive-provider";
 import { useOnboarding } from "@/components/guide/onboarding-provider";
@@ -17,6 +17,7 @@ interface NavItem {
 }
 
 const allItems = {
+  home: { href: "/home", label: "Home", icon: Home, section: "home" },
   dashboard: { href: "/dashboard", label: "Dashboard", icon: User, section: "dashboard" },
   decks: { href: "/decks", label: "Decks", icon: Layers, section: "decks" },
   readings: { href: "/readings", label: "Readings", icon: BookOpen, section: "readings" },
@@ -25,25 +26,36 @@ const allItems = {
 
 /**
  * Returns exactly 3 nav items with fixed slot assignments:
- *   Left (-135°): Profile preferred
- *   Center (-90°): Decks/Readings (rotates based on current section)
+ *   Left (-135°): Home preferred
+ *   Center (-90°): Decks preferred (rotates based on current section)
  *   Right (-45°): Paths preferred
  *
  * The current section is excluded, and remaining items fill the 3 slots.
  */
 function getRadialItems(currentSection: string | null): NavItem[] {
-  const pool = [allItems.dashboard, allItems.decks, allItems.readings, allItems.paths]
+  // Build pool based on current section — always show 3 items
+  const candidates = [allItems.home, allItems.dashboard, allItems.decks, allItems.readings, allItems.paths]
     .filter(item => item.section !== currentSection);
 
-  // If we filtered nothing (user is on settings/etc.), drop readings to keep 3
-  if (pool.length > 3) {
-    pool.splice(pool.findIndex(i => i.section === "readings"), 1);
+  // Drop excess items to keep exactly 3: prefer dropping readings, then dashboard
+  while (candidates.length > 3) {
+    const readingsIdx = candidates.findIndex(i => i.section === "readings");
+    if (readingsIdx !== -1) {
+      candidates.splice(readingsIdx, 1);
+      continue;
+    }
+    const dashboardIdx = candidates.findIndex(i => i.section === "dashboard");
+    if (dashboardIdx !== -1) {
+      candidates.splice(dashboardIdx, 1);
+      continue;
+    }
+    candidates.pop();
   }
 
   // Assign slots by preference
-  const left = pool.find(i => i.section === "dashboard") ?? pool[0];
-  const right = pool.find(i => i.section === "paths" && i !== left) ?? pool[pool.length - 1];
-  const center = pool.find(i => i !== left && i !== right)!;
+  const left = candidates.find(i => i.section === "home") ?? candidates[0];
+  const right = candidates.find(i => i.section === "paths" && i !== left) ?? candidates[candidates.length - 1];
+  const center = candidates.find(i => i !== left && i !== right)!;
 
   return [
     { ...left, angle: -135 },

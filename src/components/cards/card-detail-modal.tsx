@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Dialog,
   DialogContent,
@@ -168,52 +169,50 @@ function CardImage({
   card: CardDetailData;
   onRetryImage?: (cardId: string) => void;
 }) {
-  if (card.imageStatus === "completed" && card.imageUrl) {
-    return (
-      <img
-        src={card.imageUrl}
-        alt={card.title}
-        className="h-full w-full object-cover"
-      />
-    );
-  }
+  const stateKey = `${card.imageStatus}-${card.imageUrl ? 'url' : 'none'}`;
 
-  if (card.imageStatus === "none") {
-    return (
-      <div className="h-full w-full bg-gradient-to-b from-[#1a0530] via-[#0a0118] to-[#1a0530]" />
-    );
-  }
-
-  if (card.imageStatus === "generating") {
-    return (
-      <div className="flex h-full w-full items-center justify-center bg-gradient-to-b from-[#0a0118] to-[#1a0530]">
-        <Loader2 className="h-10 w-10 animate-spin text-[#c9a94e]/60" />
-      </div>
-    );
-  }
-
-  if (card.imageStatus === "failed") {
-    return (
-      <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-gradient-to-b from-[#0a0118] to-[#1a0530]">
-        <AlertCircle className="h-8 w-8 text-red-400/60" />
-        {onRetryImage && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onRetryImage(card.id);
-            }}
-            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-md border border-border/50"
-          >
-            <RotateCcw className="h-3.5 w-3.5" />
-            Regenerate Image
-          </button>
-        )}
-      </div>
-    );
-  }
-
-  // Pending
   return (
-    <Skeleton className="h-full w-full rounded-none bg-[#1a0530]" />
+    <AnimatePresence mode="wait">
+      <motion.div
+        key={stateKey}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.25, ease: "easeInOut" }}
+        className="h-full w-full"
+      >
+        {card.imageStatus === "completed" && card.imageUrl ? (
+          <img
+            src={card.imageUrl}
+            alt={card.title}
+            className="h-full w-full object-cover"
+          />
+        ) : card.imageStatus === "none" ? (
+          <div className="h-full w-full bg-gradient-to-b from-[#1a0530] via-[#0a0118] to-[#1a0530]" />
+        ) : card.imageStatus === "generating" ? (
+          <div className="flex h-full w-full items-center justify-center bg-gradient-to-b from-[#0a0118] to-[#1a0530]">
+            <Loader2 className="h-10 w-10 animate-spin text-[#c9a94e]/60" />
+          </div>
+        ) : card.imageStatus === "failed" ? (
+          <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-gradient-to-b from-[#0a0118] to-[#1a0530]">
+            <AlertCircle className="h-8 w-8 text-red-400/60" />
+            {onRetryImage && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRetryImage(card.id);
+                }}
+                className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-md border border-border/50"
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+                Regenerate Image
+              </button>
+            )}
+          </div>
+        ) : (
+          <Skeleton className="h-full w-full rounded-none bg-[#1a0530]" />
+        )}
+      </motion.div>
+    </AnimatePresence>
   );
 }

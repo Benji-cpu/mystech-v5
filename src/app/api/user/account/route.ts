@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth/helpers";
 import { getAllUserImageUrls, deleteUser } from "@/lib/db/queries";
 import { del } from "@vercel/blob";
+import { db } from "@/lib/db";
+import { subscriptions } from "@/lib/db/schema";
+import { stripe } from "@/lib/stripe/client";
+import { eq } from "drizzle-orm";
 import type { ApiResponse } from "@/types";
 
 export async function DELETE(request: NextRequest) {
@@ -21,7 +25,24 @@ export async function DELETE(request: NextRequest) {
     );
   }
 
-  // TODO: Cancel Stripe subscription when billing is integrated
+  // Cancel Stripe subscription if active
+  try {
+    const [sub] = await db
+      .select({
+        stripeCustomerId: subscriptions.stripeCustomerId,
+        stripeSubscriptionId: subscriptions.stripeSubscriptionId,
+        status: subscriptions.status,
+      })
+      .from(subscriptions)
+      .where(eq(subscriptions.userId, user.id));
+
+    if (sub?.stripeSubscriptionId && sub.status === "active") {
+      await stripe.subscriptions.cancel(sub.stripeSubscriptionId);
+    }
+  } catch (err) {
+    console.error("[account/delete] Stripe cancellation failed:", err);
+    // Proceed with deletion even if Stripe call fails
+  }
 
   // Best-effort cleanup of images from Vercel Blob
   const imageUrls = await getAllUserImageUrls(user.id);

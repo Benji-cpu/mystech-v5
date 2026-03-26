@@ -17,11 +17,18 @@ export default auth((req: NextRequest & { auth: unknown }) => {
 
 export const config = {
   matcher: [
+    "/home/:path*",
+    "/home",
     "/dashboard/:path*",
     "/profile/:path*",
     "/decks/:path*",
     "/readings/:path*",
-    "/explore/:path*",
+    "/art-styles/:path*",
+    "/art-styles",
+    "/chronicle/:path*",
+    "/chronicle",
+    "/paths/:path*",
+    "/paths",
     "/settings/:path*",
     "/admin/:path*",
     "/onboarding/:path*",

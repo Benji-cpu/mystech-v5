@@ -13,6 +13,7 @@ interface ReadingFlipCardProps {
   cardHeight: number;
   isActive?: boolean;
   showLabel?: boolean;
+  onClick?: () => void;
 }
 
 export function ReadingFlipCard({
@@ -23,6 +24,7 @@ export function ReadingFlipCard({
   cardHeight,
   isActive,
   showLabel = true,
+  onClick,
 }: ReadingFlipCardProps) {
   const flipped = revealState === "revealing" || revealState === "revealed";
   const isRevealing = revealState === "revealing";
@@ -31,7 +33,14 @@ export function ReadingFlipCard({
     <div className="flex flex-col items-center">
       <div
         className="relative"
-        style={{ perspective: 800, width: cardWidth, height: cardHeight }}
+        style={{
+          perspective: 800,
+          width: cardWidth,
+          height: cardHeight,
+          cursor: revealState === "revealed" && onClick ? "pointer" : undefined,
+        }}
+        onClick={revealState === "revealed" ? onClick : undefined}
+        role={revealState === "revealed" && onClick ? "button" : undefined}
       >
         <motion.div
           animate={{ rotateY: flipped ? 180 : 0 }}
@@ -115,12 +124,11 @@ export function ReadingFlipCard({
           />
         )}
 
-        {/* Active highlight glow (during interpretation) */}
-        {isActive && !isRevealing && (
+        {/* Active highlight glow (during interpretation) — always mounted, animated opacity */}
+        {!isRevealing && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            animate={{ opacity: isActive ? 1 : 0 }}
+            transition={{ type: "spring", stiffness: 300, damping: 25 }}
             className="absolute inset-0 -m-2 rounded-2xl pointer-events-none"
             style={{
               boxShadow: "0 0 20px rgba(201,169,78,0.5), 0 0 40px rgba(201,169,78,0.2)",
@@ -129,9 +137,16 @@ export function ReadingFlipCard({
         )}
       </div>
 
+      {/* Card title — shown when card is face-up */}
+      {flipped && (
+        <p className="mt-1.5 text-center text-xs sm:text-sm text-white/90 font-medium leading-snug line-clamp-2 mx-auto" style={{ maxWidth: cardWidth + 20 }}>
+          {card.title}
+        </p>
+      )}
+
       {/* Position label */}
       {showLabel && (
-        <p className="mt-1.5 text-center text-[10px] text-white/50 uppercase tracking-wider">
+        <p className="mt-0.5 text-center text-[10px] sm:text-xs text-white/50 uppercase tracking-wider">
           {positionName}
         </p>
       )}

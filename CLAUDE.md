@@ -87,8 +87,8 @@ npm run test:e2e:ui  # Playwright with interactive UI
 - Auth-protected routes call `requireAuth()` first
 
 ### Billing Tiers
-- **Free**: 10 cards/mo, 5 readings/mo, 5 images/mo, 2 decks, 3-card spread only
-- **Pro ($4.99/mo)**: 100 cards/mo, 50 readings/mo, 100 images/mo, unlimited decks, all spreads
+- **Free**: 10 cards/mo, 5 readings/mo, 5 images/mo, 3-card spread only
+- **Pro ($4.99/mo)**: 100 cards/mo, 50 readings/mo, 100 images/mo, all spreads
 
 ### Terminology
 - For the Paths feature, use path-oriented language: "path," "trail," "waypoint," "retreat"

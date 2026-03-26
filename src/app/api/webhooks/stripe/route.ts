@@ -24,6 +24,13 @@ export async function POST(request: NextRequest) {
       );
     }
   } else {
+    // Never skip signature verification in production
+    if (process.env.NODE_ENV === "production") {
+      return NextResponse.json(
+        { error: "Webhook secret not configured" },
+        { status: 500 }
+      );
+    }
     // Dev mode: skip signature verification
     event = JSON.parse(body) as Stripe.Event;
   }

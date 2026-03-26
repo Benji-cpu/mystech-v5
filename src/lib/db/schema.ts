@@ -161,7 +161,7 @@ export const cards = pgTable(
     imageStatus: text("image_status").notNull().default("pending"),
     cardType: text("card_type").notNull().default("general"), // "general" | "obstacle" | "threshold"
     originContext: jsonb("origin_context").$type<CardOriginContext>(),
-    chronicleEntryId: text("chronicle_entry_id"), // FK added after chronicleEntries is defined
+    chronicleEntryId: text("chronicle_entry_id"), // FK to chronicleEntries — circular ref prevents inline .references(), use DB-level constraint
     createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
   },
@@ -460,7 +460,7 @@ export const userProfiles = pgTable("user_profile", {
   voiceId: text("voice_id"),
   contextSummary: text("context_summary"),
   contextVersion: integer("context_version").default(0).notNull(),
-  activePathId: text("active_path_id"), // FK to paths — nullable, user's current active Path
+  activePathId: text("active_path_id").references(() => paths.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
 });

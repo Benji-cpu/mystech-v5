@@ -1,5 +1,5 @@
 import { getSharedDeckByToken } from "@/lib/db/queries";
-import { auth } from "@/auth";
+import { getCurrentUser } from "@/lib/auth/helpers";
 import { notFound } from "next/navigation";
 import { AdoptDeckButton } from "@/components/shared/adopt-deck-button";
 import { SharedDeckCardGrid } from "@/components/shared/shared-deck-card-grid";
@@ -41,8 +41,8 @@ export default async function SharedDeckPage({
 
   if (!deck) notFound();
 
-  const session = await auth();
-  const isLoggedIn = !!session?.user;
+  const user = await getCurrentUser();
+  const isLoggedIn = !!user;
 
   const cards: CardDetailData[] = deck.cards.map((c) => ({
     id: c.id,

@@ -3,7 +3,6 @@ import {
   resolveInvitation,
   type InvitationContext,
 } from "./resolve-invitation";
-import { resolveBelowFoldCards, type BelowFoldContext } from "./resolve-below-fold";
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
@@ -17,6 +16,7 @@ function makeCtx(overrides: Partial<InvitationContext> = {}): InvitationContext 
     streakCount: 7,
     pathPosition: null,
     isPostInitiation: false,
+    lastChronicleCardTitle: null,
     ...overrides,
   };
 }
@@ -49,22 +49,39 @@ describe("resolveInvitation", () => {
     expect(result.ctaLabel).toBe("Open Chronicle");
   });
 
-  it("includes streak subtitle for chronicle with streak", () => {
+  it("includes contextual subtitle for chronicle with last card title", () => {
     const result = resolveInvitation(
       makeCtx({
         hasChronicle: true,
         completedChronicleToday: false,
         streakCount: 12,
+        lastChronicleCardTitle: "The Mirror",
       })
     );
     expect(result.type).toBe("chronicle");
-    expect(result.subtitle).toBe("12-day streak");
+    expect(result.subtitle).toBe(
+      "Last time, The Mirror guided your thread."
+    );
+  });
+
+  it("omits subtitle for chronicle when no last card title", () => {
+    const result = resolveInvitation(
+      makeCtx({
+        hasChronicle: true,
+        completedChronicleToday: false,
+        streakCount: 12,
+        lastChronicleCardTitle: null,
+      })
+    );
+    expect(result.type).toBe("chronicle");
+    expect(result.subtitle).toBeUndefined();
   });
 
   it("returns continue-path when user has active path", () => {
     const result = resolveInvitation(
       makeCtx({
         pathPosition: {
+          pathId: "path-1",
           pathName: "The Inner Mirror",
           waypointName: "Shadow Work",
         },
@@ -72,7 +89,7 @@ describe("resolveInvitation", () => {
     );
     expect(result.type).toBe("continue-path");
     expect(result.subtitle).toBe("The Inner Mirror");
-    expect(result.ctaHref).toBe("/paths");
+    expect(result.ctaHref).toBe("/paths/path-1");
   });
 
   it("returns reflective as fallback", () => {
@@ -121,6 +138,7 @@ describe("resolveInvitation", () => {
           hasChronicle: true,
           completedChronicleToday: false,
           pathPosition: {
+            pathId: "path-1",
             pathName: "The Inner Mirror",
             waypointName: "Shadow Work",
           },
@@ -133,6 +151,7 @@ describe("resolveInvitation", () => {
       const result = resolveInvitation(
         makeCtx({
           pathPosition: {
+            pathId: "path-1",
             pathName: "The Inner Mirror",
             waypointName: "Shadow Work",
           },
@@ -143,108 +162,3 @@ describe("resolveInvitation", () => {
   });
 });
 
-// ── resolveBelowFoldCards ────────────────────────────────────────────
-
-describe("resolveBelowFoldCards", () => {
-  function makeBelowCtx(
-    overrides: Partial<BelowFoldContext> = {}
-  ): BelowFoldContext {
-    return {
-      draftDecks: [],
-      pathPosition: null,
-      completedChronicleToday: false,
-      streakCount: 0,
-      deckCount: 0,
-      ...overrides,
-    };
-  }
-
-  it("returns empty array when no context", () => {
-    const result = resolveBelowFoldCards(makeBelowCtx());
-    expect(result).toHaveLength(0);
-  });
-
-  it("includes draft-deck card", () => {
-    const result = resolveBelowFoldCards(
-      makeBelowCtx({
-        draftDecks: [{ id: "d1", name: "My Draft" }],
-      })
-    );
-    expect(result).toHaveLength(1);
-    expect(result[0].type).toBe("draft-deck");
-    expect(result[0].title).toBe("My Draft");
-  });
-
-  it("includes path-progress card", () => {
-    const result = resolveBelowFoldCards(
-      makeBelowCtx({
-        pathPosition: {
-          pathName: "The Inner Mirror",
-          waypointName: "Shadow Work",
-          retreatName: "Self-Reflection",
-        },
-      })
-    );
-    expect(result[0].type).toBe("path-progress");
-  });
-
-  it("includes chronicle-streak card when completed today", () => {
-    const result = resolveBelowFoldCards(
-      makeBelowCtx({
-        completedChronicleToday: true,
-        streakCount: 5,
-      })
-    );
-    expect(result[0].type).toBe("chronicle-streak");
-    expect(result[0].subtitle).toBe("5-day streak");
-  });
-
-  it("does not include chronicle-streak if not completed today", () => {
-    const result = resolveBelowFoldCards(
-      makeBelowCtx({
-        completedChronicleToday: false,
-        streakCount: 5,
-      })
-    );
-    expect(result.find((c) => c.type === "chronicle-streak")).toBeUndefined();
-  });
-
-  it("caps at 3 cards maximum", () => {
-    const result = resolveBelowFoldCards(
-      makeBelowCtx({
-        draftDecks: [{ id: "d1", name: "Draft" }],
-        pathPosition: {
-          pathName: "Path",
-          waypointName: "WP",
-          retreatName: "R",
-        },
-        completedChronicleToday: true,
-        streakCount: 3,
-        deckCount: 5,
-      })
-    );
-    expect(result).toHaveLength(3);
-  });
-
-  it("prioritizes draft-deck over deck-overview", () => {
-    const result = resolveBelowFoldCards(
-      makeBelowCtx({
-        draftDecks: [{ id: "d1", name: "Draft" }],
-        pathPosition: {
-          pathName: "Path",
-          waypointName: "WP",
-          retreatName: "R",
-        },
-        completedChronicleToday: true,
-        streakCount: 3,
-        deckCount: 5,
-      })
-    );
-    // draft-deck, path-progress, chronicle-streak — deck-overview trimmed
-    expect(result.map((c) => c.type)).toEqual([
-      "draft-deck",
-      "path-progress",
-      "chronicle-streak",
-    ]);
-  });
-});

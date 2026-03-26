@@ -31,17 +31,17 @@ export function useResponsiveCardSize(
   let gap: number;
 
   if (compact) {
-    // Smaller sizes for interpretation phase (cards stay in spread but scaled down)
+    // Presenting-phase sizes — cards are the visual anchor, keep them prominent
     if (cardCount <= 1) {
-      cardWidth = isMobile ? 80 : isTablet ? 100 : 120;
+      cardWidth = isMobile ? 130 : isTablet ? 160 : 180;
     } else if (cardCount <= 3) {
-      cardWidth = isMobile ? 56 : isTablet ? 76 : 90;
+      cardWidth = isMobile ? 90 : isTablet ? 120 : 140;
     } else if (cardCount <= 5) {
-      cardWidth = isMobile ? 44 : isTablet ? 64 : 76;
+      cardWidth = isMobile ? 70 : isTablet ? 100 : 120;
     } else {
-      cardWidth = isMobile ? 32 : isTablet ? 44 : 56;
+      cardWidth = isMobile ? 50 : isTablet ? 70 : 90;
     }
-    gap = isMobile ? 4 : 6;
+    gap = isMobile ? 12 : 16;
   } else {
     // Full sizes for spread layout during drawing/revealing
     if (cardCount <= 1) {
@@ -49,10 +49,10 @@ export function useResponsiveCardSize(
       gap = 0;
     } else if (cardCount <= 3) {
       cardWidth = isMobile ? 100 : isTablet ? 140 : 160;
-      gap = isMobile ? 8 : 16;
+      gap = isMobile ? 12 : 20;
     } else if (cardCount <= 5) {
       cardWidth = isMobile ? 80 : isTablet ? 120 : 140;
-      gap = isMobile ? 6 : 12;
+      gap = isMobile ? 10 : 16;
     } else {
       cardWidth = isMobile ? 60 : isTablet ? 80 : 100;
       gap = isMobile ? 4 : 8;

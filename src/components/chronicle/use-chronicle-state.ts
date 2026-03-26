@@ -153,8 +153,16 @@ export function chronicleReducer(
     case 'START_FORGING':
       return { ...state, phase: 'card_forging', error: null };
 
-    case 'FORGE_COMPLETE':
-      return { ...state, phase: 'card_reveal', card: action.card, error: null };
+    case 'FORGE_COMPLETE': {
+      // If image is still generating, stay in card_forging — UPDATE_CARD_IMAGE will auto-transition
+      const imageReady = action.card.imageStatus !== 'generating';
+      return {
+        ...state,
+        phase: imageReady ? 'card_reveal' : 'card_forging',
+        card: action.card,
+        error: null,
+      };
+    }
 
     case 'FORGE_ERROR':
       return { ...state, phase: 'dialogue', error: action.error, lyraSignaledReady: false };
@@ -217,12 +225,17 @@ export function chronicleReducer(
         miniReading: action.miniReading,
       };
 
-    case 'UPDATE_CARD_IMAGE':
+    case 'UPDATE_CARD_IMAGE': {
       if (!state.card) return state;
+      const updatedCard = { ...state.card, imageUrl: action.imageUrl, imageStatus: action.imageStatus };
+      // Auto-transition to card_reveal if we were waiting for the image during forging
+      const autoReveal = state.phase === 'card_forging' && action.imageStatus !== 'generating';
       return {
         ...state,
-        card: { ...state.card, imageUrl: action.imageUrl, imageStatus: action.imageStatus },
+        phase: autoReveal ? 'card_reveal' : state.phase,
+        card: updatedCard,
       };
+    }
 
     case 'START_EMERGENCE':
       return {

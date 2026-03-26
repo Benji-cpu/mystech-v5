@@ -4,7 +4,7 @@ import { useReducer, useEffect, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { LyraHeader } from "./lyra-header";
+import { LyraSigil, type SigilStateProp } from "./lyra-sigil";
 import { LyraNarration } from "./lyra-narration";
 import {
   INITIATION_WELCOME_STEPS,
@@ -462,12 +462,12 @@ function RevealPhase({
 
 // ── Phase sigil states ────────────────────────────────────────────────────
 
-const LYRA_SIGIL_STATES: Record<Phase, "dormant" | "attentive" | "speaking"> = {
+const LYRA_SIGIL_STATES: Record<Phase, SigilStateProp> = {
   voice_consent: "speaking",
   welcome: "speaking",
   question: "attentive",
-  generating: "speaking",
-  reveal: "speaking",
+  generating: "thinking",
+  reveal: "attentive",
 };
 
 // ── Main shell ────────────────────────────────────────────────────────────
@@ -543,7 +543,7 @@ export function InitiationShell({
   const handleSkip = useCallback(async () => {
     tts.stop();
     await fetch("/api/onboarding/complete", { method: "POST" });
-    router.push("/dashboard");
+    router.push("/home");
   }, [router, tts]);
 
   const handleQuestionSubmit = useCallback(async (input: string) => {
@@ -620,84 +620,55 @@ export function InitiationShell({
     <div className="h-[100dvh] flex flex-col overflow-hidden bg-transparent">
       {/* ── Lyra zone — always mounted ── */}
       <div className="shrink-0 flex flex-col items-center pt-16 pb-6 px-4">
-        <LyraHeader state={LYRA_SIGIL_STATES[state.phase]} size="lg" />
+        <LyraSigil size="lg" state={LYRA_SIGIL_STATES[state.phase]} showLabel />
       </div>
 
       {/* ── Content zone — flex-1, phase-controlled ── */}
       <div className="flex-1 min-h-0 overflow-y-auto px-4 flex items-center justify-center">
-        {/* Voice consent phase */}
-        {state.phase === "voice_consent" && (
+        <AnimatePresence mode="wait">
           <motion.div
+            key={state.phase}
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="w-full"
+            className="w-full flex justify-center"
           >
-            <VoiceConsentPhase onAccept={handleVoiceAccept} onDecline={handleVoiceDecline} />
-          </motion.div>
-        )}
+            {state.phase === "voice_consent" && (
+              <VoiceConsentPhase onAccept={handleVoiceAccept} onDecline={handleVoiceDecline} />
+            )}
 
-        {/* Welcome phase */}
-        <motion.div
-          className="w-full"
-          animate={{
-            opacity: state.phase === "welcome" ? 1 : 0,
-            pointerEvents: state.phase === "welcome" ? "auto" : "none",
-          }}
-          style={{ display: state.phase === "welcome" ? "flex" : "none", justifyContent: "center" }}
-        >
-          <WelcomePhase
-            step={state.welcomeStep}
-            onNext={() => dispatch({ type: "NEXT_WELCOME_STEP" })}
-            voiceEnabled={state.voiceEnabled}
-            voiceIdle={voiceIdle}
-          />
-        </motion.div>
+            {state.phase === "welcome" && (
+              <WelcomePhase
+                step={state.welcomeStep}
+                onNext={() => dispatch({ type: "NEXT_WELCOME_STEP" })}
+                voiceEnabled={state.voiceEnabled}
+                voiceIdle={voiceIdle}
+              />
+            )}
 
-        {/* Question phase */}
-        {state.phase === "question" && (
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="w-full"
-          >
-            <QuestionPhase onSubmit={handleQuestionSubmit} initialValue={userInputRef.current} />
-          </motion.div>
-        )}
+            {state.phase === "question" && (
+              <QuestionPhase onSubmit={handleQuestionSubmit} initialValue={userInputRef.current} />
+            )}
 
-        {/* Generating phase */}
-        {state.phase === "generating" && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.4 }}
-            className="w-full"
-          >
-            <GeneratingPhase error={isGenerating ? null : (error ?? null)} onRetry={handleRetry} stage={stage} />
-          </motion.div>
-        )}
+            {state.phase === "generating" && (
+              <GeneratingPhase error={isGenerating ? null : (error ?? null)} onRetry={handleRetry} stage={stage} />
+            )}
 
-        {/* Reveal phase */}
-        {state.phase === "reveal" && displayArtStyleName && state.deckTitle && (
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="w-full"
-          >
-            <RevealPhase
-              artStyleName={displayArtStyleName}
-              deckTitle={state.deckTitle}
-              showStylePicker={state.showStylePicker}
-              onTogglePicker={() => dispatch({ type: "TOGGLE_STYLE_PICKER" })}
-              onSelectStyle={handleSelectStyle}
-              onBeginReading={handleBeginReading}
-              voiceEnabled={state.voiceEnabled}
-              voiceIdle={voiceIdle}
-            />
+            {state.phase === "reveal" && displayArtStyleName && state.deckTitle && (
+              <RevealPhase
+                artStyleName={displayArtStyleName}
+                deckTitle={state.deckTitle}
+                showStylePicker={state.showStylePicker}
+                onTogglePicker={() => dispatch({ type: "TOGGLE_STYLE_PICKER" })}
+                onSelectStyle={handleSelectStyle}
+                onBeginReading={handleBeginReading}
+                voiceEnabled={state.voiceEnabled}
+                voiceIdle={voiceIdle}
+              />
+            )}
           </motion.div>
-        )}
+        </AnimatePresence>
       </div>
 
       {/* ── Action zone — skip always visible ── */}

@@ -9,8 +9,8 @@ interface PageTransitionWrapperProps {
 }
 
 /**
- * Enter-only page transition. Old content vanishes instantly on route change;
- * new content fades in. No `mode="wait"` — no gap between pages.
+ * Full cross-fade page transition. Both old and new pages coexist briefly
+ * during the transition via absolute positioning.
  */
 export function PageTransitionWrapper({ children }: PageTransitionWrapperProps) {
   const pathname = usePathname();
@@ -30,15 +30,19 @@ export function PageTransitionWrapper({ children }: PageTransitionWrapperProps) 
   }, [children]);
 
   return (
-    <AnimatePresence initial={false}>
-      <motion.div
-        key={currentPath}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.2, ease: "easeOut" }}
-      >
-        {frozenChildren}
-      </motion.div>
-    </AnimatePresence>
+    <div className="relative" style={{ minHeight: "100dvh" }}>
+      <AnimatePresence initial={false}>
+        <motion.div
+          key={currentPath}
+          className="absolute inset-0"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2, ease: "easeOut" }}
+        >
+          {frozenChildren}
+        </motion.div>
+      </AnimatePresence>
+    </div>
   );
 }
