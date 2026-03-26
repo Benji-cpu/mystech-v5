@@ -12,7 +12,7 @@ import {
 import { usePathname } from "next/navigation";
 import { getMoodForRoute, moodPresets, type Mood, type MoodPresetName } from "./mood-config";
 import { getNavContext } from "./nav-context";
-import { detectPerformanceTier, tierConfigs, type PerformanceTier, type TierConfig } from "./performance";
+import { getPerformanceTier, setPerformanceTierOverride as persistTierOverride, tierConfigs, type PerformanceTier, type TierConfig } from "./performance";
 
 interface ImmersiveState {
   isOrbExpanded: boolean;
@@ -73,6 +73,7 @@ interface ImmersiveContextValue {
   setMoodPreset: (name: MoodPresetName) => void;
   exitFocusMode: () => void;
   tierConfig: TierConfig;
+  setPerformanceTierOverride: (tier: PerformanceTier | null) => void;
 }
 
 const ImmersiveContext = createContext<ImmersiveContextValue | null>(null);
@@ -105,9 +106,9 @@ export function ImmersiveProvider({ children }: { children: ReactNode }) {
     focusSubtitle: initialNav.focusSubtitle,
   });
 
-  // Detect performance tier on mount
+  // Detect performance tier on mount (respects localStorage override)
   useEffect(() => {
-    const tier = detectPerformanceTier();
+    const tier = getPerformanceTier();
     dispatch({ type: "SET_PERFORMANCE_TIER", tier });
   }, []);
 
@@ -136,11 +137,17 @@ export function ImmersiveProvider({ children }: { children: ReactNode }) {
   }, []);
   const exitFocusMode = useCallback(() => dispatch({ type: "EXIT_FOCUS_MODE" }), []);
 
+  const setPerformanceTierOverride = useCallback((tier: PerformanceTier | null) => {
+    persistTierOverride(tier);
+    const resolved = tier ?? getPerformanceTier();
+    dispatch({ type: "SET_PERFORMANCE_TIER", tier: resolved });
+  }, []);
+
   const tierConfig = useMemo(() => tierConfigs[state.performanceTier], [state.performanceTier]);
 
   const value = useMemo<ImmersiveContextValue>(
-    () => ({ state, toggleOrb, closeOrb, setMood, setMoodPreset, exitFocusMode, tierConfig }),
-    [state, toggleOrb, closeOrb, setMood, setMoodPreset, exitFocusMode, tierConfig]
+    () => ({ state, toggleOrb, closeOrb, setMood, setMoodPreset, exitFocusMode, tierConfig, setPerformanceTierOverride }),
+    [state, toggleOrb, closeOrb, setMood, setMoodPreset, exitFocusMode, tierConfig, setPerformanceTierOverride]
   );
 
   return (

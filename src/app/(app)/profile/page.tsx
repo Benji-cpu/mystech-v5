@@ -10,8 +10,6 @@ import {
   getUserChronicleDeck,
   getChronicleSettings,
   getTodayChronicleCard,
-  getUserReadingLength,
-  getVoicePreferences,
   getAstrologyProfile,
   getUserActivityFeed,
 } from "@/lib/db/queries";
@@ -24,11 +22,10 @@ import { PageHeader } from "@/components/layout/page-header";
 import { InProgressDecks } from "@/components/dashboard/in-progress-decks";
 import { OverviewCollapsible } from "@/components/dashboard/overview-collapsible";
 import { LyraGreeting } from "@/components/guide/lyra-greeting";
-import { ProfileSettingsCollapsible } from "@/components/settings/profile-settings-collapsible";
 import { ChronicleNudge } from "@/components/chronicle/chronicle-nudge";
-import { ProfileAccordion } from "@/components/profile/profile-accordion";
 import { CelestialEventsSection } from "@/components/profile/celestial-events-section";
 import { ActivitySection } from "@/components/profile/activity-section";
+import { SettingsLinkCard } from "@/components/settings/settings-link-card";
 import { AnimatedPage } from "@/components/ui/animated-page";
 import { AnimatedItem } from "@/components/ui/animated-item";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -72,15 +69,13 @@ async function ProfileContent({
   userRole?: string;
 }) {
   let plan: PlanType = getUserPlanFromRole(userRole);
-  const [deckCount, draftDecks, subPlan, profile, readingCount, readingLength, voicePrefs, astroProfile, activityFeed] =
+  const [deckCount, draftDecks, subPlan, profile, readingCount, astroProfile, activityFeed] =
     await Promise.all([
       getUserDeckCount(userId),
       getUserDraftDecks(userId),
       plan === "free" ? getUserPlan(userId) : Promise.resolve(plan),
       getUserProfile(userId),
       getUserTotalReadingCount(userId),
-      getUserReadingLength(userId),
-      getVoicePreferences(userId),
       getAstrologyProfile(userId),
       getUserActivityFeed(userId, 15),
     ]);
@@ -136,37 +131,19 @@ async function ProfileContent({
       <CelestialEventsSection items={celestial} />
       <ActivitySection items={activities} />
 
-      <ProfileAccordion
-        defaultOpen={astroProfile ? null : "sanctum"}
-        className="space-y-3"
-      >
-        {({ openSection, toggleSection }) => (
-          <>
-            <OverviewCollapsible
-              deckCount={deckCount}
-              plan={plan}
-              creditsUsed={usageRecord?.creditsUsed ?? 0}
-              creditsLimit={limits.credits}
-              readingsToday={readingStatus?.performedToday ?? 0}
-              readingsPerDay={limits.readingsPerDay}
-              isLifetimeCredits={limits.creditsAreLifetime}
-              celestialProfile={astroProfile}
-              open={openSection === "sanctum"}
-              onOpenChange={() => toggleSection("sanctum")}
-            />
-            {profile && (
-              <ProfileSettingsCollapsible
-                profile={profile}
-                plan={userRole === "admin" ? "admin" : plan}
-                readingLength={readingLength}
-                voicePrefs={voicePrefs}
-                open={openSection === "settings"}
-                onOpenChange={() => toggleSection("settings")}
-              />
-            )}
-          </>
-        )}
-      </ProfileAccordion>
+      <OverviewCollapsible
+        deckCount={deckCount}
+        plan={plan}
+        creditsUsed={usageRecord?.creditsUsed ?? 0}
+        creditsLimit={limits.credits}
+        readingsToday={readingStatus?.performedToday ?? 0}
+        readingsPerDay={limits.readingsPerDay}
+        isLifetimeCredits={limits.creditsAreLifetime}
+        celestialProfile={astroProfile}
+        open={!astroProfile ? true : undefined}
+      />
+
+      <SettingsLinkCard />
     </StaggeredList>
   );
 }

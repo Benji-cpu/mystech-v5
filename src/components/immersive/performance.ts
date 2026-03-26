@@ -1,5 +1,7 @@
 export type PerformanceTier = "full" | "reduced" | "minimal";
 
+const STORAGE_KEY = "mystech-performance-tier";
+
 /** Detect performance tier based on device capabilities */
 export function detectPerformanceTier(): PerformanceTier {
   if (typeof window === "undefined") return "full";
@@ -22,6 +24,26 @@ export function detectPerformanceTier(): PerformanceTier {
   if (isSmallScreen && isTouch) return "reduced";
 
   return "full";
+}
+
+/** Get performance tier, checking localStorage override first */
+export function getPerformanceTier(): PerformanceTier {
+  if (typeof window === "undefined") return "full";
+  const override = localStorage.getItem(STORAGE_KEY);
+  if (override === "full" || override === "reduced" || override === "minimal") {
+    return override;
+  }
+  return detectPerformanceTier();
+}
+
+/** Set or clear the localStorage performance tier override */
+export function setPerformanceTierOverride(tier: PerformanceTier | null): void {
+  if (typeof window === "undefined") return;
+  if (tier === null) {
+    localStorage.removeItem(STORAGE_KEY);
+  } else {
+    localStorage.setItem(STORAGE_KEY, tier);
+  }
 }
 
 export interface TierConfig {
