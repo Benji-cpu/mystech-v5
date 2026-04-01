@@ -559,8 +559,9 @@ export function ChronicleFlow({
           if (!cancelled) dispatch({ type: 'GREETING_DONE' });
         }, 600);
       })
-      .catch(() => {
+      .catch((err) => {
         if (cancelled) return;
+        console.warn("[Chronicle] AI greeting failed, using fallback:", err?.message ?? err);
 
         // Fallback: run template-based typewriter
         const greeting = buildChronicleGreeting({

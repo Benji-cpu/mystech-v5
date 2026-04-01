@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { AnimatedItem } from '@/components/ui/animated-item';
 import { RetreatMap } from '@/components/paths/retreat-map';
 import { PathCardCollection } from '@/components/paths/path-card-collection';
+import { CurrentPracticeCard } from '@/components/paths/current-practice-card';
 import {
   Compass,
   Flower2,
@@ -18,6 +19,7 @@ import {
 } from 'lucide-react';
 import type {
   PathWithRetreats,
+  Practice,
   UserPathProgress,
   UserRetreatProgress,
   UserWaypointProgress,
@@ -43,12 +45,19 @@ type PracticeProgressEntry = {
   playCount: number;
 };
 
+type CurrentPracticeData = Practice & {
+  completed: boolean;
+  playCount: number;
+};
+
 interface PathDetailProps {
   path: PathWithRetreats;
   pathProgress: UserPathProgress | null;
   retreatProgressList: UserRetreatProgress[];
   waypointProgressMap: Record<string, UserWaypointProgress[]>;
-  practiceProgressMap?: Map<string, PracticeProgressEntry>;
+  practiceProgressMap?: Record<string, PracticeProgressEntry>;
+  currentPractice?: CurrentPracticeData | null;
+  currentWaypointName?: string | null;
   className?: string;
 }
 
@@ -58,6 +67,8 @@ export function PathDetail({
   retreatProgressList,
   waypointProgressMap,
   practiceProgressMap,
+  currentPractice,
+  currentWaypointName,
   className,
 }: PathDetailProps) {
   const router = useRouter();
@@ -178,6 +189,18 @@ export function PathDetail({
           </div>
         </motion.div>
       </AnimatedItem>
+
+      {/* Current practice card — prominent position above retreats */}
+      {isActive && currentPractice && currentWaypointName && (
+        <AnimatedItem>
+          <CurrentPracticeCard
+            practice={currentPractice}
+            waypointName={currentWaypointName}
+            completed={currentPractice.completed}
+            playCount={currentPractice.playCount}
+          />
+        </AnimatedItem>
+      )}
 
       {/* Retreat map */}
       <AnimatedItem>

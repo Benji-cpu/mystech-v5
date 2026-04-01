@@ -1,7 +1,5 @@
 import { Suspense } from "react";
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
 import { requireAuth } from "@/lib/auth/helpers";
 import {
   getPathWithRetreatsAndWaypoints,
@@ -9,10 +7,12 @@ import {
   getRetreatProgressForPath,
   getWaypointProgressForRetreat,
   getPracticeProgressForWaypoints,
+  getPracticeForWaypoint,
+  getUserPracticeProgressRecord,
   getCircleById,
 } from "@/lib/db/queries-paths";
+import { getUserPlan } from "@/lib/db/queries";
 import { PathDetail } from "@/components/paths/path-detail";
-import { Button } from "@/components/ui/button";
 import { AnimatedPage } from "@/components/ui/animated-page";
 import { AnimatedItem } from "@/components/ui/animated-item";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -124,9 +124,40 @@ async function PathDetailContent({ pathId }: { pathId: string }) {
   const allWaypointIds = pathData.retreats.flatMap((r) =>
     r.waypoints.map((w) => w.id)
   );
-  const practiceProgressMap = allWaypointIds.length > 0
+  const practiceProgressMapRaw = allWaypointIds.length > 0
     ? await getPracticeProgressForWaypoints(user.id!, allWaypointIds)
-    : new Map();
+    : new Map<string, { practiceId: string; completed: boolean; playCount: number }>();
+
+  // Convert Map to Record for RSC serialization (Maps can't cross the server→client boundary)
+  const practiceProgressRecord: Record<string, { practiceId: string; completed: boolean; playCount: number }> = {};
+  for (const [k, v] of practiceProgressMapRaw) {
+    practiceProgressRecord[k] = v;
+  }
+
+  // Fetch current waypoint's practice for the prominent card
+  let currentPractice: { practice: Awaited<ReturnType<typeof getPracticeForWaypoint>>; completed: boolean; playCount: number } | null = null;
+  let currentWaypointName: string | null = null;
+
+  if (pathProgress?.currentWaypointId) {
+    const plan = await getUserPlan(user.id!);
+    const practice = await getPracticeForWaypoint(pathProgress.currentWaypointId, user.id!, plan);
+    if (practice) {
+      const progressRecord = await getUserPracticeProgressRecord(user.id!, practice.id);
+      currentPractice = {
+        practice,
+        completed: !!progressRecord?.completedAt,
+        playCount: progressRecord?.playCount ?? 0,
+      };
+    }
+    // Derive waypoint name from pathData
+    for (const retreat of pathData.retreats) {
+      const wp = retreat.waypoints.find((w) => w.id === pathProgress.currentWaypointId);
+      if (wp) {
+        currentWaypointName = wp.name;
+        break;
+      }
+    }
+  }
 
   return (
     <PathDetail
@@ -134,7 +165,13 @@ async function PathDetailContent({ pathId }: { pathId: string }) {
       pathProgress={pathProgress}
       retreatProgressList={retreatProgressList}
       waypointProgressMap={waypointProgressMap}
-      practiceProgressMap={practiceProgressMap}
+      practiceProgressMap={practiceProgressRecord}
+      currentPractice={currentPractice ? {
+        ...currentPractice.practice!,
+        completed: currentPractice.completed,
+        playCount: currentPractice.playCount,
+      } : null}
+      currentWaypointName={currentWaypointName}
     />
   );
 }
@@ -148,15 +185,6 @@ export default async function PathDetailPage({ params }: PathDetailPageProps) {
 
   return (
     <AnimatedPage className="space-y-6 p-4 sm:p-6 lg:p-8">
-      <AnimatedItem>
-        <Button variant="ghost" size="sm" asChild className="gap-1.5 text-white/50 hover:text-white/80 -ml-2">
-          <Link href="/paths">
-            <ArrowLeft className="h-4 w-4" />
-            All Paths
-          </Link>
-        </Button>
-      </AnimatedItem>
-
       <Suspense fallback={null}>
         <CircleBreadcrumb pathId={pathId} />
       </Suspense>

@@ -1,7 +1,8 @@
 import { NextRequest } from "next/server";
 import { streamText } from "ai";
 import { db } from "@/lib/db";
-import { cards } from "@/lib/db/schema";
+import { withRetry } from "@/lib/db/retry";
+import { cards, chronicleEntries } from "@/lib/db/schema";
 import { getCurrentUser } from "@/lib/auth/helpers";
 import { geminiModel, geminiProModel } from "@/lib/ai/gemini";
 import {
@@ -12,6 +13,7 @@ import {
   getUserDisplayName,
   getUserPlan,
   getPendingEmergenceEvent,
+  getTodayChronicleEntry,
 } from "@/lib/db/queries";
 import { getUserPlanFromRole } from "@/lib/usage";
 import { buildChronicleGreetingPrompt } from "@/lib/ai/prompts/chronicle";
@@ -28,7 +30,9 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  const deck = await getUserChronicleDeck(user.id);
+  try {
+
+  const deck = await withRetry(() => getUserChronicleDeck(user.id));
   if (!deck) {
     return new Response(
       JSON.stringify({ error: "Chronicle deck not found" }),
@@ -51,31 +55,38 @@ export async function GET(request: NextRequest) {
 
   // Parallel fetch all context signals
   const [settings, knowledge, recentEntries, pathPosition, userName, pendingEmergence] =
-    await Promise.all([
-      getChronicleSettings(deck.id),
-      getChronicleKnowledge(user.id),
-      getRecentChronicleEntries(user.id, 3),
-      getPathPosition(user.id),
-      getUserDisplayName(user.id),
-      getPendingEmergenceEvent(user.id),
-    ]);
+    await withRetry(() =>
+      Promise.all([
+        getChronicleSettings(deck.id),
+        getChronicleKnowledge(user.id),
+        getRecentChronicleEntries(user.id, 3),
+        getPathPosition(user.id),
+        getUserDisplayName(user.id),
+        getPendingEmergenceEvent(user.id),
+      ])
+    );
 
-  // Resolve card title for most recent entry
-  const entriesWithCardTitles = await Promise.all(
+  // Resolve card details (title + meaning) for most recent entries
+  const entriesWithCardContext = await Promise.all(
     recentEntries.map(async (entry) => {
       let cardTitle: string | undefined;
+      let cardMeaning: string | undefined;
       if (entry.cardId) {
         const [cardRow] = await db
-          .select({ title: cards.title })
+          .select({ title: cards.title, meaning: cards.meaning })
           .from(cards)
           .where(eq(cards.id, entry.cardId))
           .limit(1);
-        if (cardRow) cardTitle = cardRow.title;
+        if (cardRow) {
+          cardTitle = cardRow.title;
+          cardMeaning = cardRow.meaning;
+        }
       }
       return {
         mood: entry.mood,
         themes: (entry.themes ?? []) as string[],
         cardTitle,
+        cardMeaning,
       };
     })
   );
@@ -100,7 +111,7 @@ export async function GET(request: NextRequest) {
   const prompt = buildChronicleGreetingPrompt({
     timeOfDay,
     streakCount: settings?.streakCount ?? 0,
-    recentEntries: entriesWithCardTitles,
+    recentEntries: entriesWithCardContext,
     knowledge,
     userName,
     journeyContext: pathPosition
@@ -116,10 +127,51 @@ export async function GET(request: NextRequest) {
     model,
     prompt,
     maxOutputTokens: 300,
+    onFinish: async ({ text }) => {
+      // Only save if greeting is substantial (matches the <60 char guard)
+      if (text.length < 60) return;
+
+      try {
+        const today = new Date().toISOString().split("T")[0];
+        const entry = await getTodayChronicleEntry(user.id);
+
+        const greetingMessage = {
+          role: "assistant",
+          content: text,
+          timestamp: new Date().toISOString(),
+        };
+
+        if (!entry) {
+          await db.insert(chronicleEntries).values({
+            userId: user.id,
+            deckId: deck.id,
+            entryDate: today,
+            conversation: [greetingMessage],
+            status: "in_progress",
+          });
+        } else if (!entry.conversation?.length) {
+          await db
+            .update(chronicleEntries)
+            .set({ conversation: [greetingMessage] })
+            .where(eq(chronicleEntries.id, entry.id));
+        }
+        // If conversation already has messages, don't overwrite
+      } catch (err) {
+        console.error("[chronicle/today/greeting] onFinish save error:", err);
+      }
+    },
     onError: (err) => {
       console.error("[chronicle/today/greeting] stream error:", err);
     },
   });
 
   return result.toTextStreamResponse();
+
+  } catch (error) {
+    console.error("[chronicle/today/greeting] pre-stream error:", error);
+    return new Response(
+      JSON.stringify({ error: "Failed to generate greeting" }),
+      { status: 500 }
+    );
+  }
 }

@@ -35,7 +35,7 @@ interface RetreatMapProps {
   currentWaypointId: string | null;
   retreatProgressList: UserRetreatProgress[];
   waypointProgressMap: Record<string, UserWaypointProgress[]>;
-  practiceProgressMap?: Map<string, PracticeProgressEntry>;
+  practiceProgressMap?: Record<string, PracticeProgressEntry>;
   className?: string;
 }
 

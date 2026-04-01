@@ -36,20 +36,14 @@ Start with: "Now that I know what draws you, tell me — what's alive in your li
 
 Keep responses warm but brief (2-3 sentences). Ask one follow-up question per exchange.`;
 
-// ── Greeting builder ────────────────────────────────────────────────────
+// ── Greeting fallback (minimal, time-aware openers) ─────────────────────
 
 export function buildChronicleGreeting({
   timeOfDay,
-  streakCount,
-  recentEntries,
-  knowledge,
-  milestoneBadge,
-  userName,
-  journeyContext,
-  emergenceContext,
 }: {
   timeOfDay: "morning" | "afternoon" | "evening" | "night";
-  streakCount: number;
+  // Keep signature accepting extra args for backward compat, but ignore them
+  streakCount?: number;
   recentEntries?: { mood: string | null; themes: string[]; cardTitle?: string }[];
   knowledge?: ChronicleKnowledge | null;
   milestoneBadge?: { name: string; lyraMessage: string } | null;
@@ -57,76 +51,13 @@ export function buildChronicleGreeting({
   journeyContext?: { waypointName: string; waypointLens: string } | null;
   emergenceContext?: { cardTitle: string; cardType: string; detectedPattern: string } | null;
 }): string {
-  // Emergence-aware greeting replaces normal greeting
-  if (emergenceContext) {
-    return `Now that you've seen **${emergenceContext.cardTitle}**, let's sit with what it stirred. Where does ${emergenceContext.detectedPattern} show up for you today — or is something else asking for attention?`;
-  }
-
-  const parts: string[] = [];
-
-  // Milestone greeting takes priority
-  if (milestoneBadge) {
-    return milestoneBadge.lyraMessage;
-  }
-
-  // Time-aware greeting
-  const timeGreetings: Record<string, string[]> = {
-    morning: ["A fresh page awaits.", "The morning holds possibility."],
-    afternoon: ["Let's see what the day has stirred.", "The day is unfolding — what's catching your attention?"],
-    evening: ["The day is settling. Let's capture what it held.", "Evening comes with its own kind of clarity."],
-    night: ["The quiet hours often bring the clearest reflections.", "Night has a way of revealing what daylight hides."],
+  const openers: Record<string, string> = {
+    morning: "What's alive for you this morning?",
+    afternoon: "What's been on your mind today?",
+    evening: "What stayed with you from today?",
+    night: "What's surfacing in the quiet?",
   };
-
-  const greetings = timeGreetings[timeOfDay];
-  parts.push(greetings[Math.floor(Math.random() * greetings.length)]);
-
-  // Reference yesterday's card
-  if (recentEntries?.[0]?.cardTitle) {
-    parts.push(`Yesterday you drew **${recentEntries[0].cardTitle}**.`);
-  }
-
-  // Reference streak
-  if (streakCount > 3) {
-    parts.push(`${streakCount} days running — your Chronicle grows richer.`);
-  }
-
-  // Reference specific patterns from knowledge
-  if (knowledge) {
-    const now = new Date();
-    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-
-    // Check for recurring emotional pattern
-    const topEmotional = knowledge.emotionalPatterns
-      ?.filter((p) => p.frequency >= 3 && new Date(p.lastSeen) >= sevenDaysAgo)
-      .sort((a, b) => b.frequency - a.frequency)[0];
-
-    if (topEmotional) {
-      parts.push(
-        `${topEmotional.pattern.charAt(0).toUpperCase() + topEmotional.pattern.slice(1)} has been present in ${topEmotional.frequency} of our recent conversations.`
-      );
-    }
-
-    // Check for recurring symbol
-    const topSymbol = knowledge.recurringSymbols?.find((s) => s.count >= 3);
-    if (topSymbol && !topEmotional) {
-      parts.push(`The image of ${topSymbol.symbol} keeps returning to your words.`);
-    }
-
-    // Check for mood streak (3+ days of same mood via recent entries)
-    if (recentEntries && recentEntries.length >= 3) {
-      const moods = recentEntries.slice(0, 3).map((e) => e.mood).filter(Boolean);
-      if (moods.length === 3 && moods.every((m) => m === moods[0])) {
-        parts.push(`Three days of ${moods[0]} now — there's something here worth sitting with.`);
-      }
-    }
-  }
-
-  // Blend journey waypoint focus when on an active path
-  if (journeyContext) {
-    parts.push(`Today we walk with "${journeyContext.waypointName}."`);
-  }
-
-  return parts.join(" ");
+  return openers[timeOfDay] ?? openers.morning;
 }
 
 // ── AI greeting prompt builder ─────────────────────────────────────────
@@ -142,7 +73,7 @@ export function buildChronicleGreetingPrompt({
 }: {
   timeOfDay: "morning" | "afternoon" | "evening" | "night";
   streakCount: number;
-  recentEntries?: { mood: string | null; themes: string[]; cardTitle?: string }[];
+  recentEntries?: { mood: string | null; themes: string[]; cardTitle?: string; cardMeaning?: string }[];
   knowledge?: ChronicleKnowledge | null;
   userName?: string;
   journeyContext?: { waypointName: string; waypointLens: string } | null;
@@ -153,22 +84,32 @@ export function buildChronicleGreetingPrompt({
   contextLines.push(`Time of day: ${timeOfDay}`);
 
   if (streakCount > 1) {
-    contextLines.push(`Streak: ${streakCount} consecutive days`);
+    contextLines.push(`The seeker has been showing up consistently (multiple days in a row)`);
   }
 
-  if (recentEntries?.[0]?.cardTitle) {
-    contextLines.push(`Yesterday's card: "${recentEntries[0].cardTitle}"`);
-  }
-
-  // Recent moods and themes
-  if (recentEntries && recentEntries.length > 0) {
-    const recentMoods = recentEntries.map((e) => e.mood).filter(Boolean);
-    if (recentMoods.length > 0) {
-      contextLines.push(`Recent moods: ${recentMoods.join(", ")}`);
+  // Yesterday's card — pass meaning/themes instead of title
+  if (recentEntries?.[0]) {
+    const yesterday = recentEntries[0];
+    if (yesterday.cardMeaning) {
+      contextLines.push(`Yesterday's reflection explored themes of: ${yesterday.cardMeaning}`);
+    } else if (yesterday.themes.length > 0) {
+      contextLines.push(`Yesterday's reflection touched on: ${yesterday.themes.join(", ")}`);
     }
+  }
+
+  // Mood streak — humanize instead of listing raw labels
+  if (recentEntries && recentEntries.length >= 3) {
+    const moods = recentEntries.slice(0, 3).map((e) => e.mood).filter(Boolean);
+    if (moods.length === 3 && moods.every((m) => m === moods[0])) {
+      contextLines.push(`The seeker has been in a ${moods[0]} state for several days`);
+    }
+  }
+
+  // Recent themes (aggregated, no card titles)
+  if (recentEntries && recentEntries.length > 0) {
     const recentThemes = [...new Set(recentEntries.flatMap((e) => e.themes).filter(Boolean))].slice(0, 6);
     if (recentThemes.length > 0) {
-      contextLines.push(`Recent themes: ${recentThemes.join(", ")}`);
+      contextLines.push(`Recent themes from their reflections: ${recentThemes.join(", ")}`);
     }
   }
 
@@ -182,39 +123,44 @@ export function buildChronicleGreetingPrompt({
       .sort((a, b) => b.frequency - a.frequency)[0];
 
     if (topEmotional) {
-      contextLines.push(`Recurring emotional pattern: "${topEmotional.pattern}" (${topEmotional.frequency} times in recent conversations)`);
+      contextLines.push(`A recurring emotional thread: ${topEmotional.pattern} — this has come up often recently`);
     }
 
     const topSymbol = knowledge.recurringSymbols?.find((s) => s.count >= 3);
     if (topSymbol) {
-      contextLines.push(`Recurring symbol: "${topSymbol.symbol}" (appeared ${topSymbol.count} times)`);
+      contextLines.push(`A recurring image in their words: ${topSymbol.symbol}`);
     }
   }
 
+  // Waypoint — pass only the lens (what it means), not the name
   if (journeyContext) {
-    contextLines.push(`Active waypoint: "${journeyContext.waypointName}" — ${journeyContext.waypointLens}`);
+    contextLines.push(`Current practice focus: ${journeyContext.waypointLens}`);
   }
 
   if (emergenceContext) {
-    contextLines.push(`Emergence card just acknowledged: "${emergenceContext.cardTitle}" (${emergenceContext.cardType}), arising from pattern: ${emergenceContext.detectedPattern}`);
+    contextLines.push(`An emergence pattern has surfaced: ${emergenceContext.detectedPattern}. The seeker just acknowledged this.`);
   }
 
-  const contextBlock = contextLines.map((l) => `- ${l}`).join("\n");
+  const contextBlock = contextLines.length > 0
+    ? contextLines.map((l) => `- ${l}`).join("\n")
+    : "- No prior context available — this may be a new seeker";
 
   return `You are Lyra, a warm daily companion who helps seekers chronicle their lives through oracle cards. You speak naturally — warm, direct, insightful, never performatively mystical.
 
 Here is today's context for this seeker:
 ${contextBlock}
 
-Write a greeting of exactly 2-3 sentences that opens today's Chronicle session. Weave the available signals into a cohesive invitation — do not list them as separate facts. End with a specific thread for the seeker to pull on: a reflection prompt, an evocative question, or an observation that invites them to respond.
+Write a greeting of exactly 2-3 sentences that opens today's Chronicle session. Weave the available signals into a cohesive invitation — do not list them as separate facts. End with a specific, evocative question that invites the seeker to respond.
 
-${emergenceContext ? "Anchor the greeting on the emergence card they just acknowledged — connect its pattern to today's opening question." : ""}${journeyContext ? "Let the waypoint's lens color your opening question — help the seeker understand what the waypoint theme means through a concrete, grounded question." : ""}
+${emergenceContext ? "Anchor the greeting on the emergence pattern — connect it to today's opening question." : ""}${journeyContext ? "Let the practice focus color your opening question — help the seeker explore that theme through their actual day, using plain language." : ""}
 
 Rules:
 - Flowing prose only — no markdown, no headers, no asterisks, no bullet points
 - Never address the seeker by name in the greeting
 - Do not mention streak numbers or statistics directly
-- Do not name-drop signals without explaining why they matter`;
+- NEVER use card titles, waypoint names, path names, or retreat names — these are internal vocabulary the seeker may not understand
+- Reference what things mean in plain, grounded language
+- If you don't have enough context about the seeker, just ask a good opening question about their day`;
 }
 
 // ── Conversation context injection ──────────────────────────────────────

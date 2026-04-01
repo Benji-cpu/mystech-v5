@@ -8,10 +8,16 @@ import {
   getChronicleSettings,
   getTodayChronicleCard,
   getUserActivityFeed,
+  getUserPlan,
 } from "@/lib/db/queries";
-import { getPathPosition } from "@/lib/db/queries-paths";
+import {
+  getPathPosition,
+  getPracticeForWaypoint,
+  getUserPracticeProgressRecord,
+} from "@/lib/db/queries-paths";
 import { resolveUserName } from "@/lib/auth/get-user-name";
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
+import { DashboardPracticeCard } from "@/components/dashboard/dashboard-practice-card";
 import { QuickAccessGrid } from "@/components/dashboard/quick-access-grid";
 import { RecentActivity } from "@/components/dashboard/recent-activity";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -76,6 +82,37 @@ async function DashboardContent({
     ? await getChronicleSettings(chronicleDeck.id)
     : null;
 
+  // Fetch practice for current waypoint (if on an active path)
+  let practiceNudge: {
+    title: string;
+    durationMin: number;
+    pathId: string;
+    pathName: string;
+    waypointName: string;
+  } | null = null;
+
+  if (pathPosition) {
+    const plan = await getUserPlan(userId);
+    const practice = await getPracticeForWaypoint(
+      pathPosition.waypoint.id,
+      userId,
+      plan,
+    );
+    if (practice) {
+      const progress = await getUserPracticeProgressRecord(userId, practice.id);
+      // Only show nudge if practice is not yet completed
+      if (!progress?.completedAt) {
+        practiceNudge = {
+          title: practice.title,
+          durationMin: practice.targetDurationMin,
+          pathId: pathPosition.path.id,
+          pathName: pathPosition.path.name,
+          waypointName: pathPosition.waypoint.name,
+        };
+      }
+    }
+  }
+
   // Quick access grid data
   const quickAccessData: QuickAccessData = {
     pathName: pathPosition?.path.name ?? null,
@@ -97,6 +134,16 @@ async function DashboardContent({
   return (
     <AnimatedDashboardContent>
       <DashboardHeader userName={userName} />
+      {practiceNudge && (
+        <DashboardPracticeCard
+          practiceTitle={practiceNudge.title}
+          durationMin={practiceNudge.durationMin}
+          pathId={practiceNudge.pathId}
+          pathName={practiceNudge.pathName}
+          waypointName={practiceNudge.waypointName}
+          className="mt-4"
+        />
+      )}
       <QuickAccessGrid data={quickAccessData} className="mt-6" />
       <RecentActivity items={taggedItems} className="mt-6" />
     </AnimatedDashboardContent>

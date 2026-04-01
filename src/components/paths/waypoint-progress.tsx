@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { CheckCircle2, Circle, Dot, Headphones } from 'lucide-react';
@@ -20,7 +21,7 @@ interface WaypointProgressProps {
   currentWaypointId: string | null;
   waypointProgressList: UserWaypointProgress[];
   retreatState: RetreatState;
-  practiceProgressMap?: Map<string, PracticeProgressEntry>;
+  practiceProgressMap?: Record<string, PracticeProgressEntry>;
   className?: string;
 }
 
@@ -52,7 +53,7 @@ export function WaypointProgress({
 
           const readingsDone = progress?.readingCount ?? 0;
           const readingsRequired = waypoint.requiredReadings;
-          const practiceProgress = practiceProgressMap?.get(waypoint.id) ?? null;
+          const practiceProgress = practiceProgressMap?.[waypoint.id] ?? null;
 
           return (
             <motion.div
@@ -148,18 +149,36 @@ export function WaypointProgress({
                   </div>
                 )}
 
-                {/* Practice callout — show when readings met, practice exists but not completed */}
-                {isCurrent && practiceProgress && !practiceProgress.completed && readingsDone >= readingsRequired && (
+                {/* Practice callout — show for current waypoint when practice exists but not completed */}
+                {isCurrent && practiceProgress && !practiceProgress.completed && (
                   <PracticeCallout waypointId={waypoint.id} />
                 )}
 
-                {/* Practice completed indicator */}
-                {practiceProgress?.completed && (
+                {/* Practice indicator for all waypoints with a practice */}
+                {practiceProgress && (
                   <div className="mt-1.5 flex items-center gap-1.5">
-                    <Headphones className="h-3 w-3 text-emerald-400/70" />
-                    <span className="text-[10px] text-emerald-400/70">
-                      Practice complete{practiceProgress.playCount > 1 ? ` (${practiceProgress.playCount}x)` : ''}
-                    </span>
+                    {practiceProgress.completed ? (
+                      <>
+                        <Headphones className="h-3 w-3 text-emerald-400/70" />
+                        <span className="text-[10px] text-emerald-400/70">
+                          Practice complete{practiceProgress.playCount > 1 ? ` (${practiceProgress.playCount}x)` : ''}
+                        </span>
+                      </>
+                    ) : isCurrent ? (
+                      <>
+                        <Headphones className="h-3 w-3 text-[#c9a94e]" />
+                        <span className="text-[10px] text-[#c9a94e]/70">
+                          Meditation available
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <Headphones className="h-3 w-3 text-white/20" />
+                        <span className="text-[10px] text-white/20">
+                          Meditation
+                        </span>
+                      </>
+                    )}
                   </div>
                 )}
               </div>
@@ -175,6 +194,7 @@ export function WaypointProgress({
  * Practice callout — fetches practice data and opens the practice screen overlay.
  */
 function PracticeCallout({ waypointId }: { waypointId: string }) {
+  const router = useRouter();
   const [practiceData, setPracticeData] = useState<PracticeWithSegments | null>(null);
   const [showPractice, setShowPractice] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -216,7 +236,7 @@ function PracticeCallout({ waypointId }: { waypointId: string }) {
             {loading ? 'Loading...' : 'Begin Practice'}
           </p>
           <p className="text-[10px] text-[#c9a94e]/60">
-            Complete the guided meditation to advance
+            Guided meditation for this waypoint
           </p>
         </div>
       </motion.button>
@@ -226,8 +246,7 @@ function PracticeCallout({ waypointId }: { waypointId: string }) {
           practice={practiceData}
           onComplete={() => {
             setShowPractice(false);
-            // Page will refresh to show updated state
-            window.location.reload();
+            router.refresh();
           }}
           onClose={() => setShowPractice(false)}
         />
