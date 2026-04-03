@@ -10,7 +10,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { AnimatedPage } from "@/components/ui/animated-page";
 import { AnimatedItem } from "@/components/ui/animated-item";
 import { SectionHeader } from "@/components/ui/section-header";
-import type { ArtStyle } from "@/types";
+import type { ArtStyle, StyleCategory } from "@/types";
 
 function toArtStyle(s: typeof artStyles.$inferSelect): ArtStyle {
   return {
@@ -25,6 +25,10 @@ function toArtStyle(s: typeof artStyles.$inferSelect): ArtStyle {
     shareToken: s.shareToken,
     createdAt: s.createdAt,
     updatedAt: s.updatedAt,
+    parameters: s.parameters ?? null,
+    referenceImageUrls: s.referenceImageUrls ?? null,
+    extractedDescription: s.extractedDescription ?? null,
+    category: (s.category as StyleCategory) ?? null,
   };
 }
 

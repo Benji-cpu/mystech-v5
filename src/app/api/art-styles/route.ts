@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { artStyles, artStyleShares } from "@/lib/db/schema";
 import { getCurrentUser } from "@/lib/auth/helpers";
 import { eq, or, and } from "drizzle-orm";
-import type { ApiResponse, ArtStyle } from "@/types";
+import type { ApiResponse, ArtStyle, StyleCategory } from "@/types";
 
 export async function GET() {
   const user = await getCurrentUser();
@@ -57,6 +57,10 @@ export async function GET() {
     shareToken: s.shareToken,
     createdAt: s.createdAt,
     updatedAt: s.updatedAt,
+    parameters: s.parameters ?? null,
+    referenceImageUrls: s.referenceImageUrls ?? null,
+    extractedDescription: s.extractedDescription ?? null,
+    category: (s.category as StyleCategory) ?? null,
   }));
 
   return NextResponse.json<ApiResponse<ArtStyle[]>>({
@@ -111,6 +115,10 @@ export async function POST(request: NextRequest) {
     shareToken: created.shareToken,
     createdAt: created.createdAt,
     updatedAt: created.updatedAt,
+    parameters: created.parameters ?? null,
+    referenceImageUrls: created.referenceImageUrls ?? null,
+    extractedDescription: created.extractedDescription ?? null,
+    category: (created.category as StyleCategory) ?? null,
   };
 
   return NextResponse.json<ApiResponse<ArtStyle>>(

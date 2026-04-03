@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { artStyles, artStyleShares } from "@/lib/db/schema";
 import { getCurrentUser } from "@/lib/auth/helpers";
 import { eq, and } from "drizzle-orm";
-import type { ApiResponse, ArtStyle } from "@/types";
+import type { ApiResponse, ArtStyle, StyleCategory } from "@/types";
 
 function toArtStyle(s: typeof artStyles.$inferSelect): ArtStyle {
   return {
@@ -18,6 +18,10 @@ function toArtStyle(s: typeof artStyles.$inferSelect): ArtStyle {
     shareToken: s.shareToken,
     createdAt: s.createdAt,
     updatedAt: s.updatedAt,
+    parameters: s.parameters ?? null,
+    referenceImageUrls: s.referenceImageUrls ?? null,
+    extractedDescription: s.extractedDescription ?? null,
+    category: (s.category as StyleCategory) ?? null,
   };
 }
 

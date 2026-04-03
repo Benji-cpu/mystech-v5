@@ -5,7 +5,7 @@ import { db } from "@/lib/db";
 import { artStyles } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { ChronicleSetupFlow } from "@/components/chronicle/chronicle-setup-flow";
-import type { ArtStyle } from "@/types";
+import type { ArtStyle, StyleCategory } from "@/types";
 
 export default async function ChronicleSetupPage() {
   const user = await requireAuth();
@@ -34,6 +34,10 @@ export default async function ChronicleSetupPage() {
     shareToken: row.shareToken ?? null,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
+    parameters: row.parameters ?? null,
+    referenceImageUrls: row.referenceImageUrls ?? null,
+    extractedDescription: row.extractedDescription ?? null,
+    category: (row.category as StyleCategory) ?? null,
   }));
 
   return <ChronicleSetupFlow presetStyles={presetStyles} />;

@@ -90,6 +90,17 @@ export const artStyles = pgTable("art_style", {
   }),
   isPublic: boolean("is_public").default(false).notNull(),
   shareToken: text("share_token").unique(),
+  // Studio additions
+  parameters: jsonb("parameters").$type<{
+    seed?: number;
+    cfgScale?: number;
+    sampler?: string;
+    stabilityPreset?: string;
+    negativePrompt?: string;
+  }>(),
+  referenceImageUrls: jsonb("reference_image_urls").$type<string[]>(),
+  extractedDescription: text("extracted_description"),
+  category: text("category"), // classical, modern, cultural, illustration, photography, period, nature
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
 });
@@ -113,6 +124,17 @@ export const artStyleShares = pgTable(
   },
   (t) => [unique().on(t.styleId, t.sharedWithUserId)]
 );
+
+// Style preview cache — cached low-res preview images keyed by style config
+export const stylePreviewCache = pgTable("style_preview_cache", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => createId()),
+  configHash: text("config_hash").notNull().unique(),
+  imageUrl: text("image_url").notNull(),
+  createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+  expiresAt: timestamp("expires_at", { mode: "date" }).notNull(),
+});
 
 // Decks
 export const decks = pgTable(
@@ -167,6 +189,28 @@ export const cards = pgTable(
   },
   (t) => [index("card_deck_id_idx").on(t.deckId)]
 );
+
+// Card overrides — per-card parameter overrides when refined in Card Studio
+export const cardOverrides = pgTable("card_override", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => createId()),
+  cardId: text("card_id")
+    .notNull()
+    .references(() => cards.id, { onDelete: "cascade" })
+    .unique(),
+  imagePrompt: text("image_prompt"),
+  parameters: jsonb("parameters").$type<{
+    seed?: number;
+    cfgScale?: number;
+    sampler?: string;
+    negativePrompt?: string;
+    initImageUrl?: string;
+    initImageStrength?: number;
+  }>(),
+  createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
+});
 
 // Deck adoptions (users adding community decks to their collection)
 export const deckAdoptions = pgTable(

@@ -2,11 +2,21 @@ import { db } from "@/lib/db";
 import { cards, decks } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { put } from "@vercel/blob";
-import { generateStabilityImage } from "./stability";
+import { generateStabilityImage, type StabilityOptions } from "./stability";
 import { ORACLE_CARD_BASE_PROMPT, ORACLE_CARD_NEGATIVE_PROMPT } from "./prompts/image-base-prompt";
 
 const MAX_RETRIES = 3;
 const BACKOFF_BASE_MS = 1000;
+
+/** Studio-level overrides for image generation */
+export type ImageGenerationOverrides = {
+  seed?: number;
+  cfgScale?: number;
+  sampler?: string;
+  negativePromptExtra?: string;
+  initImage?: Buffer;
+  initImageStrength?: number;
+};
 
 /**
  * Extracts exclusion terms from a vision string by looking for common
@@ -45,7 +55,8 @@ export async function generateCardImage(
   artStylePrompt: string,
   deckId: string,
   stabilityPreset?: string,
-  visionTheme?: string
+  visionTheme?: string,
+  overrides?: ImageGenerationOverrides
 ): Promise<{ success: boolean; imageUrl?: string; error?: string }> {
   // Check deck still exists before starting (outside retry loop for efficiency)
   const [deck] = await db
@@ -69,19 +80,29 @@ export async function generateCardImage(
 
   // Build negative prompt — inject vision exclusions as a safety net
   const visionNegatives = visionTheme ? extractNegativeTerms(visionTheme) : "";
-  const negativePrompt = [ORACLE_CARD_NEGATIVE_PROMPT, visionNegatives]
+  const negativePrompt = [
+    ORACLE_CARD_NEGATIVE_PROMPT,
+    visionNegatives,
+    overrides?.negativePromptExtra,
+  ]
     .filter(Boolean)
     .join(", ");
 
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     try {
-      const imageBuffer = await generateStabilityImage({
+      const stabilityOpts: StabilityOptions = {
         prompt: finalPrompt,
         negativePrompt,
         stylePreset: stabilityPreset,
         aspectRatio: "2:3",
         outputFormat: "png",
-      });
+        seed: overrides?.seed,
+        cfgScale: overrides?.cfgScale,
+        sampler: overrides?.sampler,
+        initImage: overrides?.initImage,
+        initImageStrength: overrides?.initImageStrength,
+      };
+      const imageBuffer = await generateStabilityImage(stabilityOpts);
 
       // Upload to Vercel Blob
       const blob = await put(`cards/${deckId}/${cardId}.png`, imageBuffer, {

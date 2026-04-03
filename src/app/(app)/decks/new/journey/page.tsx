@@ -3,7 +3,7 @@ import { artStyles, artStyleShares } from "@/lib/db/schema";
 import { requireAuth } from "@/lib/auth/helpers";
 import { eq, or, and } from "drizzle-orm";
 import { JourneySetupForm } from "@/components/decks/journey-setup-form";
-import type { ArtStyle } from "@/types";
+import type { ArtStyle, StyleCategory } from "@/types";
 
 export default async function JourneySetupPage() {
   const user = await requireAuth();
@@ -47,6 +47,10 @@ export default async function JourneySetupPage() {
     shareToken: s.shareToken,
     createdAt: s.createdAt,
     updatedAt: s.updatedAt,
+    parameters: s.parameters ?? null,
+    referenceImageUrls: s.referenceImageUrls ?? null,
+    extractedDescription: s.extractedDescription ?? null,
+    category: (s.category as StyleCategory) ?? null,
   }));
 
   const presets = styles.filter((s) => s.isPreset);

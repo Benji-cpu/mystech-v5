@@ -48,3 +48,9 @@ next-env.d.ts
 
 # playwright mcp
 .playwright-mcp/
+
+# verification screenshots
+*.png
+
+# superpowers plugin
+.superpowers/

@@ -5,7 +5,7 @@ import { eq, or, and } from "drizzle-orm";
 import { SimpleCreateForm } from "@/components/decks/simple-create-form";
 import { GlassPanel } from "@/components/ui/glass-panel";
 import { LYRA_SIMPLE_CREATE } from "@/components/guide/lyra-constants";
-import type { ArtStyle } from "@/types";
+import type { ArtStyle, StyleCategory } from "@/types";
 
 export default async function SimpleCreatePage() {
   const user = await requireAuth();
@@ -49,6 +49,10 @@ export default async function SimpleCreatePage() {
     shareToken: s.shareToken,
     createdAt: s.createdAt,
     updatedAt: s.updatedAt,
+    parameters: s.parameters ?? null,
+    referenceImageUrls: s.referenceImageUrls ?? null,
+    extractedDescription: s.extractedDescription ?? null,
+    category: (s.category as StyleCategory) ?? null,
   }));
 
   const presets = styles.filter((s) => s.isPreset);

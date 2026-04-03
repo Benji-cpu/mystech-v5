@@ -9,6 +9,7 @@ import {
   BookOpen,
   Sparkles,
   Map,
+  Palette,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { UsageIndicator } from "@/components/shared/usage-indicator";
@@ -19,6 +20,7 @@ const navItems = [
   { href: "/chronicle", label: "Chronicle", icon: ScrollText },
   { href: "/readings", label: "Readings", icon: BookOpen },
   { href: "/paths", label: "Paths", icon: Map },
+  { href: "/studio", label: "Studio", icon: Palette },
 ];
 
 interface AppSidebarProps {

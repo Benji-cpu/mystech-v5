@@ -7,8 +7,9 @@ import {
   DialogContent,
   DialogTitle,
 } from "@/components/ui/dialog";
+import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { Loader2, AlertCircle, RotateCcw } from "lucide-react";
+import { Loader2, AlertCircle, RotateCcw, Wand2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CardFeedbackButton } from "@/components/cards/card-feedback-button";
 import { CARD_TYPE_CONFIG } from "@/components/cards/card-type-config";
@@ -142,10 +143,25 @@ export function CardDetailModal({
           </div>
         </div>
 
-        {/* Hint text */}
-        <p className="text-center text-xs text-muted-foreground/60 mt-2 select-none">
-          {isFlipped ? "Tap to see image" : "Tap to reveal meaning"}
-        </p>
+        {/* Hint + Studio link */}
+        <div className="flex items-center justify-center gap-3 mt-2">
+          <p className="text-xs text-muted-foreground/60 select-none">
+            {isFlipped ? "Tap to see image" : "Tap to reveal meaning"}
+          </p>
+          {card.imageStatus === "completed" && card.imageUrl && (
+            <>
+              <span className="text-muted-foreground/20">·</span>
+              <Link
+                href={`/studio/cards/${card.id}`}
+                className="flex items-center gap-1 text-xs text-muted-foreground/60 hover:text-primary transition-colors"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Wand2 className="h-3 w-3" />
+                Refine in Studio
+              </Link>
+            </>
+          )}
+        </div>
 
         {/* Feedback button */}
         {showFeedback && (

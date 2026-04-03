@@ -105,6 +105,26 @@ export type RetreatCard = {
 /** Minimal shape for CardDetailModal — both Card and RetreatCard satisfy this */
 export type CardDetailData = Pick<Card, 'id' | 'title' | 'meaning' | 'guidance' | 'imageUrl' | 'imageStatus' | 'cardType' | 'originContext'>;
 
+// Studio parameter types
+export type StyleParameters = {
+  seed?: number;
+  cfgScale?: number;
+  sampler?: string;
+  stabilityPreset?: string;
+  negativePrompt?: string;
+};
+
+export type CardOverrideParameters = {
+  seed?: number;
+  cfgScale?: number;
+  sampler?: string;
+  negativePrompt?: string;
+  initImageUrl?: string;
+  initImageStrength?: number;
+};
+
+export type StyleCategory = 'classical' | 'modern' | 'cultural' | 'illustration' | 'photography' | 'period' | 'nature';
+
 // Art style types
 export type ArtStyle = {
   id: string;
@@ -116,8 +136,39 @@ export type ArtStyle = {
   createdBy: string | null;
   isPublic: boolean;
   shareToken: string | null;
+  parameters: StyleParameters | null;
+  referenceImageUrls: string[] | null;
+  extractedDescription: string | null;
+  category: StyleCategory | null;
   createdAt: Date;
   updatedAt: Date;
+};
+
+export type CardOverride = {
+  id: string;
+  cardId: string;
+  imagePrompt: string | null;
+  parameters: CardOverrideParameters | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type StylePreviewCacheEntry = {
+  id: string;
+  configHash: string;
+  imageUrl: string;
+  createdAt: Date;
+  expiresAt: Date;
+};
+
+export type StyleExtraction = {
+  palette: { primary: string; secondary: string; accent: string };
+  lineQuality: string;
+  texture: string;
+  composition: string;
+  mood: string;
+  medium: string;
+  stylePrompt: string;
 };
 
 export type ArtStyleShare = {

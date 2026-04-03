@@ -20,12 +20,21 @@ async function seed() {
         previewImages: [],
         isPreset: true,
         isPublic: true,
+        category: preset.category,
+        parameters: preset.stabilityPreset
+          ? { stabilityPreset: preset.stabilityPreset }
+          : null,
       })
       .onConflictDoUpdate({
         target: artStyles.id,
         set: {
+          name: preset.name,
           stylePrompt: preset.stylePrompt,
           description: preset.description,
+          category: preset.category,
+          parameters: preset.stabilityPreset
+            ? { stabilityPreset: preset.stabilityPreset }
+            : null,
           updatedAt: new Date(),
         },
       });
