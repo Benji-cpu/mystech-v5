@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X } from 'lucide-react';
+import { ChevronLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { usePracticePlayer } from '@/hooks/use-practice-player';
+import { usePracticePlayer, scaleSegmentPauses } from '@/hooks/use-practice-player';
+import { useImmersiveOptional } from '@/components/immersive/immersive-provider';
 import { PauseTimer } from './pause-timer';
 import { PracticeControls } from './practice-controls';
 import type { PracticeWithSegments } from '@/types';
@@ -13,6 +14,10 @@ import type { PracticeWithSegments } from '@/types';
 
 const ZONE_SPRING = { type: 'spring' as const, stiffness: 260, damping: 30 };
 const CONTENT_SPRING = { type: 'spring' as const, stiffness: 300, damping: 28 };
+
+// ── Constants ─────────────────────────────────────────────────────────────────
+
+const DURATION_OPTIONS = [5, 10, 15, 20, 30] as const;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -40,9 +45,19 @@ interface VisualContentProps {
   remainingMs: number;
   totalMs: number;
   fallbackText: string | null;
+  selectedDuration: number;
+  onSelectDuration: (min: number) => void;
 }
 
-function VisualContent({ state, currentSegment, remainingMs, totalMs, fallbackText }: VisualContentProps) {
+function VisualContent({
+  state,
+  currentSegment,
+  remainingMs,
+  totalMs,
+  fallbackText,
+  selectedDuration,
+  onSelectDuration,
+}: VisualContentProps) {
   const isPause = state === 'playing' && currentSegment?.segmentType === 'pause';
   const isSpeech = state === 'playing' && currentSegment?.segmentType === 'speech';
   const isLoading = state === 'loading';
@@ -100,13 +115,33 @@ function VisualContent({ state, currentSegment, remainingMs, totalMs, fallbackTe
         )}
 
         {isIdle && (
-          <div className="flex flex-col items-center gap-3 text-center">
+          <div className="flex flex-col items-center gap-5 text-center">
             <div className="w-12 h-12 rounded-full bg-[#c9a94e]/5 border border-[#c9a94e]/20 flex items-center justify-center">
               <span className="text-lg text-[#c9a94e]/50">◈</span>
             </div>
             <p className="text-sm text-white/30 max-w-xs leading-relaxed">
               Find a comfortable position and press begin when you are ready.
             </p>
+
+            {/* Duration picker */}
+            <div className="flex items-center gap-2">
+              {DURATION_OPTIONS.map((min) => (
+                <motion.button
+                  key={min}
+                  onClick={() => onSelectDuration(min)}
+                  className={cn(
+                    'rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors',
+                    'min-w-[44px] min-h-[36px]',
+                    selectedDuration === min
+                      ? 'border border-[#c9a94e]/60 bg-[#c9a94e]/20 text-[#c9a94e]'
+                      : 'border border-white/10 bg-white/5 text-white/40 hover:bg-white/8 hover:text-white/60',
+                  )}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  {min}m
+                </motion.button>
+              ))}
+            </div>
           </div>
         )}
 
@@ -171,9 +206,29 @@ export function PracticeScreen({
   onClose,
   className,
 }: PracticeScreenProps) {
+  const immersive = useImmersiveOptional();
+  const enterFocusMode = immersive?.enterFocusMode;
+  const exitFocusMode = immersive?.exitFocusMode;
+
+  // ── Focus mode: hide orb on mount, restore on unmount ──────────────────
+  useEffect(() => {
+    enterFocusMode?.();
+    return () => exitFocusMode?.();
+  }, [enterFocusMode, exitFocusMode]);
+
+  // ── Duration selection ─────────────────────────────────────────────────
+  const [selectedDuration, setSelectedDuration] = useState(
+    practice.targetDurationMin,
+  );
+
+  const scaledSegments = useMemo(
+    () => scaleSegmentPauses(practice.segments, selectedDuration * 60_000),
+    [practice.segments, selectedDuration],
+  );
+
   const player = usePracticePlayer({
     practiceId: practice.id,
-    segments: practice.segments,
+    segments: scaledSegments,
   });
 
   const completionPostedRef = useRef(false);
@@ -215,6 +270,8 @@ export function PracticeScreen({
       ? (currentSegment.durationMs ?? 4000)
       : 4000;
 
+  const canClose = state === 'idle' || state === 'completed';
+
   return (
     <motion.div
       className={cn(
@@ -235,47 +292,41 @@ export function PracticeScreen({
         <div className="absolute inset-0 bg-gradient-to-b from-purple-950/30 via-transparent to-black/60" />
       </div>
 
-      {/* ── Header zone (~8% / min-content) ──────────────────────────── */}
+      {/* ── Header zone (FocusHeader-style vertical layout) ────────── */}
       <motion.header
         layout
         transition={ZONE_SPRING}
         className="relative z-10 flex-shrink-0 flex flex-col gap-2 px-5 pt-safe-top pt-4 pb-3"
       >
-        {/* Title row */}
-        <div className="flex items-center justify-between gap-3 min-h-[44px]">
-          <h1 className="text-sm text-white/90 font-light truncate flex-1 leading-snug">
-            {practice.title}
-          </h1>
-
-          {/* Time elapsed / total */}
-          <p className="text-xs text-white/40 tabular-nums flex-shrink-0">
-            {formatTime(elapsedMs)}
-            {estimatedTotalMs > 0 && (
-              <span className="text-white/20"> / {formatTime(estimatedTotalMs)}</span>
-            )}
-          </p>
-
-          {/* Close button (only when idle or completed) */}
-          {(state === 'idle' || state === 'completed') && (
+        {/* Back link — only when idle or completed */}
+        <AnimatePresence>
+          {canClose && (
             <motion.button
-              aria-label="Close practice"
               onClick={onClose}
-              className={cn(
-                'flex items-center justify-center w-9 h-9 rounded-full flex-shrink-0',
-                'bg-white/5 border border-white/10',
-                'text-white/30 hover:text-white/60 hover:bg-white/10',
-                'transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/30',
-              )}
-              whileHover={{ scale: 1.08 }}
-              whileTap={{ scale: 0.92 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 28 }}
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
+              className="inline-flex items-center gap-0.5 text-xs text-white/40 hover:text-white/60 transition-colors self-start min-h-[44px]"
+              initial={{ opacity: 0, x: -8 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -8 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
             >
-              <X className="w-4 h-4" />
+              <ChevronLeft className="w-3.5 h-3.5" />
+              Back to path
             </motion.button>
           )}
-        </div>
+        </AnimatePresence>
+
+        {/* Title */}
+        <h1 className="text-sm font-medium text-white/70 leading-snug truncate">
+          {practice.title}
+        </h1>
+
+        {/* Elapsed / total time */}
+        <p className="text-xs text-white/35 tabular-nums">
+          {formatTime(elapsedMs)}
+          {estimatedTotalMs > 0 && (
+            <span className="text-white/20"> / {formatTime(estimatedTotalMs)}</span>
+          )}
+        </p>
 
         {/* Segment progress bar */}
         <ProgressSteps
@@ -302,6 +353,8 @@ export function PracticeScreen({
           remainingMs={remainingMs}
           totalMs={pauseTotalMs}
           fallbackText={fallbackText}
+          selectedDuration={selectedDuration}
+          onSelectDuration={setSelectedDuration}
         />
       </motion.main>
 

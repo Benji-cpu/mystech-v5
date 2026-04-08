@@ -60,7 +60,7 @@ export function DashboardPracticeCard({
               <div className="flex items-center gap-2 mt-0.5">
                 <div className="flex items-center gap-1">
                   <Clock className="h-2.5 w-2.5 text-white/30" />
-                  <span className="text-[10px] text-white/30 tabular-nums">{durationMin}m</span>
+                  <span className="text-[10px] text-white/30 tabular-nums">5–30m</span>
                 </div>
                 <span className="text-white/15">·</span>
                 <span className="text-[10px] text-white/30 truncate">

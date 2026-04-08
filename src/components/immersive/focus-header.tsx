@@ -9,9 +9,11 @@ export function FocusHeader() {
   const { state } = useImmersive();
   const { focusMode, focusTitle, focusSubtitle, backTarget, backLabel } = state;
 
+  const hasContent = (backTarget && backLabel) || focusTitle || focusSubtitle;
+
   return (
     <AnimatePresence>
-      {focusMode && (
+      {focusMode && hasContent && (
         <motion.div
           initial={{ opacity: 0, x: -12 }}
           animate={{ opacity: 1, x: 0 }}

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -241,7 +242,7 @@ function PracticeCallout({ waypointId }: { waypointId: string }) {
         </div>
       </motion.button>
 
-      {showPractice && practiceData && (
+      {showPractice && practiceData && createPortal(
         <PracticeScreen
           practice={practiceData}
           onComplete={() => {
@@ -249,7 +250,8 @@ function PracticeCallout({ waypointId }: { waypointId: string }) {
             router.refresh();
           }}
           onClose={() => setShowPractice(false)}
-        />
+        />,
+        document.body,
       )}
     </>
   );

@@ -33,6 +33,7 @@ type ImmersiveAction =
   | { type: "SET_NAV_CONTEXT"; section: string | null; depth: number; backTarget: string | null; backLabel: string | null; mood: Mood; focusMode: boolean; focusTitle: string | null; focusSubtitle: string | null }
   | { type: "SET_MOOD"; mood: Mood }
   | { type: "SET_PERFORMANCE_TIER"; tier: PerformanceTier }
+  | { type: "ENTER_FOCUS_MODE" }
   | { type: "EXIT_FOCUS_MODE" };
 
 function reducer(state: ImmersiveState, action: ImmersiveAction): ImmersiveState {
@@ -58,6 +59,8 @@ function reducer(state: ImmersiveState, action: ImmersiveAction): ImmersiveState
       return { ...state, mood: action.mood };
     case "SET_PERFORMANCE_TIER":
       return { ...state, performanceTier: action.tier };
+    case "ENTER_FOCUS_MODE":
+      return { ...state, focusMode: true, isOrbExpanded: false };
     case "EXIT_FOCUS_MODE":
       return { ...state, focusMode: false };
     default:
@@ -71,6 +74,7 @@ interface ImmersiveContextValue {
   closeOrb: () => void;
   setMood: (mood: Mood) => void;
   setMoodPreset: (name: MoodPresetName) => void;
+  enterFocusMode: () => void;
   exitFocusMode: () => void;
   tierConfig: TierConfig;
   setPerformanceTierOverride: (tier: PerformanceTier | null) => void;
@@ -135,6 +139,7 @@ export function ImmersiveProvider({ children }: { children: ReactNode }) {
     const preset = moodPresets[name];
     if (preset) dispatch({ type: "SET_MOOD", mood: preset });
   }, []);
+  const enterFocusMode = useCallback(() => dispatch({ type: "ENTER_FOCUS_MODE" }), []);
   const exitFocusMode = useCallback(() => dispatch({ type: "EXIT_FOCUS_MODE" }), []);
 
   const setPerformanceTierOverride = useCallback((tier: PerformanceTier | null) => {
@@ -146,8 +151,8 @@ export function ImmersiveProvider({ children }: { children: ReactNode }) {
   const tierConfig = useMemo(() => tierConfigs[state.performanceTier], [state.performanceTier]);
 
   const value = useMemo<ImmersiveContextValue>(
-    () => ({ state, toggleOrb, closeOrb, setMood, setMoodPreset, exitFocusMode, tierConfig, setPerformanceTierOverride }),
-    [state, toggleOrb, closeOrb, setMood, setMoodPreset, exitFocusMode, tierConfig, setPerformanceTierOverride]
+    () => ({ state, toggleOrb, closeOrb, setMood, setMoodPreset, enterFocusMode, exitFocusMode, tierConfig, setPerformanceTierOverride }),
+    [state, toggleOrb, closeOrb, setMood, setMoodPreset, enterFocusMode, exitFocusMode, tierConfig, setPerformanceTierOverride]
   );
 
   return (

@@ -28,6 +28,43 @@ export interface UsePracticePlayerReturn {
   stop: () => void;
 }
 
+// ── Pause scaling helper ──────────────────────────────────────────────────────
+
+const MIN_PAUSE_MS = 15_000; // 15 seconds minimum per pause
+
+export function scaleSegmentPauses(
+  segments: PracticeSegment[],
+  targetDurationMs: number,
+): PracticeSegment[] {
+  // Sum speech estimated durations
+  const speechTotalMs = segments.reduce(
+    (acc, seg) => acc + (seg.segmentType === "speech" ? (seg.estimatedDurationMs ?? 0) : 0),
+    0,
+  );
+
+  // Sum original pause durations
+  const originalPauseTotalMs = segments.reduce(
+    (acc, seg) => acc + (seg.segmentType === "pause" ? (seg.durationMs ?? 0) : 0),
+    0,
+  );
+
+  if (originalPauseTotalMs <= 0) return segments;
+
+  const availableForPauses = Math.max(0, targetDurationMs - speechTotalMs);
+  const pauseCount = segments.filter((s) => s.segmentType === "pause").length;
+  const minTotalPause = pauseCount * MIN_PAUSE_MS;
+
+  // If budget is less than minimum, clamp each pause to MIN_PAUSE_MS
+  const effectiveBudget = Math.max(availableForPauses, minTotalPause);
+  const ratio = effectiveBudget / originalPauseTotalMs;
+
+  return segments.map((seg) => {
+    if (seg.segmentType !== "pause") return seg;
+    const scaled = Math.max(MIN_PAUSE_MS, Math.round((seg.durationMs ?? 0) * ratio));
+    return { ...seg, durationMs: scaled };
+  });
+}
+
 // ── State machine ─────────────────────────────────────────────────────────────
 //   idle → loading → playing → paused → completed
 //                      ↑          |

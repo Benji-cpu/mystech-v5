@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Headphones, CheckCircle2, Clock } from 'lucide-react';
@@ -92,7 +93,7 @@ export function CurrentPracticeCard({
             <div className="flex items-center gap-1 shrink-0 rounded-full bg-white/5 border border-white/10 px-2.5 py-1">
               <Clock className="h-3 w-3 text-white/40" />
               <span className="text-[11px] text-white/50 tabular-nums">
-                {practice.targetDurationMin}m
+                5–30m
               </span>
             </div>
           </div>
@@ -128,7 +129,7 @@ export function CurrentPracticeCard({
         </div>
       </motion.div>
 
-      {showPractice && practiceData && (
+      {showPractice && practiceData && createPortal(
         <PracticeScreen
           practice={practiceData}
           onComplete={() => {
@@ -136,7 +137,8 @@ export function CurrentPracticeCard({
             router.refresh();
           }}
           onClose={() => setShowPractice(false)}
-        />
+        />,
+        document.body,
       )}
     </>
   );
