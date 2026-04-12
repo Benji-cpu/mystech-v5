@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth/helpers";
 import { getUserReadingLength, upsertUserReadingLength, getVoicePreferences, upsertVoicePreferences } from "@/lib/db/queries";
+import { db } from "@/lib/db";
+import { userProfiles } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
 import type { ReadingLength, VoiceSpeed } from "@/types";
 
 const VALID_LENGTHS: ReadingLength[] = ["brief", "standard", "deep"];
@@ -72,6 +75,15 @@ export async function PATCH(request: NextRequest) {
     await upsertVoicePreferences(user.id, update);
     const voice = await getVoicePreferences(user.id);
     return NextResponse.json({ voice });
+  }
+
+  // Handle guidanceEnabled toggle
+  if (typeof body.guidanceEnabled === "boolean") {
+    await db
+      .update(userProfiles)
+      .set({ guidanceEnabled: body.guidanceEnabled, updatedAt: new Date() })
+      .where(eq(userProfiles.userId, user.id));
+    return NextResponse.json({ guidanceEnabled: body.guidanceEnabled });
   }
 
   return NextResponse.json({ error: "No valid fields provided" }, { status: 400 });

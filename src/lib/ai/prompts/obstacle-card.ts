@@ -21,7 +21,7 @@ export function buildObstacleCardPrompt({
 
   return `You are creating an Obstacle Card — a special oracle card forged when a pattern is detected in the seeker's journey.
 
-The card "${triggerCardTitle}" has appeared ${appearanceCount} times during the "${retreatName}" retreat on the ${pathName} path.
+The card "${triggerCardTitle}" has appeared ${appearanceCount} times during the "${retreatName}" chapter on the ${pathName} path.
 
 Original card:
 - Title: ${triggerCardTitle}

@@ -34,6 +34,7 @@ const routeRules: RouteRule[] = [
   { pattern: /^\/decks\/[^/]+$/, backTarget: "/decks", backLabel: "Decks" },
 
   // Readings (focus mode for new reading flow)
+  { pattern: /^\/readings\/quick$/, backTarget: "/home", backLabel: "Home", focusMode: true, focusTitle: "Quick Draw", focusSubtitle: "Pull a card" },
   { pattern: /^\/readings\/new$/, backTarget: "/readings", backLabel: "Readings", focusMode: true, focusTitle: "New Reading", focusSubtitle: "Consult the cards" },
   { pattern: /^\/readings\/[^/]+$/, backTarget: "/readings", backLabel: "Readings" },
 

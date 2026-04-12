@@ -93,7 +93,7 @@ export function RetreatArtifactCard({
             <Scroll className="h-4 w-4 text-[#c9a94e]" />
           </div>
           <div>
-            <p className="text-sm font-semibold text-white/90">Retreat Complete</p>
+            <p className="text-sm font-semibold text-white/90">Chapter Complete</p>
             <p className="text-xs text-white/40">
               Generate a reflective artifact for &ldquo;{retreatName}&rdquo;
             </p>
@@ -143,7 +143,7 @@ export function RetreatArtifactCard({
           </div>
           <div>
             <p className="text-xs text-[#c9a94e] font-medium uppercase tracking-wider">
-              Retreat Artifact
+              Chapter Artifact
             </p>
             <p className="text-sm font-semibold text-white/90">{retreatName}</p>
           </div>

@@ -66,7 +66,7 @@ export function PathsHub({
               <span className="text-white/60">{activePosition.retreat.name}</span>
             </p>
             <p className="text-xs text-white/40 mt-0.5">
-              Waypoint: {activePosition.waypoint.name}
+              Step: {activePosition.waypoint.name}
             </p>
           </div>
         </AnimatedItem>

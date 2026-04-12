@@ -62,14 +62,7 @@ export function JourneyContextBanner({
       <div className="absolute inset-0 bg-gradient-to-br from-[#c9a94e]/5 via-transparent to-purple-500/5 pointer-events-none" />
 
       <div className="relative z-10">
-        {/* Circle label */}
-        {circleName && circleNumber && (
-          <p className="text-[10px] text-white/30 uppercase tracking-wider font-medium mb-0.5 ml-6">
-            Circle {circleNumber}: {circleName}
-          </p>
-        )}
-
-        {/* Journey position — prominent display */}
+        {/* Path position — prominent display */}
         <div className="flex items-center gap-2 mb-1">
           <Compass className={cn('h-4 w-4 shrink-0', pacingBlocked ? 'text-white/40' : 'text-[color:var(--gold)]')} />
           <span className={cn('text-sm font-semibold tracking-wide', pacingBlocked ? 'text-white/60' : 'text-foreground')}>
@@ -121,7 +114,7 @@ export function JourneyContextBanner({
           )}>
             <Clock className="h-4 w-4 text-white/40 shrink-0 mt-0.5" />
             <p className="text-sm text-white/50 leading-relaxed">
-              Your next waypoint reading opens{' '}
+              Your next step opens{' '}
               <span className="text-white/70 font-medium">
                 {nextAvailableAt ? formatNextAvailable(nextAvailableAt) : 'tomorrow'}
               </span>

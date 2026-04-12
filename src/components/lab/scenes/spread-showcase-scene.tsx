@@ -47,6 +47,7 @@ const SPREAD_LABELS: Record<SpreadType, string> = {
   five_card: "Five-Card Cross",
   celtic_cross: "Celtic Cross",
   daily: "Daily Chronicle",
+  quick: "Quick Draw",
 };
 
 const SPREAD_LAYOUTS: Record<SpreadType, SpreadLayout> = {
@@ -126,6 +127,16 @@ const SPREAD_LAYOUTS: Record<SpreadType, SpreadLayout> = {
     ],
     desktop: [
       { position: [0, 0, 0], rotation: [0, 0, 0], name: "Chronicle" },
+    ],
+    scale: { mobile: 0.7, desktop: 0.9 },
+    cameraZ: 8,
+  },
+  quick: {
+    mobile: [
+      { position: [0, 0, 0], rotation: [0, 0, 0], name: "Insight" },
+    ],
+    desktop: [
+      { position: [0, 0, 0], rotation: [0, 0, 0], name: "Insight" },
     ],
     scale: { mobile: 0.7, desktop: 0.9 },
     cameraZ: 8,

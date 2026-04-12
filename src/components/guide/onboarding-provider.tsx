@@ -16,9 +16,6 @@ type OnboardingContextValue = {
   hasMilestone: (m: OnboardingMilestone) => boolean;
   completeMilestone: (m: OnboardingMilestone) => Promise<void>;
   isLoaded: boolean;
-  /** True when the nav tutorial is showing the radial nav step (labels should be visible) */
-  navTutorialActive: boolean;
-  setNavTutorialActive: (active: boolean) => void;
 };
 
 const OnboardingContext = createContext<OnboardingContextValue>({
@@ -27,8 +24,6 @@ const OnboardingContext = createContext<OnboardingContextValue>({
   hasMilestone: () => false,
   completeMilestone: async () => {},
   isLoaded: false,
-  navTutorialActive: false,
-  setNavTutorialActive: () => {},
 });
 
 export function useOnboarding() {
@@ -53,7 +48,6 @@ export function OnboardingProvider({
   );
   const [stage, setStage] = useState<OnboardingStage>(initialStage ?? 1);
   const [isLoaded, setIsLoaded] = useState(!!initialMilestones);
-  const [navTutorialActive, setNavTutorialActive] = useState(false);
 
   // If no initial data was provided, fetch from API on mount
   useEffect(() => {
@@ -112,8 +106,6 @@ export function OnboardingProvider({
         hasMilestone,
         completeMilestone: completeMilestoneAction,
         isLoaded,
-        navTutorialActive,
-        setNavTutorialActive,
       }}
     >
       {children}

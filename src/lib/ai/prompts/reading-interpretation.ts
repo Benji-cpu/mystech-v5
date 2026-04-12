@@ -89,7 +89,7 @@ Formatting rules (CRITICAL — follow exactly):
 
 Card type awareness:
 - When a card is marked OBSTACLE: treat it as a mirror showing a pattern the seeker circles around. Speak with compassion but directness about what this pattern teaches.
-- When a card is marked THRESHOLD: honor it as a milestone earned through practice. Reference the passage it represents and speak with reverence for the journey it commemorates.${userName && userName !== "Seeker" ? `\n\nThe seeker's name is ${userName}. You may address them by name once or twice naturally — not every paragraph.` : ""}`;
+- When a card is marked THRESHOLD: honor it as a milestone earned through practice. Reference the passage it represents and speak with reverence for the chapter completion it commemorates.${userName && userName !== "Seeker" ? `\n\nThe seeker's name is ${userName}. You may address them by name once or twice naturally — not every paragraph.` : ""}`;
 }
 
 // Backward-compat: default to brief
@@ -104,6 +104,7 @@ export const STRUCTURE_TARGETS: Record<ReadingLength, Record<SpreadType, { parag
     five_card:    { paragraphs: 3, maxTokens: 12000 },
     celtic_cross: { paragraphs: 4, maxTokens: 16000 },
     daily:        { paragraphs: 1, maxTokens: 4000 },
+    quick:        { paragraphs: 1, maxTokens: 2000 },
   },
   standard: {
     single:       { paragraphs: 2, maxTokens: 6000 },
@@ -111,6 +112,7 @@ export const STRUCTURE_TARGETS: Record<ReadingLength, Record<SpreadType, { parag
     five_card:    { paragraphs: 5, maxTokens: 14000 },
     celtic_cross: { paragraphs: 7, maxTokens: 20000 },
     daily:        { paragraphs: 2, maxTokens: 6000 },
+    quick:        { paragraphs: 1, maxTokens: 2000 },
   },
   deep: {
     single:       { paragraphs: 3, maxTokens: 8000 },
@@ -118,6 +120,7 @@ export const STRUCTURE_TARGETS: Record<ReadingLength, Record<SpreadType, { parag
     five_card:    { paragraphs: 7, maxTokens: 20000 },
     celtic_cross: { paragraphs: 10, maxTokens: 30000 },
     daily:        { paragraphs: 3, maxTokens: 8000 },
+    quick:        { paragraphs: 1, maxTokens: 2000 },
   },
 };
 
@@ -175,7 +178,7 @@ export function buildReadingInterpretationPrompt({
         c.cardType === 'obstacle'
           ? '\nCard Type: OBSTACLE — forged from a recurring pattern'
           : c.cardType === 'threshold'
-            ? '\nCard Type: THRESHOLD — earned through retreat completion'
+            ? '\nCard Type: THRESHOLD — earned through chapter completion'
             : '';
       return `Position: ${c.positionName}\nCard: ${c.title}${typeAnnotation}\nMeaning: ${c.meaning}\nGuidance: ${c.guidance}`;
     })
@@ -269,6 +272,21 @@ When interpreting this card, honor its personal origin — reference the fact th
   const journeySection = journeyContext
     ? buildPathContextSection(journeyContext)
     : "";
+
+  // Quick draw: ultra-concise 1-2 sentence insight, no synthesis/question
+  if (spreadType === 'quick') {
+    return `This is a Quick Draw — a single-card pull for an instant insight. Be razor-sharp: deliver a 1-2 sentence interpretation that captures the essence of this card right now.
+${nameSection}${contextSection}
+${questionSection}
+
+Card drawn:
+${cardsSection}
+
+Write exactly ONE card section with 1-2 sentences. Make every word count — poetic but punchy.
+Skip the synthesis paragraph. Skip the reflective question. Just the card insight.
+
+Remember these are personal oracle cards created from the seeker's own experiences — honor the personal symbolism.${astroSection}${chronicleSection}`;
+  }
 
   return `Interpret this ${spreadType.replace("_", " ")} reading.
 ${nameSection}${contextSection}

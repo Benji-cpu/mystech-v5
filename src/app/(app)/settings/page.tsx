@@ -6,6 +6,7 @@ import {
   getUserPlan,
   getUserReadingLength,
   getVoicePreferences,
+  getGuidanceEnabled,
   getAstrologyProfile,
   getUserChronicleDeck,
   getChronicleSettings,
@@ -41,12 +42,13 @@ function SettingsContentSkeleton() {
 async function SettingsData({ userId, userRole }: { userId: string; userRole?: string }) {
   let plan: PlanType = getUserPlanFromRole(userRole);
 
-  const [profile, subPlan, readingLength, voicePrefs, astroProfile, chronicleDeck] =
+  const [profile, subPlan, readingLength, voicePrefs, guidanceEnabled, astroProfile, chronicleDeck] =
     await Promise.all([
       getUserProfile(userId),
       plan === "free" ? getUserPlan(userId) : Promise.resolve(plan),
       getUserReadingLength(userId),
       getVoicePreferences(userId),
+      getGuidanceEnabled(userId),
       getAstrologyProfile(userId),
       getUserChronicleDeck(userId),
     ]);
@@ -71,6 +73,7 @@ async function SettingsData({ userId, userRole }: { userId: string; userRole?: s
       plan={userRole === "admin" ? "admin" : plan}
       readingLength={readingLength}
       voicePrefs={voicePrefs}
+      guidanceEnabled={guidanceEnabled}
       astroProfile={astroProfile}
       chronicleSettings={chronicleSettings}
     />

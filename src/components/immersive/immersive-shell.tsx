@@ -4,11 +4,10 @@ import dynamic from "next/dynamic";
 import { type ReactNode } from "react";
 import { ImmersiveProvider } from "./immersive-provider";
 import { PageTransitionWrapper } from "./page-transition-wrapper";
-import { FloatingOrb } from "./floating-orb";
+import { BottomNav } from "./bottom-nav";
 import { FocusHeader } from "./focus-header";
 import { PromptFabProvider } from "@/components/admin/prompt-fab";
 import { OnboardingProvider } from "@/components/guide/onboarding-provider";
-import { NavTutorial } from "@/components/guide/nav-tutorial";
 import type { OnboardingMilestone, OnboardingStage } from "@/types";
 
 const AmbientBackground = dynamic(
@@ -52,16 +51,15 @@ export function ImmersiveShell({
           {/* Content: above background, scrollable, z-10 */}
           <div className="relative z-10 min-h-dvh">
             <PageTransitionWrapper>
-              <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
+              <main className="mx-auto max-w-6xl px-4 py-6 pb-20 sm:px-6 lg:px-8">
                 {children}
               </main>
             </PageTransitionWrapper>
           </div>
 
-          {/* Navigation: fixed overlay — FloatingOrb (z-50) or FocusHeader (z-40), mutually exclusive */}
-          <FloatingOrb />
+          {/* Navigation: BottomNav (z-50) or FocusHeader (z-40), mutually exclusive */}
+          <BottomNav />
           <FocusHeader />
-          <NavTutorial />
           <PromptFabProvider />
         </div>
       </OnboardingProvider>

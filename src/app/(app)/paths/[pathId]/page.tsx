@@ -29,9 +29,7 @@ async function CircleBreadcrumb({ pathId }: { pathId: string }) {
   return (
     <AnimatedItem>
       <p className="text-xs text-white/40 -mt-3">
-        <span className="text-[#c9a94e]/60">Circle {circle.circleNumber}: {circle.name}</span>
-        <span className="mx-1.5 text-white/20">/</span>
-        <span>{pathData.name}</span>
+        <span className="text-[#c9a94e]/60">{pathData.name}</span>
       </p>
     </AnimatedItem>
   );

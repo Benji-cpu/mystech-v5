@@ -149,7 +149,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json<ApiResponse<never>>(
         {
           success: false,
-          error: "This waypoint opens tomorrow. Let today's reading settle before continuing the journey.",
+          error: "This step opens tomorrow. Let today's reading settle before continuing.",
         },
         { status: 400 }
       );

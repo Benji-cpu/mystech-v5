@@ -42,7 +42,7 @@ export function WaypointProgress({
     <div className={cn('space-y-2 rounded-2xl bg-white/3 border border-white/8 p-4', className)}>
       {/* Retreat description callout */}
       <p className="text-xs text-white/40 leading-relaxed mb-3 pl-1">
-        Waypoints mark your progress through this retreat.
+        Steps mark your progress through this chapter.
       </p>
 
       <div className="space-y-1.5">
@@ -237,7 +237,7 @@ function PracticeCallout({ waypointId }: { waypointId: string }) {
             {loading ? 'Loading...' : 'Begin Practice'}
           </p>
           <p className="text-[10px] text-[#c9a94e]/60">
-            Guided meditation for this waypoint
+            Guided meditation for this step
           </p>
         </div>
       </motion.button>

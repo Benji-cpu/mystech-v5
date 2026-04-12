@@ -85,7 +85,7 @@ export async function GET() {
   } catch (error) {
     console.error("[GET /api/circles]", error);
     return NextResponse.json<ApiResponse<never>>(
-      { success: false, error: "Failed to load circles" },
+      { success: false, error: "Failed to load sections" },
       { status: 500 }
     );
   }

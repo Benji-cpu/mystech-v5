@@ -131,7 +131,7 @@ export function CardDetailModal({
                       {card.originContext.source === ORIGIN_SOURCE.CHRONICLE_EMERGENCE
                         ? `✦ ${card.originContext.detectedPattern ?? 'Emerged from your Chronicle'}`
                         : card.originContext.retreatName
-                          ? `Forged during: ${card.originContext.retreatName} retreat`
+                          ? `Forged during: ${card.originContext.retreatName}`
                           : card.originContext.source === ORIGIN_SOURCE.OBSTACLE_DETECTION
                             ? `Pattern detected: ${card.originContext.detectedPattern ?? 'recurring card'}`
                             : 'Earned through practice'}

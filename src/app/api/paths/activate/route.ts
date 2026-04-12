@@ -59,8 +59,8 @@ export async function POST(request: NextRequest) {
     const code = (error as Error & { code?: string }).code;
 
     const isNotFound = message === "Path not found" ||
-      message === "Path has no retreats" ||
-      message === "Retreat has no waypoints";
+      message === "Path has no chapters" ||
+      message === "Chapter has no steps";
 
     const isLocked = code === "circle_locked" || code === "path_locked";
 

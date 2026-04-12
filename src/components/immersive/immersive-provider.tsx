@@ -15,7 +15,6 @@ import { getNavContext } from "./nav-context";
 import { getPerformanceTier, setPerformanceTierOverride as persistTierOverride, tierConfigs, type PerformanceTier, type TierConfig } from "./performance";
 
 interface ImmersiveState {
-  isOrbExpanded: boolean;
   currentSection: string | null;
   currentDepth: number;
   backTarget: string | null;
@@ -28,8 +27,6 @@ interface ImmersiveState {
 }
 
 type ImmersiveAction =
-  | { type: "TOGGLE_ORB" }
-  | { type: "CLOSE_ORB" }
   | { type: "SET_NAV_CONTEXT"; section: string | null; depth: number; backTarget: string | null; backLabel: string | null; mood: Mood; focusMode: boolean; focusTitle: string | null; focusSubtitle: string | null }
   | { type: "SET_MOOD"; mood: Mood }
   | { type: "SET_PERFORMANCE_TIER"; tier: PerformanceTier }
@@ -38,10 +35,6 @@ type ImmersiveAction =
 
 function reducer(state: ImmersiveState, action: ImmersiveAction): ImmersiveState {
   switch (action.type) {
-    case "TOGGLE_ORB":
-      return { ...state, isOrbExpanded: !state.isOrbExpanded };
-    case "CLOSE_ORB":
-      return { ...state, isOrbExpanded: false };
     case "SET_NAV_CONTEXT":
       return {
         ...state,
@@ -50,7 +43,6 @@ function reducer(state: ImmersiveState, action: ImmersiveAction): ImmersiveState
         backTarget: action.backTarget,
         backLabel: action.backLabel,
         mood: action.mood,
-        isOrbExpanded: false,
         focusMode: action.focusMode,
         focusTitle: action.focusTitle,
         focusSubtitle: action.focusSubtitle,
@@ -60,7 +52,7 @@ function reducer(state: ImmersiveState, action: ImmersiveAction): ImmersiveState
     case "SET_PERFORMANCE_TIER":
       return { ...state, performanceTier: action.tier };
     case "ENTER_FOCUS_MODE":
-      return { ...state, focusMode: true, isOrbExpanded: false };
+      return { ...state, focusMode: true };
     case "EXIT_FOCUS_MODE":
       return { ...state, focusMode: false };
     default:
@@ -70,8 +62,6 @@ function reducer(state: ImmersiveState, action: ImmersiveAction): ImmersiveState
 
 interface ImmersiveContextValue {
   state: ImmersiveState;
-  toggleOrb: () => void;
-  closeOrb: () => void;
   setMood: (mood: Mood) => void;
   setMoodPreset: (name: MoodPresetName) => void;
   enterFocusMode: () => void;
@@ -98,7 +88,6 @@ export function ImmersiveProvider({ children }: { children: ReactNode }) {
 
   const initialNav = getNavContext(pathname);
   const [state, dispatch] = useReducer(reducer, {
-    isOrbExpanded: false,
     currentSection: initialNav.section,
     currentDepth: initialNav.depth,
     backTarget: initialNav.backTarget,
@@ -132,8 +121,6 @@ export function ImmersiveProvider({ children }: { children: ReactNode }) {
     });
   }, [pathname]);
 
-  const toggleOrb = useCallback(() => dispatch({ type: "TOGGLE_ORB" }), []);
-  const closeOrb = useCallback(() => dispatch({ type: "CLOSE_ORB" }), []);
   const setMood = useCallback((mood: Mood) => dispatch({ type: "SET_MOOD", mood }), []);
   const setMoodPreset = useCallback((name: MoodPresetName) => {
     const preset = moodPresets[name];
@@ -151,8 +138,8 @@ export function ImmersiveProvider({ children }: { children: ReactNode }) {
   const tierConfig = useMemo(() => tierConfigs[state.performanceTier], [state.performanceTier]);
 
   const value = useMemo<ImmersiveContextValue>(
-    () => ({ state, toggleOrb, closeOrb, setMood, setMoodPreset, enterFocusMode, exitFocusMode, tierConfig, setPerformanceTierOverride }),
-    [state, toggleOrb, closeOrb, setMood, setMoodPreset, enterFocusMode, exitFocusMode, tierConfig, setPerformanceTierOverride]
+    () => ({ state, setMood, setMoodPreset, enterFocusMode, exitFocusMode, tierConfig, setPerformanceTierOverride }),
+    [state, setMood, setMoodPreset, enterFocusMode, exitFocusMode, tierConfig, setPerformanceTierOverride]
   );
 
   return (

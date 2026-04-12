@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -10,6 +10,9 @@ import { AnimatedItem } from '@/components/ui/animated-item';
 import { RetreatMap } from '@/components/paths/retreat-map';
 import { PathCardCollection } from '@/components/paths/path-card-collection';
 import { CurrentPracticeCard } from '@/components/paths/current-practice-card';
+import { RetreatGuidanceCheck } from '@/components/paths/retreat-guidance-check';
+import { GuidanceScreen } from '@/components/guide/guidance-screen';
+import { useGuidance } from '@/hooks/use-guidance';
 import {
   Compass,
   Flower2,
@@ -61,6 +64,13 @@ interface PathDetailProps {
   className?: string;
 }
 
+// Derive path guidance trigger key from path name
+function getPathGuidanceTriggerKey(pathName: string): string {
+  // "The Archetypal Path" → "archetypal", "The Mindfulness Path" → "mindfulness", etc.
+  const slug = pathName.toLowerCase().replace(/^the\s+/, '').replace(/\s+path$/, '').trim();
+  return `path.${slug}.intro`;
+}
+
 export function PathDetail({
   path,
   pathProgress,
@@ -74,6 +84,7 @@ export function PathDetail({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [activating, setActivating] = useState(false);
+  const [showPathGuidance, setShowPathGuidance] = useState(false);
 
   const status = pathProgress?.status ?? null;
   const isNotStarted = !pathProgress;
@@ -82,6 +93,13 @@ export function PathDetail({
   const isCompleted = status === 'completed';
 
   const canActivate = isNotStarted || isPaused;
+
+  // Path-level guidance — shows after activation
+  const pathGuidanceTriggerKey = getPathGuidanceTriggerKey(path.name);
+  const pathGuidance = useGuidance({
+    triggerKey: pathGuidanceTriggerKey,
+    enabled: showPathGuidance,
+  });
 
   async function handleActivate() {
     setActivating(true);
@@ -92,15 +110,53 @@ export function PathDetail({
         body: JSON.stringify({ pathId: path.id }),
       });
       if (!res.ok) throw new Error('Failed to activate path');
-      startTransition(() => {
-        router.refresh();
-      });
+      // Check for path guidance before refreshing
+      setShowPathGuidance(true);
     } catch {
       // Silently fail — user can retry
     } finally {
       setActivating(false);
     }
   }
+
+  // When guidance completes/skips, refresh the page
+  function handleGuidanceDone() {
+    pathGuidance.complete().then(() => {
+      startTransition(() => router.refresh());
+    });
+  }
+
+  function handleGuidanceSkip() {
+    pathGuidance.skip().then(() => {
+      startTransition(() => router.refresh());
+    });
+  }
+
+  // Show guidance screen after activation
+  if (showPathGuidance && pathGuidance.shouldShow && pathGuidance.guidance) {
+    return (
+      <GuidanceScreen
+        guidance={pathGuidance.guidance}
+        isFirstEncounter={pathGuidance.isFirstEncounter}
+        onComplete={handleGuidanceDone}
+        onSkip={handleGuidanceSkip}
+        onListenAgain={pathGuidance.listenAgain}
+      />
+    );
+  }
+
+  // If guidance loading triggered but shouldn't show, refresh
+  useEffect(() => {
+    if (showPathGuidance && !pathGuidance.isLoading && !pathGuidance.shouldShow) {
+      setShowPathGuidance(false);
+      startTransition(() => router.refresh());
+    }
+  }, [showPathGuidance, pathGuidance.isLoading, pathGuidance.shouldShow, router]);
+
+  // Find current retreat name for retreat-level guidance
+  const currentRetreat = pathProgress?.currentRetreatId
+    ? path.retreats.find((r) => r.id === pathProgress.currentRetreatId)
+    : null;
 
   const statusBadge = isActive
     ? { label: 'Active', className: 'border-[#c9a94e]/50 text-[#c9a94e] bg-[#c9a94e]/10' }
@@ -190,6 +246,11 @@ export function PathDetail({
         </motion.div>
       </AnimatedItem>
 
+      {/* Retreat-level guidance — shows on first encounter with current retreat */}
+      {isActive && currentRetreat && (
+        <RetreatGuidanceCheck pathName={path.name} retreatName={currentRetreat.name} />
+      )}
+
       {/* Current practice card — prominent position above retreats */}
       {isActive && currentPractice && currentWaypointName && (
         <AnimatedItem>
@@ -206,7 +267,7 @@ export function PathDetail({
       <AnimatedItem>
         <div className="space-y-3">
           <h2 className="text-sm font-semibold text-white/40 uppercase tracking-wider px-1">
-            Retreats
+            Chapters
           </h2>
           <RetreatMap
             retreats={path.retreats}

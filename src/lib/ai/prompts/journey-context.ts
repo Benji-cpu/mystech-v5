@@ -17,7 +17,7 @@ export function buildCardsRememberSection(
     const questionPart = m.question
       ? `\n  At that time you asked: "${m.question}"`
       : "";
-    return `- "${m.cardTitle}" appeared during your ${m.retreatName} retreat (waypoint: ${m.waypointName}, ${dateStr}).${questionPart}`;
+    return `- "${m.cardTitle}" appeared during your ${m.retreatName} chapter (step: ${m.waypointName}, ${dateStr}).${questionPart}`;
   });
 
   return `
@@ -36,19 +36,17 @@ export function buildPathContextSection(
 ): string {
   const cardsRemember = buildCardsRememberSection(ctx.cardsRemember);
 
-  const circleIntro = ctx.circleName && ctx.circleNumber
-    ? `The seeker is in Circle ${ctx.circleNumber}: ${ctx.circleName}, on the ${ctx.pathName} path`
-    : `The seeker is on the ${ctx.pathName} path`;
+  const circleIntro = `The seeker is on the ${ctx.pathName} path`;
 
   return `
 
-${circleIntro}, currently in the "${ctx.retreatName}" retreat at the "${ctx.waypointName}" waypoint.
+${circleIntro}, currently in the "${ctx.retreatName}" chapter at the "${ctx.waypointName}" step.
 
 Path lens: ${ctx.pathLens}
 
-Retreat focus: ${ctx.retreatLens}
+Chapter focus: ${ctx.retreatLens}
 
-Waypoint intention: ${ctx.waypointLens}
+Step intention: ${ctx.waypointLens}
 ${cardsRemember}
 
 Interpret through the lens of their current path. The path context is seasoning, not the main course — the cards and their personal symbolism remain the focus.`;

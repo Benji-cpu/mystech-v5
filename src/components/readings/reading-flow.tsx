@@ -152,7 +152,7 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
   const showCards = isCardPhase(phase);
   const isPresenting = isPresentingPhase(phase);
   const cardCount = selectedSpread
-    ? { single: 1, three_card: 3, five_card: 5, celtic_cross: 10, daily: 1 }[selectedSpread]
+    ? { single: 1, three_card: 3, five_card: 5, celtic_cross: 10, daily: 1, quick: 1 }[selectedSpread]
     : 0;
 
   // Celtic Cross gets an expanded active card alongside the spread

@@ -9,6 +9,7 @@ import {
   getPathPosition,
 } from "@/lib/db/queries-paths";
 import { PathsHub } from "@/components/paths/paths-hub";
+import { PathsGuidanceWrapper } from "@/components/paths/paths-guidance-wrapper";
 import { PageHeader } from "@/components/layout/page-header";
 import { AnimatedPage } from "@/components/ui/animated-page";
 import { AnimatedItem } from "@/components/ui/animated-item";
@@ -71,13 +72,15 @@ async function PathsContent() {
   }));
 
   return (
-    <PathsHub
-      circles={allCircles}
-      circleProgress={circleProgress}
-      paths={allPaths}
-      allProgress={allProgress}
-      activePosition={position}
-    />
+    <PathsGuidanceWrapper>
+      <PathsHub
+        circles={allCircles}
+        circleProgress={circleProgress}
+        paths={allPaths}
+        allProgress={allProgress}
+        activePosition={position}
+      />
+    </PathsGuidanceWrapper>
   );
 }
 
@@ -87,7 +90,7 @@ export default function PathsPage() {
       <AnimatedItem>
         <PageHeader
           title="Paths"
-          subtitle="Progress through circles of deepening practice."
+          subtitle="Deepen your practice through guided paths."
           icon={MapIcon}
         />
       </AnimatedItem>

@@ -43,7 +43,7 @@ export function PathCardCollection({ pathId, className }: PathCardCollectionProp
     return (
       <div className={cn("rounded-xl bg-white/5 border border-white/8 p-6 text-center", className)}>
         <p className="text-sm text-white/40">
-          Complete retreats and readings to forge path cards.
+          Complete chapters and readings to forge path cards.
         </p>
       </div>
     );
@@ -54,7 +54,7 @@ export function PathCardCollection({ pathId, className }: PathCardCollectionProp
   for (const card of cards) {
     const ctx = card.originContext;
     const retreatId = card.retreatId;
-    const retreatName = ctx?.retreatName ?? "Unknown Retreat";
+    const retreatName = ctx?.retreatName ?? "Unknown Chapter";
     if (!grouped.has(retreatId)) {
       grouped.set(retreatId, { retreatName, cards: [] });
     }

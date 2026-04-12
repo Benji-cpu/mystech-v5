@@ -19,8 +19,8 @@ Your approach:
 
 Do NOT generate cards during dialogue — that happens in a separate step.
 
-When a seeker expresses confusion or asks what their waypoint, retreat, or path concept means:
-- Use the waypoint lens from context to give a brief (1-2 sentence) plain-language explanation — no jargon
+When a seeker expresses confusion or asks what their step, chapter, or path concept means:
+- Use the step lens from context to give a brief (1-2 sentence) plain-language explanation — no jargon
 - Then ask one grounding question that helps them explore that theme through their actual day
 - Never dismiss confusion with "don't worry about it" — always honour the question before moving forward`;
 
@@ -158,7 +158,7 @@ Rules:
 - Flowing prose only — no markdown, no headers, no asterisks, no bullet points
 - Never address the seeker by name in the greeting
 - Do not mention streak numbers or statistics directly
-- NEVER use card titles, waypoint names, path names, or retreat names — these are internal vocabulary the seeker may not understand
+- NEVER use card titles, step names, path names, or chapter names — these are internal vocabulary the seeker may not understand
 - Reference what things mean in plain, grounded language
 - If you don't have enough context about the seeker, just ask a good opening question about their day`;
 }
@@ -236,16 +236,16 @@ export function buildChronicleConversationContext({
 
   if (journeyContext) {
     parts.push(
-      `Journey context — actively weave these themes into the conversation:\n` +
+      `Path context — actively weave these themes into the conversation:\n` +
       `The seeker is walking the ${journeyContext.pathName} path. ` +
-      `They are in the "${journeyContext.retreatName}" retreat, at waypoint: "${journeyContext.waypointName}".\n` +
+      `They are in the "${journeyContext.retreatName}" chapter, at step: "${journeyContext.waypointName}".\n` +
       `Path lens: ${journeyContext.pathLens}\n` +
-      `Retreat focus: ${journeyContext.retreatLens}\n` +
-      `Waypoint intention: ${journeyContext.waypointLens}\n` +
+      `Chapter focus: ${journeyContext.retreatLens}\n` +
+      `Step intention: ${journeyContext.waypointLens}\n` +
       `Today's Chronicle IS their daily practice on this path. ` +
-      `Frame your questions through the waypoint's lens when natural. ` +
-      `For example, if the waypoint is about "What You Reject," ask what they've been pushing away today. ` +
-      `The card forged today should feel connected to this waypoint's theme.`
+      `Frame your questions through the step's lens when natural. ` +
+      `For example, if the step is about "What You Reject," ask what they've been pushing away today. ` +
+      `The card forged today should feel connected to this step's theme.`
     );
   }
 
@@ -325,7 +325,7 @@ The imagePrompt should:
 - Focus on concrete visual subjects
 ${artStyleName ? `- Complement the "${artStyleName}" aesthetic` : ""}
 - Describe ONLY the subject and composition — do NOT describe art technique or style
-${journeyContext ? `\nJourney waypoint (if conversation touched on this theme, the card may echo it — but only if organic): "${journeyContext.waypointName}" — ${journeyContext.waypointLens}` : ""}
+${journeyContext ? `\nPath step (if conversation touched on this theme, the card may echo it — but only if organic): "${journeyContext.waypointName}" — ${journeyContext.waypointLens}` : ""}
 Return one card with: title, meaning, guidance, and imagePrompt.`;
 }
 
@@ -361,7 +361,7 @@ export function buildChronicleMiniReadingPrompt({
 
   let pathContext = "";
   if (journeyContext) {
-    pathContext = `\nPath waypoint: "${journeyContext.waypointName}" in ${journeyContext.retreatName}. ${journeyContext.waypointLens}\n`;
+    pathContext = `\nPath step: "${journeyContext.waypointName}" in ${journeyContext.retreatName}. ${journeyContext.waypointLens}\n`;
   }
 
   let nameContext = "";

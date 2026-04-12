@@ -10,6 +10,7 @@ const SPREAD_LABELS: Record<SpreadType, string> = {
   five_card: "Five Card Cross",
   celtic_cross: "Celtic Cross",
   daily: "Daily Chronicle",
+  quick: "Quick Draw",
 };
 
 function renderBoldMarkdown(text: string) {

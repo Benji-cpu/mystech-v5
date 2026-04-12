@@ -18,15 +18,15 @@ const ArtifactSchema = z.object({
   summary: z
     .string()
     .describe(
-      "A 2-3 paragraph reflective summary of the seeker's passage through this retreat"
+      "A 2-3 paragraph reflective summary of the seeker's passage through this chapter"
     ),
   themes: z
     .array(z.string())
-    .describe("3-5 key themes that emerged across the readings in this retreat"),
+    .describe("3-5 key themes that emerged across the readings in this chapter"),
   imagePrompt: z
     .string()
     .describe(
-      "A detailed image prompt capturing the essence of this retreat's path, suitable for generating a symbolic/artistic illustration"
+      "A detailed image prompt capturing the essence of this chapter's path, suitable for generating a symbolic/artistic illustration"
     ),
 });
 
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
   if (!retreat) {
     return NextResponse.json<ApiResponse<never>>(
-      { success: false, error: "Retreat not found" },
+      { success: false, error: "Chapter not found" },
       { status: 404 }
     );
   }
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   const retreatProgress = await getUserRetreatProgress(user.id, retreatId);
   if (!retreatProgress || retreatProgress.status !== "completed") {
     return NextResponse.json<ApiResponse<never>>(
-      { success: false, error: "Retreat not yet completed" },
+      { success: false, error: "Chapter not yet completed" },
       { status: 400 }
     );
   }
@@ -107,7 +107,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
   if (retreatReadings.length === 0) {
     return NextResponse.json<ApiResponse<never>>(
-      { success: false, error: "No readings found for this retreat" },
+      { success: false, error: "No readings found for this chapter" },
       { status: 400 }
     );
   }
@@ -127,22 +127,22 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const { object } = await generateObject({
       model: geminiModel,
       schema: ArtifactSchema,
-      prompt: `You are Lyra, a wise mystic guide. A seeker has completed the "${retreat.name}" retreat on their spiritual path.
+      prompt: `You are Lyra, a wise mystic guide. A seeker has completed the "${retreat.name}" chapter on their spiritual path.
 
-Retreat theme: ${retreat.theme}
-Retreat focus: ${retreat.retreatLens}
+Chapter theme: ${retreat.theme}
+Chapter focus: ${retreat.retreatLens}
 
-They completed ${retreatReadings.length} readings during this retreat:
+They completed ${retreatReadings.length} readings during this chapter:
 
 ${readingSummaries}
 
-Generate a retreat artifact — a reflective summary honoring their passage through this chapter:
+Generate a chapter artifact — a reflective summary honoring their passage through this chapter:
 
-1. Summary: Write 2-3 paragraphs in Lyra's warm, poetic voice reflecting on the seeker's passage through this retreat. Reference specific themes from their readings. Honor what they explored and what emerged. This should feel like a wise companion looking back over the ground covered together.
+1. Summary: Write 2-3 paragraphs in Lyra's warm, poetic voice reflecting on the seeker's passage through this chapter. Reference specific themes from their readings. Honor what they explored and what emerged. This should feel like a wise companion looking back over the ground covered together.
 
 2. Themes: Extract 3-5 key themes that emerged across their readings. Use evocative, specific phrases (not generic words like "growth" — instead, "learning to sit with uncertainty" or "the courage of softness").
 
-3. Image prompt: Create a detailed prompt for generating a symbolic illustration that captures the essence of their passage through this retreat. The image should be mystical, atmospheric, and personally meaningful.`,
+3. Image prompt: Create a detailed prompt for generating a symbolic illustration that captures the essence of their passage through this chapter. The image should be mystical, atmospheric, and personally meaningful.`,
     });
 
     // Save artifact to retreat progress
@@ -171,7 +171,7 @@ Generate a retreat artifact — a reflective summary honoring their passage thro
   } catch (error) {
     console.error("[POST /api/paths/retreats/artifact]", error);
     return NextResponse.json<ApiResponse<never>>(
-      { success: false, error: "Failed to generate retreat artifact" },
+      { success: false, error: "Failed to generate chapter artifact" },
       { status: 500 }
     );
   }

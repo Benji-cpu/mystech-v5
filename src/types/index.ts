@@ -180,7 +180,7 @@ export type ArtStyleShare = {
 };
 
 // Reading types
-export type SpreadType = 'single' | 'three_card' | 'five_card' | 'celtic_cross' | 'daily';
+export type SpreadType = 'single' | 'three_card' | 'five_card' | 'celtic_cross' | 'daily' | 'quick';
 export type ReadingLength = 'brief' | 'standard' | 'deep';
 
 export type ReadingFeedback = 'positive' | 'negative';

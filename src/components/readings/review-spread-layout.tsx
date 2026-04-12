@@ -358,6 +358,7 @@ const EXPECTED_COUNTS: Record<SpreadType, number> = {
   five_card: 5,
   celtic_cross: 10,
   daily: 1,
+  quick: 1,
 };
 
 export function ReviewSpreadLayout({

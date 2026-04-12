@@ -39,7 +39,7 @@ export async function GET(
     const circleWithPaths = await getCircleWithPaths(circleId);
     if (!circleWithPaths) {
       return NextResponse.json<ApiResponse<never>>(
-        { success: false, error: "Circle not found" },
+        { success: false, error: "Section not found" },
         { status: 404 }
       );
     }
@@ -92,7 +92,7 @@ export async function GET(
   } catch (error) {
     console.error("[GET /api/circles/[circleId]]", error);
     return NextResponse.json<ApiResponse<never>>(
-      { success: false, error: "Failed to load circle" },
+      { success: false, error: "Failed to load section" },
       { status: 500 }
     );
   }

@@ -230,20 +230,11 @@ export function CircleCard({
               isLocked && 'bg-white/8 text-white/30',
             )}
           >
-            Circle {circle.circleNumber}
-          </span>
-
-          {/* Circle name */}
-          <span
-            className={cn(
-              'flex-1 text-sm font-semibold leading-tight',
-              isActive && 'text-white/90',
-              isCompleted && 'text-emerald-400/90',
-              isLocked && 'text-white/30',
-            )}
-          >
             {circle.name}
           </span>
+
+          {/* Spacer for layout */}
+          <span className="flex-1" />
 
           {/* Status indicator */}
           <span className="shrink-0 flex items-center gap-1.5">
@@ -306,7 +297,7 @@ export function CircleCard({
                 {/* Locked placeholder */}
                 {isLocked ? (
                   <p className="text-xs text-white/30 italic px-1">
-                    Complete the previous circle to unlock.
+                    Complete the previous section to unlock.
                   </p>
                 ) : (
                   <>

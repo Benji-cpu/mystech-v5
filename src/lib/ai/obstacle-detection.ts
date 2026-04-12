@@ -64,6 +64,6 @@ export async function detectObstacleCandidate(
     triggerCardId: matchingMemory ? "" : "", // Will be resolved from drawn cards
     appearanceCount: best.count,
     retreatId,
-    pattern: `"${best.title}" has appeared ${best.count} times during this retreat — a pattern may be emerging.`,
+    pattern: `"${best.title}" has appeared ${best.count} times during this chapter — a pattern may be emerging.`,
   };
 }

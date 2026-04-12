@@ -545,9 +545,9 @@ export async function activatePath(userId: string, pathId: string) {
   if (!progress) {
     // First time — create path, retreat, and waypoint progress
     const firstRetreat = pathData.retreats[0];
-    if (!firstRetreat) throw new Error("Path has no retreats");
+    if (!firstRetreat) throw new Error("Path has no chapters");
     const firstWaypoint = firstRetreat.waypoints[0];
-    if (!firstWaypoint) throw new Error("Retreat has no waypoints");
+    if (!firstWaypoint) throw new Error("Chapter has no steps");
 
     const [pathProg] = await db
       .insert(userPathProgress)

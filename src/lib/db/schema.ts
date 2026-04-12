@@ -505,6 +505,7 @@ export const userProfiles = pgTable("user_profile", {
   contextSummary: text("context_summary"),
   contextVersion: integer("context_version").default(0).notNull(),
   activePathId: text("active_path_id").references(() => paths.id, { onDelete: "set null" }),
+  guidanceEnabled: boolean("guidance_enabled").default(true).notNull(),
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
 });
@@ -939,6 +940,58 @@ export const generationLogs = pgTable(
     index("generation_log_deck_id_idx").on(t.deckId),
     index("generation_log_reading_id_idx").on(t.readingId),
     index("generation_log_created_at_idx").on(t.createdAt),
+  ]
+);
+
+// ── Guidance content ─────────────────────────────────────────────────────
+
+// Pre-seeded guidance pieces — Lyra's voiced explanations at progression milestones
+export const guidanceContent = pgTable(
+  "guidance_content",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    triggerKey: text("trigger_key").notNull().unique(),
+    triggerLevel: text("trigger_level").notNull(), // "app" | "path" | "retreat" | "check_in" | "feature"
+    deliveryMode: text("delivery_mode").notNull(), // "full_screen" | "overlay"
+    title: text("title").notNull(),
+    narrationText: text("narration_text").notNull(),
+    audioUrl: text("audio_url"),
+    audioDurationMs: integer("audio_duration_ms"),
+    sortOrder: integer("sort_order").notNull().default(0),
+    pathId: text("path_id").references(() => paths.id, { onDelete: "cascade" }),
+    retreatId: text("retreat_id").references(() => retreats.id, { onDelete: "cascade" }),
+    featureKey: text("feature_key"),
+    createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
+  },
+  (t) => [
+    index("guidance_content_path_id_idx").on(t.pathId),
+    index("guidance_content_retreat_id_idx").on(t.retreatId),
+  ]
+);
+
+// Per-user guidance completion tracking
+export const userGuidanceCompletions = pgTable(
+  "user_guidance_completion",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    guidanceId: text("guidance_id")
+      .notNull()
+      .references(() => guidanceContent.id, { onDelete: "cascade" }),
+    completedAt: timestamp("completed_at", { mode: "date" }).defaultNow().notNull(),
+    skippedAt: timestamp("skipped_at", { mode: "date" }),
+    listenedAgainCount: integer("listened_again_count").notNull().default(0),
+  },
+  (t) => [
+    unique().on(t.userId, t.guidanceId),
+    index("user_guidance_completion_user_id_idx").on(t.userId),
   ]
 );
 

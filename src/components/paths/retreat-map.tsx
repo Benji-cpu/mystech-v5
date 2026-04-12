@@ -72,7 +72,7 @@ function RetreatChallenges({ retreatId }: { retreatId: string }) {
       <div className="flex items-center gap-1.5 px-1">
         <Shield className="h-3.5 w-3.5 text-amber-400/70" />
         <p className="text-[11px] text-white/35 uppercase tracking-wider font-medium">
-          Challenges of This Retreat
+          Challenges of This Chapter
         </p>
       </div>
       <div className="grid grid-cols-3 gap-2">
@@ -132,7 +132,7 @@ export function RetreatMap({
           <Milestone className="h-5 w-5 text-white/30" />
         </div>
         <p className="text-sm text-white/40 text-center">
-          Retreats coming soon — this path is still being charted.
+          Chapters coming soon — this path is still being charted.
         </p>
       </div>
     );
@@ -192,7 +192,7 @@ export function RetreatMap({
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="text-[10px] text-white/30 font-medium">
-                      Retreat {index + 1}
+                      Chapter {index + 1}
                     </span>
                     {state === 'active' && (
                       <span className="text-[10px] text-[#c9a94e] font-medium">

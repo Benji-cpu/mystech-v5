@@ -885,6 +885,15 @@ export async function getVoicePreferences(userId: string): Promise<VoicePreferen
   };
 }
 
+export async function getGuidanceEnabled(userId: string): Promise<boolean> {
+  const [profile] = await db
+    .select({ guidanceEnabled: userProfiles.guidanceEnabled })
+    .from(userProfiles)
+    .where(eq(userProfiles.userId, userId))
+    .limit(1);
+  return profile?.guidanceEnabled ?? true;
+}
+
 export async function upsertVoicePreferences(
   userId: string,
   prefs: Partial<{

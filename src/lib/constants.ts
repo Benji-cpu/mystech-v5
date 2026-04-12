@@ -74,6 +74,9 @@ export const SPREAD_POSITIONS: Record<
   daily: [
     { position: 0, name: 'Chronicle' },
   ],
+  quick: [
+    { position: 0, name: 'Insight' },
+  ],
 };
 
 // Spread layout positions (percentage-based for desktop absolute positioning)
@@ -110,6 +113,9 @@ export const SPREAD_LAYOUT_POSITIONS: Record<
     { x: 75, y: 15 },                 // 9: Final Outcome
   ],
   daily: [
+    { x: 50, y: 50 },
+  ],
+  quick: [
     { x: 50, y: 50 },
   ],
 };

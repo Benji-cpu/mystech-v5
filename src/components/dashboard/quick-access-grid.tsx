@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Map, Layers, Sparkles, BookOpen } from "lucide-react";
+import { useOnboarding } from "@/components/guide/onboarding-provider";
 import { cn } from "@/lib/utils";
 import type { LucideIcon } from "lucide-react";
 
@@ -13,6 +14,8 @@ interface QuickAccessCard {
   secondaryStat?: string;
   href: string;
   accent: string;
+  /** Minimum onboarding stage to show this card */
+  minStage: number;
 }
 
 export interface QuickAccessData {
@@ -30,11 +33,26 @@ const spring = { type: "spring" as const, stiffness: 300, damping: 25 };
 function resolveCards(data: QuickAccessData): QuickAccessCard[] {
   return [
     {
-      icon: Map,
-      label: data.pathName ?? "Paths",
-      stat: data.pathWaypoint ?? "Explore",
-      href: "/paths",
-      accent: "text-emerald-400/80",
+      icon: Sparkles,
+      label: "Readings",
+      stat: data.readingCount === 0
+        ? "Draw first"
+        : `${data.readingCount} reading${data.readingCount !== 1 ? "s" : ""}`,
+      href: data.readingCount === 0 ? "/readings/new" : "/readings",
+      accent: "text-purple-400/80",
+      minStage: 0,
+    },
+    {
+      icon: BookOpen,
+      label: "Chronicle",
+      stat: !data.hasChronicle
+        ? "Set up"
+        : data.chronicleStreakCount > 0
+          ? `${data.chronicleStreakCount}-day streak`
+          : "Start streak",
+      href: data.hasChronicle ? "/chronicle/today" : "/chronicle/setup",
+      accent: "text-orange-400/80",
+      minStage: 0,
     },
     {
       icon: Layers,
@@ -47,26 +65,15 @@ function resolveCards(data: QuickAccessData): QuickAccessCard[] {
         : undefined,
       href: data.deckCount === 0 ? "/onboarding" : "/decks",
       accent: "text-amber-400/80",
+      minStage: 2,
     },
     {
-      icon: Sparkles,
-      label: "Readings",
-      stat: data.readingCount === 0
-        ? "Draw first"
-        : `${data.readingCount} reading${data.readingCount !== 1 ? "s" : ""}`,
-      href: data.readingCount === 0 ? "/readings/new" : "/readings",
-      accent: "text-purple-400/80",
-    },
-    {
-      icon: BookOpen,
-      label: "Chronicle",
-      stat: !data.hasChronicle
-        ? "Set up"
-        : data.chronicleStreakCount > 0
-          ? `${data.chronicleStreakCount}-day streak`
-          : "Start streak",
-      href: data.hasChronicle ? "/chronicle/today" : "/chronicle/setup",
-      accent: "text-orange-400/80",
+      icon: Map,
+      label: data.pathName ?? "Paths",
+      stat: data.pathWaypoint ?? "Explore",
+      href: "/paths",
+      accent: "text-emerald-400/80",
+      minStage: 3,
     },
   ];
 }
@@ -78,7 +85,8 @@ export function QuickAccessGrid({
   data: QuickAccessData;
   className?: string;
 }) {
-  const cards = resolveCards(data);
+  const { stage } = useOnboarding();
+  const cards = resolveCards(data).filter((card) => stage >= card.minStage);
 
   return (
     <div className={cn("grid grid-cols-2 gap-3", className)}>
