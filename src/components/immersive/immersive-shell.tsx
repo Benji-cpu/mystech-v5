@@ -5,9 +5,12 @@ import { type ReactNode } from "react";
 import { ImmersiveProvider } from "./immersive-provider";
 import { PageTransitionWrapper } from "./page-transition-wrapper";
 import { BottomNav } from "./bottom-nav";
+import { DesktopNav } from "./desktop-nav";
 import { FocusHeader } from "./focus-header";
 import { PromptFabProvider } from "@/components/admin/prompt-fab";
 import { OnboardingProvider } from "@/components/guide/onboarding-provider";
+import { FeedbackProvider } from "@/components/feedback/feedback-provider";
+import { FeedbackSheet } from "@/components/feedback/feedback-sheet";
 import type { OnboardingMilestone, OnboardingStage } from "@/types";
 
 const AmbientBackground = dynamic(
@@ -42,26 +45,30 @@ export function ImmersiveShell({
         initialMilestones={initialMilestones}
         initialStage={initialStage}
       >
-        <div className="relative min-h-dvh">
-          {/* Background: fixed, full bleed, z-0 */}
-          <div className="fixed inset-0 z-0 bg-[#0a0118]">
-            <AmbientBackground />
-          </div>
+        <FeedbackProvider>
+          <div className="relative min-h-dvh">
+            {/* Background: fixed, full bleed, z-0 */}
+            <div className="fixed inset-0 z-0 bg-surface-deep">
+              <AmbientBackground />
+            </div>
 
-          {/* Content: above background, scrollable, z-10 */}
-          <div className="relative z-10 min-h-dvh">
-            <PageTransitionWrapper>
-              <main className="mx-auto max-w-6xl px-4 py-6 pb-20 sm:px-6 lg:px-8">
-                {children}
-              </main>
-            </PageTransitionWrapper>
-          </div>
+            {/* Content: above background, scrollable, z-10 */}
+            <div className="relative z-10 min-h-dvh lg:pl-16">
+              <PageTransitionWrapper>
+                <main className="mx-auto max-w-6xl px-4 py-6 pb-20 sm:px-6 lg:px-8 lg:pb-8">
+                  {children}
+                </main>
+              </PageTransitionWrapper>
+            </div>
 
-          {/* Navigation: BottomNav (z-50) or FocusHeader (z-40), mutually exclusive */}
-          <BottomNav />
-          <FocusHeader />
-          <PromptFabProvider />
-        </div>
+            {/* Navigation: BottomNav on mobile, DesktopNav on lg+ */}
+            <BottomNav />
+            <DesktopNav />
+            <FocusHeader />
+            <FeedbackSheet />
+            <PromptFabProvider />
+          </div>
+        </FeedbackProvider>
       </OnboardingProvider>
     </ImmersiveProvider>
   );

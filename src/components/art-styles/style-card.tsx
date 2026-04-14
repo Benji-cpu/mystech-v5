@@ -50,7 +50,7 @@ export function StyleCard({
   return (
     <Link
       href={`/art-styles/${style.id}`}
-      className="group block rounded-2xl bg-white/5 border border-white/10 p-3 transition-colors hover:border-[#c9a94e]/30 hover:bg-white/[0.08]"
+      className="group block rounded-2xl bg-white/5 border border-white/10 p-3 transition-colors hover:border-gold/30 hover:bg-white/[0.08]"
     >
       {content}
     </Link>

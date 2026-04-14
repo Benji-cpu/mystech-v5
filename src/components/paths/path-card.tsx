@@ -30,7 +30,7 @@ function statusLabel(status: UserPathProgress['status'] | null): {
 } {
   switch (status) {
     case 'active':
-      return { label: 'Active', variant: 'default', className: 'border-[#c9a94e]/50 text-[#c9a94e] bg-[#c9a94e]/10' };
+      return { label: 'Active', variant: 'default', className: 'border-gold/50 text-gold bg-gold/10' };
     case 'completed':
       return { label: 'Completed', variant: 'outline', className: 'border-emerald-500/50 text-emerald-400 bg-emerald-500/10' };
     case 'paused':
@@ -75,10 +75,10 @@ export function PathCard({ path, progress, isActive, className }: PathCardProps)
       whileTap={{ scale: 0.98 }}
       className={cn(
         'relative overflow-hidden rounded-2xl',
-        'bg-white/5 backdrop-blur-xl',
+        'bg-white/[0.03] backdrop-blur-sm',
         'border transition-colors duration-300',
         isActive
-          ? 'border-[#c9a94e]/40 shadow-lg shadow-[#c9a94e]/10'
+          ? 'border-gold/40 shadow-lg shadow-gold/10'
           : 'border-white/10 hover:border-purple-500/30',
         'shadow-lg shadow-purple-900/20',
         className,
@@ -87,7 +87,7 @@ export function PathCard({ path, progress, isActive, className }: PathCardProps)
       {/* Gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent pointer-events-none" />
       {isActive && (
-        <div className="absolute inset-0 bg-gradient-to-br from-[#c9a94e]/5 to-transparent pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-br from-gold/5 to-transparent pointer-events-none" />
       )}
 
       <div className="relative z-10 p-6 flex flex-col gap-4">
@@ -98,7 +98,7 @@ export function PathCard({ path, progress, isActive, className }: PathCardProps)
               className={cn(
                 'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl',
                 isActive
-                  ? 'bg-[#c9a94e]/15 text-[#c9a94e]'
+                  ? 'bg-gold/15 text-gold'
                   : 'bg-white/10 text-white/60',
               )}
             >
@@ -144,7 +144,7 @@ export function PathCard({ path, progress, isActive, className }: PathCardProps)
               className={cn(
                 'h-1.5',
                 status === 'completed' && '[&>div]:bg-emerald-400',
-                isActive && status === 'active' && '[&>div]:bg-[#c9a94e]',
+                isActive && status === 'active' && '[&>div]:bg-gold',
               )}
             />
           </div>
@@ -157,7 +157,7 @@ export function PathCard({ path, progress, isActive, className }: PathCardProps)
           size="sm"
           className={cn(
             'w-full mt-auto',
-            isActive && 'bg-[#c9a94e] text-black hover:bg-[#c9a94e]/90 shadow-[0_0_20px_rgba(201,169,78,0.3)]',
+            isActive && 'bg-gold text-black hover:bg-gold/90 shadow-[0_0_20px_rgba(201,169,78,0.3)]',
           )}
         >
           <Link href={`/paths/${path.id}`}>

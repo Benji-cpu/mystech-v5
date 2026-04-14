@@ -9,7 +9,7 @@ export function SectionHeader({ children, className }: SectionHeaderProps) {
   return (
     <h3
       className={cn(
-        "text-xs font-medium tracking-wider uppercase text-[#c9a94e]",
+        "text-xs font-medium tracking-wider uppercase text-gold",
         className
       )}
     >

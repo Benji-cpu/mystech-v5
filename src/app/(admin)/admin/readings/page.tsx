@@ -65,7 +65,7 @@ export default function AdminReadingsPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold">Readings</h1>
+      <h1 className="text-2xl font-bold font-display">Readings</h1>
 
       <div className="flex gap-3">
         <form onSubmit={handleSearch} className="flex gap-2 max-w-sm">

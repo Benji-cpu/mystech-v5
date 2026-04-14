@@ -37,19 +37,19 @@ export function PathBadge({ position, className }: PathBadgeProps) {
         className={cn(
           'flex items-center gap-2.5 w-full',
           'rounded-xl px-3 py-2',
-          'bg-[#c9a94e]/8 border border-[#c9a94e]/20',
-          'hover:bg-[#c9a94e]/12 hover:border-[#c9a94e]/30',
+          'bg-gold/8 border border-gold/20',
+          'hover:bg-gold/12 hover:border-gold/30',
           'transition-colors duration-200',
         )}
       >
         {/* Icon pill */}
-        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#c9a94e]/15 text-[#c9a94e]">
+        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gold/15 text-gold">
           <PathIcon iconKey={position.path.iconKey} />
         </div>
 
         {/* Text */}
         <div className="flex-1 min-w-0">
-          <p className="text-[11px] text-[#c9a94e]/70 font-medium uppercase tracking-wider leading-none mb-0.5 truncate">
+          <p className="text-[11px] text-gold/70 font-medium uppercase tracking-wider leading-none mb-0.5 truncate">
             {position.path.name}
           </p>
           <p className="text-xs text-white/60 leading-tight truncate">

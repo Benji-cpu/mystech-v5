@@ -245,7 +245,7 @@ export function ConversationChat({
               className={cn(
                 "max-w-[80%] rounded-xl px-4 py-3 text-sm leading-relaxed",
                 message.role === "user"
-                  ? "bg-[#c9a94e]/10 text-foreground"
+                  ? "bg-gold/10 text-foreground"
                   : "bg-card border border-border/50 text-foreground"
               )}
             >
@@ -284,7 +284,7 @@ export function ConversationChat({
         <div className="pb-2">
           <Button
             onClick={() => router.push(`/decks/new/journey/${deckId}/review`)}
-            className="w-full bg-[#c9a94e]/20 border border-[#c9a94e] text-[#c9a94e] hover:bg-[#c9a94e]/30"
+            className="w-full bg-gold/20 border border-gold text-gold hover:bg-gold/30"
             size="lg"
           >
             <Layers className="h-4 w-4 mr-2" />
@@ -298,7 +298,7 @@ export function ConversationChat({
         <div className="pb-2">
           <Button
             onClick={handleGenerate}
-            className="w-full bg-[#c9a94e]/20 border border-[#c9a94e] text-[#c9a94e] hover:bg-[#c9a94e]/30"
+            className="w-full bg-gold/20 border border-gold text-gold hover:bg-gold/30"
             size="lg"
           >
             <Sparkles className="h-4 w-4 mr-2" />

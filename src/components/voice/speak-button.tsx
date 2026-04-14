@@ -30,7 +30,7 @@ export function SpeakButton({ text, voiceId, speed, className }: SpeakButtonProp
       className={cn(
         "flex h-7 w-7 items-center justify-center rounded-md transition-colors",
         "text-muted-foreground hover:text-foreground hover:bg-white/10",
-        tts.isPlaying && "text-[#c9a94e]",
+        tts.isPlaying && "text-gold",
         className
       )}
       aria-label={tts.isPlaying ? "Pause" : "Listen"}

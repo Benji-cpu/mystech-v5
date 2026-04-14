@@ -73,7 +73,7 @@ function StyleBrowserCard({ style, currentUserId }: StyleBrowserCardProps) {
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.95 }}
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
-      className="group relative overflow-hidden rounded-2xl bg-white/5 border border-white/10 transition-colors hover:border-[#c9a94e]/30 hover:bg-white/[0.08]"
+      className="group relative overflow-hidden rounded-2xl bg-white/5 border border-white/10 transition-colors hover:border-gold/30 hover:bg-white/[0.08]"
     >
       {/* Preview thumbnail */}
       <div className="relative aspect-[3/4] w-full overflow-hidden bg-gradient-to-br from-purple-900/40 to-indigo-900/30">
@@ -119,7 +119,7 @@ function StyleBrowserCard({ style, currentUserId }: StyleBrowserCardProps) {
           asChild
           size="sm"
           variant="outline"
-          className="flex-1 text-xs h-7 border-white/10 hover:border-[#c9a94e]/40"
+          className="flex-1 text-xs h-7 border-white/10 hover:border-gold/40"
         >
           <Link href={`/decks/new?style=${style.id}`}>Use</Link>
         </Button>
@@ -184,14 +184,14 @@ export function TemplateBrowser({
             placeholder="Search styles..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 bg-white/5 border-white/10 placeholder:text-white/30 text-white/80 focus-visible:border-[#c9a94e]/40 focus-visible:ring-0"
+            className="pl-9 bg-white/5 border-white/10 placeholder:text-white/30 text-white/80 focus-visible:border-gold/40 focus-visible:ring-0"
           />
         </div>
 
         {/* Create from Reference CTA */}
         <Button
           asChild
-          className="bg-gradient-to-r from-[#c9a94e] to-[#daa520] text-black font-semibold hover:shadow-lg hover:shadow-[#c9a94e]/20 shrink-0"
+          className="bg-gradient-to-r from-gold to-gold-bright text-black font-semibold hover:shadow-lg hover:shadow-gold/20 shrink-0"
         >
           <Link href="/studio/styles/new">
             <ImagePlus className="h-4 w-4" />
@@ -211,7 +211,7 @@ export function TemplateBrowser({
                 className={cn(
                   "shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition-all duration-200",
                   activeCategory === tab.id
-                    ? "bg-[#c9a94e] text-black shadow-lg shadow-[#c9a94e]/20"
+                    ? "bg-gold text-black shadow-lg shadow-gold/20"
                     : "bg-white/5 text-white/50 border border-white/10 hover:bg-white/10 hover:text-white/80"
                 )}
               >
@@ -267,7 +267,7 @@ export function TemplateBrowser({
               asChild
               size="sm"
               variant="outline"
-              className="mt-2 border-white/10 text-white/60 hover:border-[#c9a94e]/40"
+              className="mt-2 border-white/10 text-white/60 hover:border-gold/40"
             >
               <Link href="/studio/styles/new">
                 <ImagePlus className="h-4 w-4" />

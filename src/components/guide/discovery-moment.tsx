@@ -61,7 +61,7 @@ export function DiscoveryMoment({
             return (
               <motion.div
                 key={i}
-                className="absolute w-1.5 h-1.5 rounded-full bg-[#c9a94e]"
+                className="absolute w-1.5 h-1.5 rounded-full bg-gold"
                 style={{
                   boxShadow: "0 0 6px rgba(201,169,78,0.6)",
                 }}

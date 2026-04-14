@@ -33,25 +33,25 @@ export function DashboardPracticeCard({
         <div
           className={cn(
             'relative overflow-hidden rounded-2xl',
-            'bg-white/5 backdrop-blur-xl',
-            'border border-[#c9a94e]/20',
+            'bg-white/[0.03] backdrop-blur-sm',
+            'border border-gold/20',
             'p-4',
             'hover:bg-white/8 transition-colors',
             'group',
           )}
         >
           {/* Gold accent gradient */}
-          <div className="absolute inset-0 bg-gradient-to-br from-[#c9a94e]/5 to-transparent pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-br from-gold/5 to-transparent pointer-events-none" />
 
-          <div className="relative z-10 flex items-center gap-3">
+          <div className="relative z-10 flex items-center gap-2">
             {/* Icon */}
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#c9a94e]/15">
-              <Headphones className="h-5 w-5 text-[#c9a94e]" />
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gold/15">
+              <Headphones className="h-5 w-5 text-gold" />
             </div>
 
             {/* Content */}
             <div className="flex-1 min-w-0">
-              <p className="text-[10px] text-[#c9a94e]/60 uppercase tracking-wider font-medium">
+              <p className="text-[10px] text-gold/60 uppercase tracking-wider font-medium">
                 Practice Available
               </p>
               <p className="text-sm font-medium text-white/90 truncate mt-0.5">

@@ -54,7 +54,7 @@ function Chip({ label, isSelected, onToggle }: ChipProps) {
         "rounded-full px-4 py-2 text-sm font-medium transition-colors duration-200",
         "border focus:outline-none",
         isSelected
-          ? "bg-[#c9a94e]/20 border-[#c9a94e]/50 text-[#c9a94e] shadow-[0_0_12px_rgba(201,169,78,0.15)]"
+          ? "bg-gold/20 border-gold/50 text-gold shadow-[0_0_12px_rgba(201,169,78,0.15)]"
           : "bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:border-white/20 hover:text-white/90"
       )}
     >

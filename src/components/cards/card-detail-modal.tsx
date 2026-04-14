@@ -96,14 +96,14 @@ export function CardDetailModal({
               typeConfig.borderClass,
               typeConfig.glowClass,
             )}>
-              <div className="flex flex-col h-full p-5 sm:p-6 overflow-y-auto bg-gradient-to-b from-[#0a0118] to-[#1a0530]">
+              <div className="flex flex-col h-full p-5 sm:p-6 overflow-y-auto bg-gradient-to-b from-surface-deep to-surface-mid">
                 {isSpecial && (
                   <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1 flex items-center gap-1">
                     <TypeIcon className="h-3 w-3" />
                     {typeConfig.label}
                   </p>
                 )}
-                <h3 className="text-lg font-semibold text-[#c9a94e] mb-4">
+                <h3 className="text-lg font-semibold text-gold mb-4">
                   {card.title}
                 </h3>
                 <div className="mb-4">
@@ -204,13 +204,13 @@ function CardImage({
             className="h-full w-full object-cover"
           />
         ) : card.imageStatus === "none" ? (
-          <div className="h-full w-full bg-gradient-to-b from-[#1a0530] via-[#0a0118] to-[#1a0530]" />
+          <div className="h-full w-full bg-gradient-to-b from-surface-mid via-surface-deep to-surface-mid" />
         ) : card.imageStatus === "generating" ? (
-          <div className="flex h-full w-full items-center justify-center bg-gradient-to-b from-[#0a0118] to-[#1a0530]">
-            <Loader2 className="h-10 w-10 animate-spin text-[#c9a94e]/60" />
+          <div className="flex h-full w-full items-center justify-center bg-gradient-to-b from-surface-deep to-surface-mid">
+            <Loader2 className="h-10 w-10 animate-spin text-gold/60" />
           </div>
         ) : card.imageStatus === "failed" ? (
-          <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-gradient-to-b from-[#0a0118] to-[#1a0530]">
+          <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-gradient-to-b from-surface-deep to-surface-mid">
             <AlertCircle className="h-8 w-8 text-red-400/60" />
             {onRetryImage && (
               <button
@@ -226,7 +226,7 @@ function CardImage({
             )}
           </div>
         ) : (
-          <Skeleton className="h-full w-full rounded-none bg-[#1a0530]" />
+          <Skeleton className="h-full w-full rounded-none bg-surface-mid" />
         )}
       </motion.div>
     </AnimatePresence>

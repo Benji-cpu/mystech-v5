@@ -30,7 +30,7 @@ export function UpgradeCta() {
   };
 
   return (
-    <GlassPanel className="mt-6 border-[#c9a94e]/30 p-6">
+    <GlassPanel className="mt-6 border-gold/30 p-4">
       <div className="flex flex-col items-center gap-4 text-center">
         <LyraSigil size="lg" state="dormant" />
         <div className="space-y-1">

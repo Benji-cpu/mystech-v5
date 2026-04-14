@@ -144,8 +144,8 @@ export function JourneySetupForm({
               className={cn(
                 "rounded-lg px-4 py-2 text-sm font-medium transition-colors border",
                 !isCustomCount && cardCount === count
-                  ? "bg-[#c9a94e]/20 border-[#c9a94e] text-[#c9a94e]"
-                  : "border-border hover:border-[#c9a94e]/30 text-muted-foreground hover:text-foreground"
+                  ? "bg-gold/20 border-gold text-gold"
+                  : "border-border hover:border-gold/30 text-muted-foreground hover:text-foreground"
               )}
             >
               {count}
@@ -181,7 +181,7 @@ export function JourneySetupForm({
               type="button"
               onClick={() => setIsCustomCount(true)}
               disabled={isSubmitting}
-              className="rounded-lg px-4 py-2 text-sm font-medium transition-colors border border-border hover:border-[#c9a94e]/30 text-muted-foreground hover:text-foreground"
+              className="rounded-lg px-4 py-2 text-sm font-medium transition-colors border border-border hover:border-gold/30 text-muted-foreground hover:text-foreground"
             >
               Custom
             </button>

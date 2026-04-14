@@ -253,7 +253,7 @@ function GuidedSetup({
   }, [knowsTime, handleSave]);
 
   return (
-    <GlassPanel className={cn("p-5 sm:p-6 space-y-4", className)}>
+    <GlassPanel className={cn("p-4 space-y-4", className)}>
       <SectionHeader>Celestial Profile</SectionHeader>
 
       <AnimatePresence mode="wait">
@@ -307,7 +307,7 @@ function GuidedSetup({
         {step === "time" && (
           <StepWrapper key="time">
             <LyraMessage text={LYRA_CELESTIAL.moonExplain} />
-            <div className="flex items-center gap-3 mt-3">
+            <div className="flex items-center gap-2 mt-4">
               <Switch
                 id="knows-time"
                 checked={knowsTime}
@@ -321,7 +321,7 @@ function GuidedSetup({
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
-                className="flex gap-3 mt-3"
+                className="flex gap-4 mt-4"
               >
                 <div className="flex-1 space-y-1">
                   <Label className="text-white/50 text-xs">Hour</Label>
@@ -407,7 +407,7 @@ function GuidedSetup({
         {/* REVEAL */}
         {step === "reveal" && revealedProfile && (
           <StepWrapper key="reveal">
-            <div className="flex flex-wrap justify-center gap-3 py-4">
+            <div className="flex flex-wrap justify-center gap-2 py-4">
               <PlacementBadge
                 placement="sun"
                 sign={revealedProfile.sunSign}
@@ -458,7 +458,7 @@ function CompactDisplay({
   const hasPartialData = !profile.birthTimeKnown || !profile.birthLocationName;
 
   return (
-    <GlassPanel className={cn("p-5 sm:p-6 space-y-4", className)}>
+    <GlassPanel className={cn("p-4 space-y-4", className)}>
       <div className="flex items-center justify-between">
         <SectionHeader>Celestial Profile</SectionHeader>
         <div className="flex items-center gap-2">
@@ -471,7 +471,7 @@ function CompactDisplay({
           </button>
           <button
             onClick={onEdit}
-            className="flex items-center gap-1 text-xs text-[#c9a94e] hover:text-[#daa520] font-medium transition-colors"
+            className="flex items-center gap-1 text-xs text-gold hover:text-gold-bright font-medium transition-colors"
           >
             <Pencil className="w-3.5 h-3.5" />
             Edit
@@ -515,7 +515,7 @@ function CompactDisplay({
       {hasPartialData && (
         <button
           onClick={onEdit}
-          className="flex items-center gap-1 text-xs text-[#c9a94e]/70 hover:text-[#c9a94e] transition-colors"
+          className="flex items-center gap-1 text-xs text-gold/70 hover:text-gold transition-colors"
         >
           {!profile.birthTimeKnown
             ? LYRA_CELESTIAL.partialNudge.noTime
@@ -604,7 +604,7 @@ function EditForm({
   }, [birthDate, knowsTime, hour, minute, cityKey, onSave]);
 
   return (
-    <GlassPanel className={cn("p-5 sm:p-6 space-y-4", className)}>
+    <GlassPanel className={cn("p-4 space-y-4", className)}>
       <SectionHeader>Edit Celestial Profile</SectionHeader>
 
       {/* Date */}
@@ -623,8 +623,8 @@ function EditForm({
       </div>
 
       {/* Time toggle + selects */}
-      <div className="space-y-3">
-        <div className="flex items-center gap-3">
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
           <Switch
             id="edit-knows-time"
             checked={knowsTime}
@@ -635,7 +635,7 @@ function EditForm({
           </Label>
         </div>
         {knowsTime && (
-          <div className="flex gap-3">
+          <div className="flex gap-4">
             <div className="flex-1 space-y-1">
               <Label className="text-white/50 text-xs">Hour</Label>
               <Select value={hour} onValueChange={setHour}>
@@ -695,7 +695,7 @@ function EditForm({
       )}
 
       {/* Actions */}
-      <div className="flex gap-3 pt-2">
+      <div className="flex gap-4 pt-2">
         <button
           onClick={onCancel}
           className="flex-1 px-4 py-2.5 rounded-xl text-sm text-white/60 hover:text-white/80 bg-white/5 hover:bg-white/10 border border-white/10 transition-colors"

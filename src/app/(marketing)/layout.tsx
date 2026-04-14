@@ -1,5 +1,6 @@
 import { MarketingNavbar } from "@/components/layout/marketing-navbar";
 import { MarketingFooter } from "@/components/layout/marketing-footer";
+import { FeedbackFab } from "@/components/feedback/feedback-fab";
 import { getCurrentUser } from "@/lib/auth/helpers";
 
 export default async function MarketingLayout({
@@ -14,6 +15,7 @@ export default async function MarketingLayout({
       <MarketingNavbar user={user} />
       <main className="flex-1">{children}</main>
       <MarketingFooter />
+      <FeedbackFab />
     </div>
   );
 }

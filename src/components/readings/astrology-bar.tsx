@@ -69,7 +69,7 @@ function PlacementBadge({
       {isActive && (
         <motion.span
           layoutId="astro-active-dot"
-          className="w-1.5 h-1.5 rounded-full bg-[#c9a94e]"
+          className="w-1.5 h-1.5 rounded-full bg-gold"
           transition={{ type: "spring", stiffness: 500, damping: 30 }}
         />
       )}

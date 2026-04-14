@@ -16,7 +16,7 @@ export function StepChatPreview({ className }: StepChatPreviewProps) {
     <div
       ref={containerRef}
       className={cn(
-        "bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4",
+        "bg-white/[0.03] backdrop-blur-sm border border-white/[0.06] rounded-2xl p-4",
         "max-w-[320px]",
         "flex flex-col gap-3",
         className
@@ -43,7 +43,7 @@ export function StepChatPreview({ className }: StepChatPreviewProps) {
           damping: 30,
           delay: 0.4,
         }}
-        className="bg-[#c9a94e]/10 border border-[#c9a94e]/20 rounded-2xl rounded-bl-sm px-3 py-2 text-sm text-[#c9a94e]/80 max-w-[85%]"
+        className="bg-gold/10 border border-gold/20 rounded-2xl rounded-bl-sm px-3 py-2 text-sm text-gold/80 max-w-[85%]"
       >
         A garden of memory and safety... let&apos;s weave that into a card that
         honors where you found peace.

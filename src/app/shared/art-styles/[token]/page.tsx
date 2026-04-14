@@ -40,7 +40,7 @@ export default async function SharedArtStylePage({
     <div className="max-w-4xl mx-auto px-4 py-8">
       {/* Header */}
       <div className="mb-8 text-center">
-        <h1 className="text-2xl font-bold">{style.name}</h1>
+        <h1 className="text-2xl font-bold font-display">{style.name}</h1>
         <p className="text-muted-foreground mt-2 max-w-lg mx-auto">
           {style.description}
         </p>

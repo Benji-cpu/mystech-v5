@@ -856,7 +856,7 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
                 key={i}
                 animate={{ opacity: [0.3, 1, 0.3] }}
                 transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.4 }}
-                className="h-1.5 w-1.5 rounded-full bg-[#c9a94e]"
+                className="h-1.5 w-1.5 rounded-full bg-gold"
               />
             ))}
           </div>
@@ -890,9 +890,9 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
                 <div
                   className={cn(
                     "flex items-center gap-3 px-4 py-2.5 rounded-xl",
-                    "bg-white/5 backdrop-blur-xl border",
+                    "bg-white/[0.03] backdrop-blur-sm border",
                     chronicleCardId
-                      ? "border-[#c9a94e]/50 shadow-[0_0_12px_rgba(201,169,78,0.12)]"
+                      ? "border-gold/50 shadow-[0_0_12px_rgba(201,169,78,0.12)]"
                       : "border-white/10 opacity-60"
                   )}
                 >
@@ -911,7 +911,7 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
                     })}
                     aria-label="Preview Chronicle card"
                   >
-                    <BookOpen className="w-4 h-4 text-[#c9a94e] shrink-0" />
+                    <BookOpen className="w-4 h-4 text-gold shrink-0" />
                     <div className="flex-1 min-w-0">
                       <span className="text-xs text-white/50 leading-none block mb-0.5">
                         Today&apos;s Chronicle Card
@@ -1073,7 +1073,7 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
                 "px-8 py-3 rounded-xl font-medium text-sm",
                 "transition-all duration-300",
                 canBegin
-                  ? "bg-gradient-to-r from-[#c9a94e] to-[#b89840] text-[#0a0118] shadow-lg shadow-[#c9a94e]/20 hover:shadow-xl hover:shadow-[#c9a94e]/30"
+                  ? "bg-gradient-to-r from-gold to-[#b89840] text-surface-deep shadow-lg shadow-gold/20 hover:shadow-xl hover:shadow-gold/30"
                   : "bg-white/10 text-white/30 cursor-not-allowed"
               )}
             >
@@ -1114,7 +1114,7 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
                 {isSettled && phase === "drawing" && (
                   <LyraSigil size="sm" state="speaking" />
                 )}
-                <p className="text-[#c9a94e] text-sm sm:text-base">
+                <p className="text-gold text-sm sm:text-base">
                   {renderBoldMarkdown(statusText)}
                 </p>
               </motion.div>
@@ -1235,7 +1235,7 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
           if (isPresenting) setTextZoneVisible(true);
         }}
       >
-        <div className="relative h-full overflow-y-auto bg-white/5 backdrop-blur-xl border border-white/10 rounded-t-2xl mx-2 sm:mx-4 p-4 sm:p-6">
+        <div className="relative h-full overflow-y-auto bg-white/[0.03] backdrop-blur-sm border border-white/[0.06] rounded-t-2xl mx-2 sm:mx-4 p-4 sm:p-6">
           {isPresenting && (
             <CardByCardInterpretation
               object={presentation.object}

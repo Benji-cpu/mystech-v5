@@ -73,7 +73,7 @@ export function ObstacleProposal({ readingId, className }: ObstacleProposalProps
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
           className={cn(
             "rounded-2xl overflow-hidden",
-            "bg-white/5 backdrop-blur-xl",
+            "bg-white/[0.03] backdrop-blur-sm",
             "border border-amber-500/20",
             "shadow-[0_0_20px_rgba(245,158,11,0.1)]",
             className,

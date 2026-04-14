@@ -5,12 +5,12 @@ export interface Mood {
 
 /** Named mood presets for imperative use by flow components */
 export const moodPresets = {
-  default:         { primaryHue: 285, sparkleColor: "#c9a94e" },
-  "reading-setup": { primaryHue: 280, sparkleColor: "#c9a94e" },
+  default:         { primaryHue: 285, sparkleColor: "var(--gold)" },
+  "reading-setup": { primaryHue: 280, sparkleColor: "var(--gold)" },
   "card-draw":     { primaryHue: 260, sparkleColor: "#7c9aff" },
   "card-reveal":   { primaryHue: 250, sparkleColor: "#ffd700" },
   forging:         { primaryHue: 30,  sparkleColor: "#ff8c00" },
-  completion:      { primaryHue: 290, sparkleColor: "#c9a94e" },
+  completion:      { primaryHue: 290, sparkleColor: "var(--gold)" },
   midnight:        { primaryHue: 240, sparkleColor: "#4a6cf7" },
   golden:          { primaryHue: 315, sparkleColor: "#ffd700" },
 } as const satisfies Record<string, Mood>;
@@ -18,17 +18,17 @@ export const moodPresets = {
 export type MoodPresetName = keyof typeof moodPresets;
 
 const routeMoods: Record<string, Mood> = {
-  "/dashboard": { primaryHue: 285, sparkleColor: "#c9a94e" },
-  "/decks": { primaryHue: 270, sparkleColor: "#c9a94e" },
+  "/dashboard": { primaryHue: 285, sparkleColor: "var(--gold)" },
+  "/decks": { primaryHue: 270, sparkleColor: "var(--gold)" },
   "/decks/new": { primaryHue: 30, sparkleColor: "#ff8c00" },
-  "/readings": { primaryHue: 280, sparkleColor: "#c9a94e" },
+  "/readings": { primaryHue: 280, sparkleColor: "var(--gold)" },
   "/readings/new": { primaryHue: 260, sparkleColor: "#7c9aff" },
   "/art-styles": { primaryHue: 240, sparkleColor: "#4a6cf7" },
-  "/settings": { primaryHue: 285, sparkleColor: "#c9a94e" },
-  "/admin": { primaryHue: 285, sparkleColor: "#c9a94e" },
+  "/settings": { primaryHue: 285, sparkleColor: "var(--gold)" },
+  "/admin": { primaryHue: 285, sparkleColor: "var(--gold)" },
 };
 
-const defaultMood: Mood = { primaryHue: 285, sparkleColor: "#c9a94e" };
+const defaultMood: Mood = { primaryHue: 285, sparkleColor: "var(--gold)" };
 
 /**
  * Find the best matching mood for a pathname.

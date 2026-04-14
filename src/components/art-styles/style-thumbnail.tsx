@@ -67,8 +67,8 @@ export function StyleThumbnail({
         "relative overflow-hidden rounded-lg transition-all",
         sizeClasses[size],
         selected
-          ? "ring-2 ring-[#c9a94e] ring-offset-2 ring-offset-background"
-          : "ring-1 ring-border hover:ring-[#c9a94e]/50",
+          ? "ring-2 ring-gold ring-offset-2 ring-offset-background"
+          : "ring-1 ring-border hover:ring-gold/50",
         onClick && "cursor-pointer"
       )}
     >

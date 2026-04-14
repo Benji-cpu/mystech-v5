@@ -167,7 +167,7 @@ function FloatingCard({ card, className, cardSize = "w-[90px] h-[135px] md:w-[13
           alt={card.alt}
           fill
           sizes="(max-width: 768px) 90px, 130px"
-          className="object-cover rounded-xl border border-[#c9a94e]/20 shadow-lg shadow-black/40"
+          className="object-cover rounded-xl border border-gold/20 shadow-lg shadow-black/40"
         />
       </div>
     </motion.div>

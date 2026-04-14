@@ -340,7 +340,7 @@ export function EmergenceReveal({ card, onCardRevealed }: EmergenceRevealProps) 
             key={statusLabel}
             className={cn(
               'absolute top-[12%] left-0 right-0 text-center text-sm tracking-widest uppercase z-10',
-              isObstacle ? 'text-purple-300/70' : 'text-[#c9a94e]/70',
+              isObstacle ? 'text-purple-300/70' : 'text-gold/70',
             )}
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}

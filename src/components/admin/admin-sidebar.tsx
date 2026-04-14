@@ -9,6 +9,7 @@ import {
   BookOpen,
   ScrollText,
   Users,
+  MessageSquarePlus,
   ArrowLeft,
   Shield,
 } from "lucide-react";
@@ -21,6 +22,7 @@ const navItems = [
   { href: "/admin/readings", label: "Readings", icon: BookOpen },
   { href: "/admin/logs", label: "Generation Logs", icon: ScrollText },
   { href: "/admin/users", label: "Users", icon: Users },
+  { href: "/admin/feedback", label: "Feedback", icon: MessageSquarePlus },
 ];
 
 export function AdminSidebar() {

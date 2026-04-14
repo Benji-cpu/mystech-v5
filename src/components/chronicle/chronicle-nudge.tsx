@@ -42,12 +42,12 @@ export function ChronicleNudge({
     <Link href={href}>
       <GlassPanel
         className={cn(
-          "p-4 flex items-center gap-3 border-[#c9a94e]/20 hover:border-[#c9a94e]/40 transition-colors cursor-pointer",
+          "p-4 flex items-center gap-3 border-gold/20 hover:border-gold/40 transition-colors cursor-pointer",
           className
         )}
       >
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#c9a94e]/10 shrink-0">
-          <ScrollText className="h-5 w-5 text-[#c9a94e]" />
+        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gold/10 shrink-0">
+          <ScrollText className="h-5 w-5 text-gold" />
         </div>
         <p className="text-sm text-white/60">{message}</p>
       </GlassPanel>

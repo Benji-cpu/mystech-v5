@@ -172,7 +172,7 @@ export function BillingPageClient({
                 mystical experience.
               </p>
 
-              <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3">
+              <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-4">
                 <h4 className="font-semibold flex items-center gap-2">
                   <Sparkles className="h-4 w-4 text-primary" />
                   Pro Benefits

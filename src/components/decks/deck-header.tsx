@@ -22,7 +22,7 @@ export function DeckHeader({ deck, artStyleName, shareToken, isAdopter, ownerNam
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold text-white/90">{deck.title}</h1>
+            <h1 className="text-2xl font-bold text-white/90 font-display leading-relaxed">{deck.title}</h1>
             <Badge
               variant={deck.status === "completed" ? "default" : "secondary"}
             >
@@ -32,7 +32,7 @@ export function DeckHeader({ deck, artStyleName, shareToken, isAdopter, ownerNam
           {deck.description && (
             <p className="text-white/60">{deck.description}</p>
           )}
-          <div className="flex items-center gap-3 text-sm text-[#c9a94e]">
+          <div className="flex items-center gap-3 text-sm text-gold">
             <span>
               {deck.cardCount} card{deck.cardCount !== 1 ? "s" : ""}
             </span>

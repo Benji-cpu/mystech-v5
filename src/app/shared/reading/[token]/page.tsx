@@ -66,7 +66,7 @@ export default async function SharedReadingPage({
         <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
           {reading.deckTitle}
         </p>
-        <h1 className="text-2xl font-bold">
+        <h1 className="text-2xl font-bold font-display">
           {SPREAD_LABELS[spreadType]} Reading
         </h1>
         <p className="text-muted-foreground text-sm mt-1">

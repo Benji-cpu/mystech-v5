@@ -45,13 +45,13 @@ export function LyraGreeting({
 
   return (
     <div
-      className={`bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-5 space-y-2 ${className ?? ""}`}
+      className={`bg-white/[0.03] backdrop-blur-sm border border-white/[0.06] rounded-2xl p-5 space-y-2 ${className ?? ""}`}
     >
       <p className="text-sm text-muted-foreground inline-flex items-center gap-2">
         <LyraSigil size="sm" state="attentive" className="shrink-0" />
         <span>
           {userName && userName !== "Seeker" && (
-            <span className="text-[#c9a94e]/80">{userName}, </span>
+            <span className="text-gold/80">{userName}, </span>
           )}
           {greeting}
         </span>
@@ -70,7 +70,7 @@ export function LyraGreeting({
       )}
 
       {alignment?.note && (
-        <p className="text-xs text-[#c9a94e]/70 leading-relaxed">
+        <p className="text-xs text-gold/70 leading-relaxed">
           {alignment.note}
         </p>
       )}

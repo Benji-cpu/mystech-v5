@@ -17,7 +17,7 @@ import {
   LYRA_OBSTACLE_REVEAL,
 } from "@/components/guide/lyra-constants";
 import { LyraForging } from "@/components/guide/lyra-forging";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import type { ArtStyle } from "@/types";
 
 // ── Spring config ─────────────────────────────────────────────────────────────
@@ -138,6 +138,7 @@ interface SimpleCreateFormProps {
 function StepIndicator({ phase }: { phase: Phase }) {
   const isForging = phase === "forging" || phase === "reveal";
   const activeIndex = isForging ? PHASE_ORDER.length : PHASE_ORDER.indexOf(phase);
+  const prefersReducedMotion = useReducedMotion();
   return (
     <div className="flex items-center justify-center gap-2 py-4">
       {PHASE_ORDER.map((p, i) => (
@@ -153,10 +154,10 @@ function StepIndicator({ phase }: { phase: Phase }) {
                 : i < activeIndex
                   ? "rgba(201, 169, 78, 0.4)"
                   : "rgba(255, 255, 255, 0.15)",
-            opacity: isForging ? [1, 0.5, 1] : 1,
+            opacity: isForging && !prefersReducedMotion ? [1, 0.5, 1] : 1,
           }}
           transition={
-            isForging
+            isForging && !prefersReducedMotion
               ? { opacity: { repeat: Infinity, duration: 2, ease: "easeInOut" }, ...SPRING }
               : SPRING
           }
@@ -210,7 +211,7 @@ function CardCountStep({
             className={cn(
               "rounded-xl px-5 py-3 text-sm font-medium transition-colors border min-w-[48px]",
               !isCustomCount && cardCount === count
-                ? "bg-[#c9a94e]/20 border-[#c9a94e] text-[#c9a94e]"
+                ? "bg-gold/20 border-gold text-gold"
                 : "bg-white/5 border-white/10 text-white/60 hover:border-white/20 hover:text-white/80"
             )}
           >
@@ -228,7 +229,7 @@ function CardCountStep({
             }
             onBlur={() => dispatch({ type: "DISABLE_CUSTOM_COUNT" })}
             disabled={disabled}
-            className="w-20 rounded-xl bg-white/5 border border-white/10 px-3 py-3 text-sm text-white/90 focus:border-[#c9a94e] focus:outline-none"
+            className="w-20 rounded-xl bg-white/5 border border-white/10 px-3 py-3 text-sm text-white/90 focus:border-gold focus:outline-none"
             autoFocus
             placeholder="1-30"
           />
@@ -331,7 +332,7 @@ function VisionStep({
           disabled={disabled}
           rows={5}
           maxLength={1000}
-          className="w-full resize-none rounded-xl bg-white/5 border border-white/10 px-4 py-3 pr-14 text-white/90 placeholder-transparent focus:border-[#c9a94e]/50 focus:outline-none focus:ring-1 focus:ring-[#c9a94e]/30 transition-colors"
+          className="w-full resize-none rounded-xl bg-white/5 border border-white/10 px-4 py-3 pr-14 text-white/90 placeholder-transparent focus:border-gold/50 focus:outline-none focus:ring-1 focus:ring-gold/30 transition-colors"
         />
         {/* Rotating placeholder overlay */}
         {vision.length === 0 && (
@@ -396,7 +397,7 @@ function RevealView({ title, obstacleCount }: { title: string; obstacleCount: nu
     >
       {/* Golden flash ring */}
       <motion.div
-        className="h-20 w-20 rounded-full border-2 border-[#c9a94e]"
+        className="h-20 w-20 rounded-full border-2 border-gold"
         initial={{
           boxShadow: "0 0 60px rgba(201, 169, 78, 0.6)",
           borderColor: "rgba(201, 169, 78, 0.8)",
@@ -413,7 +414,7 @@ function RevealView({ title, obstacleCount }: { title: string; obstacleCount: nu
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3, ...SPRING }}
-        className="text-xl font-semibold text-[#c9a94e] text-center px-4"
+        className="text-xl font-semibold text-gold text-center px-4"
       >
         {title}
       </motion.h2>

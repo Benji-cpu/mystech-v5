@@ -49,7 +49,7 @@ export function DeleteAccount() {
   }
 
   return (
-    <GlassPanel className="border-destructive/30 p-6">
+    <GlassPanel className="border-destructive/30 p-4">
       <h3 className="text-sm font-semibold text-destructive mb-1">Danger Zone</h3>
       <p className="text-sm text-white/40 mb-4">
         Permanently delete your account and all associated data.

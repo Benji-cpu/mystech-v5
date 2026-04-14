@@ -181,7 +181,7 @@ export function ParameterControls({
       {/* Basic Controls */}
       <div
         className={cn(
-          'rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10',
+          'rounded-2xl bg-white/[0.03] backdrop-blur-sm border border-white/[0.06]',
           'p-4 space-y-4',
         )}
       >
@@ -230,7 +230,7 @@ export function ParameterControls({
           'text-sm font-medium transition-colors',
           'min-h-[44px]',
           isPro
-            ? 'bg-white/5 backdrop-blur-xl border-white/10 hover:border-primary/30 cursor-pointer'
+            ? 'bg-white/[0.03] backdrop-blur-sm border-white/[0.06] hover:border-primary/30 cursor-pointer'
             : 'bg-white/[0.03] border-white/5 cursor-default opacity-60',
         )}
         disabled={!isPro}
@@ -270,7 +270,7 @@ export function ParameterControls({
           >
             <div
               className={cn(
-                'rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10',
+                'rounded-2xl bg-white/[0.03] backdrop-blur-sm border border-white/[0.06]',
                 'p-4 space-y-5',
               )}
             >

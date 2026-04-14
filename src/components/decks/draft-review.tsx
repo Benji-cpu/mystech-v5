@@ -243,7 +243,7 @@ export function DraftReview({
               className={cn(
                 "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors border",
                 viewMode === mode.key
-                  ? "bg-[#c9a94e]/20 border-[#c9a94e] text-[#c9a94e]"
+                  ? "bg-gold/20 border-gold text-gold"
                   : "border-border text-muted-foreground hover:text-foreground"
               )}
             >

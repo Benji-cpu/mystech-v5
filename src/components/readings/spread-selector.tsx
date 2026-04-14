@@ -127,7 +127,7 @@ export function SpreadSelector({
               onClick={() => !isLocked && !tooFewCards && onSelect(spread.type)}
               disabled={isLocked || tooFewCards}
               className={cn(
-                "w-full bg-white/5 backdrop-blur-xl border rounded-xl p-4 flex items-center justify-between",
+                "w-full bg-white/[0.03] backdrop-blur-sm border rounded-xl p-4 flex items-center justify-between",
                 isLocked || tooFewCards
                   ? "border-white/5 opacity-50 cursor-not-allowed"
                   : "border-white/10 cursor-pointer",
@@ -164,7 +164,7 @@ export function SpreadSelector({
                       className={cn(
                         "w-2 h-3 rounded-sm border",
                         isSelected
-                          ? "bg-[#c9a94e]/30 border-[#c9a94e]/50"
+                          ? "bg-gold/30 border-gold/50"
                           : "bg-white/10 border-white/20"
                       )}
                     />
@@ -204,7 +204,7 @@ export function SpreadSelector({
               onClick={() => !isLocked && !tooFewCards && onSelect(spread.type)}
               disabled={isLocked || tooFewCards}
               className={cn(
-                "relative bg-white/5 backdrop-blur-xl border rounded-2xl p-5 text-left overflow-hidden group",
+                "relative bg-white/[0.03] backdrop-blur-sm border rounded-2xl p-5 text-left overflow-hidden group",
                 isLocked || tooFewCards
                   ? "border-white/5 opacity-50 cursor-not-allowed"
                   : "border-white/10 cursor-pointer",
@@ -212,7 +212,7 @@ export function SpreadSelector({
               )}
             >
               {/* Hover glow */}
-              <div className="absolute inset-0 bg-gradient-to-br from-[#c9a94e]/0 to-[#c9a94e]/0 group-hover:from-[#c9a94e]/10 group-hover:to-transparent transition-all duration-500" />
+              <div className="absolute inset-0 bg-gradient-to-br from-gold/0 to-gold/0 group-hover:from-gold/10 group-hover:to-transparent transition-all duration-500" />
 
               <div className="relative z-10">
                 <div className="flex items-center justify-between mb-1">

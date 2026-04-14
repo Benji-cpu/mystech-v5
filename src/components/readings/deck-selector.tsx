@@ -77,7 +77,7 @@ export function DeckSelector({
   if (compact && selectedDeck) {
     return (
       <div className={cn("flex items-center gap-2", className)}>
-        <div className="w-8 h-8 rounded-lg overflow-hidden bg-gradient-to-br from-[#1a0530] to-[#0a0118] border border-white/10 shrink-0">
+        <div className="w-8 h-8 rounded-lg overflow-hidden bg-gradient-to-br from-surface-mid to-surface-deep border border-white/10 shrink-0">
           {selectedDeck.coverImageUrl ? (
             <img
               src={selectedDeck.coverImageUrl}
@@ -123,7 +123,7 @@ export function DeckSelector({
             )}
           >
             {/* Cover image or gradient */}
-            <div className="aspect-[3/2] rounded-lg overflow-hidden mb-2 bg-gradient-to-br from-[#1a0530] to-[#0a0118]">
+            <div className="aspect-[3/2] rounded-lg overflow-hidden mb-2 bg-gradient-to-br from-surface-mid to-surface-deep">
               {deck.coverImageUrl ? (
                 <img
                   src={deck.coverImageUrl}

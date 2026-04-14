@@ -51,15 +51,15 @@ export function JourneyContextBanner({
       transition={{ type: 'spring', stiffness: 300, damping: 30 }}
       className={cn(
         'relative overflow-hidden rounded-xl',
-        'bg-white/5 backdrop-blur-xl',
-        pacingBlocked ? 'border border-white/10' : 'border border-[#c9a94e]/30',
+        'bg-white/[0.03] backdrop-blur-sm',
+        pacingBlocked ? 'border border-white/10' : 'border border-gold/30',
         'shadow-lg shadow-purple-900/20',
         'p-4',
         className
       )}
     >
       {/* Subtle gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#c9a94e]/5 via-transparent to-purple-500/5 pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-br from-gold/5 via-transparent to-purple-500/5 pointer-events-none" />
 
       <div className="relative z-10">
         {/* Path position — prominent display */}
@@ -71,7 +71,7 @@ export function JourneyContextBanner({
         </div>
 
         {/* Breadcrumb position */}
-        <p className={cn('text-xs font-medium mb-3 ml-6', pacingBlocked ? 'text-white/30' : 'text-[#c9a94e]/80')}>
+        <p className={cn('text-xs font-medium mb-3 ml-6', pacingBlocked ? 'text-white/30' : 'text-gold/80')}>
           {retreatName}
           {hasProgress && (
             <span className="text-muted-foreground">
@@ -96,7 +96,7 @@ export function JourneyContextBanner({
                   i < waypointIndex
                     ? 'w-4 bg-emerald-500/80'
                     : i === waypointIndex
-                      ? 'w-6 bg-[#c9a94e]'
+                      ? 'w-6 bg-gold'
                       : 'w-3 bg-white/15'
                 )}
               />
@@ -126,11 +126,11 @@ export function JourneyContextBanner({
           <div className={cn(
             'flex items-start gap-2.5 px-3 py-2.5',
             'rounded-lg',
-            'border border-[#c9a94e]/20',
-            'bg-[#c9a94e]/5'
+            'border border-gold/20',
+            'bg-gold/5'
           )}>
             <Sparkles className="h-4 w-4 text-[color:var(--gold)] shrink-0 mt-0.5" />
-            <p className="text-sm text-[#c9a94e] italic font-medium leading-relaxed">
+            <p className="text-sm text-gold italic font-medium leading-relaxed">
               &ldquo;{suggestedIntention}&rdquo;
             </p>
           </div>

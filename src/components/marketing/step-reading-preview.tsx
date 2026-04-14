@@ -40,7 +40,7 @@ function FlipCard({ name, image, flipDelay, triggerFlip }: FlipCardProps) {
       <motion.div
         className={cn(
           "absolute inset-0 rounded-xl overflow-hidden",
-          "border border-[#c9a94e]/40",
+          "border border-gold/40",
           "bg-gradient-to-b from-[#180428] to-[#0d0020]"
         )}
         animate={{ rotateY: flipped ? -180 : 0 }}
@@ -53,18 +53,18 @@ function FlipCard({ name, image, flipDelay, triggerFlip }: FlipCardProps) {
       >
         {/* Sacred geometry */}
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-8 h-8 border border-[#c9a94e]/30 rotate-45" />
-          <div className="absolute w-6 h-6 border border-[#c9a94e]/20 rounded-full" />
-          <div className="absolute w-10 h-10 border border-[#c9a94e]/10 rounded-full" />
+          <div className="w-8 h-8 border border-gold/30 rotate-45" />
+          <div className="absolute w-6 h-6 border border-gold/20 rounded-full" />
+          <div className="absolute w-10 h-10 border border-gold/10 rounded-full" />
         </div>
-        <div className="absolute inset-[3px] rounded-[9px] border border-[#c9a94e]/20 pointer-events-none" />
+        <div className="absolute inset-[3px] rounded-[9px] border border-gold/20 pointer-events-none" />
       </motion.div>
 
       {/* Front face — pre-rotated 180deg so it faces forward after flip */}
       <motion.div
         className={cn(
           "absolute inset-0 rounded-xl overflow-hidden",
-          "border border-[#c9a94e]/40",
+          "border border-gold/40",
           "shadow-lg shadow-purple-900/30"
         )}
         animate={{ rotateY: flipped ? 0 : 180 }}
@@ -83,7 +83,7 @@ function FlipCard({ name, image, flipDelay, triggerFlip }: FlipCardProps) {
         />
         {/* Title overlay */}
         <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-1 py-1">
-          <p className="text-center text-[9px] font-medium text-[#c9a94e] tracking-wide truncate">
+          <p className="text-center text-[9px] font-medium text-gold tracking-wide truncate">
             {name}
           </p>
         </div>
@@ -129,7 +129,7 @@ export function StepReadingPreview({ className }: StepReadingPreviewProps) {
           showInterpretation ? { opacity: 1, y: 0 } : { opacity: 0, y: 8 }
         }
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        className="text-sm text-[#c9a94e]/70 text-center italic mt-3"
+        className="text-sm text-gold/70 text-center italic mt-3"
       >
         The Dreamer asks you to trust what&apos;s emerging...
       </motion.p>

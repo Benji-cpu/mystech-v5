@@ -46,7 +46,7 @@ function CardItem({
       className={cn(
         'relative shrink-0 overflow-hidden rounded-xl',
         'w-[120px] h-[180px] sm:w-[150px] sm:h-[225px]',
-        'border border-[#c9a94e]/20',
+        'border border-gold/20',
         'shadow-lg shadow-purple-900/20',
       )}
       whileHover={{ scale: 1.05, y: -8 }}
@@ -78,7 +78,7 @@ export function ArtStyleMarquee({ className }: ArtStyleMarqueeProps) {
       )}
     >
       <ScrollReveal className="text-center px-6">
-        <h2 className="text-2xl sm:text-3xl font-bold">
+        <h2 className="text-2xl sm:text-3xl font-bold font-display">
           Every story deserves its own aesthetic
         </h2>
         <p className="mt-3 text-muted-foreground">

@@ -28,14 +28,14 @@ export function VoiceToggle() {
       className={cn(
         "relative flex h-9 w-9 items-center justify-center rounded-lg transition-colors",
         "hover:bg-white/10",
-        preferences.enabled && "text-[#c9a94e]",
+        preferences.enabled && "text-gold",
         !preferences.enabled && "text-muted-foreground"
       )}
       aria-label={preferences.enabled ? "Disable voice" : "Enable voice"}
     >
       <Icon className="h-4 w-4" />
       {preferences.enabled && (
-        <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-[#c9a94e] animate-pulse" />
+        <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-gold animate-pulse" />
       )}
     </button>
   );

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { LyraSigil } from "@/components/guide/lyra-sigil";
 import { LYRA_FORGING_MESSAGES } from "@/components/guide/lyra-constants";
@@ -39,6 +39,7 @@ export function LyraForging({
   className,
 }: LyraForgingProps) {
   const [messageIndex, setMessageIndex] = useState(0);
+  const prefersReducedMotion = useReducedMotion();
 
   useEffect(() => {
     if (message) return; // static message, no rotation
@@ -61,14 +62,18 @@ export function LyraForging({
       {/* Outer ambient glow */}
       <motion.div
         className="absolute inset-0 pointer-events-none"
-        animate={{
-          background: [
-            "radial-gradient(ellipse 60% 60% at 50% 50%, rgba(201,169,78,0.08) 0%, transparent 70%)",
-            "radial-gradient(ellipse 80% 80% at 50% 50%, rgba(201,169,78,0.15) 0%, transparent 70%)",
-            "radial-gradient(ellipse 60% 60% at 50% 50%, rgba(201,169,78,0.08) 0%, transparent 70%)",
-          ],
-        }}
-        transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+        animate={
+          prefersReducedMotion
+            ? { background: "radial-gradient(ellipse 70% 70% at 50% 50%, rgba(201,169,78,0.1) 0%, transparent 70%)" }
+            : {
+                background: [
+                  "radial-gradient(ellipse 60% 60% at 50% 50%, rgba(201,169,78,0.08) 0%, transparent 70%)",
+                  "radial-gradient(ellipse 80% 80% at 50% 50%, rgba(201,169,78,0.15) 0%, transparent 70%)",
+                  "radial-gradient(ellipse 60% 60% at 50% 50%, rgba(201,169,78,0.08) 0%, transparent 70%)",
+                ],
+              }
+        }
+        transition={prefersReducedMotion ? { duration: 0 } : { duration: 3, repeat: Infinity, ease: "easeInOut" }}
       />
 
       {/* Central visual wrapper */}
@@ -82,8 +87,8 @@ export function LyraForging({
         {/* Orbiting dashed gold ring */}
         <motion.div
           className="absolute inset-0 flex items-center justify-center"
-          animate={{ rotate: 360 }}
-          transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+          animate={prefersReducedMotion ? { rotate: 0 } : { rotate: 360 }}
+          transition={prefersReducedMotion ? { duration: 0 } : { duration: 8, repeat: Infinity, ease: "linear" }}
         >
           <svg width="136" height="136" viewBox="0 0 136 136" fill="none">
             <circle
@@ -97,9 +102,9 @@ export function LyraForging({
             />
             <defs>
               <linearGradient id="goldRingForging" x1="0" y1="0" x2="136" y2="136" gradientUnits="userSpaceOnUse">
-                <stop offset="0%" stopColor="#c9a94e" stopOpacity="0.8" />
+                <stop offset="0%" stopColor="var(--gold)" stopOpacity="0.8" />
                 <stop offset="50%" stopColor="#ffd700" stopOpacity="0.3" />
-                <stop offset="100%" stopColor="#c9a94e" stopOpacity="0.8" />
+                <stop offset="100%" stopColor="var(--gold)" stopOpacity="0.8" />
               </linearGradient>
             </defs>
           </svg>
@@ -108,8 +113,8 @@ export function LyraForging({
         {/* Counter-rotating rune ring */}
         <motion.div
           className="absolute inset-0"
-          animate={{ rotate: -360 }}
-          transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
+          animate={prefersReducedMotion ? { rotate: 0 } : { rotate: -360 }}
+          transition={prefersReducedMotion ? { duration: 0 } : { duration: 12, repeat: Infinity, ease: "linear" }}
         >
           {RUNES.map((rune, i) => {
             const angle = (i / RUNES.length) * 360;
@@ -119,14 +124,14 @@ export function LyraForging({
             return (
               <motion.span
                 key={rune}
-                className="absolute text-[10px] text-[#c9a94e]/40 font-mono select-none"
+                className="absolute text-[10px] text-gold/40 font-mono select-none"
                 style={{
                   left: cx,
                   top: cy,
                   transform: "translate(-50%, -50%)",
                 }}
-                animate={{ opacity: [0.2, 0.5, 0.2] }}
-                transition={{ duration: 2, repeat: Infinity, delay: i * 0.25 }}
+                animate={prefersReducedMotion ? { opacity: 0.4 } : { opacity: [0.2, 0.5, 0.2] }}
+                transition={prefersReducedMotion ? { duration: 0 } : { duration: 2, repeat: Infinity, delay: i * 0.25 }}
               >
                 {rune}
               </motion.span>
@@ -151,16 +156,16 @@ export function LyraForging({
                 translateX: "-50%",
                 translateY: "-50%",
               }}
-              animate={{
-                opacity: [0, 0.9, 0],
-                scale: [0.5, 1.4, 0.5],
-              }}
-              transition={{
-                duration: 2.4,
-                repeat: Infinity,
-                delay: p.delay,
-                ease: "easeInOut",
-              }}
+              animate={
+                prefersReducedMotion
+                  ? { opacity: 0.5, scale: 1 }
+                  : { opacity: [0, 0.9, 0], scale: [0.5, 1.4, 0.5] }
+              }
+              transition={
+                prefersReducedMotion
+                  ? { duration: 0 }
+                  : { duration: 2.4, repeat: Infinity, delay: p.delay, ease: "easeInOut" }
+              }
             />
           );
         })}
@@ -178,7 +183,7 @@ export function LyraForging({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.4, ease: "easeInOut" }}
-            className="text-[#c9a94e]/80 text-xs font-medium tracking-[0.15em] uppercase text-center"
+            className="text-gold/80 text-xs font-medium tracking-[0.15em] uppercase text-center"
           >
             {displayText}
           </motion.p>
@@ -188,9 +193,9 @@ export function LyraForging({
       {/* Shimmer bar */}
       <div className="relative w-32 h-0.5 bg-white/5 rounded-full overflow-hidden z-10">
         <motion.div
-          className="absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r from-transparent via-[#c9a94e]/60 to-transparent"
-          animate={{ left: ["-33%", "100%"] }}
-          transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r from-transparent via-gold/60 to-transparent"
+          animate={prefersReducedMotion ? { left: "33%" } : { left: ["-33%", "100%"] }}
+          transition={prefersReducedMotion ? { duration: 0 } : { duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
         />
       </div>
     </div>

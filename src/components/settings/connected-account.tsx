@@ -10,13 +10,13 @@ interface ConnectedAccountProps {
 
 export function ConnectedAccount({ email, image, name }: ConnectedAccountProps) {
   return (
-    <GlassPanel className="p-6">
+    <GlassPanel className="p-4">
       <SectionHeader className="mb-1">Connected Account</SectionHeader>
       <p className="text-sm text-white/40 mb-4">Your linked Google account</p>
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
         <Avatar>
           <AvatarImage src={image ?? undefined} alt={name ?? "User"} />
-          <AvatarFallback className="bg-[#c9a94e]/10 text-[#c9a94e]">
+          <AvatarFallback className="bg-gold/10 text-gold">
             {(name ?? "U").charAt(0).toUpperCase()}
           </AvatarFallback>
         </Avatar>

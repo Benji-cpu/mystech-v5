@@ -25,7 +25,7 @@ export function ScrollProgressLine({ className }: ScrollProgressLineProps) {
       )}
     >
       <motion.div
-        className="w-full h-full bg-gradient-to-b from-[#c9a94e]/60 via-[#c9a94e]/30 to-transparent origin-top"
+        className="w-full h-full bg-gradient-to-b from-gold/60 via-gold/30 to-transparent origin-top"
         style={{ scaleY }}
       />
     </div>

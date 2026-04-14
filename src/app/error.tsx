@@ -37,8 +37,8 @@ export default function RootError({ error, reset }: ErrorProps) {
         animate="animate"
         className={cn(
           'relative overflow-hidden rounded-2xl',
-          'bg-white/5 backdrop-blur-xl',
-          'border border-white/10',
+          'bg-card/80',
+          'border border-white/[0.06]',
           'shadow-lg shadow-purple-900/20',
           'w-full max-w-md p-8',
           'flex flex-col items-center text-center gap-5',
@@ -50,14 +50,14 @@ export default function RootError({ error, reset }: ErrorProps) {
         <div className="relative z-10 flex flex-col items-center gap-5">
           {/* Icon */}
           <Sparkles
-            className="text-[#c9a94e]"
+            className="text-gold"
             size={40}
             strokeWidth={1.5}
             aria-hidden="true"
           />
 
           {/* Title */}
-          <h1 className="text-2xl font-semibold tracking-wide text-[#c9a94e]">
+          <h1 className="text-2xl font-semibold tracking-wide text-gold font-display leading-relaxed">
             The threads have tangled
           </h1>
 
@@ -72,13 +72,13 @@ export default function RootError({ error, reset }: ErrorProps) {
             onClick={reset}
             className={cn(
               'mt-2 inline-flex items-center gap-2 px-6 py-3 rounded-xl',
-              'bg-[#c9a94e]/10 border border-[#c9a94e]/30',
-              'text-[#c9a94e] text-sm font-medium',
-              'hover:bg-[#c9a94e]/20 hover:border-[#c9a94e]/50',
+              'bg-gold/10 border border-gold/30',
+              'text-gold text-sm font-medium',
+              'hover:bg-gold/20 hover:border-gold/50',
               'transition-colors duration-200',
               'shadow-[0_0_20px_rgba(201,169,78,0.15)]',
               'hover:shadow-[0_0_24px_rgba(201,169,78,0.3)]',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c9a94e]/50',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/50',
             )}
           >
             <RefreshCw size={14} strokeWidth={2} aria-hidden="true" />

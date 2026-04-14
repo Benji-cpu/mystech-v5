@@ -113,7 +113,7 @@ export default function AdminUsersPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold">Users</h1>
+      <h1 className="text-2xl font-bold font-display">Users</h1>
 
       <form onSubmit={handleSearch} className="flex gap-2 max-w-sm">
         <Input

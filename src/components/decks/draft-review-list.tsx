@@ -32,7 +32,7 @@ export function DraftReviewList({
             "flex items-start gap-3 rounded-lg border p-3 transition-colors cursor-pointer",
             card.removed
               ? "border-red-500/20 bg-red-500/5 opacity-60"
-              : "border-border/50 bg-card hover:border-[#c9a94e]/30"
+              : "border-border/50 bg-card hover:border-gold/30"
           )}
           onClick={() => {
             if (!card.removed) {
@@ -47,7 +47,7 @@ export function DraftReviewList({
               "flex-shrink-0 mt-0.5 h-6 w-6 rounded-md border flex items-center justify-center transition-colors",
               card.removed
                 ? "border-red-500/40 bg-red-500/10 text-red-400"
-                : "border-[#c9a94e]/40 bg-[#c9a94e]/10 text-[#c9a94e]"
+                : "border-gold/40 bg-gold/10 text-gold"
             )}
           >
             {card.removed ? (

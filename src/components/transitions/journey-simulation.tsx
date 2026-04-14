@@ -210,7 +210,7 @@ function JourneyCard({
             transition={{ duration: 0.6, delay: index * 0.15 }}
             className="text-center"
           >
-            <p className="text-[10px] text-[#c9a94e]/80 font-medium">
+            <p className="text-[10px] text-gold/80 font-medium">
               {card.title}
             </p>
             <p className="text-[9px] text-muted-foreground mt-0.5 max-w-[100px]">

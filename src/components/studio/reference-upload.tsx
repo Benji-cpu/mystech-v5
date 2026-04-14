@@ -355,7 +355,7 @@ export function ReferenceUpload({
             animate="animate"
             exit="exit"
             className={cn(
-              'rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10',
+              'rounded-2xl bg-white/[0.03] backdrop-blur-sm border border-white/[0.06]',
               'p-4 space-y-4',
             )}
           >

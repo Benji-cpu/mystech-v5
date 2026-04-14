@@ -159,7 +159,7 @@ export function PathDetail({
     : null;
 
   const statusBadge = isActive
-    ? { label: 'Active', className: 'border-[#c9a94e]/50 text-[#c9a94e] bg-[#c9a94e]/10' }
+    ? { label: 'Active', className: 'border-gold/50 text-gold bg-gold/10' }
     : isCompleted
       ? { label: 'Completed', className: 'border-emerald-500/50 text-emerald-400 bg-emerald-500/10' }
       : isPaused
@@ -173,14 +173,14 @@ export function PathDetail({
         <motion.div
           className={cn(
             'relative overflow-hidden rounded-2xl',
-            'bg-white/5 backdrop-blur-xl',
+            'bg-white/[0.03] backdrop-blur-sm',
             'border shadow-lg shadow-purple-900/20',
-            isActive ? 'border-[#c9a94e]/30' : 'border-white/10',
+            isActive ? 'border-gold/30' : 'border-white/10',
           )}
         >
           <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent pointer-events-none" />
           {isActive && (
-            <div className="absolute inset-0 bg-gradient-to-br from-[#c9a94e]/5 to-transparent pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-to-br from-gold/5 to-transparent pointer-events-none" />
           )}
 
           <div className="relative z-10 p-6 space-y-4">
@@ -189,7 +189,7 @@ export function PathDetail({
               <div
                 className={cn(
                   'flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl',
-                  isActive ? 'bg-[#c9a94e]/15 text-[#c9a94e]' : 'bg-white/10 text-white/60',
+                  isActive ? 'bg-gold/15 text-gold' : 'bg-white/10 text-white/60',
                 )}
               >
                 <PathIcon iconKey={path.iconKey} />
@@ -234,7 +234,7 @@ export function PathDetail({
               <Button
                 onClick={handleActivate}
                 disabled={activating || isPending}
-                className="bg-[#c9a94e] text-black hover:bg-[#c9a94e]/90 shadow-[0_0_20px_rgba(201,169,78,0.3)] w-full sm:w-auto"
+                className="bg-gold text-black hover:bg-gold/90 shadow-[0_0_20px_rgba(201,169,78,0.3)] w-full sm:w-auto"
               >
                 {activating || isPending ? (
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />

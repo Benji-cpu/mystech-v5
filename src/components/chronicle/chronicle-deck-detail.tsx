@@ -88,7 +88,7 @@ export function ChronicleDeckDetail({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-white/90 sm:text-2xl">{deckTitle}</h1>
+          <h1 className="text-xl font-bold text-white/90 sm:text-2xl font-display leading-relaxed">{deckTitle}</h1>
           <p className="text-sm text-white/40 mt-0.5">
             {cardCount} card{cardCount !== 1 ? "s" : ""} and growing
           </p>
@@ -103,10 +103,10 @@ export function ChronicleDeckDetail({
       </div>
 
       {/* Today section */}
-      <GlassPanel className="p-5 border-[#c9a94e]/20">
+      <GlassPanel className="p-5 border-gold/20">
         {completedToday && todayCard ? (
           <div>
-            <p className="text-xs text-[#c9a94e] font-medium tracking-wider uppercase mb-3">
+            <p className="text-xs text-gold font-medium tracking-wider uppercase mb-3">
               Today&apos;s Card
             </p>
             <button
@@ -126,7 +126,7 @@ export function ChronicleDeckDetail({
               }
             >
               {todayCard.imageUrl ? (
-                <div className="w-20 h-28 rounded-lg overflow-hidden flex-shrink-0 border border-white/10 group-hover:border-[#c9a94e]/40 transition-colors">
+                <div className="w-20 h-28 rounded-lg overflow-hidden flex-shrink-0 border border-white/10 group-hover:border-gold/40 transition-colors">
                   <img
                     src={todayCard.imageUrl}
                     alt={todayCard.title}
@@ -134,8 +134,8 @@ export function ChronicleDeckDetail({
                   />
                 </div>
               ) : (
-                <div className="w-20 h-28 rounded-lg bg-gradient-to-br from-[#c9a94e]/20 to-[#1a0530] border border-[#c9a94e]/20 flex items-center justify-center flex-shrink-0">
-                  <ScrollText className="h-6 w-6 text-[#c9a94e]/40" />
+                <div className="w-20 h-28 rounded-lg bg-gradient-to-br from-gold/20 to-surface-mid border border-gold/20 flex items-center justify-center flex-shrink-0">
+                  <ScrollText className="h-6 w-6 text-gold/40" />
                 </div>
               )}
               <div className="min-w-0 flex-1">
@@ -145,7 +145,7 @@ export function ChronicleDeckDetail({
                 <p className="text-xs text-white/40 mt-1 line-clamp-2">
                   {todayCard.meaning}
                 </p>
-                <p className="text-xs text-white/30 mt-2 group-hover:text-[#c9a94e]/50 transition-colors">
+                <p className="text-xs text-white/30 mt-2 group-hover:text-gold/50 transition-colors">
                   Tap to view
                 </p>
               </div>
@@ -174,10 +174,10 @@ export function ChronicleDeckDetail({
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={SPRING}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#c9a94e]/10 border border-[#c9a94e]/20"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gold/10 border border-gold/20"
             >
               <Flame className="h-3.5 w-3.5 text-orange-400" />
-              <span className="text-xs font-medium text-[#c9a94e]">{streakCount} day streak</span>
+              <span className="text-xs font-medium text-gold">{streakCount} day streak</span>
             </motion.div>
           )}
           {badges.length > 0 && (
@@ -187,7 +187,7 @@ export function ChronicleDeckDetail({
                 return (
                   <span
                     key={badge.id}
-                    className="text-sm px-1.5 py-0.5 rounded-full bg-[#c9a94e]/10 border border-[#c9a94e]/30"
+                    className="text-sm px-1.5 py-0.5 rounded-full bg-gold/10 border border-gold/30"
                     title={def?.label ?? badge.id}
                   >
                     {def?.emoji ?? "\u2726"}
@@ -211,7 +211,7 @@ export function ChronicleDeckDetail({
               animate={{ opacity: 1, y: 0 }}
               transition={SPRING}
               className={cn(
-                "flex items-center gap-4 p-4 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 hover:border-[#c9a94e]/30 transition-all",
+                "flex items-center gap-4 p-4 rounded-2xl bg-white/[0.03] backdrop-blur-sm border border-white/[0.06] hover:border-gold/30 transition-all",
                 entry.cardId && "cursor-pointer"
               )}
               onClick={
@@ -230,7 +230,7 @@ export function ChronicleDeckDetail({
                   : undefined
               }
             >
-              <div className="w-12 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-gradient-to-br from-[#1a0530] to-[#0a0118] border border-white/5">
+              <div className="w-12 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-gradient-to-br from-surface-mid to-surface-deep border border-white/5">
                 {entry.cardImageUrl ? (
                   <img
                     src={entry.cardImageUrl}
@@ -239,7 +239,7 @@ export function ChronicleDeckDetail({
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
-                    <ScrollText className="h-4 w-4 text-[#c9a94e]/30" />
+                    <ScrollText className="h-4 w-4 text-gold/30" />
                   </div>
                 )}
               </div>

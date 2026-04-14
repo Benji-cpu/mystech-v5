@@ -55,7 +55,7 @@ export interface TierConfig {
 }
 
 export const tierConfigs: Record<PerformanceTier, TierConfig> = {
-  full: { starCount: 5000, sparkleCount: 80, sparkleAccentCount: 30, nebulaOctaves: 5, bloom: true },
-  reduced: { starCount: 2000, sparkleCount: 30, sparkleAccentCount: 10, nebulaOctaves: 3, bloom: false },
+  full: { starCount: 3000, sparkleCount: 50, sparkleAccentCount: 20, nebulaOctaves: 5, bloom: true },
+  reduced: { starCount: 1000, sparkleCount: 15, sparkleAccentCount: 5, nebulaOctaves: 3, bloom: false },
   minimal: { starCount: 0, sparkleCount: 0, sparkleAccentCount: 0, nebulaOctaves: 0, bloom: false },
 };

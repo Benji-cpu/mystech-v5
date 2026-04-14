@@ -58,7 +58,7 @@ function PathListItem({ path, order, progress, isActivePath, isLocked }: PathLis
       className={cn(
         'flex items-center gap-3 py-2.5 px-3 rounded-xl transition-colors duration-200',
         isLocked && 'opacity-40 cursor-default',
-        isActivePath && 'bg-[#c9a94e]/8 border border-[#c9a94e]/20',
+        isActivePath && 'bg-gold/8 border border-gold/20',
         !isActivePath && !isLocked && 'hover:bg-white/5',
       )}
     >
@@ -67,7 +67,7 @@ function PathListItem({ path, order, progress, isActivePath, isLocked }: PathLis
         className={cn(
           'flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold',
           isCompleted && 'bg-emerald-500/20 text-emerald-400',
-          isActivePath && !isCompleted && 'bg-[#c9a94e]/20 text-[#c9a94e]',
+          isActivePath && !isCompleted && 'bg-gold/20 text-gold',
           !isActivePath && !isCompleted && !isLocked && 'bg-white/10 text-white/50',
           isLocked && 'bg-white/5 text-white/30',
         )}
@@ -87,7 +87,7 @@ function PathListItem({ path, order, progress, isActivePath, isLocked }: PathLis
         className={cn(
           'shrink-0',
           isCompleted && 'text-emerald-400',
-          isActivePath && !isCompleted && 'text-[#c9a94e]',
+          isActivePath && !isCompleted && 'text-gold',
           !isActivePath && !isCompleted && 'text-white/40',
           isLocked && 'text-white/20',
         )}
@@ -99,7 +99,7 @@ function PathListItem({ path, order, progress, isActivePath, isLocked }: PathLis
           className={cn(
             'text-sm font-medium leading-tight truncate',
             isCompleted && 'text-emerald-400',
-            isActivePath && !isCompleted && 'text-[#c9a94e]',
+            isActivePath && !isCompleted && 'text-gold',
             !isActivePath && !isCompleted && !isLocked && 'text-white/75',
             isLocked && 'text-white/30',
           )}
@@ -124,7 +124,7 @@ function PathListItem({ path, order, progress, isActivePath, isLocked }: PathLis
       {isActivePath && !isCompleted && (
         <Badge
           variant="outline"
-          className="shrink-0 text-[10px] border-[#c9a94e]/40 text-[#c9a94e] bg-[#c9a94e]/10 px-1.5 py-0"
+          className="shrink-0 text-[10px] border-gold/40 text-gold bg-gold/10 px-1.5 py-0"
         >
           Active
         </Badge>
@@ -196,9 +196,9 @@ export function CircleCard({
       transition={{ type: 'spring', stiffness: 280, damping: 28 }}
       className={cn(
         'relative overflow-hidden rounded-2xl',
-        'bg-white/5 backdrop-blur-xl',
+        'bg-white/[0.03] backdrop-blur-sm',
         'border transition-colors duration-300',
-        isActive && 'border-[#c9a94e]/40 shadow-lg shadow-[#c9a94e]/8',
+        isActive && 'border-gold/40 shadow-lg shadow-gold/8',
         isCompleted && 'border-emerald-500/30',
         isLocked && 'border-white/10 opacity-60',
         !isActive && !isCompleted && !isLocked && 'border-white/10',
@@ -208,7 +208,7 @@ export function CircleCard({
       {/* Gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent pointer-events-none" />
       {isActive && (
-        <div className="absolute inset-0 bg-gradient-to-br from-[#c9a94e]/5 to-transparent pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-br from-gold/5 to-transparent pointer-events-none" />
       )}
       {isCompleted && (
         <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent pointer-events-none" />
@@ -225,7 +225,7 @@ export function CircleCard({
           <span
             className={cn(
               'shrink-0 inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider',
-              isActive && 'bg-[#c9a94e]/15 text-[#c9a94e]',
+              isActive && 'bg-gold/15 text-gold',
               isCompleted && 'bg-emerald-500/15 text-emerald-400',
               isLocked && 'bg-white/8 text-white/30',
             )}
@@ -253,7 +253,7 @@ export function CircleCard({
             className={cn(
               'shrink-0',
               isLocked && 'text-white/20',
-              isActive && 'text-[#c9a94e]/60',
+              isActive && 'text-gold/60',
               isCompleted && 'text-emerald-400/60',
               !isActive && !isCompleted && !isLocked && 'text-white/30',
             )}
@@ -276,7 +276,7 @@ export function CircleCard({
               className={cn(
                 'h-1',
                 isCompleted && '[&>[data-slot=progress-indicator]]:bg-emerald-400',
-                isActive && '[&>[data-slot=progress-indicator]]:bg-[#c9a94e]',
+                isActive && '[&>[data-slot=progress-indicator]]:bg-gold',
               )}
             />
           </div>

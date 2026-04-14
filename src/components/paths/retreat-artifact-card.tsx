@@ -84,13 +84,13 @@ export function RetreatArtifactCard({
         animate={{ opacity: 1, y: 0 }}
         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
         className={cn(
-          'rounded-2xl bg-white/5 backdrop-blur-xl border border-[#c9a94e]/20 p-5',
+          'rounded-2xl bg-white/[0.03] backdrop-blur-sm border border-gold/20 p-5',
           className,
         )}
       >
         <div className="flex items-center gap-3 mb-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#c9a94e]/15">
-            <Scroll className="h-4 w-4 text-[#c9a94e]" />
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gold/15">
+            <Scroll className="h-4 w-4 text-gold" />
           </div>
           <div>
             <p className="text-sm font-semibold text-white/90">Chapter Complete</p>
@@ -108,7 +108,7 @@ export function RetreatArtifactCard({
           onClick={handleGenerate}
           disabled={loading}
           size="sm"
-          className="bg-[#c9a94e] text-black hover:bg-[#c9a94e]/90 shadow-[0_0_20px_rgba(201,169,78,0.3)]"
+          className="bg-gold text-black hover:bg-gold/90 shadow-[0_0_20px_rgba(201,169,78,0.3)]"
         >
           {loading ? (
             <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -129,20 +129,20 @@ export function RetreatArtifactCard({
       transition={{ type: 'spring', stiffness: 300, damping: 30 }}
       className={cn(
         'rounded-2xl overflow-hidden',
-        'bg-white/5 backdrop-blur-xl',
-        'border border-[#c9a94e]/20',
+        'bg-white/[0.03] backdrop-blur-sm',
+        'border border-gold/20',
         'shadow-lg shadow-purple-900/20',
         className,
       )}
     >
       {/* Header */}
-      <div className="bg-gradient-to-r from-[#c9a94e]/10 to-purple-900/10 px-5 py-4 border-b border-white/5">
+      <div className="bg-gradient-to-r from-gold/10 to-purple-900/10 px-5 py-4 border-b border-white/5">
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#c9a94e]/15">
-            <Scroll className="h-4 w-4 text-[#c9a94e]" />
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gold/15">
+            <Scroll className="h-4 w-4 text-gold" />
           </div>
           <div>
-            <p className="text-xs text-[#c9a94e] font-medium uppercase tracking-wider">
+            <p className="text-xs text-gold font-medium uppercase tracking-wider">
               Chapter Artifact
             </p>
             <p className="text-sm font-semibold text-white/90">{retreatName}</p>
@@ -177,7 +177,7 @@ export function RetreatArtifactCard({
               {artifact.themes.map((theme) => (
                 <span
                   key={theme}
-                  className="inline-flex items-center rounded-full bg-[#c9a94e]/10 border border-[#c9a94e]/20 px-3 py-1 text-xs text-[#c9a94e]/80"
+                  className="inline-flex items-center rounded-full bg-gold/10 border border-gold/20 px-3 py-1 text-xs text-gold/80"
                 >
                   {theme}
                 </span>
@@ -190,7 +190,7 @@ export function RetreatArtifactCard({
         {thresholdCard && (
           <div className="space-y-2 pt-2 border-t border-white/5">
             <div className="flex items-center gap-2">
-              <Milestone className="h-3.5 w-3.5 text-[#c9a94e]" />
+              <Milestone className="h-3.5 w-3.5 text-gold" />
               <p className="text-[11px] text-white/30 uppercase tracking-wider font-medium">
                 Threshold Card Earned
               </p>

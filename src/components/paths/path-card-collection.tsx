@@ -65,7 +65,7 @@ export function PathCardCollection({ pathId, className }: PathCardCollectionProp
     type === "obstacle" ? (
       <Shield className="h-3 w-3 text-amber-400" />
     ) : type === "threshold" ? (
-      <Milestone className="h-3 w-3 text-[#c9a94e]" />
+      <Milestone className="h-3 w-3 text-gold" />
     ) : null;
 
   return (

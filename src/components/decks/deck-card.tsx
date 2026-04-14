@@ -20,12 +20,12 @@ export function DeckCard({ deck, resumeHref, isAdopted }: DeckCardProps) {
       Community
     </Badge>
   ) : deck.deckType === "chronicle" ? (
-    <Badge variant="outline" className="text-[10px] border-[#c9a94e]/50 text-[#c9a94e] bg-black/50 backdrop-blur-sm">
+    <Badge variant="outline" className="text-[10px] border-gold/50 text-gold bg-black/50 backdrop-blur-sm">
       <ScrollText className="h-3 w-3 mr-0.5" />
       Chronicle
     </Badge>
   ) : isDraft ? (
-    <Badge variant="outline" className="text-[10px] border-[#c9a94e]/50 text-[#c9a94e] bg-black/50 backdrop-blur-sm">
+    <Badge variant="outline" className="text-[10px] border-gold/50 text-gold bg-black/50 backdrop-blur-sm">
       in progress
     </Badge>
   ) : deck.status === "generating" ? (
@@ -37,10 +37,10 @@ export function DeckCard({ deck, resumeHref, isAdopted }: DeckCardProps) {
   return (
     <Link
       href={href}
-      className="group block rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 overflow-hidden transition-all hover:border-[#c9a94e]/30 hover:shadow-lg hover:shadow-[#c9a94e]/5"
+      className="group block rounded-2xl bg-white/[0.03] backdrop-blur-sm border border-white/[0.06] overflow-hidden transition-all hover:border-gold/30 hover:shadow-lg hover:shadow-gold/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-[0.98]"
     >
       {/* Cover Image — tarot proportions */}
-      <div className="relative aspect-[3/4] overflow-hidden bg-gradient-to-b from-[#0a0118] to-[#1a0530]">
+      <div className="relative aspect-[3/4] overflow-hidden bg-gradient-to-b from-surface-deep to-surface-mid">
         {deck.coverImageUrl ? (
           <img
             src={deck.coverImageUrl}
@@ -49,7 +49,7 @@ export function DeckCard({ deck, resumeHref, isAdopted }: DeckCardProps) {
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center">
-            <Layers className="h-10 w-10 text-[#c9a94e]/30" />
+            <Layers className="h-10 w-10 text-gold/30" />
           </div>
         )}
 
@@ -66,8 +66,8 @@ export function DeckCard({ deck, resumeHref, isAdopted }: DeckCardProps) {
         {/* Draft hover overlay */}
         {isDraft && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 opacity-0 transition-opacity group-hover:opacity-100">
-            <Play className="h-8 w-8 text-[#c9a94e] mb-1" />
-            <span className="text-sm font-medium text-[#c9a94e]">Resume Journey</span>
+            <Play className="h-8 w-8 text-gold mb-1" />
+            <span className="text-sm font-medium text-gold">Resume Journey</span>
           </div>
         )}
       </div>

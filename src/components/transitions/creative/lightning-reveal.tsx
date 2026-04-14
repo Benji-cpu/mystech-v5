@@ -97,7 +97,7 @@ function LightningContent({ playing }: { playing: boolean }) {
       const mainPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
       mainPath.setAttribute("d", pathData);
       mainPath.setAttribute("fill", "none");
-      mainPath.setAttribute("stroke", "#c9a94e");
+      mainPath.setAttribute("stroke", "var(--gold)");
       mainPath.setAttribute("stroke-width", "2");
       svg.appendChild(mainPath);
 

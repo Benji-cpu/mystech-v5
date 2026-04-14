@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useState, useEffect, type ReactNode } from "react";
 
 interface PageTransitionWrapperProps {
@@ -9,13 +9,16 @@ interface PageTransitionWrapperProps {
 }
 
 /**
- * Full cross-fade page transition. Both old and new pages coexist briefly
- * during the transition via absolute positioning.
+ * Cross-fade page transition with a subtle scale shift (0.99 → 1).
+ * Simulates turning a page rather than swiping screens.
+ * Both old and new pages coexist briefly during the transition via absolute positioning.
+ * Exit uses tighter spring so it clears faster than the enter settles.
  */
 export function PageTransitionWrapper({ children }: PageTransitionWrapperProps) {
   const pathname = usePathname();
   const [frozenChildren, setFrozenChildren] = useState(children);
   const [currentPath, setCurrentPath] = useState(pathname);
+  const prefersReducedMotion = useReducedMotion();
 
   useEffect(() => {
     if (pathname !== currentPath) {
@@ -29,16 +32,35 @@ export function PageTransitionWrapper({ children }: PageTransitionWrapperProps) 
     setFrozenChildren(children);
   }, [children]);
 
+  const variants = {
+    initial: prefersReducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.99 },
+    animate: {
+      opacity: 1,
+      scale: 1,
+      transition: prefersReducedMotion
+        ? { duration: 0 }
+        : { type: "spring" as const, stiffness: 300, damping: 30 },
+    },
+    exit: {
+      opacity: 0,
+      scale: prefersReducedMotion ? 1 : 0.99,
+      transition: prefersReducedMotion
+        ? { duration: 0 }
+        // Exit spring is stiffer so the old page clears faster than the new page settles
+        : { type: "spring" as const, stiffness: 400, damping: 35 },
+    },
+  };
+
   return (
     <div className="relative" style={{ minHeight: "100dvh" }}>
       <AnimatePresence initial={false}>
         <motion.div
           key={currentPath}
           className="absolute inset-0"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.2, ease: "easeOut" }}
+          variants={variants}
+          initial="initial"
+          animate="animate"
+          exit="exit"
         >
           {frozenChildren}
         </motion.div>

@@ -54,7 +54,7 @@ export function LivingDeckSetup({ presetStyles, customStyles }: LivingDeckSetupP
         <div className="inline-flex items-center justify-center rounded-full bg-primary/10 p-3 mb-2">
           <Sprout className="h-8 w-8 text-primary" />
         </div>
-        <h2 className="text-2xl font-bold">Start Your Living Deck</h2>
+        <h2 className="text-2xl font-bold font-display">Start Your Living Deck</h2>
         <p className="text-muted-foreground max-w-md mx-auto">
           A daily mirror of your journey. Each day, a new card captures where you are right now.
         </p>

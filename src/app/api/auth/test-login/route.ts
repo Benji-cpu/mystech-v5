@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { encode } from "next-auth/jwt";
+import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import type { ApiResponse } from "@/types";
@@ -44,6 +45,13 @@ export async function POST() {
     })
     .onConflictDoNothing();
 
+  // Read actual role from DB (may have been updated for testing)
+  const [dbUser] = await db
+    .select({ role: users.role })
+    .from(users)
+    .where(eq(users.id, testUser.id));
+  const role = dbUser?.role ?? "user";
+
   // In dev/test, the cookie is unprefixed
   const cookieName = "authjs.session-token";
 
@@ -54,6 +62,7 @@ export async function POST() {
       email: testUser.email,
       picture: testUser.image,
       sub: testUser.id,
+      role,
     },
     secret,
     salt: cookieName,

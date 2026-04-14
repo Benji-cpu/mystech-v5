@@ -54,17 +54,17 @@ export function AstroNudgeBanner({ className }: { className?: string }) {
           transition={{ type: "spring", stiffness: 400, damping: 30 }}
           className={cn(
             "flex items-center gap-3 px-4 py-2.5 rounded-xl",
-            "bg-white/5 backdrop-blur-xl border border-white/10",
+            "bg-white/[0.03] backdrop-blur-sm border border-white/[0.06]",
             className
           )}
         >
-          <Sparkles className="w-4 h-4 text-[#c9a94e] shrink-0" />
+          <Sparkles className="w-4 h-4 text-gold shrink-0" />
           <p className="flex-1 text-sm text-white/60 min-w-0">
             Add your birth data to unlock astrological insights
           </p>
           <Link
             href="/dashboard"
-            className="shrink-0 flex items-center gap-1 text-xs text-[#c9a94e] hover:text-[#daa520] font-medium transition-colors"
+            className="shrink-0 flex items-center gap-1 text-xs text-gold hover:text-gold-bright font-medium transition-colors"
           >
             Dashboard
             <ArrowRight className="w-3 h-3" />

@@ -908,6 +908,35 @@ export const userMilestones = pgTable(
   ]
 );
 
+// Feedback (contextual user feedback with screenshots)
+export const feedback = pgTable(
+  "feedback",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    userId: text("user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    email: text("email"),
+    category: text("category").notNull(), // "bug" | "feature" | "general"
+    message: text("message").notNull(),
+    pageUrl: text("page_url").notNull(),
+    screenshotUrl: text("screenshot_url"),
+    viewportWidth: integer("viewport_width"),
+    viewportHeight: integer("viewport_height"),
+    userAgent: text("user_agent"),
+    status: text("status").notNull().default("new"), // "new" | "reviewed" | "archived"
+    adminNotes: text("admin_notes"),
+    createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+  },
+  (t) => [
+    index("feedback_user_id_idx").on(t.userId),
+    index("feedback_status_idx").on(t.status),
+    index("feedback_created_at_idx").on(t.createdAt),
+  ]
+);
+
 // Generation logs (admin)
 export const generationLogs = pgTable(
   "generation_log",

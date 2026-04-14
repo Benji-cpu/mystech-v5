@@ -15,7 +15,7 @@ export function CtaSection() {
           </ScrollReveal>
 
           <ScrollReveal delay={0.2} className="text-center">
-            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight font-display">
               Ready to discover your cards?
             </h2>
             <p className="mt-3 max-w-xl mx-auto text-muted-foreground">

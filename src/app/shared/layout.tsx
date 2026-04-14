@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { FeedbackFab } from "@/components/feedback/feedback-fab";
 import { Sparkles } from "lucide-react";
 
 export default function SharedLayout({
@@ -16,7 +17,7 @@ export default function SharedLayout({
             href="/"
             className="flex items-center gap-2 font-bold text-lg"
           >
-            <Sparkles className="h-5 w-5 text-[#c9a94e]" />
+            <Sparkles className="h-5 w-5 text-gold" />
             <span>MysTech</span>
           </Link>
           <Link href="/login">
@@ -29,6 +30,7 @@ export default function SharedLayout({
 
       {/* Content */}
       <main className="flex-1">{children}</main>
+      <FeedbackFab />
 
       {/* Footer */}
       <footer className="border-t border-border/50 py-8">

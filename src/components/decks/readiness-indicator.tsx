@@ -18,13 +18,13 @@ export function ReadinessIndicator({ readiness }: ReadinessIndicatorProps) {
         value={percentage}
         className={cn(
           "h-2",
-          isNearReady && "[&>div]:bg-[#c9a94e]"
+          isNearReady && "[&>div]:bg-gold"
         )}
       />
       <p
         className={cn(
           "text-[11px] leading-tight",
-          isNearReady ? "text-[#c9a94e]" : "text-muted-foreground"
+          isNearReady ? "text-gold" : "text-muted-foreground"
         )}
       >
         {readiness.readinessText}

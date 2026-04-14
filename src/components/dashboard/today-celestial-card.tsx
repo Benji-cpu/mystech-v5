@@ -29,7 +29,7 @@ export function TodayCelestialCard({
   return (
     <GlassPanel
       className={cn(
-        "p-4 border-l-2 border-l-[#c9a94e]/40",
+        "p-4 border-l-2 border-l-gold/40",
         className
       )}
     >
@@ -51,7 +51,7 @@ export function TodayCelestialCard({
         )}
 
         {alignment?.note && (
-          <p className="text-xs text-[#c9a94e]/70 leading-relaxed">
+          <p className="text-xs text-gold/70 leading-relaxed">
             {alignment.note}
           </p>
         )}

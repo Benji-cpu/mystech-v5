@@ -105,7 +105,7 @@ export function CardByCardInterpretation({
 
   if (error) {
     return (
-      <div className="p-4 rounded-2xl bg-white/5 backdrop-blur-xl border border-destructive/30">
+      <div className="p-4 rounded-2xl bg-white/[0.03] backdrop-blur-sm border border-destructive/30">
         <div className="flex items-center gap-2 mb-3">
           <AlertCircle className="h-4 w-4 text-destructive" />
           <h2 className="text-sm font-semibold text-white/90">
@@ -148,7 +148,7 @@ export function CardByCardInterpretation({
   return (
     <div ref={scrollRef}>
       {/* Header */}
-      <div className="flex items-center gap-2 text-[#c9a94e] mb-4">
+      <div className="flex items-center gap-2 text-gold mb-4">
         <Sparkles className="w-4 h-4" />
         <span className="text-xs font-medium tracking-wider uppercase">
           Your Reading
@@ -168,12 +168,12 @@ export function CardByCardInterpretation({
                     opacity: idx < presentingCardIndex ? 0.5 : idx === presentingCardIndex ? 1 : 0.2,
                   }}
                   transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                  className="h-1.5 rounded-full bg-[#c9a94e]"
+                  className="h-1.5 rounded-full bg-gold"
                 />
               ))}
             </div>
           ) : (
-            <span className="text-xs text-[#c9a94e]/70 font-medium">
+            <span className="text-xs text-gold/70 font-medium">
               Card {presentingCardIndex + 1} of {drawnCards.length}
             </span>
           )}
@@ -198,17 +198,17 @@ export function CardByCardInterpretation({
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ type: "spring", stiffness: 300, damping: 30 }}
                 >
-                  <p className="text-[#c9a94e] text-xs font-medium tracking-wider uppercase mb-1">
+                  <p className="text-gold text-xs font-medium tracking-wider uppercase mb-1">
                     {section?.positionName || drawnCard?.positionName || `Position ${idx + 1}`}
                   </p>
                   {drawnCard && (
-                    <p className="text-white/80 text-sm font-semibold mb-2">
+                    <p className="font-display text-white/80 text-sm font-semibold mb-2">
                       {drawnCard.card.title}
                     </p>
                   )}
                   {isCurrentCard && isStreaming ? (
                     <div className="flex items-center gap-2">
-                      <span className="inline-block w-1.5 h-4 bg-[#c9a94e]/70 animate-pulse" />
+                      <span className="inline-block w-1.5 h-4 bg-gold/70 animate-pulse" />
                       <span className="text-sm text-white/40 italic">Lyra is reading...</span>
                     </div>
                   ) : (
@@ -230,12 +230,12 @@ export function CardByCardInterpretation({
                 transition={{ type: "spring", stiffness: 300, damping: 30 }}
               >
                 {/* Position name header */}
-                <p className="text-[#c9a94e] text-xs font-medium tracking-wider uppercase mb-1">
+                <p className="text-gold text-xs font-medium tracking-wider uppercase mb-1">
                   {section.positionName || drawnCard?.positionName || `Position ${idx + 1}`}
                 </p>
                 {/* Card title */}
                 {drawnCard && (
-                  <p className="text-white/80 text-sm font-semibold mb-2">
+                  <p className="font-display text-white/80 text-sm font-semibold mb-2">
                     {drawnCard.card.title}
                   </p>
                 )}
@@ -243,7 +243,7 @@ export function CardByCardInterpretation({
                 <div className="text-sm leading-relaxed text-white/70">
                   {renderBoldMarkdown(section.text)}
                   {showCursor && (
-                    <span className="inline-block w-1.5 h-4 bg-[#c9a94e]/70 animate-pulse ml-0.5 align-text-bottom" />
+                    <span className="inline-block w-1.5 h-4 bg-gold/70 animate-pulse ml-0.5 align-text-bottom" />
                   )}
                 </div>
               </motion.div>
@@ -270,7 +270,7 @@ export function CardByCardInterpretation({
             </p>
             <button
               onClick={onInitiationComplete}
-              className="flex items-center gap-2 px-6 py-2.5 rounded-xl font-medium text-sm bg-gradient-to-r from-[#c9a94e] to-[#b89840] text-[#0a0118] shadow-lg shadow-[#c9a94e]/20 hover:shadow-xl hover:shadow-[#c9a94e]/30 transition-all duration-300"
+              className="flex items-center gap-2 px-6 py-2.5 rounded-xl font-medium text-sm bg-gradient-to-r from-gold to-[#b89840] text-surface-deep shadow-lg shadow-gold/20 hover:shadow-xl hover:shadow-gold/30 transition-all duration-300"
             >
               {GUIDED_READING_ENTER_CTA}
             </button>
@@ -291,7 +291,7 @@ export function CardByCardInterpretation({
             )}
             <Link
               href={`/readings/${readingId}`}
-              className="flex items-center gap-2 px-6 py-2.5 rounded-xl font-medium text-sm bg-gradient-to-r from-[#c9a94e] to-[#b89840] text-[#0a0118] shadow-lg shadow-[#c9a94e]/20 hover:shadow-xl hover:shadow-[#c9a94e]/30 transition-all duration-300"
+              className="flex items-center gap-2 px-6 py-2.5 rounded-xl font-medium text-sm bg-gradient-to-r from-gold to-[#b89840] text-surface-deep shadow-lg shadow-gold/20 hover:shadow-xl hover:shadow-gold/30 transition-all duration-300"
             >
               <Eye className="w-4 h-4" />
               View Complete Reading
@@ -306,7 +306,7 @@ export function CardByCardInterpretation({
       {/* Sticky Next Card button — always visible at bottom */}
       {isCurrentSectionComplete && !isLastCard && onAdvance && (
         <div className="sticky bottom-0 z-10">
-          <div className="bg-gradient-to-t from-[#0a0118] via-[#0a0118]/90 to-transparent pt-6 pb-4">
+          <div className="bg-gradient-to-t from-surface-deep via-surface-deep/90 to-transparent pt-6 pb-4">
             <motion.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
@@ -315,11 +315,11 @@ export function CardByCardInterpretation({
             >
               <button
                 onClick={onAdvance}
-                className="relative flex items-center gap-2 px-6 py-2.5 rounded-xl font-medium text-sm bg-gradient-to-r from-[#c9a94e] to-[#b89840] text-[#0a0118] shadow-lg shadow-[#c9a94e]/20 hover:shadow-xl hover:shadow-[#c9a94e]/30 transition-all duration-300 overflow-hidden"
+                className="relative flex items-center gap-2 px-6 py-2.5 rounded-xl font-medium text-sm bg-gradient-to-r from-gold to-[#b89840] text-surface-deep shadow-lg shadow-gold/20 hover:shadow-xl hover:shadow-gold/30 transition-all duration-300 overflow-hidden"
               >
                 {autoAdvanceCountdown && (
                   <motion.div
-                    className="absolute inset-0 bg-[#0a0118]/20 origin-left"
+                    className="absolute inset-0 bg-surface-deep/20 origin-left"
                     initial={{ scaleX: 0 }}
                     animate={{ scaleX: 1 }}
                     transition={{ duration: 1.5, ease: "linear" }}

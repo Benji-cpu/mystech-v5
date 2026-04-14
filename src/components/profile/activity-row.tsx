@@ -138,8 +138,8 @@ export function getRowStyle(item: ActivityItemWithTemporal) {
   }
   return {
     row: "bg-white/[0.03] border-white/5",
-    iconBg: "bg-[#c9a94e]/10",
-    iconColor: "text-[#c9a94e]",
+    iconBg: "bg-gold/10",
+    iconColor: "text-gold",
   };
 }
 

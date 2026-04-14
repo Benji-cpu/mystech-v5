@@ -115,11 +115,11 @@ export function DailyPracticeCard({
         <div
           className={cn(
             "relative overflow-hidden rounded-2xl",
-            "bg-white/5 backdrop-blur-xl",
+            "bg-white/[0.03] backdrop-blur-sm",
             "border",
             action.celebratory
               ? "border-emerald-500/20"
-              : "border-[#c9a94e]/20",
+              : "border-gold/20",
             "p-4",
             "hover:bg-white/[0.07] transition-colors",
             "group"
@@ -131,18 +131,18 @@ export function DailyPracticeCard({
               "absolute inset-0 pointer-events-none bg-gradient-to-br",
               action.celebratory
                 ? "from-emerald-500/5 to-transparent"
-                : "from-[#c9a94e]/5 to-transparent"
+                : "from-gold/5 to-transparent"
             )}
           />
 
-          <div className="relative z-10 flex items-center gap-3">
+          <div className="relative z-10 flex items-center gap-2">
             {/* Icon */}
             <div
               className={cn(
                 "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
                 action.celebratory
                   ? "bg-emerald-500/15"
-                  : "bg-[#c9a94e]/15"
+                  : "bg-gold/15"
               )}
             >
               <Icon
@@ -150,7 +150,7 @@ export function DailyPracticeCard({
                   "h-5 w-5",
                   action.celebratory
                     ? "text-emerald-400"
-                    : "text-[#c9a94e]"
+                    : "text-gold"
                 )}
               />
             </div>
@@ -168,7 +168,7 @@ export function DailyPracticeCard({
             {/* Badge or chevron */}
             <div className="flex items-center gap-2 shrink-0">
               {action.badge && (
-                <span className="text-[10px] font-medium text-[#c9a94e]/70 bg-[#c9a94e]/10 px-2 py-0.5 rounded-full">
+                <span className="text-[10px] font-medium text-gold/70 bg-gold/10 px-2 py-0.5 rounded-full">
                   {action.badge}
                 </span>
               )}

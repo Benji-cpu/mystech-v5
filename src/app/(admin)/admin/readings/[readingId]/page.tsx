@@ -68,7 +68,7 @@ export default function AdminReadingDetailPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-2xl font-bold">
+        <h1 className="text-2xl font-bold font-display">
           {reading.spreadType.replace(/_/g, " ")} Reading
         </h1>
         <p className="text-sm text-muted-foreground">

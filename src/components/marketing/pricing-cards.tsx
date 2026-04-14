@@ -1,19 +1,8 @@
 import Link from "next/link";
 import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-
-function getSpreadLabel(spreads: readonly string[]): string {
-  if (spreads.length <= 2) {
-    return "Single & 3-card spreads";
-  }
-  return "All spread types";
-}
+import { GoldButton } from "@/components/ui/gold-button";
+import { cn } from "@/lib/utils";
 
 const plans = [
   {
@@ -52,42 +41,56 @@ export function PricingCards() {
   return (
     <div className="mx-auto grid max-w-3xl gap-8 md:grid-cols-2">
       {plans.map((plan) => (
-        <Card
+        <div
           key={plan.name}
-          className={
+          className={cn(
+            "rounded-2xl border p-6 sm:p-8 flex flex-col",
             plan.highlight
-              ? "border-primary/50 shadow-lg shadow-primary/5"
-              : "border-border/50"
-          }
+              ? "bg-gradient-to-b from-gold/[0.06] to-transparent border-gold/30 shadow-lg shadow-gold/5"
+              : "bg-white/[0.03] border-white/[0.06]"
+          )}
         >
-          <CardHeader>
-            <CardTitle className="text-lg">{plan.name}</CardTitle>
+          {/* Header */}
+          <div className="mb-6">
+            <h3 className={cn(
+              "text-lg font-semibold",
+              plan.highlight ? "text-gold" : "text-foreground"
+            )}>
+              {plan.name}
+            </h3>
             <div className="mt-2">
-              <span className="text-4xl font-bold">{plan.price}</span>
+              <span className="text-4xl font-bold font-display">{plan.price}</span>
               <span className="text-muted-foreground">{plan.period}</span>
             </div>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground mt-2">
               {plan.description}
             </p>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <ul className="space-y-3">
-              {plan.features.map((feature) => (
-                <li key={feature} className="flex items-start gap-3">
-                  <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                  <span className="text-sm">{feature}</span>
-                </li>
-              ))}
-            </ul>
-            <Button
-              className="w-full"
-              variant={plan.highlight ? "default" : "outline"}
-              asChild
-            >
+          </div>
+
+          {/* Features */}
+          <ul className="space-y-3 flex-1 mb-6">
+            {plan.features.map((feature) => (
+              <li key={feature} className="flex items-start gap-3">
+                <Check className={cn(
+                  "mt-0.5 h-4 w-4 shrink-0",
+                  plan.highlight ? "text-gold" : "text-primary"
+                )} />
+                <span className="text-sm">{feature}</span>
+              </li>
+            ))}
+          </ul>
+
+          {/* CTA */}
+          {plan.highlight ? (
+            <Link href={plan.href}>
+              <GoldButton className="w-full">{plan.cta}</GoldButton>
+            </Link>
+          ) : (
+            <Button className="w-full" variant="outline" asChild>
               <Link href={plan.href}>{plan.cta}</Link>
             </Button>
-          </CardContent>
-        </Card>
+          )}
+        </div>
       ))}
     </div>
   );

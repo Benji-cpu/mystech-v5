@@ -63,7 +63,7 @@ function CardWithLabel({
       </div>
       <p
         className={cn(
-          "mt-2 text-[#c9a94e] uppercase tracking-wider text-center truncate",
+          "mt-2 text-gold uppercase tracking-wider text-center truncate",
           isSmall ? "text-[10px]" : "text-xs"
         )}
         style={{ maxWidth: cardWidth + 8 }}
@@ -257,7 +257,7 @@ function CelticCrossReview({
               {/* Labels below the overlapping pair */}
               <p
                 className={cn(
-                  "absolute -bottom-5 left-1/2 -translate-x-1/2 text-[#c9a94e] uppercase tracking-wider whitespace-nowrap",
+                  "absolute -bottom-5 left-1/2 -translate-x-1/2 text-gold uppercase tracking-wider whitespace-nowrap",
                   isSmall ? "text-[10px]" : "text-xs"
                 )}
               >

@@ -35,7 +35,7 @@ export function CtaCardReveal({ className }: CtaCardRevealProps) {
       {PARTICLES.map((p, i) => (
         <motion.div
           key={i}
-          className="w-1 h-1 bg-[#c9a94e] rounded-full absolute"
+          className="w-1 h-1 bg-gold rounded-full absolute"
           style={{ top: p.top, left: p.left }}
           animate={{
             opacity: [0.15, 0.7, 0.15],
@@ -67,22 +67,22 @@ export function CtaCardReveal({ className }: CtaCardRevealProps) {
               'absolute inset-0',
               'w-full h-full',
               'bg-gradient-to-b from-[#180428] to-[#0d0020]',
-              'border border-[#c9a94e]/40 rounded-xl',
+              'border border-gold/40 rounded-xl',
               'flex items-center justify-center',
             )}
             style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' }}
           >
             {/* Inner border */}
-            <div className="absolute inset-[3px] rounded-[9px] border border-[#c9a94e]/20" />
+            <div className="absolute inset-[3px] rounded-[9px] border border-gold/20" />
 
             {/* Sacred geometry */}
             <div className="relative flex items-center justify-center">
               {/* Outer circle */}
-              <div className="absolute w-16 h-16 rounded-full border border-[#c9a94e]/20" />
+              <div className="absolute w-16 h-16 rounded-full border border-gold/20" />
               {/* Inner circle */}
-              <div className="absolute w-10 h-10 rounded-full border border-[#c9a94e]/30" />
+              <div className="absolute w-10 h-10 rounded-full border border-gold/30" />
               {/* Diamond */}
-              <div className="w-12 h-12 border border-[#c9a94e]/25 rotate-45" />
+              <div className="w-12 h-12 border border-gold/25 rotate-45" />
             </div>
           </div>
 
@@ -91,7 +91,7 @@ export function CtaCardReveal({ className }: CtaCardRevealProps) {
             className={cn(
               'absolute inset-0',
               'w-full h-full',
-              'rounded-xl border border-[#c9a94e]/40 overflow-hidden',
+              'rounded-xl border border-gold/40 overflow-hidden',
             )}
             style={{
               backfaceVisibility: 'hidden',
@@ -108,14 +108,14 @@ export function CtaCardReveal({ className }: CtaCardRevealProps) {
             />
 
             {/* Gold corner accents */}
-            <div className="absolute top-1.5 left-1.5 w-3 h-3 border-t border-l border-[#c9a94e]/60" />
-            <div className="absolute top-1.5 right-1.5 w-3 h-3 border-t border-r border-[#c9a94e]/60" />
-            <div className="absolute bottom-1.5 left-1.5 w-3 h-3 border-b border-l border-[#c9a94e]/60" />
-            <div className="absolute bottom-1.5 right-1.5 w-3 h-3 border-b border-r border-[#c9a94e]/60" />
+            <div className="absolute top-1.5 left-1.5 w-3 h-3 border-t border-l border-gold/60" />
+            <div className="absolute top-1.5 right-1.5 w-3 h-3 border-t border-r border-gold/60" />
+            <div className="absolute bottom-1.5 left-1.5 w-3 h-3 border-b border-l border-gold/60" />
+            <div className="absolute bottom-1.5 right-1.5 w-3 h-3 border-b border-r border-gold/60" />
 
             {/* Title overlay */}
             <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 to-transparent px-2 py-2">
-              <p className="text-xs text-[#c9a94e] text-center font-medium tracking-wide">
+              <p className="text-xs text-gold text-center font-medium tracking-wide">
                 The Oracle
               </p>
             </div>

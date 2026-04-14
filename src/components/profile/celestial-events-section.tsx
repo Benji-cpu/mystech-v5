@@ -27,7 +27,7 @@ export function CelestialEventsSection({
   return (
     <div
       className={cn(
-        "bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4",
+        "bg-white/[0.03] backdrop-blur-sm border border-white/[0.06] rounded-2xl p-4",
         className
       )}
     >

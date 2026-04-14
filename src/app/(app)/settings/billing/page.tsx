@@ -12,7 +12,7 @@ function BillingContentSkeleton() {
   return (
     <div className="space-y-6">
       {/* Plan card */}
-      <div className="rounded-2xl bg-white/5 border border-white/10 p-6 space-y-4">
+      <div className="rounded-2xl bg-white/5 border border-white/10 p-4 space-y-4">
         <div className="flex items-center justify-between">
           <div className="space-y-1">
             <Skeleton className="h-5 w-24" />

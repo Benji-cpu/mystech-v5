@@ -29,7 +29,7 @@ export default async function EditArtStylePage({
   return (
     <div className="p-6 max-w-lg mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Edit Style</h1>
+        <h1 className="text-2xl font-bold font-display">Edit Style</h1>
         <p className="text-sm text-muted-foreground mt-1">
           Update your custom art style
         </p>

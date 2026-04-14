@@ -33,7 +33,7 @@ function MorphContent({ playing }: { playing: boolean }) {
       // Pulse the circle
       tl.to(circleRef.current, {
         attr: { r: 55 },
-        stroke: "#c9a94e",
+        stroke: "var(--gold)",
         strokeWidth: 2,
         duration: 0.3,
         ease: "power2.out",
@@ -54,7 +54,7 @@ function MorphContent({ playing }: { playing: boolean }) {
           {
             opacity: 1,
             attr: { width: 100, height: 150, x: 50, y: 25, rx: 8 },
-            stroke: "#c9a94e",
+            stroke: "var(--gold)",
             duration: 0.6,
             ease: "back.out(1.4)",
           },
@@ -101,8 +101,8 @@ function MorphContent({ playing }: { playing: boolean }) {
       >
         <defs>
           <radialGradient id="glow-grad">
-            <stop offset="0%" stopColor="#c9a94e" stopOpacity="0.6" />
-            <stop offset="100%" stopColor="#c9a94e" stopOpacity="0" />
+            <stop offset="0%" stopColor="var(--gold)" stopOpacity="0.6" />
+            <stop offset="100%" stopColor="var(--gold)" stopOpacity="0" />
           </radialGradient>
         </defs>
         {/* Glow */}
@@ -121,7 +121,7 @@ function MorphContent({ playing }: { playing: boolean }) {
           cy="100"
           r="40"
           fill="none"
-          stroke="#c9a94e"
+          stroke="var(--gold)"
           strokeWidth="1"
           opacity="1"
         />
@@ -134,7 +134,7 @@ function MorphContent({ playing }: { playing: boolean }) {
           height="150"
           rx="8"
           fill="none"
-          stroke="#c9a94e"
+          stroke="var(--gold)"
           strokeWidth="1.5"
           opacity="0"
         />
@@ -147,7 +147,7 @@ function MorphContent({ playing }: { playing: boolean }) {
           height="138"
           rx="6"
           fill="none"
-          stroke="#c9a94e"
+          stroke="var(--gold)"
           strokeWidth="0.5"
           opacity="0"
         />

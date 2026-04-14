@@ -14,7 +14,7 @@ export function InProgressDecks({ drafts }: InProgressDecksProps) {
   return (
     <div>
       <SectionHeader className="mb-4">In Progress</SectionHeader>
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-2">
         {drafts.map((deck) => {
           const isChat = deck.journeyPhase === "chat";
           const Icon = isChat ? MessageSquare : CheckSquare;
@@ -23,10 +23,10 @@ export function InProgressDecks({ drafts }: InProgressDecksProps) {
           return (
             <GlassPanel
               key={deck.id}
-              className="flex items-center gap-4 border-[#c9a94e]/20 p-4"
+              className="flex items-center gap-4 border-gold/20 p-4"
             >
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#c9a94e]/10">
-                <Icon className="h-5 w-5 text-[#c9a94e]" />
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gold/10">
+                <Icon className="h-5 w-5 text-gold" />
               </div>
               <div className="min-w-0 flex-1">
                 <p className="truncate font-semibold text-white/90">{deck.title}</p>
@@ -34,7 +34,7 @@ export function InProgressDecks({ drafts }: InProgressDecksProps) {
               </div>
               <Link
                 href={deck.resumeHref}
-                className="shrink-0 inline-flex items-center gap-1 rounded-lg bg-gradient-to-r from-[#c9a94e] to-[#daa520] px-3 py-1.5 text-sm font-semibold text-black"
+                className="shrink-0 inline-flex items-center gap-1 rounded-lg bg-gradient-to-r from-gold to-gold-bright px-3 py-1.5 text-sm font-semibold text-black"
               >
                 Resume
                 <ArrowRight className="h-3 w-3" />

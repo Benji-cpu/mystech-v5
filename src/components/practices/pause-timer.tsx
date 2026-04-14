@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 const DIAMETER = 120;
 const RADIUS = 52;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
-const GOLD = '#c9a94e';
+const GOLD = 'var(--gold)';
 
 const BREATHING_CYCLE_MS = 4000;
 const BREATHING_CUES = ['Breathe in...', 'Breathe out...'] as const;
@@ -99,7 +99,7 @@ export function PauseTimer({ remainingMs, totalMs, className }: PauseTimerProps)
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 28 } }}
             exit={{ opacity: 0, y: -8, transition: { duration: 0.18 } }}
-            className="text-xs text-[#c9a94e]/70 tracking-widest uppercase text-center"
+            className="text-xs text-gold/70 tracking-widest uppercase text-center"
           >
             {BREATHING_CUES[breathingIndex]}
           </motion.p>

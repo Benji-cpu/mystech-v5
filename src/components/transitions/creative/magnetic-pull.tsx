@@ -60,7 +60,7 @@ function MagneticContent({ playing }: { playing: boolean }) {
     <TransitionStage>
       {/* Magnet point indicator */}
       {playing && (
-        <div className="absolute w-3 h-3 rounded-full bg-[#c9a94e]/50 animate-pulse z-0" />
+        <div className="absolute w-3 h-3 rounded-full bg-gold/50 animate-pulse z-0" />
       )}
       <div
         ref={containerRef}

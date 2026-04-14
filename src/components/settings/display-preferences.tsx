@@ -63,12 +63,12 @@ export function DisplayPreferences({ className }: DisplayPreferencesProps) {
   }
 
   return (
-    <GlassPanel className={cn("p-6", className)}>
+    <GlassPanel className={cn("p-4", className)}>
       <SectionHeader className="mb-1">Display & Performance</SectionHeader>
       <p className="text-sm text-white/40 mb-4">
         Control visual effects intensity. Changes apply immediately.
       </p>
-      <div className="grid gap-3">
+      <div className="grid gap-4">
         {DISPLAY_OPTIONS.map((option) => (
           <button
             key={option.value}
@@ -76,8 +76,8 @@ export function DisplayPreferences({ className }: DisplayPreferencesProps) {
             className={cn(
               "flex flex-col items-start gap-1 rounded-xl border p-4 text-left transition-colors",
               selected === option.value
-                ? "border-[#c9a94e]/50 bg-[#c9a94e]/5"
-                : "border-white/10 hover:border-[#c9a94e]/30 hover:bg-white/[0.02]"
+                ? "border-gold/50 bg-gold/5"
+                : "border-white/10 hover:border-gold/30 hover:bg-white/[0.02]"
             )}
           >
             <span className="font-medium text-white/90">{option.label}</span>

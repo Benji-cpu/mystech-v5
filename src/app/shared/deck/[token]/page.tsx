@@ -61,7 +61,7 @@ export default async function SharedDeckPage({
       <div className="mb-8">
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-2xl font-bold">{deck.title}</h1>
+            <h1 className="text-2xl font-bold font-display">{deck.title}</h1>
             {deck.description && (
               <p className="text-muted-foreground mt-1">{deck.description}</p>
             )}

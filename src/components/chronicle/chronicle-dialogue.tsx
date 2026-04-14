@@ -74,7 +74,7 @@ function MessageBubble({ message, isLast, isStreaming }: MessageBubbleProps) {
           'rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed',
           isAssistant
             ? 'bg-purple-950/60 border border-purple-500/15 text-white/85 rounded-tl-sm'
-            : 'bg-[#c9a94e]/12 border border-[#c9a94e]/20 text-white/90 rounded-tr-sm'
+            : 'bg-gold/12 border border-gold/20 text-white/90 rounded-tr-sm'
         )}
       >
         <span className="whitespace-pre-wrap">{renderMarkdown(displayContent)}</span>
@@ -82,13 +82,13 @@ function MessageBubble({ message, isLast, isStreaming }: MessageBubbleProps) {
           <motion.span
             animate={{ opacity: [1, 0] }}
             transition={{ duration: 0.7, repeat: Infinity }}
-            className="inline-block w-0.5 h-3.5 bg-[#c9a94e] ml-0.5 align-text-bottom"
+            className="inline-block w-0.5 h-3.5 bg-gold ml-0.5 align-text-bottom"
           />
         )}
         {isLong && (
           <button
             onClick={() => setExpanded(!expanded)}
-            className="block mt-1.5 text-xs text-[#c9a94e]/60 hover:text-[#c9a94e]/90 transition-colors"
+            className="block mt-1.5 text-xs text-gold/60 hover:text-gold/90 transition-colors"
           >
             {expanded ? 'Show less' : 'Read more'}
           </button>
@@ -111,12 +111,12 @@ function MiniReading({ text, isStreaming }: MiniReadingProps) {
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-      className="mt-2 rounded-2xl bg-gradient-to-b from-purple-950/40 to-indigo-950/40 border border-[#c9a94e]/15 p-4"
+      className="mt-2 rounded-2xl bg-gradient-to-b from-purple-950/40 to-indigo-950/40 border border-gold/15 p-4"
     >
       {/* Header */}
       <div className="flex items-center gap-2 mb-3">
-        <div className="w-1 h-4 rounded-full bg-gradient-to-b from-[#c9a94e] to-[#c9a94e]/30" />
-        <span className="text-[10px] uppercase tracking-[0.2em] text-[#c9a94e]/70 font-medium">
+        <div className="w-1 h-4 rounded-full bg-gradient-to-b from-gold to-gold/30" />
+        <span className="text-[10px] uppercase tracking-[0.2em] text-gold/70 font-medium">
           Your Reading
         </span>
       </div>
@@ -128,7 +128,7 @@ function MiniReading({ text, isStreaming }: MiniReadingProps) {
           <motion.span
             animate={{ opacity: [1, 0] }}
             transition={{ duration: 0.7, repeat: Infinity }}
-            className="inline-block w-0.5 h-3.5 bg-[#c9a94e] ml-0.5 align-text-bottom"
+            className="inline-block w-0.5 h-3.5 bg-gold ml-0.5 align-text-bottom"
           />
         )}
       </p>

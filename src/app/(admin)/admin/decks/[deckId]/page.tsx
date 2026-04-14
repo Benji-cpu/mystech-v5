@@ -85,7 +85,7 @@ export default function AdminDeckDetailPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-2xl font-bold">{deck.title}</h1>
+        <h1 className="text-2xl font-bold font-display">{deck.title}</h1>
         <p className="text-sm text-muted-foreground">
           {deck.userEmail} &middot; {new Date(deck.createdAt).toLocaleDateString()} &middot;{" "}
           <Badge variant="outline" className="text-xs">

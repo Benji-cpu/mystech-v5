@@ -64,9 +64,9 @@ export function ChroniclePreferences({
           <Link
             href="/chronicle/setup"
             className={cn(
-              "rounded-lg border border-[#c9a94e]/50 bg-[#c9a94e]/10 px-4 py-2",
-              "text-sm font-medium text-[#c9a94e]",
-              "transition-colors hover:bg-[#c9a94e]/20"
+              "rounded-lg border border-gold/50 bg-gold/10 px-4 py-2",
+              "text-sm font-medium text-gold",
+              "transition-colors hover:bg-gold/20"
             )}
           >
             Set up Chronicle
@@ -79,7 +79,7 @@ export function ChroniclePreferences({
             className={cn(
               "flex items-center justify-between rounded-xl border p-4 transition-colors",
               enabled
-                ? "border-[#c9a94e]/50 bg-[#c9a94e]/5"
+                ? "border-gold/50 bg-gold/5"
                 : "border-white/10"
             )}
           >
@@ -115,7 +115,7 @@ export function ChroniclePreferences({
               className={cn(
                 "shrink-0 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5",
                 "text-sm font-medium text-white/60",
-                "transition-colors hover:border-[#c9a94e]/30 hover:text-white/90"
+                "transition-colors hover:border-gold/30 hover:text-white/90"
               )}
             >
               Edit

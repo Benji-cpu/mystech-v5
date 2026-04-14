@@ -182,7 +182,7 @@ export function StyleCard({
       whileTap={onSelect ? 'tap' : 'rest'}
       className={cn(
         'relative rounded-2xl overflow-hidden',
-        'bg-white/5 backdrop-blur-xl border',
+        'bg-white/[0.03] backdrop-blur-sm border',
         'transition-colors duration-200',
         isSelected
           ? 'border-primary/60 shadow-[0_0_0_1px_rgba(201,169,78,0.4),0_0_20px_rgba(201,169,78,0.12)]'

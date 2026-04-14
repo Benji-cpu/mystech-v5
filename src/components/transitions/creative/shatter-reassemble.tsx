@@ -92,7 +92,7 @@ function ShatterContent({ playing }: { playing: boolean }) {
           return (
             <div
               key={i}
-              className="shard border border-[#c9a94e]/20"
+              className="shard border border-gold/20"
               style={{
                 width: pieceW,
                 height: pieceH,

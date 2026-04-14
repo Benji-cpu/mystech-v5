@@ -74,7 +74,7 @@ export function VoicePreferences({ initialPrefs, initialGuidanceEnabled = true, 
   }
 
   return (
-    <GlassPanel className={cn("p-6", className)}>
+    <GlassPanel className={cn("p-4", className)}>
       <SectionHeader className="mb-1">Voice</SectionHeader>
       <p className="text-sm text-white/40 mb-4">
         Configure Lyra&apos;s voice narration for readings and conversations.
@@ -87,8 +87,8 @@ export function VoicePreferences({ initialPrefs, initialGuidanceEnabled = true, 
           className={cn(
             "flex w-full items-center justify-between rounded-xl border p-4 text-left transition-colors",
             prefs.enabled
-              ? "border-[#c9a94e]/50 bg-[#c9a94e]/5"
-              : "border-white/10 hover:border-[#c9a94e]/30 hover:bg-white/[0.02]"
+              ? "border-gold/50 bg-gold/5"
+              : "border-white/10 hover:border-gold/30 hover:bg-white/[0.02]"
           )}
         >
           <div>
@@ -99,7 +99,7 @@ export function VoicePreferences({ initialPrefs, initialGuidanceEnabled = true, 
           </div>
           <span className={cn(
             "text-xs font-medium px-2 py-1 rounded",
-            prefs.enabled ? "bg-[#c9a94e]/20 text-[#c9a94e]" : "bg-white/5 text-white/40"
+            prefs.enabled ? "bg-gold/20 text-gold" : "bg-white/5 text-white/40"
           )}>
             {prefs.enabled ? "On" : "Off"}
           </span>
@@ -113,8 +113,8 @@ export function VoicePreferences({ initialPrefs, initialGuidanceEnabled = true, 
             "flex w-full items-center justify-between rounded-xl border p-4 text-left transition-colors",
             !prefs.enabled && "opacity-50 cursor-not-allowed",
             prefs.autoplay && prefs.enabled
-              ? "border-[#c9a94e]/50 bg-[#c9a94e]/5"
-              : "border-white/10 hover:border-[#c9a94e]/30 hover:bg-white/[0.02]"
+              ? "border-gold/50 bg-gold/5"
+              : "border-white/10 hover:border-gold/30 hover:bg-white/[0.02]"
           )}
         >
           <div>
@@ -125,7 +125,7 @@ export function VoicePreferences({ initialPrefs, initialGuidanceEnabled = true, 
           </div>
           <span className={cn(
             "text-xs font-medium px-2 py-1 rounded",
-            prefs.autoplay && prefs.enabled ? "bg-[#c9a94e]/20 text-[#c9a94e]" : "bg-white/5 text-white/40"
+            prefs.autoplay && prefs.enabled ? "bg-gold/20 text-gold" : "bg-white/5 text-white/40"
           )}>
             {prefs.autoplay ? "On" : "Off"}
           </span>
@@ -143,8 +143,8 @@ export function VoicePreferences({ initialPrefs, initialGuidanceEnabled = true, 
                 className={cn(
                   "rounded-xl border px-3 py-2 text-sm font-medium transition-colors",
                   prefs.speed === option.value
-                    ? "border-[#c9a94e]/50 bg-[#c9a94e]/5 text-white/90"
-                    : "border-white/10 text-white/40 hover:border-[#c9a94e]/30 hover:bg-white/[0.02]"
+                    ? "border-gold/50 bg-gold/5 text-white/90"
+                    : "border-white/10 text-white/40 hover:border-gold/30 hover:bg-white/[0.02]"
                 )}
               >
                 {option.label}
@@ -160,8 +160,8 @@ export function VoicePreferences({ initialPrefs, initialGuidanceEnabled = true, 
           className={cn(
             "flex w-full items-center justify-between rounded-xl border p-4 text-left transition-colors",
             guidanceEnabled
-              ? "border-[#c9a94e]/50 bg-[#c9a94e]/5"
-              : "border-white/10 hover:border-[#c9a94e]/30 hover:bg-white/[0.02]"
+              ? "border-gold/50 bg-gold/5"
+              : "border-white/10 hover:border-gold/30 hover:bg-white/[0.02]"
           )}
         >
           <div>
@@ -172,7 +172,7 @@ export function VoicePreferences({ initialPrefs, initialGuidanceEnabled = true, 
           </div>
           <span className={cn(
             "text-xs font-medium px-2 py-1 rounded",
-            guidanceEnabled ? "bg-[#c9a94e]/20 text-[#c9a94e]" : "bg-white/5 text-white/40"
+            guidanceEnabled ? "bg-gold/20 text-gold" : "bg-white/5 text-white/40"
           )}>
             {guidanceEnabled ? "On" : "Off"}
           </span>

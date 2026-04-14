@@ -23,9 +23,9 @@ export function QuickActions() {
     <div className="grid gap-4 sm:grid-cols-2">
       {actions.map((action) => (
         <Link key={action.title} href={action.href}>
-          <GlassPanel className="flex items-center gap-4 p-4 hover:border-[#c9a94e]/30 transition-colors">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#c9a94e]/10">
-              <action.icon className="h-5 w-5 text-[#c9a94e]" />
+          <GlassPanel className="flex items-center gap-4 p-4 hover:border-gold/30 transition-colors">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gold/10">
+              <action.icon className="h-5 w-5 text-gold" />
             </div>
             <div className="text-left">
               <p className="font-semibold text-white/90">{action.title}</p>

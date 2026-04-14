@@ -22,13 +22,13 @@ export function MorphShapes() {
                       borderRadius: "12px",
                       width: 150,
                       height: 225,
-                      background: "linear-gradient(to bottom, #1a0530, #0a0118)",
+                      background: "linear-gradient(to bottom, var(--surface-mid), var(--surface-deep))",
                     }
                   : {
                       borderRadius: "50%",
                       width: 80,
                       height: 80,
-                      background: "linear-gradient(135deg, #c9a94e, #8b6f2e)",
+                      background: "linear-gradient(135deg, var(--gold), var(--gold-dim))",
                     }
               }
               transition={{
@@ -37,7 +37,7 @@ export function MorphShapes() {
                 damping: 20,
                 mass: 1.5,
               }}
-              className="border border-[#c9a94e]/40 flex items-center justify-center overflow-hidden"
+              className="border border-gold/40 flex items-center justify-center overflow-hidden"
             >
               <motion.div
                 animate={{ opacity: playing ? 1 : 0, scale: playing ? 1 : 0.5 }}

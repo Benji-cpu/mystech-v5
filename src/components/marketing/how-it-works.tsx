@@ -36,7 +36,7 @@ export function HowItWorks() {
     <section className="border-t border-border/40">
       <div className="mx-auto max-w-5xl px-4 py-16 sm:py-20 sm:px-6">
         <ScrollReveal className="mb-8 sm:mb-14 text-center">
-          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight font-display">
             How it works
           </h2>
           <p className="mt-3 text-muted-foreground">
@@ -63,7 +63,7 @@ export function HowItWorks() {
                   >
                     {/* Text side */}
                     <div className="flex-1 text-center md:text-left">
-                      <div className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[#c9a94e]/10 text-sm font-bold text-[#c9a94e] mb-3">
+                      <div className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-gold/10 text-sm font-bold text-gold mb-3">
                         {step.number}
                       </div>
                       <h3 className="text-lg sm:text-xl font-semibold mb-2">

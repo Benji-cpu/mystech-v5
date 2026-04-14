@@ -46,14 +46,14 @@ export function ChronicleContextPanel({
     >
       {/* ── Conversation thread (only when we have data) ── */}
       {hasThread && (
-        <div className="mb-2 rounded-xl bg-white/5 backdrop-blur-xl border border-white/10 overflow-hidden">
+        <div className="mb-2 rounded-xl bg-white/[0.03] backdrop-blur-sm border border-white/[0.06] overflow-hidden">
           <button
             onClick={() => setThreadOpen((prev) => !prev)}
             className="w-full flex items-center gap-2.5 px-4 py-3 text-left hover:bg-white/5 transition-colors"
             aria-expanded={threadOpen}
           >
-            <Sparkles className="w-3.5 h-3.5 text-[#c9a94e] shrink-0" />
-            <span className="flex-1 text-xs text-[#c9a94e] font-medium tracking-wide">
+            <Sparkles className="w-3.5 h-3.5 text-gold shrink-0" />
+            <span className="flex-1 text-xs text-gold font-medium tracking-wide">
               From your Chronicle
             </span>
             {!threadOpen && threadSummary && (
@@ -84,13 +84,13 @@ export function ChronicleContextPanel({
                         "px-3 py-2 rounded-lg text-xs leading-relaxed",
                         msg.role === "user"
                           ? "bg-white/8 text-white/80 ml-4"
-                          : "bg-[#c9a94e]/8 text-white/60 mr-4"
+                          : "bg-gold/8 text-white/60 mr-4"
                       )}
                     >
                       <span
                         className={cn(
                           "block text-[9px] uppercase tracking-wider mb-1 font-medium",
-                          msg.role === "user" ? "text-white/30" : "text-[#c9a94e]/50"
+                          msg.role === "user" ? "text-white/30" : "text-gold/50"
                         )}
                       >
                         {msg.role === "user" ? "You" : "Lyra"}
@@ -106,8 +106,8 @@ export function ChronicleContextPanel({
       )}
 
       {/* ── Question (always visible) ── */}
-      <div className="px-4 py-3 rounded-xl bg-white/5 border border-[#c9a94e]/30 mb-2">
-        <p className="text-[10px] text-[#c9a94e]/60 uppercase tracking-wider mb-1.5">
+      <div className="px-4 py-3 rounded-xl bg-white/5 border border-gold/30 mb-2">
+        <p className="text-[10px] text-gold/60 uppercase tracking-wider mb-1.5">
           Your Question
         </p>
         <p className="text-sm text-white/80 italic leading-relaxed">
@@ -116,7 +116,7 @@ export function ChronicleContextPanel({
       </div>
 
       {/* ── Add more context ── */}
-      <div className="rounded-xl bg-white/5 backdrop-blur-xl border border-white/10 overflow-hidden">
+      <div className="rounded-xl bg-white/[0.03] backdrop-blur-sm border border-white/[0.06] overflow-hidden">
         <button
           onClick={() => setNotesOpen((prev) => !prev)}
           className="w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-white/5 transition-colors"
@@ -151,7 +151,7 @@ export function ChronicleContextPanel({
                     }
                   }}
                   placeholder="A bit more background, a feeling, a hunch..."
-                  className="bg-white/5 border-white/10 text-white/80 placeholder:text-white/30 text-xs resize-none min-h-[80px] focus-visible:ring-[#c9a94e]/30"
+                  className="bg-white/5 border-white/10 text-white/80 placeholder:text-white/30 text-xs resize-none min-h-[80px] focus-visible:ring-gold/30"
                   rows={3}
                 />
                 {notes.length > 0 && (

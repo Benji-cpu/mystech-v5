@@ -140,7 +140,7 @@ export function ReadingInterpretation({
 
   if (error) {
     return (
-      <div className="p-6 rounded-2xl bg-white/5 backdrop-blur-xl border border-destructive/30">
+      <div className="p-6 rounded-2xl bg-white/[0.03] backdrop-blur-sm border border-destructive/30">
         <div className="flex items-center gap-2 mb-3">
           <AlertCircle className="h-4 w-4 text-destructive" />
           <h2 className="text-sm font-semibold text-white/90">
@@ -179,7 +179,7 @@ export function ReadingInterpretation({
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2 text-[#c9a94e]">
+        <div className="flex items-center gap-2 text-gold">
           <Sparkles className="w-4 h-4" />
           <span className="text-xs font-medium tracking-wider uppercase">
             Your Reading
@@ -198,7 +198,7 @@ export function ReadingInterpretation({
               {isMuted ? (
                 <VolumeX className="w-4 h-4" />
               ) : (
-                <Volume2 className="w-4 h-4 text-[#c9a94e]" />
+                <Volume2 className="w-4 h-4 text-gold" />
               )}
             </button>
           )}
@@ -215,7 +215,7 @@ export function ReadingInterpretation({
               {tts.isLoading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : tts.isPlaying ? (
-                <Pause className="w-4 h-4 text-[#c9a94e]" />
+                <Pause className="w-4 h-4 text-gold" />
               ) : (
                 <Volume2 className="w-4 h-4" />
               )}
@@ -226,7 +226,7 @@ export function ReadingInterpretation({
       <div className="text-sm leading-relaxed whitespace-pre-wrap text-white/70">
         {renderBoldMarkdown(textToShow)}
         {isLoading && (
-          <span className="inline-block w-1.5 h-4 bg-[#c9a94e]/70 animate-pulse ml-0.5 align-text-bottom" />
+          <span className="inline-block w-1.5 h-4 bg-gold/70 animate-pulse ml-0.5 align-text-bottom" />
         )}
       </div>
     </div>

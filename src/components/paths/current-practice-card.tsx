@@ -53,14 +53,14 @@ export function CurrentPracticeCard({
         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
         className={cn(
           'relative overflow-hidden rounded-2xl',
-          'bg-white/5 backdrop-blur-xl',
-          'border border-[#c9a94e]/25',
-          'shadow-lg shadow-[#c9a94e]/5',
+          'bg-white/[0.03] backdrop-blur-sm',
+          'border border-gold/25',
+          'shadow-lg shadow-gold/5',
           className,
         )}
       >
         {/* Subtle gold gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[#c9a94e]/8 to-transparent pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-br from-gold/8 to-transparent pointer-events-none" />
 
         <div className="relative z-10 p-5 space-y-3">
           {/* Header row */}
@@ -70,7 +70,7 @@ export function CurrentPracticeCard({
                 'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl',
                 completed
                   ? 'bg-emerald-500/15 text-emerald-400'
-                  : 'bg-[#c9a94e]/15 text-[#c9a94e]',
+                  : 'bg-gold/15 text-gold',
               )}
             >
               {completed ? (
@@ -114,7 +114,7 @@ export function CurrentPracticeCard({
               'disabled:opacity-50',
               completed
                 ? 'bg-white/5 border border-white/10 text-white/60 hover:bg-white/8'
-                : 'bg-[#c9a94e] text-black hover:bg-[#c9a94e]/90 shadow-[0_0_20px_rgba(201,169,78,0.2)]',
+                : 'bg-gold text-black hover:bg-gold/90 shadow-[0_0_20px_rgba(201,169,78,0.2)]',
             )}
             whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.98 }}

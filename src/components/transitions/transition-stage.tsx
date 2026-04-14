@@ -12,7 +12,7 @@ export function TransitionStage({ children, className }: TransitionStageProps) {
     <div
       className={cn(
         "relative w-full min-h-[260px] rounded-lg overflow-hidden",
-        "bg-gradient-to-b from-[#0d0020] to-[#0a0118]",
+        "bg-gradient-to-b from-[#0d0020] to-surface-deep",
         "flex items-center justify-center",
         "border border-white/5",
         className

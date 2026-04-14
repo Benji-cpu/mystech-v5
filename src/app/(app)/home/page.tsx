@@ -36,10 +36,10 @@ import type { DailyPracticeData } from "@/components/dashboard/daily-practice-ca
 
 function HomeSkeleton() {
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col gap-4">
       <Skeleton className="h-[76px] rounded-2xl" />
       <Skeleton className="h-[72px] rounded-2xl" />
-      <div className="grid grid-cols-2 gap-3 mt-2">
+      <div className="grid grid-cols-2 gap-4">
         {[1, 2, 3, 4].map((i) => (
           <Skeleton key={i} className="h-[100px] rounded-2xl" />
         ))}
@@ -168,21 +168,30 @@ async function HomeContent({
 
   return (
     <AnimatedDashboardContent>
-      <CompactLyraGreeting invitation={invitation} />
-      <DailyPracticeCard data={dailyPracticeData} className="mt-4" />
-      {practiceNudge && (
-        <DashboardPracticeCard
-          practiceTitle={practiceNudge.title}
-          durationMin={practiceNudge.durationMin}
-          pathId={practiceNudge.pathId}
-          pathName={practiceNudge.pathName}
-          waypointName={practiceNudge.waypointName}
-          className="mt-3"
-        />
-      )}
-      <QuickAccessGrid data={quickAccessData} className="mt-4" />
-      <DashboardNudgeSlot />
-      <RecentActivity items={taggedItems} className="mt-4" />
+      {/* Desktop: two-column layout. Mobile: single column */}
+      <div className="flex flex-col gap-6 lg:grid lg:grid-cols-[1fr_320px] lg:gap-8 lg:items-start">
+        {/* Primary column — greeting + CTA */}
+        <div className="flex flex-col gap-4">
+          <CompactLyraGreeting invitation={invitation} />
+          <DailyPracticeCard data={dailyPracticeData} />
+          {practiceNudge && (
+            <DashboardPracticeCard
+              practiceTitle={practiceNudge.title}
+              durationMin={practiceNudge.durationMin}
+              pathId={practiceNudge.pathId}
+              pathName={practiceNudge.pathName}
+              waypointName={practiceNudge.waypointName}
+            />
+          )}
+          <RecentActivity items={taggedItems} className="lg:mt-2" />
+        </div>
+
+        {/* Secondary column — quick access + nudges */}
+        <div className="flex flex-col gap-4">
+          <QuickAccessGrid data={quickAccessData} />
+          <DashboardNudgeSlot />
+        </div>
+      </div>
     </AnimatedDashboardContent>
   );
 }

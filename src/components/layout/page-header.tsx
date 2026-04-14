@@ -9,8 +9,8 @@ export function PageHeader({ title, subtitle, icon: Icon, action }: PageHeaderPr
   return (
     <div className="flex items-start justify-between gap-4">
       <div className="min-w-0">
-        <h1 className="text-2xl font-bold text-white/90 flex items-center gap-2">
-          {Icon && <Icon className="h-6 w-6 text-[#c9a94e] shrink-0" />}
+        <h1 className="text-2xl font-bold text-white/90 flex items-center gap-2 font-display leading-relaxed">
+          {Icon && <Icon className="h-6 w-6 text-gold shrink-0" />}
           {title}
         </h1>
         {subtitle && (

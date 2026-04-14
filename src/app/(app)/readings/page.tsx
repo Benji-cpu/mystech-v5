@@ -85,9 +85,9 @@ async function ReadingsContent() {
           <Link
             key={reading.id}
             href={`/readings/${reading.id}`}
-            className="flex items-center gap-4 p-4 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 hover:border-[#c9a94e]/30 transition-all group"
+            className="flex items-center gap-4 p-4 rounded-2xl bg-white/[0.03] backdrop-blur-sm border border-white/[0.06] hover:border-gold/30 transition-all group"
           >
-            <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-gradient-to-br from-[#1a0530] to-[#0a0118]">
+            <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-gradient-to-br from-surface-mid to-surface-deep">
               {reading.deckCoverImageUrl ? (
                 <img
                   src={reading.deckCoverImageUrl}
@@ -96,7 +96,7 @@ async function ReadingsContent() {
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
-                  <BookOpen className="h-5 w-5 text-[#c9a94e]/30" />
+                  <BookOpen className="h-5 w-5 text-gold/30" />
                 </div>
               )}
             </div>
@@ -106,7 +106,7 @@ async function ReadingsContent() {
                 <span className="font-medium text-sm truncate text-white/90">
                   {reading.deckTitle}
                 </span>
-                <span className="bg-[#c9a94e]/10 border border-[#c9a94e]/30 text-[#c9a94e] rounded-full px-2 py-0.5 text-xs flex-shrink-0">
+                <span className="bg-gold/10 border border-gold/30 text-gold rounded-full px-2 py-0.5 text-xs flex-shrink-0">
                   {SPREAD_LABELS[reading.spreadType as SpreadType] ?? reading.spreadType}
                 </span>
               </div>
@@ -122,10 +122,10 @@ async function ReadingsContent() {
                 <Share2 className="h-3.5 w-3.5 text-white/30" />
               )}
               {reading.feedback === "positive" && (
-                <ThumbsUp className="h-3.5 w-3.5 text-[#c9a94e]/70" />
+                <ThumbsUp className="h-3.5 w-3.5 text-gold/70" />
               )}
               {reading.feedback === "negative" && (
-                <ThumbsDown className="h-3.5 w-3.5 text-[#c9a94e]/70" />
+                <ThumbsDown className="h-3.5 w-3.5 text-gold/70" />
               )}
             </div>
 
@@ -137,7 +137,7 @@ async function ReadingsContent() {
       </StaggeredList>
 
       {isFree && (
-        <GlassPanel className="mt-6 p-4 border-[#c9a94e]/20 text-center">
+        <GlassPanel className="mt-6 p-4 border-gold/20 text-center">
           <div className="flex items-center justify-center gap-2 mb-2">
             <LyraSigil size="sm" state="dormant" />
             <span className="text-sm font-medium text-white/90">

@@ -15,7 +15,7 @@ export function ComingSoon({ title, description }: ComingSoonProps) {
             <Sparkles className="h-6 w-6 text-primary" />
           </div>
           <div className="space-y-2">
-            <h2 className="text-2xl font-semibold">{title}</h2>
+            <h2 className="text-2xl font-semibold font-display">{title}</h2>
             <p className="text-muted-foreground">
               {description ?? "This feature is coming soon. Stay tuned for updates."}
             </p>

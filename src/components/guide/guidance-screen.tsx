@@ -92,7 +92,7 @@ export function GuidanceScreen({
         animate={{ opacity: 1, y: 0 }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
         className={cn(
-          "fixed inset-0 z-50 flex items-center justify-center bg-[#0a0118]/95 backdrop-blur-md px-6",
+          "fixed inset-0 z-50 flex items-center justify-center bg-surface-deep/95 backdrop-blur-md px-6",
           className
         )}
       >
@@ -105,7 +105,7 @@ export function GuidanceScreen({
             {guidance.audioUrl && (
               <button
                 onClick={handleListenAgain}
-                className="px-5 py-2 rounded-xl bg-[#c9a94e]/20 border border-[#c9a94e]/30 text-[#c9a94e] text-sm hover:bg-[#c9a94e]/30 transition-colors"
+                className="px-5 py-2 rounded-xl bg-gold/20 border border-gold/30 text-gold text-sm hover:bg-gold/30 transition-colors"
               >
                 Listen again
               </button>
@@ -129,7 +129,7 @@ export function GuidanceScreen({
       exit={{ opacity: 0 }}
       transition={{ duration: 0.6 }}
       className={cn(
-        "fixed inset-0 z-50 flex flex-col bg-[#0a0118]/98 backdrop-blur-md",
+        "fixed inset-0 z-50 flex flex-col bg-surface-deep/98 backdrop-blur-md",
         className
       )}
     >
@@ -145,7 +145,7 @@ export function GuidanceScreen({
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ type: "spring", stiffness: 300, damping: 30, delay: 0.2 }}
-            className="text-xs text-[#c9a94e]/70 uppercase tracking-widest mb-6"
+            className="text-xs text-gold/70 uppercase tracking-widest mb-6"
           >
             {guidance.title}
           </motion.h2>
@@ -167,10 +167,10 @@ export function GuidanceScreen({
           disabled={!narrationDone}
           className={cn(
             "w-full max-w-xs py-3 rounded-xl font-medium text-sm transition-all",
-            "bg-gradient-to-r from-[#c9a94e] to-[#b89840] text-[#0a0118]",
-            "shadow-lg shadow-[#c9a94e]/20",
+            "bg-gradient-to-r from-gold to-[#b89840] text-surface-deep",
+            "shadow-lg shadow-gold/20",
             narrationDone
-              ? "cursor-pointer hover:shadow-xl hover:shadow-[#c9a94e]/30"
+              ? "cursor-pointer hover:shadow-xl hover:shadow-gold/30"
               : "cursor-default"
           )}
         >

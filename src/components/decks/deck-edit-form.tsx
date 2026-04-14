@@ -61,7 +61,7 @@ export function DeckEditForm({ deck }: DeckEditFormProps) {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Edit Deck</h1>
+        <h1 className="text-2xl font-bold font-display">Edit Deck</h1>
         <p className="text-muted-foreground mt-1">
           Update your deck&apos;s details.
         </p>

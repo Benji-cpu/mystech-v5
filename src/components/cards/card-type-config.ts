@@ -28,8 +28,8 @@ export const CARD_TYPE_CONFIG: Record<CardType, CardTypeConfig> = {
   threshold: {
     label: "Threshold Card",
     icon: Milestone,
-    borderClass: "border-[#c9a94e]/40",
-    badgeClass: "bg-[#c9a94e]/15 text-[#c9a94e] border border-[#c9a94e]/30",
+    borderClass: "border-gold/40",
+    badgeClass: "bg-gold/15 text-gold border border-gold/30",
     glowClass: "shadow-[0_0_20px_rgba(201,169,78,0.25)]",
   },
 };

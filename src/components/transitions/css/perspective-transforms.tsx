@@ -59,7 +59,7 @@ export function PerspectiveTransforms() {
                   <DemoCard
                     title={layer === 2 ? "Layers" : ""}
                     size="sm"
-                    className={layer < 2 ? "border-[#c9a94e]/20" : ""}
+                    className={layer < 2 ? "border-gold/20" : ""}
                   />
                 </div>
               ))}

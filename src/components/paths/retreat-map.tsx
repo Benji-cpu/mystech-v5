@@ -128,7 +128,7 @@ export function RetreatMap({
   if (retreats.length === 0) {
     return (
       <div className={cn('flex flex-col items-center justify-center gap-3 py-16 px-6', className)}>
-        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/5 backdrop-blur-xl border border-white/10">
+        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/[0.03] backdrop-blur-sm border border-white/[0.06]">
           <Milestone className="h-5 w-5 text-white/30" />
         </div>
         <p className="text-sm text-white/40 text-center">
@@ -156,12 +156,12 @@ export function RetreatMap({
               onClick={() => toggleRetreat(retreat.id)}
               className={cn(
                 'w-full text-left rounded-2xl',
-                'bg-white/5 backdrop-blur-xl border transition-colors duration-200',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c9a94e]/50',
+                'bg-white/[0.03] backdrop-blur-sm border transition-colors duration-200',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/50',
                 state === 'completed'
                   ? 'border-white/8 opacity-70 hover:opacity-100 hover:border-white/15'
                   : state === 'active'
-                    ? 'border-[#c9a94e]/30 hover:border-[#c9a94e]/50'
+                    ? 'border-gold/30 hover:border-gold/50'
                     : 'border-white/8 hover:border-white/15',
               )}
               whileHover={{ scale: 1.005 }}
@@ -175,7 +175,7 @@ export function RetreatMap({
                     state === 'completed'
                       ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-400'
                       : state === 'active'
-                        ? 'bg-[#c9a94e]/15 border-[#c9a94e]/50 text-[#c9a94e]'
+                        ? 'bg-gold/15 border-gold/50 text-gold'
                         : 'bg-white/5 border-white/15 text-white/30',
                   )}
                 >
@@ -195,7 +195,7 @@ export function RetreatMap({
                       Chapter {index + 1}
                     </span>
                     {state === 'active' && (
-                      <span className="text-[10px] text-[#c9a94e] font-medium">
+                      <span className="text-[10px] text-gold font-medium">
                         • Current
                       </span>
                     )}

@@ -22,7 +22,7 @@ export function LyraNudge({ nudge, onDismiss, className }: LyraNudgeProps) {
       className={cn(
         "p-4 flex items-start gap-3 relative",
         isDiscovery
-          ? "border-[#c9a94e]/30 shadow-[0_0_20px_rgba(201,169,78,0.08)]"
+          ? "border-gold/30 shadow-[0_0_20px_rgba(201,169,78,0.08)]"
           : "border-white/10",
         className
       )}
@@ -47,7 +47,7 @@ export function LyraNudge({ nudge, onDismiss, className }: LyraNudgeProps) {
       <div className="flex-1 min-w-0 space-y-2">
         <p className="text-sm text-white/70 leading-relaxed">{nudge.message}</p>
         {nudge.cta && (
-          <span className="inline-block text-sm font-medium text-[#c9a94e] hover:text-[#d4b85a] transition-colors">
+          <span className="inline-block text-sm font-medium text-gold hover:text-[#d4b85a] transition-colors">
             {nudge.cta.label} &rarr;
           </span>
         )}

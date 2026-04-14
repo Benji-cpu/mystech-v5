@@ -29,7 +29,7 @@ export default async function LoginPage({
 
       {/* Heading */}
       <div>
-        <h1 className="text-3xl font-bold md:text-4xl">MysTech</h1>
+        <h1 className="text-3xl font-bold md:text-4xl font-display">MysTech</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           Sign in to begin your mystical exploration
         </p>

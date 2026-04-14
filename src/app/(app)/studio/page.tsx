@@ -26,7 +26,7 @@ function StudioCard({
   return (
     <Link
       href={href}
-      className="group relative overflow-hidden rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 p-6 flex flex-col gap-4 transition-colors duration-300 hover:border-[#c9a94e]/30 hover:bg-white/[0.08]"
+      className="group relative overflow-hidden rounded-2xl bg-white/[0.03] backdrop-blur-sm border border-white/[0.06] p-6 flex flex-col gap-4 transition-colors duration-300 hover:border-gold/30 hover:bg-white/[0.08]"
     >
       {/* Gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent pointer-events-none" />
@@ -34,11 +34,11 @@ function StudioCard({
       <div className="relative z-10 flex flex-col gap-4 h-full">
         {/* Icon row */}
         <div className="flex items-start justify-between gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#c9a94e]/10 border border-[#c9a94e]/20 shrink-0">
-            <Icon className="h-6 w-6 text-[#c9a94e]" />
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gold/10 border border-gold/20 shrink-0">
+            <Icon className="h-6 w-6 text-gold" />
           </div>
           {badge && (
-            <span className="text-[10px] font-semibold tracking-widest uppercase px-2 py-0.5 rounded-full bg-[#c9a94e]/10 text-[#c9a94e] border border-[#c9a94e]/20">
+            <span className="text-[10px] font-semibold tracking-widest uppercase px-2 py-0.5 rounded-full bg-gold/10 text-gold border border-gold/20">
               {badge}
             </span>
           )}
@@ -60,7 +60,7 @@ function StudioCard({
         )}
 
         {/* Arrow */}
-        <div className="flex items-center gap-1 text-[#c9a94e]/60 group-hover:text-[#c9a94e] transition-colors mt-auto">
+        <div className="flex items-center gap-1 text-gold/60 group-hover:text-gold transition-colors mt-auto">
           <span className="text-xs font-medium">Open</span>
           <ChevronRight className="h-3.5 w-3.5 translate-x-0 group-hover:translate-x-0.5 transition-transform" />
         </div>

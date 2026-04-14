@@ -144,7 +144,7 @@ export function GuidanceOverlay({
 
               {/* Content */}
               <div className="flex-1 min-w-0">
-                <p className="text-xs text-[#c9a94e]/70 uppercase tracking-widest mb-2">
+                <p className="text-xs text-gold/70 uppercase tracking-widest mb-2">
                   {guidance.title}
                 </p>
                 <p className="text-sm text-amber-200/90 italic font-serif leading-relaxed">
@@ -158,7 +158,7 @@ export function GuidanceOverlay({
               {!isFirstEncounter && guidance.audioUrl && (
                 <button
                   onClick={handleListenAgain}
-                  className="px-4 py-2 rounded-xl bg-[#c9a94e]/20 border border-[#c9a94e]/30 text-[#c9a94e] text-xs hover:bg-[#c9a94e]/30 transition-colors"
+                  className="px-4 py-2 rounded-xl bg-gold/20 border border-gold/30 text-gold text-xs hover:bg-gold/30 transition-colors"
                 >
                   Listen again
                 </button>
@@ -173,7 +173,7 @@ export function GuidanceOverlay({
                   </button>
                   <button
                     onClick={handleComplete}
-                    className="px-4 py-2 rounded-xl bg-[#c9a94e]/20 border border-[#c9a94e]/30 text-[#c9a94e] text-xs font-medium hover:bg-[#c9a94e]/30 transition-colors"
+                    className="px-4 py-2 rounded-xl bg-gold/20 border border-gold/30 text-gold text-xs font-medium hover:bg-gold/30 transition-colors"
                   >
                     Got it
                   </button>

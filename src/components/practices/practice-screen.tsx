@@ -93,19 +93,19 @@ function VisualContent({
           <div className="flex flex-col items-center gap-4 text-center">
             {/* Gold glow pulse */}
             <motion.div
-              className="w-20 h-20 rounded-full bg-[#c9a94e]/10 border border-[#c9a94e]/30 flex items-center justify-center"
+              className="w-20 h-20 rounded-full bg-gold/10 border border-gold/30 flex items-center justify-center"
               animate={{
                 boxShadow: [
-                  '0 0 20px rgba(201,169,78,0.15)',
-                  '0 0 40px rgba(201,169,78,0.35)',
-                  '0 0 20px rgba(201,169,78,0.15)',
+                  '0 0 20px oklch(0.75 0.12 85 / 0.15)',
+                  '0 0 40px oklch(0.75 0.12 85 / 0.35)',
+                  '0 0 20px oklch(0.75 0.12 85 / 0.15)',
                 ],
               }}
               transition={{ repeat: Infinity, duration: 3, ease: 'easeInOut' }}
             >
               <span className="text-3xl">✦</span>
             </motion.div>
-            <h2 className="text-lg font-light text-[#c9a94e] tracking-wide">
+            <h2 className="text-lg font-light text-gold tracking-wide">
               Practice Complete
             </h2>
             <p className="text-sm text-white/40 max-w-xs">
@@ -116,8 +116,8 @@ function VisualContent({
 
         {isIdle && (
           <div className="flex flex-col items-center gap-5 text-center">
-            <div className="w-12 h-12 rounded-full bg-[#c9a94e]/5 border border-[#c9a94e]/20 flex items-center justify-center">
-              <span className="text-lg text-[#c9a94e]/50">◈</span>
+            <div className="w-12 h-12 rounded-full bg-gold/5 border border-gold/20 flex items-center justify-center">
+              <span className="text-lg text-gold/50">◈</span>
             </div>
             <p className="text-sm text-white/30 max-w-xs leading-relaxed">
               Find a comfortable position and press begin when you are ready.
@@ -133,7 +133,7 @@ function VisualContent({
                     'rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors',
                     'min-w-[44px] min-h-[36px]',
                     selectedDuration === min
-                      ? 'border border-[#c9a94e]/60 bg-[#c9a94e]/20 text-[#c9a94e]'
+                      ? 'border border-gold/60 bg-gold/20 text-gold'
                       : 'border border-white/10 bg-white/5 text-white/40 hover:bg-white/8 hover:text-white/60',
                   )}
                   whileTap={{ scale: 0.95 }}
@@ -151,7 +151,7 @@ function VisualContent({
             animate={{ opacity: [0.4, 0.8, 0.4] }}
             transition={{ repeat: Infinity, duration: 1.8, ease: 'easeInOut' }}
           >
-            <div className="w-2 h-2 rounded-full bg-[#c9a94e]/60" />
+            <div className="w-2 h-2 rounded-full bg-gold/60" />
             <p className="text-xs text-white/30 tracking-wider uppercase">Preparing</p>
           </motion.div>
         )}
@@ -190,7 +190,7 @@ function ProgressSteps({ currentIndex, total }: ProgressStepsProps) {
   return (
     <div className="relative w-full h-0.5 bg-white/10 rounded-full overflow-hidden">
       <motion.div
-        className="absolute inset-y-0 left-0 bg-[#c9a94e]/60 rounded-full"
+        className="absolute inset-y-0 left-0 bg-gold/60 rounded-full"
         animate={{ width: `${completedFraction * 100}%` }}
         transition={ZONE_SPRING}
       />

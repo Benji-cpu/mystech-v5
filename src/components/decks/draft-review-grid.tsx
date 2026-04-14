@@ -31,7 +31,7 @@ export function DraftReviewGrid({
             "group relative aspect-[2/3] rounded-xl border p-3 flex flex-col cursor-pointer transition-all",
             card.removed
               ? "border-red-500/20 bg-red-500/5 opacity-40"
-              : "border-border/50 bg-card hover:border-[#c9a94e]/30"
+              : "border-border/50 bg-card hover:border-gold/30"
           )}
           onClick={() => {
             if (!card.removed) {
@@ -49,7 +49,7 @@ export function DraftReviewGrid({
               "absolute top-2 right-2 h-6 w-6 rounded-full border flex items-center justify-center transition-colors z-10",
               card.removed
                 ? "border-red-500/40 bg-red-500/10 text-red-400"
-                : "border-[#c9a94e]/40 bg-[#c9a94e]/10 text-[#c9a94e]"
+                : "border-gold/40 bg-gold/10 text-gold"
             )}
           >
             {card.removed ? (

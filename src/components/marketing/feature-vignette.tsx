@@ -22,7 +22,7 @@ function CardImage({
   return (
     <div
       className={cn(
-        'relative overflow-hidden rounded-lg border border-[#c9a94e]/20',
+        'relative overflow-hidden rounded-lg border border-gold/20',
         className,
       )}
       style={style}
@@ -84,7 +84,7 @@ function ReadingsVignette() {
         }}
       />
       <p
-        className="text-xs sm:text-sm text-[#c9a94e]/60 animate-pulse"
+        className="text-xs sm:text-sm text-gold/60 animate-pulse"
         style={{ animationDuration: '3s' }}
       >
         A moment of clarity awaits...

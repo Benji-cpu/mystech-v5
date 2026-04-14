@@ -18,7 +18,7 @@ export default function DashboardLoading() {
       </div>
 
       {/* Today celestial card skeleton */}
-      <div className="rounded-2xl bg-white/5 border border-white/10 border-l-2 border-l-[#c9a94e]/20 p-4 space-y-2">
+      <div className="rounded-2xl bg-white/5 border border-white/10 border-l-2 border-l-gold/20 p-4 space-y-2">
         <div className="flex items-center gap-2">
           <Skeleton className="h-5 w-5 rounded" />
           <Skeleton className="h-4 w-28" />

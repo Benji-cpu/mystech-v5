@@ -33,7 +33,7 @@ export function StylePickerGrid({
           className={cn(
             "flex flex-col items-center gap-1.5 rounded-lg p-2 transition-colors",
             selectedStyleId === style.id
-              ? "bg-[#c9a94e]/10"
+              ? "bg-gold/10"
               : "hover:bg-white/5"
           )}
         >
@@ -46,7 +46,7 @@ export function StylePickerGrid({
           <span
             className={cn(
               "text-xs font-medium text-center leading-tight",
-              selectedStyleId === style.id && "text-[#c9a94e]"
+              selectedStyleId === style.id && "text-gold"
             )}
           >
             {style.name}
@@ -66,7 +66,7 @@ export function StylePickerGrid({
           onClick={onCreateCustom}
           className="flex flex-col items-center gap-1.5 rounded-lg p-2 transition-colors hover:bg-white/5"
         >
-          <div className="flex h-24 w-24 items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 transition-colors hover:border-[#c9a94e]/50">
+          <div className="flex h-24 w-24 items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 transition-colors hover:border-gold/50">
             <Plus className="h-8 w-8 text-muted-foreground/50" />
           </div>
           <span className="text-xs font-medium text-muted-foreground">

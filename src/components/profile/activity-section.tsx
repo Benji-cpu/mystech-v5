@@ -27,12 +27,12 @@ export function ActivitySection({
   return (
     <div
       className={cn(
-        "bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4",
+        "bg-white/[0.03] backdrop-blur-sm border border-white/[0.06] rounded-2xl p-4",
         className
       )}
     >
       <div className="flex items-center gap-2.5 mb-3">
-        <BookOpen className="h-4 w-4 text-[#c9a94e]" />
+        <BookOpen className="h-4 w-4 text-gold" />
         <span className="text-sm font-medium text-white/80">
           Activity
         </span>

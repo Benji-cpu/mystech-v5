@@ -15,9 +15,9 @@ export default async function NewDeckPage() {
         {/* Quick Create */}
         <Link
           href="/decks/new/simple"
-          className="group block rounded-2xl p-6 transition-all bg-white/5 backdrop-blur-xl border border-white/10 shadow-lg shadow-purple-900/20 hover:border-[#c9a94e]/40 hover:bg-white/10 hover:shadow-[0_0_30px_rgba(201,169,78,0.15)]"
+          className="group block rounded-2xl p-6 transition-all bg-white/[0.03] backdrop-blur-sm border border-white/[0.06] shadow-lg shadow-purple-900/20 hover:border-gold/40 hover:bg-white/10 hover:shadow-[0_0_30px_rgba(201,169,78,0.15)]"
         >
-          <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-[#c9a94e]/10 text-[#c9a94e] mb-3">
+          <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-gold/10 text-gold mb-3">
             <Zap className="h-7 w-7" />
           </div>
           <h3 className="text-lg font-semibold mb-1">Quick Create</h3>
@@ -29,9 +29,9 @@ export default async function NewDeckPage() {
         {/* Guided Journey */}
         <Link
           href="/decks/new/journey"
-          className="group block rounded-2xl p-6 transition-all bg-white/5 backdrop-blur-xl border border-white/10 shadow-lg shadow-purple-900/20 hover:border-[#c9a94e]/40 hover:bg-white/10 hover:shadow-[0_0_30px_rgba(201,169,78,0.15)]"
+          className="group block rounded-2xl p-6 transition-all bg-white/[0.03] backdrop-blur-sm border border-white/[0.06] shadow-lg shadow-purple-900/20 hover:border-gold/40 hover:bg-white/10 hover:shadow-[0_0_30px_rgba(201,169,78,0.15)]"
         >
-          <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-[#c9a94e]/10 text-[#c9a94e] mb-3">
+          <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-gold/10 text-gold mb-3">
             <MessageCircle className="h-7 w-7" />
           </div>
           <h3 className="text-lg font-semibold mb-1">Guided Journey</h3>

@@ -193,8 +193,8 @@ export function DraftReviewSwipe({
     return (
       <div className="flex flex-col items-center justify-center min-h-[500px] space-y-6 py-8">
         <div className="text-center space-y-2">
-          <Sparkles className="h-8 w-8 text-[#c9a94e] mx-auto mb-2" />
-          <h2 className="text-2xl font-bold">Review Complete</h2>
+          <Sparkles className="h-8 w-8 text-gold mx-auto mb-2" />
+          <h2 className="text-2xl font-bold font-display">Review Complete</h2>
         </div>
 
         {/* Mini card grid — kept cards only */}
@@ -203,7 +203,7 @@ export function DraftReviewSwipe({
             {kept.map((c) => (
               <div
                 key={c.cardNumber}
-                className="w-16 h-20 rounded-lg border border-[#c9a94e]/30 bg-[#c9a94e]/5 flex items-center justify-center p-1"
+                className="w-16 h-20 rounded-lg border border-gold/30 bg-gold/5 flex items-center justify-center p-1"
               >
                 <span className="text-[10px] text-center leading-tight text-muted-foreground line-clamp-3">
                   {c.title}
@@ -225,7 +225,7 @@ export function DraftReviewSwipe({
         <Button
           onClick={onFinalize}
           disabled={kept.length === 0 || isFinalizing || isReplacing}
-          className="w-full max-w-xs bg-[#c9a94e]/20 border border-[#c9a94e] text-[#c9a94e] hover:bg-[#c9a94e]/30"
+          className="w-full max-w-xs bg-gold/20 border border-gold text-gold hover:bg-gold/30"
           size="lg"
         >
           {isFinalizing ? (

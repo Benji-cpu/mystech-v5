@@ -36,14 +36,14 @@ export function ChronicleDashboardCard({
   return (
     <GlassPanel
       className={cn(
-        "p-5 border-[#c9a94e]/20 hover:border-[#c9a94e]/40 transition-colors",
+        "p-5 border-gold/20 hover:border-gold/40 transition-colors",
         className
       )}
     >
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <ScrollText className="h-4 w-4 text-[#c9a94e]" />
+          <ScrollText className="h-4 w-4 text-gold" />
           <span className="text-sm font-semibold text-white/90">
             {completedToday ? "Today's Card" : "Your Chronicle"}
           </span>
@@ -55,7 +55,7 @@ export function ChronicleDashboardCard({
               return (
                 <span
                   key={badge.id}
-                  className="text-sm px-1.5 py-0.5 rounded-full bg-[#c9a94e]/10 border border-[#c9a94e]/30"
+                  className="text-sm px-1.5 py-0.5 rounded-full bg-gold/10 border border-gold/30"
                   title={def?.label ?? badge.id}
                   aria-label={def?.label ?? badge.id}
                 >
@@ -83,12 +83,12 @@ export function ChronicleDashboardCard({
                 />
               </motion.div>
             ) : (
-              <div className="w-14 h-20 rounded-lg bg-gradient-to-br from-[#c9a94e]/20 to-[#1a0530] border border-[#c9a94e]/20 flex items-center justify-center flex-shrink-0">
-                <ScrollText className="h-5 w-5 text-[#c9a94e]/40" />
+              <div className="w-14 h-20 rounded-lg bg-gradient-to-br from-gold/20 to-surface-mid border border-gold/20 flex items-center justify-center flex-shrink-0">
+                <ScrollText className="h-5 w-5 text-gold/40" />
               </div>
             )}
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium text-white/90 group-hover:text-[#c9a94e] transition-colors">
+              <p className="text-sm font-medium text-white/90 group-hover:text-gold transition-colors">
                 &ldquo;{todayCard.title}&rdquo;
               </p>
               <p className="text-xs text-white/40 mt-1 line-clamp-2">
@@ -108,7 +108,7 @@ export function ChronicleDashboardCard({
             </p>
           </div>
           <Link href="/chronicle/today">
-            <Button className="w-full bg-[#c9a94e] hover:bg-[#c9a94e]/80 text-black font-semibold">
+            <Button className="w-full bg-gold hover:bg-gold/80 text-black font-semibold">
               Chronicle Your Day
             </Button>
           </Link>

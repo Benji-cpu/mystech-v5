@@ -44,7 +44,7 @@ function SmokeContent({ playing }: { playing: boolean }) {
     // Card body
     const grad = ctx.createLinearGradient(cx, cy, cx, cy + ch);
     grad.addColorStop(0, "#1a0530");
-    grad.addColorStop(1, "#0a0118");
+    grad.addColorStop(1, "var(--surface-deep)");
     ctx.fillStyle = grad;
     ctx.beginPath();
     ctx.roundRect(cx, cy, cw, ch, 8);

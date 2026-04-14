@@ -17,18 +17,18 @@ const planLabels: Record<PlanType, string> = {
 
 export function SubscriptionSection({ plan }: SubscriptionSectionProps) {
   return (
-    <GlassPanel className="p-6">
+    <GlassPanel className="p-4">
       <div className="flex items-center justify-between mb-4">
         <div>
           <SectionHeader>Subscription</SectionHeader>
           <p className="text-sm text-white/40 mt-1">Your current plan</p>
         </div>
-        <span className="bg-[#c9a94e]/10 border border-[#c9a94e]/30 text-[#c9a94e] rounded-full px-3 py-1 text-xs font-medium">
+        <span className="bg-gold/10 border border-gold/30 text-gold rounded-full px-3 py-1 text-xs font-medium">
           {planLabels[plan]}
         </span>
       </div>
       {plan === "free" ? (
-        <div className="space-y-3">
+        <div className="space-y-4">
           <p className="text-sm text-white/60">
             Upgrade to Pro for more cards, readings, and all spread types.
           </p>
@@ -37,7 +37,7 @@ export function SubscriptionSection({ plan }: SubscriptionSectionProps) {
           </Link>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-4">
           <p className="text-sm text-white/60">
             Manage your billing details and subscription.
           </p>

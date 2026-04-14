@@ -152,7 +152,7 @@ export default async function ReadingViewPage({
       <AnimatedItem className="mb-8">
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-white/90">
+            <h1 className="text-2xl font-bold text-white/90 font-display leading-relaxed">
               {SPREAD_LABELS[spreadType]} Reading
             </h1>
             <p className="text-white/40 text-sm mt-1">
@@ -177,7 +177,7 @@ export default async function ReadingViewPage({
 
         {reading.question && (
           <GlassPanel className="mt-4 p-3">
-            <p className="text-xs text-[#c9a94e] uppercase tracking-wider mb-1">
+            <p className="text-xs text-gold uppercase tracking-wider mb-1">
               Your Question
             </p>
             <p className="text-sm italic text-white/90">{reading.question}</p>

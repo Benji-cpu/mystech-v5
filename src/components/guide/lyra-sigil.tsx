@@ -226,7 +226,7 @@ export function LyraSigil({
               <motion.circle
                 cx={star.cx}
                 initial={{ cy: star.cy, r, opacity: 0.8 }}
-                fill="#c9a94e"
+                fill="var(--gold)"
                 animate={getStarAnimation(index, star)}
               />
               {/* Bright white core — stays static */}
@@ -247,7 +247,7 @@ export function LyraSigil({
     return (
       <div className={cn("flex flex-col items-center gap-2", className)}>
         {sigil}
-        <span className="text-[10px] text-[#c9a94e]/50 tracking-[0.25em] uppercase">
+        <span className="text-[10px] text-gold/50 tracking-[0.25em] uppercase">
           Lyra
         </span>
       </div>

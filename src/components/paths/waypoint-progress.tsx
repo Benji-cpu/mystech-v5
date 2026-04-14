@@ -70,7 +70,7 @@ export function WaypointProgress({
               className={cn(
                 'flex items-start gap-3 rounded-xl p-3 transition-colors duration-200',
                 isCurrent
-                  ? 'bg-[#c9a94e]/8 border border-[#c9a94e]/20'
+                  ? 'bg-gold/8 border border-gold/20'
                   : isCompleted
                     ? 'opacity-60'
                     : 'opacity-50',
@@ -81,7 +81,7 @@ export function WaypointProgress({
                 {isCompleted ? (
                   <CheckCircle2 className="h-4 w-4 text-emerald-400" />
                 ) : isCurrent ? (
-                  <Dot className="h-4 w-4 text-[#c9a94e] animate-pulse" />
+                  <Dot className="h-4 w-4 text-gold animate-pulse" />
                 ) : (
                   <Circle className="h-4 w-4 text-white/20" />
                 )}
@@ -107,7 +107,7 @@ export function WaypointProgress({
                   <span
                     className={cn(
                       'text-[10px] shrink-0 tabular-nums',
-                      isCurrent ? 'text-[#c9a94e]' : 'text-white/30',
+                      isCurrent ? 'text-gold' : 'text-white/30',
                     )}
                   >
                     {isCompleted
@@ -128,11 +128,11 @@ export function WaypointProgress({
 
                 {/* Suggested intention — only for current waypoint */}
                 {isCurrent && waypoint.suggestedIntention && (
-                  <div className="mt-2 rounded-lg bg-[#c9a94e]/8 border border-[#c9a94e]/15 p-2">
-                    <p className="text-[10px] text-[#c9a94e]/60 font-medium uppercase tracking-wider mb-0.5">
+                  <div className="mt-2 rounded-lg bg-gold/8 border border-gold/15 p-2">
+                    <p className="text-[10px] text-gold/60 font-medium uppercase tracking-wider mb-0.5">
                       Suggested Intention
                     </p>
-                    <p className="text-xs text-[#c9a94e]/80 italic leading-relaxed">
+                    <p className="text-xs text-gold/80 italic leading-relaxed">
                       &ldquo;{waypoint.suggestedIntention}&rdquo;
                     </p>
                   </div>
@@ -142,7 +142,7 @@ export function WaypointProgress({
                 {isCurrent && readingsRequired > 1 && (
                   <div className="mt-1.5 h-1 rounded-full bg-white/10 overflow-hidden">
                     <motion.div
-                      className="h-full bg-[#c9a94e] rounded-full"
+                      className="h-full bg-gold rounded-full"
                       initial={{ width: 0 }}
                       animate={{ width: `${(readingsDone / readingsRequired) * 100}%` }}
                       transition={{ type: 'spring', stiffness: 200, damping: 30, delay: 0.3 }}
@@ -167,8 +167,8 @@ export function WaypointProgress({
                       </>
                     ) : isCurrent ? (
                       <>
-                        <Headphones className="h-3 w-3 text-[#c9a94e]" />
-                        <span className="text-[10px] text-[#c9a94e]/70">
+                        <Headphones className="h-3 w-3 text-gold" />
+                        <span className="text-[10px] text-gold/70">
                           Meditation available
                         </span>
                       </>
@@ -223,20 +223,20 @@ function PracticeCallout({ waypointId }: { waypointId: string }) {
         disabled={loading}
         className={cn(
           'mt-2 w-full rounded-lg p-2.5',
-          'bg-[#c9a94e]/10 border border-[#c9a94e]/25',
+          'bg-gold/10 border border-gold/25',
           'flex items-center gap-2',
-          'hover:bg-[#c9a94e]/15 transition-colors',
+          'hover:bg-gold/15 transition-colors',
           'disabled:opacity-50',
         )}
         whileHover={{ scale: 1.01 }}
         whileTap={{ scale: 0.99 }}
       >
-        <Headphones className="h-4 w-4 text-[#c9a94e] shrink-0" />
+        <Headphones className="h-4 w-4 text-gold shrink-0" />
         <div className="text-left flex-1">
-          <p className="text-xs text-[#c9a94e] font-medium">
+          <p className="text-xs text-gold font-medium">
             {loading ? 'Loading...' : 'Begin Practice'}
           </p>
-          <p className="text-[10px] text-[#c9a94e]/60">
+          <p className="text-[10px] text-gold/60">
             Guided meditation for this step
           </p>
         </div>

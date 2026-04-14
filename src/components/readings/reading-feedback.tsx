@@ -55,7 +55,7 @@ export function ReadingFeedback({
         size="icon"
         className={`h-7 w-7 ${
           feedback === "positive"
-            ? "text-[#c9a94e] hover:text-[#c9a94e]"
+            ? "text-gold hover:text-gold"
             : "text-muted-foreground/50 hover:text-muted-foreground"
         }`}
         onClick={() => handleFeedback("positive")}
@@ -68,7 +68,7 @@ export function ReadingFeedback({
         size="icon"
         className={`h-7 w-7 ${
           feedback === "negative"
-            ? "text-[#c9a94e] hover:text-[#c9a94e]"
+            ? "text-gold hover:text-gold"
             : "text-muted-foreground/50 hover:text-muted-foreground"
         }`}
         onClick={() => handleFeedback("negative")}

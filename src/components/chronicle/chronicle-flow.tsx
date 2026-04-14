@@ -112,7 +112,7 @@ function BadgeNotice({ name, lyraMessage, onDismiss }: BadgeNoticeProps) {
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: -10 }}
       transition={CONTENT_SPRING}
-      className="rounded-2xl bg-gradient-to-r from-[#c9a94e]/10 to-purple-900/20 border border-[#c9a94e]/30 p-4"
+      className="rounded-2xl bg-gradient-to-r from-gold/10 to-purple-900/20 border border-gold/30 p-4"
     >
       <div className="flex items-start gap-3">
         <motion.div
@@ -123,7 +123,7 @@ function BadgeNotice({ name, lyraMessage, onDismiss }: BadgeNoticeProps) {
           ✦
         </motion.div>
         <div className="min-w-0">
-          <p className="text-[#c9a94e] font-semibold text-sm mb-1">{name} — Earned!</p>
+          <p className="text-gold font-semibold text-sm mb-1">{name} — Earned!</p>
           <p className="text-white/60 text-xs leading-relaxed">{lyraMessage}</p>
         </div>
       </div>
@@ -146,16 +146,16 @@ function StreakBadge({ count }: { count: number }) {
       initial={{ opacity: 0, scale: 0.8 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={CONTENT_SPRING}
-      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#c9a94e]/10 border border-[#c9a94e]/20"
+      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gold/10 border border-gold/20"
     >
       <motion.span
         animate={{ scale: [1, 1.2, 1] }}
         transition={{ duration: 1.5, repeat: Infinity }}
-        className="text-[#c9a94e] text-xs"
+        className="text-gold text-xs"
       >
         ✦
       </motion.span>
-      <span className="text-[#c9a94e] text-xs font-medium">{count} day streak</span>
+      <span className="text-gold text-xs font-medium">{count} day streak</span>
     </motion.div>
   );
 }
@@ -243,7 +243,7 @@ function ActionBar({
               {[0, 1, 2].map((i) => (
                 <div
                   key={i}
-                  className="w-1.5 h-1.5 rounded-full bg-[#c9a94e]/50"
+                  className="w-1.5 h-1.5 rounded-full bg-gold/50"
                   style={{ animationDelay: `${i * 0.2}s` }}
                 />
               ))}
@@ -265,7 +265,7 @@ function ActionBar({
                 disabled={isStreaming}
                 maxLength={2000}
                 rows={1}
-                className="min-h-[44px] max-h-[120px] resize-none bg-white/5 border-white/10 text-white/90 placeholder:text-white/25 focus-visible:ring-[#c9a94e]/20 focus-visible:border-[#c9a94e]/40"
+                className="min-h-[44px] max-h-[120px] resize-none bg-white/5 border-white/10 text-white/90 placeholder:text-white/25 focus-visible:ring-gold/20 focus-visible:border-gold/40"
               />
               <MicrophoneButton
                 onTranscript={onMicTranscript}
@@ -293,7 +293,7 @@ function ActionBar({
                 transition={CONTENT_SPRING}
               >
                 {isFirstEntry && (
-                  <p className="text-xs text-[#c9a94e]/60 text-center mb-2">
+                  <p className="text-xs text-gold/60 text-center mb-2">
                     Your first card is ready to be forged from today&apos;s conversation
                   </p>
                 )}
@@ -303,8 +303,8 @@ function ActionBar({
                   onClick={onForge}
                   className={cn(
                     'w-auto px-8 mx-auto block py-3 rounded-xl font-semibold text-sm',
-                    'bg-gradient-to-r from-[#c9a94e] to-[#daa520] text-black',
-                    'shadow-lg shadow-[#c9a94e]/20 hover:shadow-xl hover:shadow-[#c9a94e]/30',
+                    'bg-gradient-to-r from-gold to-gold-bright text-black',
+                    'shadow-lg shadow-gold/20 hover:shadow-xl hover:shadow-gold/30',
                     'transition-shadow duration-300',
                   )}
                 >
@@ -1001,8 +1001,8 @@ export function ChronicleFlow({
                   onClick={transitionToReading}
                   className={cn(
                     'relative w-auto px-8 py-3 rounded-xl font-semibold text-sm overflow-hidden',
-                    'bg-gradient-to-r from-[#c9a94e] to-[#daa520] text-black',
-                    'shadow-lg shadow-[#c9a94e]/20',
+                    'bg-gradient-to-r from-gold to-gold-bright text-black',
+                    'shadow-lg shadow-gold/20',
                   )}
                 >
                   {/* Progress fill */}

@@ -25,11 +25,11 @@ function SettingsContentSkeleton() {
       {Array.from({ length: 6 }).map((_, i) => (
         <div
           key={i}
-          className="rounded-2xl bg-white/5 border border-white/10 p-6"
+          className="rounded-2xl bg-white/5 border border-white/10 p-4"
         >
           <Skeleton className="h-3 w-24 mb-3" />
           <Skeleton className="h-4 w-48 mb-4" />
-          <div className="space-y-3">
+          <div className="space-y-4">
             <Skeleton className="h-10 w-full rounded-xl" />
             <Skeleton className="h-10 w-full rounded-xl" />
           </div>

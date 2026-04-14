@@ -81,7 +81,7 @@ export function SpreadPreviewSVG({ spreadType, className }: SpreadPreviewSVGProp
               width={cardW}
               height={cardH}
               rx={1}
-              className="fill-white/10 stroke-[#c9a94e]/40"
+              className="fill-white/10 stroke-gold/40"
               strokeWidth={0.5}
               transform={
                 pos.rotation

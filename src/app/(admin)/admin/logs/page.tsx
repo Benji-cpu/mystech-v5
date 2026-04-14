@@ -81,7 +81,7 @@ export default function AdminLogsPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold">Generation Logs</h1>
+      <h1 className="text-2xl font-bold font-display">Generation Logs</h1>
 
       <div className="flex gap-3">
         <Select value={operationType} onValueChange={(v) => { setOperationType(v); setPage(1); }}>

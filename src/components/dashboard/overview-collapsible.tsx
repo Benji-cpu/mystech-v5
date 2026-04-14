@@ -54,12 +54,12 @@ export function OverviewCollapsible({
     <Collapsible open={open} onOpenChange={setOpen} className={className}>
       <CollapsibleTrigger
         className={cn(
-          "bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl",
+          "bg-white/[0.03] backdrop-blur-sm border border-white/[0.06] rounded-2xl",
           "p-4 cursor-pointer transition-colors hover:bg-white/[0.07]",
           "flex items-center justify-between w-full"
         )}
       >
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2">
           <Compass className="h-4 w-4 text-white/50" />
           <span className="text-sm font-medium text-white/80">
             Your Sanctum

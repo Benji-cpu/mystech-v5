@@ -314,7 +314,7 @@ export function ChronicleSetupFlow({
     <div
       className={cn(
         "flex h-[100dvh] flex-col overflow-hidden",
-        "bg-gradient-to-b from-[#0a0118] via-[#0d0220] to-[#0a0118]",
+        "bg-gradient-to-b from-surface-deep via-[#0d0220] to-surface-deep",
         className
       )}
     >
@@ -371,7 +371,7 @@ export function ChronicleSetupFlow({
         {/* Primary CTA — always gold, forward-only */}
         <motion.div whileTap={{ scale: 0.98 }}>
           <Button
-            className="h-12 w-full bg-[#c9a94e] text-sm font-semibold text-black hover:bg-[#c9a94e]/80 disabled:opacity-40 shadow-[0_0_20px_rgba(201,169,78,0.3)]"
+            className="h-12 w-full bg-gold text-sm font-semibold text-black hover:bg-gold/80 disabled:opacity-40 shadow-[0_0_20px_rgba(201,169,78,0.3)]"
             disabled={!canContinue || state.isCreating}
             onClick={isOnLast ? handleComplete : () => dispatch({ type: "NEXT" })}
           >

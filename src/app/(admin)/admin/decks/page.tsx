@@ -66,7 +66,7 @@ export default function AdminDecksPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold">Decks</h1>
+      <h1 className="text-2xl font-bold font-display">Decks</h1>
 
       <form onSubmit={handleSearch} className="flex gap-2 max-w-sm">
         <Input

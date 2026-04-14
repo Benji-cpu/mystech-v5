@@ -9,7 +9,11 @@ paths:
 - Always accept `className?: string` and merge with `cn()` from `@/lib/utils`
 - Use ShadCN/UI primitives from `src/components/ui/` — don't rebuild buttons, dialogs, inputs, etc.
 - Dark theme by default. Use CSS variables (`--background`, `--card`, `--primary`, `--gold`) not hardcoded colors
-- Glass morphism for card surfaces: `bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl`
+- Three-tier surface system via `GlassPanel` variants:
+  - `solid`: nav bars, modal backdrops, structural containers — `bg-card` + subtle border, NO blur
+  - `translucent` (default): cards over ambient background — `bg-white/[0.03] backdrop-blur-sm border border-white/[0.06]`
+  - `elevated`: primary CTA, most important element — `bg-white/[0.08]` + stronger border + optional gold accent
+  - Reserve `backdrop-blur-xl` for modals and truly floating elements only
 - Gold accent for mystical emphasis: `text-primary` (maps to gold in dark theme)
 - Keep components small and focused — one responsibility per component
 - Co-locate component-specific hooks and types with the component

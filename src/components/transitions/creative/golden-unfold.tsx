@@ -28,8 +28,8 @@ export function GoldenUnfold() {
                 zIndex: 3,
               }}
             >
-              <div className="w-full h-full bg-gradient-to-b from-[#1a0530] to-[#120225] border border-[#c9a94e]/30 rounded-t-xl">
-                <div className="absolute bottom-0 inset-x-0 h-px bg-[#c9a94e]/50" />
+              <div className="w-full h-full bg-gradient-to-b from-surface-mid to-[#120225] border border-gold/30 rounded-t-xl">
+                <div className="absolute bottom-0 inset-x-0 h-px bg-gold/50" />
               </div>
             </div>
 
@@ -44,8 +44,8 @@ export function GoldenUnfold() {
                 zIndex: 3,
               }}
             >
-              <div className="w-full h-full bg-gradient-to-t from-[#1a0530] to-[#120225] border border-[#c9a94e]/30 rounded-b-xl">
-                <div className="absolute top-0 inset-x-0 h-px bg-[#c9a94e]/50" />
+              <div className="w-full h-full bg-gradient-to-t from-surface-mid to-[#120225] border border-gold/30 rounded-b-xl">
+                <div className="absolute top-0 inset-x-0 h-px bg-gold/50" />
               </div>
             </div>
 
@@ -60,8 +60,8 @@ export function GoldenUnfold() {
                 zIndex: 2,
               }}
             >
-              <div className="w-full h-full bg-gradient-to-r from-[#1a0530] to-[#120225] border border-[#c9a94e]/30 rounded-l-xl">
-                <div className="absolute right-0 inset-y-0 w-px bg-[#c9a94e]/50" />
+              <div className="w-full h-full bg-gradient-to-r from-surface-mid to-[#120225] border border-gold/30 rounded-l-xl">
+                <div className="absolute right-0 inset-y-0 w-px bg-gold/50" />
               </div>
             </div>
 
@@ -76,8 +76,8 @@ export function GoldenUnfold() {
                 zIndex: 2,
               }}
             >
-              <div className="w-full h-full bg-gradient-to-l from-[#1a0530] to-[#120225] border border-[#c9a94e]/30 rounded-r-xl">
-                <div className="absolute left-0 inset-y-0 w-px bg-[#c9a94e]/50" />
+              <div className="w-full h-full bg-gradient-to-l from-surface-mid to-[#120225] border border-gold/30 rounded-r-xl">
+                <div className="absolute left-0 inset-y-0 w-px bg-gold/50" />
               </div>
             </div>
           </div>

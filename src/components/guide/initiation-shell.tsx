@@ -114,7 +114,7 @@ function VoiceConsentPhase({
       >
         <button
           onClick={onAccept}
-          className="px-6 py-2.5 rounded-xl bg-[#c9a94e]/20 border border-[#c9a94e]/30 text-[#c9a94e] text-sm font-medium hover:bg-[#c9a94e]/30 transition-colors cursor-pointer"
+          className="px-6 py-2.5 rounded-xl bg-gold/20 border border-gold/30 text-gold text-sm font-medium hover:bg-gold/30 transition-colors cursor-pointer"
         >
           Yes, please
         </button>
@@ -168,7 +168,7 @@ function WelcomePhase({
             key={i}
             className={cn(
               "h-1 rounded-full transition-all duration-500",
-              i === step ? "w-4 bg-[#c9a94e]" : i < step ? "w-2 bg-[#c9a94e]/40" : "w-2 bg-white/20"
+              i === step ? "w-4 bg-gold" : i < step ? "w-2 bg-gold/40" : "w-2 bg-white/20"
             )}
           />
         ))}
@@ -251,7 +251,7 @@ function QuestionPhase({
           className={cn(
             "w-full resize-none rounded-xl px-4 py-3 text-sm leading-relaxed",
             "bg-white/5 border border-white/10 text-white/90 placeholder:text-white/25",
-            "focus:outline-none focus:border-[#c9a94e]/40 focus:ring-0",
+            "focus:outline-none focus:border-gold/40 focus:ring-0",
             "transition-colors duration-200"
           )}
         />
@@ -264,9 +264,9 @@ function QuestionPhase({
         onClick={() => value.trim().length >= 10 && onSubmit(value.trim())}
         className={cn(
           "w-full py-3 rounded-xl font-medium text-sm transition-all",
-          "bg-gradient-to-r from-[#c9a94e] to-[#b89840] text-[#0a0118]",
-          "shadow-lg shadow-[#c9a94e]/20",
-          value.trim().length >= 10 ? "cursor-pointer hover:shadow-xl hover:shadow-[#c9a94e]/30" : "cursor-not-allowed opacity-40"
+          "bg-gradient-to-r from-gold to-[#b89840] text-surface-deep",
+          "shadow-lg shadow-gold/20",
+          value.trim().length >= 10 ? "cursor-pointer hover:shadow-xl hover:shadow-gold/30" : "cursor-not-allowed opacity-40"
         )}
       >
         Shape my deck
@@ -309,7 +309,7 @@ function GeneratingPhase({
             key={i}
             animate={{ opacity: [0.3, 1, 0.3] }}
             transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.4 }}
-            className="h-1.5 w-1.5 rounded-full bg-[#c9a94e]"
+            className="h-1.5 w-1.5 rounded-full bg-gold"
           />
         ))}
       </div>
@@ -320,7 +320,7 @@ function GeneratingPhase({
           {onRetry && (
             <button
               onClick={onRetry}
-              className="px-6 py-2.5 rounded-xl bg-[#c9a94e]/20 border border-[#c9a94e]/30 text-[#c9a94e] text-sm font-medium hover:bg-[#c9a94e]/30 transition-colors cursor-pointer"
+              className="px-6 py-2.5 rounded-xl bg-gold/20 border border-gold/30 text-gold text-sm font-medium hover:bg-gold/30 transition-colors cursor-pointer"
             >
               Try again
             </button>
@@ -383,9 +383,9 @@ function RevealPhase({
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl px-6 py-5"
+        className="bg-white/[0.03] backdrop-blur-sm border border-white/[0.06] rounded-2xl px-6 py-5"
       >
-        <p className="text-xs text-[#c9a94e]/70 uppercase tracking-widest mb-1.5">Your first deck</p>
+        <p className="text-xs text-gold/70 uppercase tracking-widest mb-1.5">Your first deck</p>
         <p className="text-lg font-medium text-white/90">{deckTitle}</p>
       </motion.div>
 
@@ -428,7 +428,7 @@ function RevealPhase({
                   className={cn(
                     "w-full text-left px-3 py-2 rounded-lg text-sm transition-colors",
                     name === artStyleName
-                      ? "bg-[#c9a94e]/20 text-[#c9a94e]"
+                      ? "bg-gold/20 text-gold"
                       : "text-white/60 hover:bg-white/5 hover:text-white/80"
                   )}
                 >
@@ -449,8 +449,8 @@ function RevealPhase({
         disabled={!showButton}
         className={cn(
           "w-full py-3 rounded-xl font-medium text-sm transition-all",
-          "bg-gradient-to-r from-[#c9a94e] to-[#b89840] text-[#0a0118]",
-          "shadow-lg shadow-[#c9a94e]/20 hover:shadow-xl hover:shadow-[#c9a94e]/30",
+          "bg-gradient-to-r from-gold to-[#b89840] text-surface-deep",
+          "shadow-lg shadow-gold/20 hover:shadow-xl hover:shadow-gold/30",
           !showButton && "opacity-0"
         )}
       >

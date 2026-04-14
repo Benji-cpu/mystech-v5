@@ -98,10 +98,10 @@ async function DecksContent() {
       {!hasChronicle && (
         <Link
           href="/chronicle/setup"
-          className="block rounded-2xl bg-gradient-to-r from-[#c9a94e]/5 to-purple-900/10 border border-[#c9a94e]/20 overflow-hidden transition-all hover:border-[#c9a94e]/40 hover:shadow-lg hover:shadow-[#c9a94e]/10 p-4"
+          className="block rounded-2xl bg-gradient-to-r from-gold/5 to-purple-900/10 border border-gold/20 overflow-hidden transition-all hover:border-gold/40 hover:shadow-lg hover:shadow-gold/10 p-4"
         >
           <div className="flex items-center gap-3">
-            <ScrollText className="h-5 w-5 text-[#c9a94e]" />
+            <ScrollText className="h-5 w-5 text-gold" />
             <div>
               <h3 className="text-sm font-semibold text-white/90">Start a Chronicle</h3>
               <p className="text-xs text-white/50">A daily practice of reflection and card creation.</p>

@@ -65,7 +65,7 @@ export function StepCardMaterialization({ className }: StepCardMaterializationPr
       {scatteredPositions.map((pos, i) => (
         <motion.div
           key={i}
-          className="absolute w-2 h-2 rounded-full bg-[#c9a94e]"
+          className="absolute w-2 h-2 rounded-full bg-gold"
           initial={{
             top: pos.top,
             left: pos.left,
@@ -103,7 +103,7 @@ export function StepCardMaterialization({ className }: StepCardMaterializationPr
         animate={{ opacity: phase === "revealed" ? 1 : 0 }}
         transition={{ duration: 0.6, ease: "easeOut" }}
       >
-        <div className="relative w-[90px] h-[135px] rounded-lg overflow-hidden border border-[#c9a94e]/30 shadow-lg shadow-purple-900/30">
+        <div className="relative w-[90px] h-[135px] rounded-lg overflow-hidden border border-gold/30 shadow-lg shadow-purple-900/30">
           <Image
             src="/mock/cards/the-garden.png"
             alt="The Garden"

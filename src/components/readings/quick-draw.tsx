@@ -217,7 +217,7 @@ export function QuickDraw() {
           animate={{ opacity: 1, y: 0 }}
           className="max-w-sm w-full text-center"
         >
-          <div className="p-6 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10">
+          <div className="p-6 rounded-2xl bg-white/[0.03] backdrop-blur-sm border border-white/[0.06]">
             <AlertCircle className="w-10 h-10 text-white/40 mx-auto mb-4" />
             <p className="text-sm text-white/70 mb-4">{state.errorMessage}</p>
             {state.noDeck ? (
@@ -241,7 +241,7 @@ export function QuickDraw() {
           animate={{ opacity: 1 }}
           className="flex flex-col items-center gap-4"
         >
-          <Loader2 className="w-8 h-8 text-[#c9a94e] animate-spin" />
+          <Loader2 className="w-8 h-8 text-gold animate-spin" />
           <p className="text-sm text-white/50">Drawing from your deck...</p>
         </motion.div>
       )}
@@ -296,8 +296,8 @@ export function QuickDraw() {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <div className="w-full h-full bg-gradient-to-b from-[#1a0530] via-[#12022a] to-[#0a0118] flex flex-col items-center justify-center gap-3 p-3">
-                    <svg viewBox="0 0 48 48" className="w-1/3 max-w-[48px] opacity-60" fill="none" stroke="#c9a94e" strokeWidth="1">
+                  <div className="w-full h-full bg-gradient-to-b from-surface-mid via-[#12022a] to-surface-deep flex flex-col items-center justify-center gap-3 p-3">
+                    <svg viewBox="0 0 48 48" className="w-1/3 max-w-[48px] opacity-60" fill="none" stroke="var(--gold)" strokeWidth="1">
                       <circle cx="24" cy="24" r="18" />
                       <polygon points="24,8 38,32 10,32" />
                       <circle cx="24" cy="24" r="6" />
@@ -311,24 +311,24 @@ export function QuickDraw() {
 
               {/* Back face (mystical pattern) */}
               <div
-                className="absolute inset-0 rounded-xl overflow-hidden border border-white/20 bg-gradient-to-b from-[#1a0530] to-[#0a0118]"
+                className="absolute inset-0 rounded-xl overflow-hidden border border-white/20 bg-gradient-to-b from-surface-mid to-surface-deep"
                 style={{ backfaceVisibility: "hidden" }}
               >
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="relative w-3/4 h-3/4">
                     <motion.div
-                      className="absolute inset-0 rounded-full border border-[#c9a94e]/20"
+                      className="absolute inset-0 rounded-full border border-gold/20"
                       animate={{ rotate: 360 }}
                       transition={{ duration: 20, ease: "linear", repeat: Infinity }}
                     />
                     <motion.div
-                      className="absolute inset-3 rounded-full border border-[#c9a94e]/15"
+                      className="absolute inset-3 rounded-full border border-gold/15"
                       animate={{ rotate: -360 }}
                       transition={{ duration: 15, ease: "linear", repeat: Infinity }}
                     />
                     <div className="absolute inset-0 flex items-center justify-center">
                       <motion.div
-                        className="w-1/3 h-1/3 rotate-45 border border-[#c9a94e]/25"
+                        className="w-1/3 h-1/3 rotate-45 border border-gold/25"
                         animate={{ opacity: [0.5, 1, 0.5] }}
                         transition={{ duration: 2, ease: "easeInOut", repeat: Infinity }}
                       />
@@ -355,8 +355,8 @@ export function QuickDraw() {
               <motion.h2
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-                className="mt-4 text-lg font-semibold text-white/90 text-center"
+                transition={{ type: "spring", stiffness: 300, damping: 25, delay: 0.3 }}
+                className="mt-4 font-display text-lg font-semibold text-white/90 text-center"
               >
                 {state.card.title}
               </motion.h2>
@@ -372,14 +372,14 @@ export function QuickDraw() {
                 transition={{ delay: 0.2 }}
                 className="mt-6 w-full px-2"
               >
-                <div className="p-4 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10">
+                <div className="p-4 rounded-2xl bg-white/[0.03] backdrop-blur-sm border border-white/[0.06]">
                   <div className="flex items-center gap-2 mb-3">
                     {isStreaming ? (
                       <LyraSigil size="sm" state="speaking" />
                     ) : (
-                      <Sparkles className="w-4 h-4 text-[#c9a94e]" />
+                      <Sparkles className="w-4 h-4 text-gold" />
                     )}
-                    <span className="text-xs font-medium tracking-wider uppercase text-[#c9a94e]">
+                    <span className="text-xs font-medium tracking-wider uppercase text-gold">
                       {isStreaming ? "Lyra speaks..." : "Insight"}
                     </span>
                   </div>
@@ -390,7 +390,7 @@ export function QuickDraw() {
                       <div className="h-4 w-3/4 bg-white/10 rounded animate-pulse" />
                     )}
                     {isStreaming && interpretationText && (
-                      <span className="inline-block w-1.5 h-4 bg-[#c9a94e]/70 animate-pulse ml-0.5 align-text-bottom" />
+                      <span className="inline-block w-1.5 h-4 bg-gold/70 animate-pulse ml-0.5 align-text-bottom" />
                     )}
                   </div>
                   {streamError && (
@@ -422,7 +422,7 @@ export function QuickDraw() {
                 </Button>
                 <Button
                   asChild
-                  className="flex-1 bg-[#c9a94e] hover:bg-[#b8993f] text-black"
+                  className="flex-1 bg-gold hover:bg-[#b8993f] text-black"
                 >
                   <Link href="/readings/new">
                     <BookOpen className="w-4 h-4 mr-2" />

@@ -64,9 +64,9 @@ export function ReadingFlipCard({
                 className="w-full h-full object-cover"
               />
             ) : (
-              <div className="w-full h-full bg-gradient-to-b from-[#1a0530] via-[#12022a] to-[#0a0118] flex flex-col items-center justify-center gap-3 p-3">
+              <div className="w-full h-full bg-gradient-to-b from-surface-mid via-[#12022a] to-surface-deep flex flex-col items-center justify-center gap-3 p-3">
                 {/* Static gold geometric symbol */}
-                <svg viewBox="0 0 48 48" className="w-1/3 max-w-[48px] opacity-60" fill="none" stroke="#c9a94e" strokeWidth="1">
+                <svg viewBox="0 0 48 48" className="w-1/3 max-w-[48px] opacity-60" fill="none" stroke="var(--gold)" strokeWidth="1">
                   <circle cx="24" cy="24" r="18" />
                   <polygon points="24,8 38,32 10,32" />
                   <circle cx="24" cy="24" r="6" />
@@ -80,31 +80,31 @@ export function ReadingFlipCard({
 
           {/* Back face (mystical pattern — visible when face-down) */}
           <div
-            className="absolute inset-0 rounded-xl overflow-hidden border border-border/30 bg-gradient-to-b from-[#1a0530] to-[#0a0118]"
+            className="absolute inset-0 rounded-xl overflow-hidden border border-border/30 bg-gradient-to-b from-surface-mid to-surface-deep"
             style={{ backfaceVisibility: "hidden" }}
           >
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="relative w-3/4 h-3/4">
                 <motion.div
-                  className="absolute inset-0 rounded-full border border-[#c9a94e]/20"
+                  className="absolute inset-0 rounded-full border border-gold/20"
                   animate={{ rotate: 360 }}
                   transition={{ duration: 20, ease: "linear", repeat: Infinity }}
                 />
                 <motion.div
-                  className="absolute inset-3 rounded-full border border-[#c9a94e]/15"
+                  className="absolute inset-3 rounded-full border border-gold/15"
                   animate={{ rotate: -360 }}
                   transition={{ duration: 15, ease: "linear", repeat: Infinity }}
                 />
                 <div className="absolute inset-0 flex items-center justify-center">
                   <motion.div
-                    className="w-1/3 h-1/3 rotate-45 border border-[#c9a94e]/25"
+                    className="w-1/3 h-1/3 rotate-45 border border-gold/25"
                     animate={{ opacity: [0.5, 1, 0.5] }}
                     transition={{ duration: 2, ease: "easeInOut", repeat: Infinity }}
                   />
                 </div>
                 <div className="absolute inset-0 flex items-center justify-center">
                   <motion.div
-                    className="w-2 h-2 rounded-full bg-[#c9a94e]/40 shadow-[0_0_12px_rgba(201,169,78,0.3)]"
+                    className="w-2 h-2 rounded-full bg-gold/40 shadow-[0_0_12px_rgba(201,169,78,0.3)]"
                     animate={{ opacity: [0.5, 1, 0.5] }}
                     transition={{ duration: 2, ease: "easeInOut", repeat: Infinity }}
                   />

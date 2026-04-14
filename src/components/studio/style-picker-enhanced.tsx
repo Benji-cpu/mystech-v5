@@ -63,7 +63,7 @@ export function EnhancedStylePicker({
               className={cn(
                 "shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-all",
                 activeCategory === tab.id
-                  ? "bg-[#c9a94e] text-black"
+                  ? "bg-gold text-black"
                   : "bg-white/5 text-white/50 hover:bg-white/10 hover:text-white/70"
               )}
             >
@@ -88,7 +88,7 @@ export function EnhancedStylePicker({
                 className={cn(
                   "flex flex-col items-center gap-1 p-1.5 rounded-lg shrink-0 transition-colors",
                   selectedStyleId === style.id
-                    ? "bg-[#c9a94e]/10"
+                    ? "bg-gold/10"
                     : "hover:bg-white/5"
                 )}
               >
@@ -100,7 +100,7 @@ export function EnhancedStylePicker({
                     selected={selectedStyleId === style.id}
                   />
                   {selectedStyleId === style.id && (
-                    <div className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-[#c9a94e] flex items-center justify-center">
+                    <div className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-gold flex items-center justify-center">
                       <Check className="h-2.5 w-2.5 text-black" />
                     </div>
                   )}
@@ -124,7 +124,7 @@ export function EnhancedStylePicker({
             className={cn(
               "flex flex-col items-center gap-1.5 rounded-lg p-2 transition-colors",
               selectedStyleId === style.id
-                ? "bg-[#c9a94e]/10"
+                ? "bg-gold/10"
                 : "hover:bg-white/5"
             )}
           >
@@ -136,7 +136,7 @@ export function EnhancedStylePicker({
                 selected={selectedStyleId === style.id}
               />
               {selectedStyleId === style.id && (
-                <div className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-[#c9a94e] flex items-center justify-center">
+                <div className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-gold flex items-center justify-center">
                   <Check className="h-3 w-3 text-black" />
                 </div>
               )}
@@ -144,7 +144,7 @@ export function EnhancedStylePicker({
             <span
               className={cn(
                 "text-xs font-medium text-center leading-tight",
-                selectedStyleId === style.id && "text-[#c9a94e]"
+                selectedStyleId === style.id && "text-gold"
               )}
             >
               {style.name}

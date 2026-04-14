@@ -22,7 +22,7 @@ export function InitiationArrivalBanner() {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: -8, scale: 0.98 }}
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
-          className="relative bg-white/5 backdrop-blur-xl border border-[#c9a94e]/20 rounded-2xl p-4 flex items-start gap-3 shadow-[0_0_20px_rgba(201,169,78,0.08)]"
+          className="relative bg-white/[0.03] backdrop-blur-sm border border-gold/20 rounded-2xl p-4 flex items-start gap-3 shadow-[0_0_20px_rgba(201,169,78,0.08)]"
         >
           <LyraSigil size="sm" state="attentive" className="shrink-0 mt-0.5" />
           <p className="text-sm text-amber-200/80 italic font-serif leading-relaxed flex-1">

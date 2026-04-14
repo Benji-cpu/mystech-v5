@@ -81,12 +81,12 @@ function CenterButton({ state, onPlay, onPause, onResume, onClose }: CenterButto
       className={cn(
         'relative flex items-center justify-center',
         'w-16 h-16 rounded-full',
-        'bg-[#c9a94e]/20 border border-[#c9a94e]/40',
-        'shadow-[0_0_24px_rgba(201,169,78,0.25)]',
+        'bg-gold/20 border border-gold/40',
+        'shadow-[0_0_24px_oklch(0.75_0.12_85_/_0.25)]',
         'disabled:opacity-50 disabled:cursor-not-allowed',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c9a94e]/50',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/50',
         'transition-colors',
-        isCompleted && 'bg-[#c9a94e]/30 border-[#c9a94e]/60',
+        isCompleted && 'bg-gold/30 border-gold/60',
       )}
       whileHover={isLoading ? {} : { scale: 1.06 }}
       whileTap={isLoading ? {} : { scale: 0.94 }}
@@ -101,7 +101,7 @@ function CenterButton({ state, onPlay, onPause, onResume, onClose }: CenterButto
             exit={{ opacity: 0, scale: 0.7 }}
             transition={{ type: 'spring', stiffness: 300, damping: 25 }}
           >
-            <Loader2 className="w-6 h-6 text-[#c9a94e] animate-spin" />
+            <Loader2 className="w-6 h-6 text-gold animate-spin" />
           </motion.span>
         ) : isCompleted ? (
           <motion.span
@@ -111,7 +111,7 @@ function CenterButton({ state, onPlay, onPause, onResume, onClose }: CenterButto
             exit={{ opacity: 0, scale: 0.7 }}
             transition={{ type: 'spring', stiffness: 300, damping: 25 }}
           >
-            <CheckCircle className="w-6 h-6 text-[#c9a94e]" />
+            <CheckCircle className="w-6 h-6 text-gold" />
           </motion.span>
         ) : isPlaying ? (
           <motion.span
@@ -121,7 +121,7 @@ function CenterButton({ state, onPlay, onPause, onResume, onClose }: CenterButto
             exit={{ opacity: 0, scale: 0.7 }}
             transition={{ type: 'spring', stiffness: 300, damping: 25 }}
           >
-            <Pause className="w-6 h-6 text-[#c9a94e]" />
+            <Pause className="w-6 h-6 text-gold" />
           </motion.span>
         ) : (
           <motion.span
@@ -131,7 +131,7 @@ function CenterButton({ state, onPlay, onPause, onResume, onClose }: CenterButto
             exit={{ opacity: 0, scale: 0.7 }}
             transition={{ type: 'spring', stiffness: 300, damping: 25 }}
           >
-            <Play className="w-6 h-6 text-[#c9a94e] translate-x-0.5" />
+            <Play className="w-6 h-6 text-gold translate-x-0.5" />
           </motion.span>
         )}
       </AnimatePresence>
@@ -215,7 +215,7 @@ export function PracticeControls({
               <motion.button
                 key="return"
                 onClick={onClose}
-                className="text-xs text-[#c9a94e]/80 hover:text-[#c9a94e] transition-colors tracking-wide"
+                className="text-xs text-gold/80 hover:text-gold transition-colors tracking-wide"
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 28 } }}
                 exit={{ opacity: 0, y: -6 }}
@@ -260,9 +260,9 @@ export function PracticeControls({
                 className={cn(
                   'rounded-full transition-colors',
                   i < currentSegmentIndex
-                    ? 'w-1.5 h-1.5 bg-[#c9a94e]/60'     // completed
+                    ? 'w-1.5 h-1.5 bg-gold/60'     // completed
                     : i === currentSegmentIndex
-                      ? 'w-2 h-2 bg-[#c9a94e]'           // current
+                      ? 'w-2 h-2 bg-gold'           // current
                       : 'w-1.5 h-1.5 bg-white/15',       // upcoming
                 )}
                 animate={

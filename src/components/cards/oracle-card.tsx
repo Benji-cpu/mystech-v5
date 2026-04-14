@@ -71,7 +71,7 @@ export function OracleCard({
           </div>
         )}
         {card.originContext?.source === ORIGIN_SOURCE.CHRONICLE_EMERGENCE && (
-          <span className="absolute top-2 right-2 z-10 text-[#c9a94e]/40 text-xs leading-none" aria-label="Emerged from pattern">
+          <span className="absolute top-2 right-2 z-10 text-gold/40 text-xs leading-none" aria-label="Emerged from pattern">
             ✦
           </span>
         )}
@@ -113,13 +113,13 @@ function CardImage({
             className="h-full w-full object-cover"
           />
         ) : card.imageStatus === "none" ? (
-          <div className="h-full w-full bg-gradient-to-b from-[#1a0530] via-[#0a0118] to-[#1a0530]" />
+          <div className="h-full w-full bg-gradient-to-b from-surface-mid via-surface-deep to-surface-mid" />
         ) : card.imageStatus === "generating" ? (
-          <div className="flex h-full w-full items-center justify-center bg-gradient-to-b from-[#0a0118] to-[#1a0530]">
-            <Loader2 className="h-8 w-8 animate-spin text-[#c9a94e]/60" />
+          <div className="flex h-full w-full items-center justify-center bg-gradient-to-b from-surface-deep to-surface-mid">
+            <Loader2 className="h-8 w-8 animate-spin text-gold/60" />
           </div>
         ) : card.imageStatus === "failed" ? (
-          <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-gradient-to-b from-[#0a0118] to-[#1a0530]">
+          <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-gradient-to-b from-surface-deep to-surface-mid">
             <AlertCircle className="h-6 w-6 text-red-400/60" />
             {onRetryImage && (
               <button
@@ -135,7 +135,7 @@ function CardImage({
             )}
           </div>
         ) : (
-          <Skeleton className="h-full w-full rounded-none bg-[#1a0530]" />
+          <Skeleton className="h-full w-full rounded-none bg-surface-mid" />
         )}
       </motion.div>
     </AnimatePresence>

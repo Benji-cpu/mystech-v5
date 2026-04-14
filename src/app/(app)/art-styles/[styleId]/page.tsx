@@ -53,7 +53,7 @@ export default async function StyleDetailPage({
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold">{style.name}</h1>
+            <h1 className="text-2xl font-bold font-display">{style.name}</h1>
             <Badge variant={isPreset ? "secondary" : "outline"}>
               {isPreset ? "Preset" : "Custom"}
             </Badge>

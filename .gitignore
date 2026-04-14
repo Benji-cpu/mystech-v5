@@ -54,3 +54,7 @@ next-env.d.ts
 
 # superpowers plugin
 .superpowers/
+.agents/
+.claude/skills/
+.impeccable.md
+skills-lock.json

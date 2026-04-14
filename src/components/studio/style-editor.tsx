@@ -182,7 +182,7 @@ export function StyleEditor({ style, isOwner, plan, userId }: StyleEditorProps) 
           )}
           <Button
             size="sm"
-            className="bg-gradient-to-r from-[#c9a94e] to-[#daa520] text-black font-semibold"
+            className="bg-gradient-to-r from-gold to-gold-bright text-black font-semibold"
             onClick={() => handleSave(true)}
             disabled={isSaving}
           >

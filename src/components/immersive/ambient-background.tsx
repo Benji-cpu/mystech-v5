@@ -119,7 +119,7 @@ function AmbientScene({ mood: propMood, tierConfig: propTierConfig }: { mood?: M
   const { pointer } = useThree();
   // Always call hook (Rules of Hooks), use props when provided
   const ctx = useImmersiveOptional();
-  const mood = propMood ?? ctx?.state.mood ?? { primaryHue: 285, sparkleColor: "#c9a94e" };
+  const mood = propMood ?? ctx?.state.mood ?? { primaryHue: 285, sparkleColor: "var(--gold)" };
   const tierConfig = propTierConfig ?? ctx?.tierConfig ?? { nebulaOctaves: 5, starCount: 5000, sparkleCount: 50, sparkleAccentCount: 30, bloom: true };
 
   // Target hue derived from mood (changes on route change)
@@ -163,7 +163,7 @@ function AmbientScene({ mood: propMood, tierConfig: propTierConfig }: { mood?: M
   return (
     <>
       <ambientLight intensity={0.3} />
-      <pointLight position={[5, 5, 5]} intensity={0.5} color="#c9a94e" />
+      <pointLight position={[5, 5, 5]} intensity={0.5} color="var(--gold)" />
       <pointLight position={[-5, -3, 3]} intensity={0.3} color="#7c4dff" />
 
       {/* Nebula shader background — uIntensity + uDriftSpeed are constant, only uHueShift lerps */}
@@ -239,7 +239,7 @@ function CSSFallbackBackground() {
     <div
       className="absolute inset-0"
       style={{
-        background: "radial-gradient(ellipse at center, #1a0530 0%, #0a0118 70%)",
+        background: "radial-gradient(ellipse at center, var(--surface-mid) 0%, var(--surface-deep) 70%)",
       }}
     />
   );

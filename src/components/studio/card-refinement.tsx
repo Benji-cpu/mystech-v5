@@ -296,7 +296,7 @@ export function CardRefinement({
             <Button
               onClick={() => handleRegenerate()}
               disabled={isRegenerating}
-              className="w-full bg-gradient-to-r from-[#c9a94e] to-[#daa520] text-black font-semibold"
+              className="w-full bg-gradient-to-r from-gold to-gold-bright text-black font-semibold"
             >
               {isRegenerating ? (
                 <Loader2 className="h-4 w-4 animate-spin" />

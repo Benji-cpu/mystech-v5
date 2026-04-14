@@ -56,8 +56,8 @@ export function PathsHub({
       {/* Active path callout */}
       {activePosition && (
         <AnimatedItem>
-          <div className="rounded-2xl bg-gradient-to-r from-[#c9a94e]/10 to-purple-900/10 border border-[#c9a94e]/20 p-4">
-            <p className="text-xs text-[#c9a94e] font-medium uppercase tracking-wider mb-0.5">
+          <div className="rounded-2xl bg-gradient-to-r from-gold/10 to-purple-900/10 border border-gold/20 p-4">
+            <p className="text-xs text-gold font-medium uppercase tracking-wider mb-0.5">
               Active Path
             </p>
             <p className="text-sm text-white/80">
@@ -107,7 +107,7 @@ export function PathsHub({
       {/* Orphan paths (no circle assigned — backward compatibility) */}
       {orphanPaths.length > 0 && (
         <AnimatedItem>
-          <div className="rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 p-4">
+          <div className="rounded-2xl bg-white/[0.03] backdrop-blur-sm border border-white/[0.06] p-4">
             <p className="text-xs text-white/40 uppercase tracking-wider mb-3">Other Paths</p>
             {orphanPaths.map((path) => (
               <div key={path.id} className="text-sm text-white/60">

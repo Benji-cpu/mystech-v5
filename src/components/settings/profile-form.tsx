@@ -61,12 +61,12 @@ export function ProfileForm({ profile }: ProfileFormProps) {
   }
 
   return (
-    <GlassPanel className="p-6">
-      <div className="flex items-center gap-4 mb-6">
+    <GlassPanel className="p-4">
+      <div className="flex items-center gap-4 mb-4">
         <div className="relative">
-          <Avatar className="size-20 ring-2 ring-[#c9a94e]/30">
+          <Avatar className="size-20 ring-2 ring-gold/30">
             <AvatarImage src={profile.image ?? undefined} alt={profile.name ?? "User"} />
-            <AvatarFallback className="text-2xl bg-[#c9a94e]/10 text-[#c9a94e]">
+            <AvatarFallback className="text-2xl bg-gold/10 text-gold">
               {(profile.name ?? "U").charAt(0).toUpperCase()}
             </AvatarFallback>
           </Avatar>

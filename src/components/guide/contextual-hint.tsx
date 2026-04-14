@@ -39,7 +39,7 @@ export function ContextualHint({
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
           className={cn("overflow-hidden", className)}
         >
-          <div className="border-l-2 border-[#c9a94e]/40 bg-[#c9a94e]/5 rounded-r-lg px-3 py-2">
+          <div className="border-l-2 border-gold/40 bg-gold/5 rounded-r-lg px-3 py-2">
             <p className="text-xs text-white/50 leading-relaxed italic">
               {message}
             </p>
