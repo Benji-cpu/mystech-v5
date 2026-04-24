@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ScrollText, Flame } from "lucide-react";
@@ -73,13 +74,15 @@ export function ChronicleDashboardCard({
           <div className="flex items-start gap-3">
             {todayCard.imageUrl ? (
               <motion.div
-                className="w-14 h-20 rounded-lg overflow-hidden flex-shrink-0 border border-white/10"
+                className="relative w-14 h-20 rounded-lg overflow-hidden flex-shrink-0 border border-white/10"
                 whileHover={{ scale: 1.03 }}
               >
-                <img
+                <Image
                   src={todayCard.imageUrl}
                   alt={todayCard.title}
-                  className="w-full h-full object-cover"
+                  fill
+                  sizes="56px"
+                  className="object-cover"
                 />
               </motion.div>
             ) : (

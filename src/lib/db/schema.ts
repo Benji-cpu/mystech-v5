@@ -179,6 +179,7 @@ export const cards = pgTable(
     meaning: text("meaning").notNull(),
     guidance: text("guidance").notNull(),
     imageUrl: text("image_url"),
+    imageBlurData: text("image_blur_data"),
     imagePrompt: text("image_prompt"),
     imageStatus: text("image_status").notNull().default("pending"),
     cardType: text("card_type").notNull().default("general"), // "general" | "obstacle" | "threshold"
@@ -919,7 +920,6 @@ export const feedback = pgTable(
       onDelete: "set null",
     }),
     email: text("email"),
-    category: text("category").notNull(), // "bug" | "feature" | "general"
     message: text("message").notNull(),
     pageUrl: text("page_url").notNull(),
     screenshotUrl: text("screenshot_url"),

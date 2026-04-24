@@ -62,30 +62,32 @@ export default async function CardStudioPage({
   const plan: PlanType = await getUserPlan(user.id!);
 
   return (
-    <CardRefinement
-      card={{
-        id: result.card.id,
-        deckId: result.card.deckId,
-        title: result.card.title,
-        meaning: result.card.meaning,
-        guidance: result.card.guidance,
-        imageUrl: result.card.imageUrl,
-        imagePrompt: result.card.imagePrompt,
-        imageStatus: result.card.imageStatus as "pending" | "generating" | "completed" | "failed",
-        cardNumber: result.card.cardNumber,
-      }}
-      deckTitle={result.deck.title}
-      artStyle={artStyleData}
-      existingOverride={
-        existingOverride
-          ? {
-              id: existingOverride.id,
-              imagePrompt: existingOverride.imagePrompt,
-              parameters: existingOverride.parameters as Record<string, unknown> | null,
-            }
-          : null
-      }
-      plan={plan}
-    />
+    <div className="daylight fixed inset-0 overflow-y-auto" style={{ background: "var(--paper)", zIndex: 1 }}>
+      <CardRefinement
+        card={{
+          id: result.card.id,
+          deckId: result.card.deckId,
+          title: result.card.title,
+          meaning: result.card.meaning,
+          guidance: result.card.guidance,
+          imageUrl: result.card.imageUrl,
+          imagePrompt: result.card.imagePrompt,
+          imageStatus: result.card.imageStatus as "pending" | "generating" | "completed" | "failed",
+          cardNumber: result.card.cardNumber,
+        }}
+        deckTitle={result.deck.title}
+        artStyle={artStyleData}
+        existingOverride={
+          existingOverride
+            ? {
+                id: existingOverride.id,
+                imagePrompt: existingOverride.imagePrompt,
+                parameters: existingOverride.parameters as Record<string, unknown> | null,
+              }
+            : null
+        }
+        plan={plan}
+      />
+    </div>
   );
 }

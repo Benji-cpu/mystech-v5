@@ -2,8 +2,21 @@ import { db } from "@/lib/db";
 import { cards, decks } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { put } from "@vercel/blob";
+import sharp from "sharp";
 import { generateStabilityImage, type StabilityOptions } from "./stability";
 import { ORACLE_CARD_BASE_PROMPT, ORACLE_CARD_NEGATIVE_PROMPT } from "./prompts/image-base-prompt";
+
+async function generateBlurDataUrl(imageBuffer: Buffer): Promise<string | null> {
+  try {
+    const small = await sharp(imageBuffer)
+      .resize(16, 24, { fit: "cover" })
+      .jpeg({ quality: 40 })
+      .toBuffer();
+    return `data:image/jpeg;base64,${small.toString("base64")}`;
+  } catch {
+    return null;
+  }
+}
 
 const MAX_RETRIES = 3;
 const BACKOFF_BASE_MS = 1000;
@@ -104,18 +117,22 @@ export async function generateCardImage(
       };
       const imageBuffer = await generateStabilityImage(stabilityOpts);
 
-      // Upload to Vercel Blob
-      const blob = await put(`cards/${deckId}/${cardId}.png`, imageBuffer, {
-        access: "public",
-        contentType: "image/png",
-        allowOverwrite: true,
-      });
+      // Upload to Vercel Blob + generate blur placeholder in parallel
+      const [blob, imageBlurData] = await Promise.all([
+        put(`cards/${deckId}/${cardId}.png`, imageBuffer, {
+          access: "public",
+          contentType: "image/png",
+          allowOverwrite: true,
+        }),
+        generateBlurDataUrl(imageBuffer),
+      ]);
 
-      // Update card with image URL
+      // Update card with image URL + blur data
       await db
         .update(cards)
         .set({
           imageUrl: blob.url,
+          imageBlurData,
           imageStatus: "completed",
           updatedAt: new Date(),
         })

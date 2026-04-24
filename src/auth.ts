@@ -9,6 +9,8 @@ import {
 } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import authConfig from "./auth.config";
+import { captureServer, identifyServer, ANALYTICS_EVENTS } from "@/lib/analytics";
+import { sendWelcomeEmail } from "@/lib/email/send";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
@@ -50,6 +52,25 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       session.user.role = (token.role as string) ?? "user";
       session.user.displayName = (token.displayName as string) ?? null;
       return session;
+    },
+  },
+  events: {
+    async createUser({ user }) {
+      if (!user.id) return;
+      identifyServer(user.id, {
+        email: user.email ?? undefined,
+        name: user.name ?? undefined,
+      });
+      captureServer(ANALYTICS_EVENTS.SIGNUP_COMPLETED, user.id, {
+        email: user.email ?? null,
+      });
+      if (user.email) {
+        sendWelcomeEmail({ to: user.email, name: user.name }).catch(() => {});
+      }
+    },
+    async signIn({ user, isNewUser }) {
+      if (!user.id || isNewUser) return;
+      captureServer(ANALYTICS_EVENTS.LOGIN_COMPLETED, user.id);
     },
   },
 });

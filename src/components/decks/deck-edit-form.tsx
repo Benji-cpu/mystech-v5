@@ -8,14 +8,18 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { MicrophoneButton } from "@/components/voice/microphone-button";
 import { useVoiceInput } from "@/hooks/use-voice-input";
-import { Loader2 } from "lucide-react";
+import { Loader2, Palette } from "lucide-react";
+import Link from "next/link";
+import { StudioStyleBadge } from "@/components/studio/studio-style-badge";
 import type { Deck } from "@/types";
 
 interface DeckEditFormProps {
   deck: Deck;
+  artStyleName?: string;
+  artStyleId?: string | null;
 }
 
-export function DeckEditForm({ deck }: DeckEditFormProps) {
+export function DeckEditForm({ deck, artStyleName, artStyleId }: DeckEditFormProps) {
   const router = useRouter();
   const [title, setTitle] = useState(deck.title);
   const [description, setDescription] = useState(deck.description ?? "");
@@ -111,6 +115,26 @@ export function DeckEditForm({ deck }: DeckEditFormProps) {
           maxLength={100}
         />
       </div>
+
+      {/* Art Style */}
+      {artStyleName && artStyleId && (
+        <div className="space-y-2">
+          <Label>Art Style</Label>
+          <div className="flex items-center gap-3">
+            <StudioStyleBadge styleName={artStyleName} styleId={artStyleId} />
+            <Link
+              href={`/studio/styles/${artStyleId}`}
+              className="text-xs text-muted-foreground hover:text-primary transition-colors flex items-center gap-1"
+            >
+              <Palette className="h-3 w-3" />
+              Customize in Studio
+            </Link>
+          </div>
+          <p className="text-xs text-muted-foreground/60">
+            Style changes apply to new cards only. Existing card images keep their current style.
+          </p>
+        </div>
+      )}
 
       {error && (
         <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">

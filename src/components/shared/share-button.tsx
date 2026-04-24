@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Share2, Copy, Check, Link2Off } from "lucide-react";
+import { Share2, Copy, Check, Link2Off, Twitter, Mail, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -12,6 +12,13 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import {
+  twitterIntent,
+  whatsappIntent,
+  emailIntent,
+  canUseWebShare,
+  triggerWebShare,
+} from "@/lib/sharing/intent-urls";
 
 interface ShareButtonProps {
   shareEndpoint: string;
@@ -150,6 +157,63 @@ export function ShareButton({
                 )}
               </Button>
             </div>
+
+            <div className="flex flex-wrap gap-2">
+              {canUseWebShare() && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    triggerWebShare({
+                      url: shareUrl,
+                      title: `MysTech ${contentType}`,
+                      text: `Take a look at this ${contentType}`,
+                    })
+                  }
+                >
+                  <Share2 className="h-4 w-4 mr-1" />
+                  Share...
+                </Button>
+              )}
+              <Button variant="outline" size="sm" asChild>
+                <a
+                  href={twitterIntent({
+                    url: shareUrl,
+                    text: `A ${contentType} from MysTech ✦`,
+                  })}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                >
+                  <Twitter className="h-4 w-4 mr-1" />
+                  Twitter
+                </a>
+              </Button>
+              <Button variant="outline" size="sm" asChild>
+                <a
+                  href={whatsappIntent({
+                    url: shareUrl,
+                    text: `A ${contentType} from MysTech`,
+                  })}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                >
+                  <MessageCircle className="h-4 w-4 mr-1" />
+                  WhatsApp
+                </a>
+              </Button>
+              <Button variant="outline" size="sm" asChild>
+                <a
+                  href={emailIntent({
+                    url: shareUrl,
+                    text: `A ${contentType} from MysTech`,
+                  })}
+                >
+                  <Mail className="h-4 w-4 mr-1" />
+                  Email
+                </a>
+              </Button>
+            </div>
+
             <Button
               variant="ghost"
               size="sm"

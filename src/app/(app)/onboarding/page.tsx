@@ -11,7 +11,11 @@ export default async function OnboardingPage() {
 
   // Admin bypass — always start at welcome for full arc testing
   if (isAdmin(user as { role?: string })) {
-    return <InitiationShell initialPhase="welcome" />;
+    return (
+      <div className="daylight fixed inset-0 overflow-y-auto" style={{ background: "var(--paper)", zIndex: 1 }}>
+        <InitiationShell initialPhase="welcome" />
+      </div>
+    );
   }
 
   // Check if initiation is already complete
@@ -68,15 +72,21 @@ export default async function OnboardingPage() {
     }
 
     return (
-      <InitiationShell
-        initialPhase="reveal"
-        existingDeckId={existingDeck.id}
-        existingDeckTitle={existingDeck.title}
-        existingArtStyleName={artStyleName}
-      />
+      <div className="daylight fixed inset-0 overflow-y-auto" style={{ background: "var(--paper)", zIndex: 1 }}>
+        <InitiationShell
+          initialPhase="reveal"
+          existingDeckId={existingDeck.id}
+          existingDeckTitle={existingDeck.title}
+          existingArtStyleName={artStyleName}
+        />
+      </div>
     );
   }
 
   // Fresh start — begin at welcome
-  return <InitiationShell initialPhase="welcome" />;
+  return (
+    <div className="daylight fixed inset-0 overflow-y-auto" style={{ background: "var(--paper)", zIndex: 1 }}>
+      <InitiationShell initialPhase="welcome" />
+    </div>
+  );
 }

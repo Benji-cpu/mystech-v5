@@ -169,6 +169,50 @@ describe("POST /api/webhooks/stripe", () => {
     expect(mockDbUpdate).toHaveBeenCalled();
   });
 
+  it("handles customer.subscription.created", async () => {
+    const event = {
+      type: "customer.subscription.created",
+      data: {
+        object: {
+          id: "sub_456",
+          customer: "cus_456",
+          status: "active",
+          items: {
+            data: [
+              { current_period_start: 1700000000, current_period_end: 1702592000 },
+            ],
+          },
+          cancel_at_period_end: false,
+        },
+      },
+    };
+
+    const res = await POST(makeWebhookRequest(event));
+    const json = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(json.received).toBe(true);
+    expect(mockDbUpdate).toHaveBeenCalled();
+  });
+
+  it("handles invoice.payment_action_required (3DS / SCA challenge)", async () => {
+    const event = {
+      type: "invoice.payment_action_required",
+      data: {
+        object: {
+          customer: "cus_789",
+        },
+      },
+    };
+
+    const res = await POST(makeWebhookRequest(event));
+    const json = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(json.received).toBe(true);
+    expect(mockDbUpdate).toHaveBeenCalled();
+  });
+
   it("returns 200 for unhandled event types", async () => {
     const event = {
       type: "some.other.event",

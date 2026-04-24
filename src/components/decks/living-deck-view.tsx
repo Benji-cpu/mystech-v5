@@ -69,6 +69,7 @@ export function LivingDeckView({
       meaning: card.meaning,
       guidance: card.guidance,
       imageUrl: card.imageUrl,
+      imageBlurData: null,
       imagePrompt: null,
       imageStatus: card.imageStatus as CardType["imageStatus"],
       cardType: 'general' as const,

@@ -152,22 +152,35 @@ export default async function ProfilePage() {
   const user = await requireAuth();
 
   return (
-    <AnimatedPage className="space-y-8 p-4 sm:p-6 lg:p-8">
-      <AnimatedItem>
-        <PageHeader
-          title={`Welcome, ${resolveUserName(user)}`}
-          subtitle="Your profile and command center. Overview, settings, and account in one place."
-          icon={User}
-        />
-      </AnimatedItem>
+    <div
+      className="daylight fixed inset-0 overflow-y-auto"
+      style={{ background: "var(--paper)", zIndex: 1 }}
+    >
+      <div className="mx-auto max-w-2xl space-y-10 px-6 pb-28 pt-10 sm:px-10 sm:pt-14">
+        <header>
+          <p className="eyebrow">Profile</p>
+          <h1
+            className="display mt-3 text-[clamp(2rem,7vw,3rem)] leading-[0.98]"
+            style={{ color: "var(--ink)" }}
+          >
+            Welcome, {resolveUserName(user)}.
+          </h1>
+          <p
+            className="whisper mt-3 text-base leading-relaxed"
+            style={{ color: "var(--ink-soft)" }}
+          >
+            Your command center. Overview, settings, and account in one place.
+          </p>
+        </header>
 
-      <Suspense fallback={<ProfileContentSkeleton />}>
-        <ProfileContent
-          userId={user.id!}
-          userName={resolveUserName(user)}
-          userRole={(user as { role?: string }).role}
-        />
-      </Suspense>
-    </AnimatedPage>
+        <Suspense fallback={<ProfileContentSkeleton />}>
+          <ProfileContent
+            userId={user.id!}
+            userName={resolveUserName(user)}
+            userRole={(user as { role?: string }).role}
+          />
+        </Suspense>
+      </div>
+    </div>
   );
 }

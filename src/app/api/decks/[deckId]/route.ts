@@ -52,6 +52,7 @@ export async function GET(request: NextRequest, { params }: Params) {
       meaning: c.meaning,
       guidance: c.guidance,
       imageUrl: c.imageUrl,
+      imageBlurData: c.imageBlurData,
       imagePrompt: c.imagePrompt,
       imageStatus: c.imageStatus as Card["imageStatus"],
       cardType: (c.cardType ?? 'general') as Card["cardType"],

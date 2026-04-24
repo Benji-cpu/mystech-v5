@@ -3,12 +3,16 @@
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 
-export function GoogleSignInButton() {
+interface GoogleSignInButtonProps {
+  callbackUrl?: string;
+}
+
+export function GoogleSignInButton({ callbackUrl = "/home" }: GoogleSignInButtonProps = {}) {
   const [isLoading, setIsLoading] = useState(false);
 
   function handleClick() {
     setIsLoading(true);
-    signIn("google", { callbackUrl: "/home" });
+    signIn("google", { callbackUrl });
   }
 
   return (

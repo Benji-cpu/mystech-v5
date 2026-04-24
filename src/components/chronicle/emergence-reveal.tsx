@@ -294,6 +294,7 @@ export function EmergenceReveal({ card, onCardRevealed }: EmergenceRevealProps) 
     meaning: card.meaning,
     guidance: card.guidance,
     imageUrl: card.imageUrl,
+    imagePrompt: null,
     imageStatus: card.imageStatus as CardImageStatus,
     cardType: card.cardType as CardType,
     originContext: null,

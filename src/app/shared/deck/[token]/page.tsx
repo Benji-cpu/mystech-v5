@@ -1,8 +1,10 @@
 import { getSharedDeckByToken } from "@/lib/db/queries";
 import { getCurrentUser } from "@/lib/auth/helpers";
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { AdoptDeckButton } from "@/components/shared/adopt-deck-button";
 import { SharedDeckCardGrid } from "@/components/shared/shared-deck-card-grid";
+import { StudioStyleBadge } from "@/components/studio/studio-style-badge";
 import type { Metadata } from "next";
 import type { CardDetailData, CardImageStatus, CardType } from "@/types";
 
@@ -50,39 +52,66 @@ export default async function SharedDeckPage({
     meaning: c.meaning,
     guidance: c.guidance,
     imageUrl: c.imageUrl,
+    imagePrompt: null,
     imageStatus: c.imageStatus as CardImageStatus,
     cardType: (c.cardType ?? 'general') as CardType,
     originContext: c.originContext ?? null,
   }));
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8">
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-2xl font-bold font-display">{deck.title}</h1>
-            {deck.description && (
-              <p className="text-muted-foreground mt-1">{deck.description}</p>
+    <div className="mx-auto max-w-5xl px-6 py-12 sm:px-10">
+      <header className="mb-10 flex items-start justify-between gap-4">
+        <div className="min-w-0 flex-1">
+          <p className="eyebrow">A shared deck</p>
+          <h1
+            className="display mt-3 text-[clamp(2rem,7vw,3.25rem)] leading-[0.98]"
+            style={{ color: "var(--ink)" }}
+          >
+            {deck.title}
+          </h1>
+          {deck.description && (
+            <p
+              className="whisper mt-3 max-w-2xl text-base leading-relaxed"
+              style={{ color: "var(--ink-soft)" }}
+            >
+              {deck.description}
+            </p>
+          )}
+          <div
+            className="mt-3 flex flex-wrap items-center gap-3 text-sm"
+            style={{ color: "var(--ink-mute)" }}
+          >
+            <span>
+              {deck.cardCount} {deck.cardCount === 1 ? "card" : "cards"}
+            </span>
+            {deck.artStyleName && (
+              <>
+                <span style={{ color: "var(--ink-faint)" }}>·</span>
+                <StudioStyleBadge
+                  styleName={deck.artStyleName}
+                  styleId={deck.artStyleId}
+                  linkToStudio={false}
+                />
+              </>
             )}
-            <div className="flex items-center gap-3 text-sm text-muted-foreground mt-2">
-              <span>
-                {deck.cardCount} card{deck.cardCount !== 1 ? "s" : ""}
-              </span>
-              {deck.artStyleName && (
-                <>
-                  <span>&middot;</span>
-                  <span>{deck.artStyleName}</span>
-                </>
-              )}
-            </div>
           </div>
-          <AdoptDeckButton deckId={deck.id} isLoggedIn={isLoggedIn} />
         </div>
-      </div>
+        <AdoptDeckButton deckId={deck.id} isLoggedIn={isLoggedIn} />
+      </header>
 
-      {/* Card gallery */}
       <SharedDeckCardGrid cards={cards} />
+
+      {deck.artStyleName && (
+        <div className="mt-12 text-center">
+          <Link
+            href={isLoggedIn ? "/decks/new" : "/api/auth/signin"}
+            className="inline-flex items-center gap-2 rounded-full border px-5 py-2.5 text-sm transition-colors hover:border-[var(--ink)]"
+            style={{ borderColor: "var(--line)", color: "var(--ink-soft)" }}
+          >
+            Create your own deck with this style →
+          </Link>
+        </div>
+      )}
     </div>
   );
 }

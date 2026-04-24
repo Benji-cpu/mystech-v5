@@ -1,15 +1,10 @@
 import Link from "next/link";
-import { Plus, Palette } from "lucide-react";
+import { Plus } from "lucide-react";
 import { db } from "@/lib/db";
 import { artStyles, artStyleShares } from "@/lib/db/schema";
 import { requireAuth } from "@/lib/auth/helpers";
 import { eq, or, and } from "drizzle-orm";
-import { Button } from "@/components/ui/button";
 import { StyleCard } from "@/components/art-styles/style-card";
-import { PageHeader } from "@/components/layout/page-header";
-import { AnimatedPage } from "@/components/ui/animated-page";
-import { AnimatedItem } from "@/components/ui/animated-item";
-import { SectionHeader } from "@/components/ui/section-header";
 import type { ArtStyle, StyleCategory } from "@/types";
 
 function toArtStyle(s: typeof artStyles.$inferSelect): ArtStyle {
@@ -60,74 +55,68 @@ export default async function ArtStylesPage() {
   const shared = sharedRows.map((r) => toArtStyle(r.style));
 
   return (
-    <AnimatedPage className="p-4 sm:p-6 lg:p-8 space-y-8">
-      <AnimatedItem>
-        <PageHeader
-          icon={Palette}
-          title="Art Styles"
-          subtitle="Choose a visual style for your oracle card artwork"
-          action={
-            <Button asChild>
-              <Link href="/art-styles/new">
-                <Plus className="h-4 w-4" />
-                Create Custom
-              </Link>
-            </Button>
-          }
-        />
-      </AnimatedItem>
+    <div
+      className="daylight fixed inset-0 overflow-y-auto"
+      style={{ background: "var(--paper)", zIndex: 1 }}
+    >
+      <div className="mx-auto max-w-5xl space-y-12 px-6 pb-28 pt-10 sm:px-10 sm:pt-14">
+        <header className="flex items-start justify-between gap-4">
+          <div>
+            <p className="eyebrow">Studio</p>
+            <h1
+              className="display mt-3 text-[clamp(2.25rem,8vw,3.25rem)] leading-[0.98]"
+              style={{ color: "var(--ink)" }}
+            >
+              Art Styles
+            </h1>
+            <p
+              className="whisper mt-3 text-base leading-relaxed"
+              style={{ color: "var(--ink-soft)" }}
+            >
+              Choose or craft a visual language for your card artwork.
+            </p>
+          </div>
+          <Link
+            href="/art-styles/new"
+            className="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition-opacity hover:opacity-90"
+            style={{ background: "var(--ink)", color: "var(--paper)" }}
+          >
+            <Plus size={14} strokeWidth={2} />
+            Custom
+          </Link>
+        </header>
 
-      {/* Presets */}
-      <AnimatedItem>
         <section>
-          <SectionHeader className="mb-4">Preset Styles</SectionHeader>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+          <p className="eyebrow mb-5">Presets</p>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
             {presets.map((style) => (
-              <StyleCard
-                key={style.id}
-                style={style}
-                currentUserId={user.id!}
-              />
+              <StyleCard key={style.id} style={style} currentUserId={user.id!} />
             ))}
           </div>
         </section>
-      </AnimatedItem>
 
-      {/* Custom */}
-      {custom.length > 0 && (
-        <AnimatedItem>
+        {custom.length > 0 && (
           <section>
-            <SectionHeader className="mb-4">Custom Styles</SectionHeader>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            <p className="eyebrow mb-5">Your custom styles</p>
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
               {custom.map((style) => (
-                <StyleCard
-                  key={style.id}
-                  style={style}
-                  currentUserId={user.id!}
-                />
+                <StyleCard key={style.id} style={style} currentUserId={user.id!} />
               ))}
             </div>
           </section>
-        </AnimatedItem>
-      )}
+        )}
 
-      {/* Shared */}
-      {shared.length > 0 && (
-        <AnimatedItem>
+        {shared.length > 0 && (
           <section>
-            <SectionHeader className="mb-4">Shared With You</SectionHeader>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            <p className="eyebrow mb-5">Shared with you</p>
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
               {shared.map((style) => (
-                <StyleCard
-                  key={style.id}
-                  style={style}
-                  currentUserId={user.id!}
-                />
+                <StyleCard key={style.id} style={style} currentUserId={user.id!} />
               ))}
             </div>
           </section>
-        </AnimatedItem>
-      )}
-    </AnimatedPage>
+        )}
+      </div>
+    </div>
   );
 }

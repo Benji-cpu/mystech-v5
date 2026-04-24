@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
-import { decks } from "@/lib/db/schema";
+import { decks, artStyles } from "@/lib/db/schema";
 import { requireAuth } from "@/lib/auth/helpers";
 import { eq, and } from "drizzle-orm";
 import { DeckEditForm } from "@/components/decks/deck-edit-form";
@@ -75,7 +75,16 @@ async function DeckEditContent({ deckId }: { deckId: string }) {
     updatedAt: deck.updatedAt,
   };
 
-  return <DeckEditForm deck={deckData} />;
+  let artStyleName: string | undefined;
+  if (deck.artStyleId) {
+    const [style] = await db
+      .select({ name: artStyles.name })
+      .from(artStyles)
+      .where(eq(artStyles.id, deck.artStyleId));
+    artStyleName = style?.name;
+  }
+
+  return <DeckEditForm deck={deckData} artStyleName={artStyleName} artStyleId={deck.artStyleId} />;
 }
 
 // ---------------------------------------------------------------------------
@@ -90,17 +99,31 @@ export default async function DeckEditPage({ params }: DeckEditPageProps) {
   const { deckId } = await params;
 
   return (
-    <div className="max-w-2xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-white/90 font-display leading-relaxed">Edit Deck</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Update your deck&apos;s details.
-        </p>
-      </div>
+    <div
+      className="daylight fixed inset-0 overflow-y-auto"
+      style={{ background: "var(--paper)", zIndex: 1 }}
+    >
+      <div className="mx-auto max-w-2xl space-y-8 px-6 pb-28 pt-10 sm:px-10 sm:pt-14">
+        <header>
+          <p className="eyebrow">Edit</p>
+          <h1
+            className="display mt-3 text-[clamp(2rem,7vw,3rem)] leading-[0.98]"
+            style={{ color: "var(--ink)" }}
+          >
+            Edit deck
+          </h1>
+          <p
+            className="whisper mt-3 text-base"
+            style={{ color: "var(--ink-soft)" }}
+          >
+            Update your deck&rsquo;s details.
+          </p>
+        </header>
 
-      <Suspense fallback={<DeckEditSkeleton />}>
-        <DeckEditContent deckId={deckId} />
-      </Suspense>
+        <Suspense fallback={<DeckEditSkeleton />}>
+          <DeckEditContent deckId={deckId} />
+        </Suspense>
+      </div>
     </div>
   );
 }

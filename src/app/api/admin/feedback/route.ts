@@ -12,15 +12,8 @@ export async function GET(request: NextRequest) {
   const page = parseInt(searchParams.get("page") ?? "1");
   const pageSize = parseInt(searchParams.get("pageSize") ?? "20");
   const status = searchParams.get("status"); // "new" | "reviewed" | "archived"
-  const category = searchParams.get("category"); // "bug" | "feature" | "general"
 
-  const conditions = [];
-  if (status) conditions.push(eq(feedback.status, status));
-  if (category) conditions.push(eq(feedback.category, category));
-
-  const where = conditions.length > 0
-    ? sql`${sql.join(conditions, sql` AND `)}`
-    : undefined;
+  const where = status ? eq(feedback.status, status) : undefined;
 
   const [countResult] = await db
     .select({ count: sql<number>`count(*)` })
@@ -34,7 +27,6 @@ export async function GET(request: NextRequest) {
       userName: users.name,
       userEmail: users.email,
       email: feedback.email,
-      category: feedback.category,
       message: feedback.message,
       pageUrl: feedback.pageUrl,
       screenshotUrl: feedback.screenshotUrl,

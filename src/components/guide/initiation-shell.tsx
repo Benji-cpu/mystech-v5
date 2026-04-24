@@ -617,7 +617,7 @@ export function InitiationShell({
   const displayArtStyleName = state.selectedArtStyleName;
 
   return (
-    <div className="h-[100dvh] flex flex-col overflow-hidden bg-transparent">
+    <div className="h-[100dvh] flex flex-col overflow-hidden bg-transparent pb-20">
       {/* ── Lyra zone — always mounted ── */}
       <div className="shrink-0 flex flex-col items-center pt-16 pb-6 px-4">
         <LyraSigil size="lg" state={LYRA_SIGIL_STATES[state.phase]} showLabel />

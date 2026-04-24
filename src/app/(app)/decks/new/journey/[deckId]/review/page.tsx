@@ -24,12 +24,17 @@ export default async function JourneyReviewPage({ params }: Params) {
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <DraftReview
-        deckId={deckId}
-        deckTitle={deck.title}
-        initialDraftCards={draftCards}
-      />
+    <div
+      className="daylight fixed inset-0 overflow-y-auto"
+      style={{ background: "var(--paper)", zIndex: 1 }}
+    >
+      <div className="mx-auto max-w-4xl px-6 pb-28 pt-10 sm:px-10 sm:pt-14">
+        <DraftReview
+          deckId={deckId}
+          deckTitle={deck.title}
+          initialDraftCards={draftCards}
+        />
+      </div>
     </div>
   );
 }

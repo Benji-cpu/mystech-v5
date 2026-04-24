@@ -1,6 +1,9 @@
 import { getSharedReadingByToken } from "@/lib/db/queries";
+import { getCurrentUser } from "@/lib/auth/helpers";
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { ReviewSpreadLayout } from "@/components/readings/review-spread-layout";
+import { StudioStyleBadge } from "@/components/studio/studio-style-badge";
 import type { Metadata } from "next";
 import type { SpreadType, CardImageStatus, CardType, CardOriginContext } from "@/types";
 
@@ -57,33 +60,56 @@ export default async function SharedReadingPage({
 
   if (!reading) notFound();
 
+  const user = await getCurrentUser();
+  const isLoggedIn = !!user;
   const spreadType = reading.spreadType as SpreadType;
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
-      {/* Header */}
-      <div className="mb-8 text-center">
-        <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
-          {reading.deckTitle}
-        </p>
-        <h1 className="text-2xl font-bold font-display">
-          {SPREAD_LABELS[spreadType]} Reading
+    <div className="mx-auto max-w-4xl px-6 py-12 sm:px-10">
+      <header className="mb-10 text-center">
+        <p className="eyebrow">A shared reading · {reading.deckTitle}</p>
+        <h1
+          className="display mt-3 text-[clamp(2.25rem,8vw,3.25rem)] leading-[0.98]"
+          style={{ color: "var(--ink)" }}
+        >
+          {SPREAD_LABELS[spreadType]}
         </h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          {new Date(reading.createdAt).toLocaleDateString("en-US", {
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-          })}
-        </p>
-      </div>
+        <div
+          className="mt-3 flex items-center justify-center gap-3 text-sm"
+          style={{ color: "var(--ink-mute)" }}
+        >
+          <span>
+            {new Date(reading.createdAt).toLocaleDateString("en-US", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            })}
+          </span>
+          {reading.artStyleName && (
+            <>
+              <span style={{ color: "var(--ink-faint)" }}>·</span>
+              <StudioStyleBadge
+                styleName={reading.artStyleName}
+                styleId={reading.artStyleId}
+                linkToStudio={false}
+              />
+            </>
+          )}
+        </div>
+      </header>
 
       {reading.question && (
-        <div className="max-w-xl mx-auto mb-8 p-3 rounded-lg bg-card/50 border border-border/50 text-center">
-          <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
-            Question
+        <div
+          className="mx-auto mb-10 max-w-xl rounded-2xl border p-5 text-center hair"
+          style={{ background: "var(--paper-card)" }}
+        >
+          <p className="eyebrow">The question</p>
+          <p
+            className="whisper mt-2 text-base leading-relaxed"
+            style={{ color: "var(--ink-soft)" }}
+          >
+            &ldquo;{reading.question}&rdquo;
           </p>
-          <p className="text-sm italic">{reading.question}</p>
         </div>
       )}
 
@@ -106,6 +132,7 @@ export default async function SharedReadingPage({
                   meaning: (c?.meaning ?? r?.meaning)!,
                   guidance: (c?.guidance ?? r?.guidance)!,
                   imageUrl: c?.imageUrl ?? r?.imageUrl ?? null,
+                  imageBlurData: c?.imageBlurData ?? null,
                   imagePrompt: c?.imagePrompt ?? r?.imagePrompt ?? null,
                   imageStatus: (c?.imageStatus ?? r?.imageStatus ?? "pending") as CardImageStatus,
                   cardType: ((c?.cardType ?? r?.cardType) ?? "general") as CardType,
@@ -118,15 +145,31 @@ export default async function SharedReadingPage({
         />
       </div>
 
-      {/* Interpretation (static, not streaming) */}
       {reading.interpretation && (
-        <div className="max-w-2xl mx-auto p-6 rounded-xl bg-card/50 border border-border/50">
+        <div
+          className="mx-auto mt-10 max-w-2xl rounded-2xl border p-7 hair"
+          style={{ background: "var(--paper-card)" }}
+        >
+          <p className="eyebrow">The weave</p>
           <div
-            className="text-sm leading-relaxed whitespace-pre-wrap"
+            className="mt-4 whitespace-pre-wrap leading-relaxed"
+            style={{ color: "var(--ink-soft)", fontSize: "16px" }}
             dangerouslySetInnerHTML={{
               __html: renderBoldMarkdown(reading.interpretation),
             }}
           />
+        </div>
+      )}
+
+      {reading.artStyleName && (
+        <div className="mt-12 text-center">
+          <Link
+            href={isLoggedIn ? "/decks/new" : "/api/auth/signin"}
+            className="inline-flex items-center gap-2 rounded-full border px-5 py-2.5 text-sm transition-colors hover:border-[var(--ink)]"
+            style={{ borderColor: "var(--line)", color: "var(--ink-soft)" }}
+          >
+            Create your own deck with this style →
+          </Link>
         </div>
       )}
     </div>

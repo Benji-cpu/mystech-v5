@@ -43,6 +43,10 @@ vi.mock("@/lib/db/schema", () => ({
     userId: "user_id",
     createdAt: "created_at",
   },
+  users: {
+    id: "id",
+    createdAt: "created_at",
+  },
 }));
 
 vi.mock("drizzle-orm", () => ({
@@ -142,26 +146,21 @@ describe("checkDailyReadings", () => {
     mockInsertResult.length = 0;
   });
 
-  it("returns allowed when readings are available", async () => {
-    // First call: isFirstReadingEver — count query returns 1 reading (not first ever)
-    // Second call: count today's readings — returns 0
-    // The mock returns the same array for all select().from().where() calls,
-    // so we need to set up mock to return count of 0 for today
-    // Since isFirstReadingEver checks count and gets the same mock, we need
-    // both calls to work. Use a counter approach.
+  // Helper: user created long ago (outside welcome window)
+  const oldUser = () => ({ createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) });
+  // Helper: user created recently (inside welcome window)
+  const newUser = () => ({ createdAt: new Date(Date.now() - 60 * 60 * 1000) });
 
+  it("returns allowed when readings are available", async () => {
     const { db } = await import("@/lib/db");
     let callCount = 0;
     vi.mocked(db.select).mockImplementation(() => ({
       from: vi.fn().mockReturnValue({
         where: vi.fn().mockImplementation(() => {
           callCount++;
-          if (callCount === 1) {
-            // isFirstReadingEver: user has readings => not first
-            return Promise.resolve([{ count: 3 }]);
-          }
-          // checkDailyReadings: count today => 0
-          return Promise.resolve([{ count: 0 }]);
+          if (callCount === 1) return Promise.resolve([{ count: 3 }]); // isFirstReadingEver: not first
+          if (callCount === 2) return Promise.resolve([oldUser()]); // user lookup: outside welcome window
+          return Promise.resolve([{ count: 0 }]); // today's reading count
         }),
       }),
     }) as ReturnType<typeof db.select>);
@@ -172,6 +171,7 @@ describe("checkDailyReadings", () => {
     expect(result.performedToday).toBe(0);
     expect(result.limit).toBe(1);
     expect(result.remaining).toBe(1);
+    expect(result.inWelcomeWindow).toBe(false);
   });
 
   it("returns not allowed when daily limit reached", async () => {
@@ -181,12 +181,9 @@ describe("checkDailyReadings", () => {
       from: vi.fn().mockReturnValue({
         where: vi.fn().mockImplementation(() => {
           callCount++;
-          if (callCount === 1) {
-            // isFirstReadingEver: user has readings => not first
-            return Promise.resolve([{ count: 5 }]);
-          }
-          // checkDailyReadings: performed 1 today (free limit = 1)
-          return Promise.resolve([{ count: 1 }]);
+          if (callCount === 1) return Promise.resolve([{ count: 5 }]); // isFirstReadingEver: not first
+          if (callCount === 2) return Promise.resolve([oldUser()]); // user lookup: outside welcome window
+          return Promise.resolve([{ count: 1 }]); // performed 1 today (free limit = 1)
         }),
       }),
     }) as ReturnType<typeof db.select>);
@@ -196,6 +193,51 @@ describe("checkDailyReadings", () => {
     expect(result.allowed).toBe(false);
     expect(result.performedToday).toBe(1);
     expect(result.limit).toBe(1);
+    expect(result.remaining).toBe(0);
+  });
+
+  it("welcome grant: free user within 24h of signup can perform 3 readings total", async () => {
+    const { db } = await import("@/lib/db");
+    let callCount = 0;
+    vi.mocked(db.select).mockImplementation(() => ({
+      from: vi.fn().mockReturnValue({
+        where: vi.fn().mockImplementation(() => {
+          callCount++;
+          if (callCount === 1) return Promise.resolve([{ count: 2 }]); // has 2 readings, not first ever
+          if (callCount === 2) return Promise.resolve([newUser()]); // inside welcome window
+          if (callCount === 3) return Promise.resolve([{ count: 2 }]); // 2 readings since signup
+          return Promise.resolve([{ count: 2 }]); // today count for payload
+        }),
+      }),
+    }) as ReturnType<typeof db.select>);
+
+    const result = await checkDailyReadings("user-1", "free");
+
+    expect(result.inWelcomeWindow).toBe(true);
+    expect(result.limit).toBe(3);
+    expect(result.remaining).toBe(1); // 3 - 2 = 1 left in welcome grant
+    expect(result.allowed).toBe(true);
+  });
+
+  it("welcome grant exhausted: user did 3 readings in first 24h, further readings blocked in window", async () => {
+    const { db } = await import("@/lib/db");
+    let callCount = 0;
+    vi.mocked(db.select).mockImplementation(() => ({
+      from: vi.fn().mockReturnValue({
+        where: vi.fn().mockImplementation(() => {
+          callCount++;
+          if (callCount === 1) return Promise.resolve([{ count: 3 }]);
+          if (callCount === 2) return Promise.resolve([newUser()]);
+          if (callCount === 3) return Promise.resolve([{ count: 3 }]); // already used grant
+          return Promise.resolve([{ count: 3 }]);
+        }),
+      }),
+    }) as ReturnType<typeof db.select>);
+
+    const result = await checkDailyReadings("user-1", "free");
+
+    expect(result.inWelcomeWindow).toBe(true);
+    expect(result.allowed).toBe(false);
     expect(result.remaining).toBe(0);
   });
 

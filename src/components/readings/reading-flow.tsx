@@ -27,6 +27,8 @@ import { AstrologyBar } from "./astrology-bar";
 import { AstroNudgeBanner } from "@/components/shared/astro-nudge-banner";
 import { JourneyContextBanner } from "./journey-context-banner";
 import { useCardDetailModal } from "@/hooks/use-card-detail-modal";
+import { fetchWithUpgrade } from "@/lib/api/fetch-with-upgrade";
+import { ReadingCompleteShare } from "./reading-complete-share";
 import { CardDetailModal } from "@/components/cards/card-detail-modal";
 import type { AstrologyProfile, CardImageStatus, CardType } from "@/types";
 
@@ -557,7 +559,7 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
     createReadingTriggered.current = true;
     devLog("creating", "API call started");
 
-    fetch("/api/readings", {
+    fetchWithUpgrade("/api/readings", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -831,7 +833,18 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
   // ── Render ────────────────────────────────────────────────────────────
 
   return (
-    <div className="-mx-4 sm:-mx-6 lg:-mx-8 -mt-6 -mb-6 h-[100dvh] flex flex-col overflow-hidden pt-20">
+    <div
+      className={cn(
+        "fixed inset-0 flex flex-col overflow-hidden transition-colors",
+        isInSetup ? "daylight" : "nocturnal"
+      )}
+      style={{
+        zIndex: 1,
+        paddingTop: "1.5rem",
+        paddingBottom: "5rem",
+        background: isInSetup ? "var(--paper)" : "var(--night, #0A0614)",
+      }}
+    >
       {/* ── ZONE 0: GUIDED LOADING — only visible in guided mode before reading begins ── */}
       <motion.div
         layout
@@ -905,6 +918,7 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
                       meaning: todayChronicleCard.meaning,
                       guidance: todayChronicleCard.guidance,
                       imageUrl: todayChronicleCard.imageUrl,
+                      imagePrompt: null,
                       imageStatus: todayChronicleCard.imageStatus as CardImageStatus,
                       cardType: todayChronicleCard.cardType as CardType,
                       originContext: null,
@@ -1065,19 +1079,18 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
           {/* Begin Reading button */}
           <div className="flex justify-center pb-20">
             <motion.button
-              whileHover={canBegin ? { scale: 1.05 } : {}}
-              whileTap={canBegin ? { scale: 0.95 } : {}}
+              whileHover={canBegin ? { scale: 1.03 } : {}}
+              whileTap={canBegin ? { scale: 0.97 } : {}}
               onClick={handleBeginReading}
               disabled={!canBegin}
-              className={cn(
-                "px-8 py-3 rounded-xl font-medium text-sm",
-                "transition-all duration-300",
-                canBegin
-                  ? "bg-gradient-to-r from-gold to-[#b89840] text-surface-deep shadow-lg shadow-gold/20 hover:shadow-xl hover:shadow-gold/30"
-                  : "bg-white/10 text-white/30 cursor-not-allowed"
-              )}
+              className="px-8 py-3.5 rounded-full text-sm font-medium transition-all"
+              style={{
+                background: canBegin ? "var(--ink)" : "var(--paper-warm)",
+                color: canBegin ? "var(--paper)" : "var(--ink-faint)",
+                cursor: canBegin ? "pointer" : "not-allowed",
+              }}
             >
-              Begin Reading
+              Begin reading →
             </motion.button>
           </div>
         </div>
@@ -1144,6 +1157,7 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
                             meaning: "",
                             guidance: "",
                             imageUrl: null,
+                            imageBlurData: null,
                             imagePrompt: null,
                             imageStatus: "pending" as const,
                             cardType: "general" as const,
@@ -1252,6 +1266,12 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
               guided={guided}
               onInitiationComplete={handleInitiationComplete}
               autoAdvanceCountdown={autoAdvanceCountdown}
+            />
+          )}
+          {phase === "complete" && readingId && !guided && (
+            <ReadingCompleteShare
+              readingId={readingId}
+              spreadType={selectedSpread ?? undefined}
             />
           )}
         </div>

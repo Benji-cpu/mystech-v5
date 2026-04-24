@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { Plus, BookOpen, Share2, ThumbsUp, ThumbsDown } from "lucide-react";
 import { requireAuth } from "@/lib/auth/helpers";
@@ -87,12 +88,14 @@ async function ReadingsContent() {
             href={`/readings/${reading.id}`}
             className="flex items-center gap-4 p-4 rounded-2xl bg-white/[0.03] backdrop-blur-sm border border-white/[0.06] hover:border-gold/30 transition-all group"
           >
-            <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-gradient-to-br from-surface-mid to-surface-deep">
+            <div className="relative w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-gradient-to-br from-surface-mid to-surface-deep">
               {reading.deckCoverImageUrl ? (
-                <img
+                <Image
                   src={reading.deckCoverImageUrl}
                   alt=""
-                  className="w-full h-full object-cover"
+                  fill
+                  sizes="48px"
+                  className="object-cover"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
@@ -160,25 +163,41 @@ async function ReadingsContent() {
 
 export default function ReadingsPage() {
   return (
-    <AnimatedPage className="p-4 sm:p-6 lg:p-8">
-      <AnimatedItem className="mb-8">
-        <PageHeader
-          title="My Readings"
-          subtitle="View your past readings and the insights they revealed."
-          action={
-            <Link href="/readings/new">
-              <Button className="gap-2">
-                <Plus className="h-4 w-4" />
-                New Reading
-              </Button>
-            </Link>
-          }
-        />
-      </AnimatedItem>
+    <div
+      className="daylight fixed inset-0 overflow-y-auto"
+      style={{ background: "var(--paper)", zIndex: 1 }}
+    >
+      <div className="mx-auto max-w-3xl px-6 pb-28 pt-10 sm:px-10 sm:pt-14">
+        <header className="mb-8 flex items-start justify-between gap-4">
+          <div>
+            <p className="eyebrow">Archive</p>
+            <h1
+              className="display mt-3 text-[clamp(2.25rem,8vw,3.25rem)] leading-[0.98]"
+              style={{ color: "var(--ink)" }}
+            >
+              Readings
+            </h1>
+            <p
+              className="whisper mt-3 text-base leading-relaxed"
+              style={{ color: "var(--ink-soft)" }}
+            >
+              Every insight you&rsquo;ve pulled, kept quietly.
+            </p>
+          </div>
+          <Link
+            href="/readings/new"
+            className="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition-opacity hover:opacity-90"
+            style={{ background: "var(--ink)", color: "var(--paper)" }}
+          >
+            <Plus size={14} strokeWidth={2} />
+            New
+          </Link>
+        </header>
 
-      <Suspense fallback={<ReadingsContentSkeleton />}>
-        <ReadingsContent />
-      </Suspense>
-    </AnimatedPage>
+        <Suspense fallback={<ReadingsContentSkeleton />}>
+          <ReadingsContent />
+        </Suspense>
+      </div>
+    </div>
   );
 }

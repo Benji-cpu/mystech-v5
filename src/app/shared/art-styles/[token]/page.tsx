@@ -37,33 +37,45 @@ export default async function SharedArtStylePage({
   const previewImages = (style.previewImages as string[]) ?? [];
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
-      {/* Header */}
-      <div className="mb-8 text-center">
-        <h1 className="text-2xl font-bold font-display">{style.name}</h1>
-        <p className="text-muted-foreground mt-2 max-w-lg mx-auto">
+    <div className="mx-auto max-w-4xl px-6 py-12 sm:px-10">
+      <header className="mb-10 text-center">
+        <p className="eyebrow">A shared art style</p>
+        <h1
+          className="display mt-3 text-[clamp(2rem,7vw,3rem)] leading-[0.98]"
+          style={{ color: "var(--ink)" }}
+        >
+          {style.name}
+        </h1>
+        <p
+          className="whisper mx-auto mt-4 max-w-lg text-base leading-relaxed"
+          style={{ color: "var(--ink-soft)" }}
+        >
           {style.description}
         </p>
-      </div>
+      </header>
 
-      {/* Preview images gallery */}
       {previewImages.length > 0 ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
           {previewImages.map((url, i) => (
             <div
               key={i}
-              className="aspect-[2/3] rounded-xl overflow-hidden border border-border/50"
+              className="aspect-[2/3] overflow-hidden rounded-md border"
+              style={{ borderColor: "var(--line)" }}
             >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={url}
                 alt={`${style.name} preview ${i + 1}`}
-                className="w-full h-full object-cover"
+                className="h-full w-full object-cover"
               />
             </div>
           ))}
         </div>
       ) : (
-        <div className="text-center py-12 text-muted-foreground">
+        <div
+          className="whisper py-12 text-center text-base"
+          style={{ color: "var(--ink-mute)" }}
+        >
           No preview images available for this style.
         </div>
       )}

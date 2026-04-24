@@ -17,6 +17,7 @@ interface ReviewCardData {
 interface ReviewSpreadLayoutProps {
   spreadType: SpreadType;
   cards: ReviewCardData[];
+  onCardImageUpdated?: (cardId: string, newImageUrl: string) => void;
   className?: string;
 }
 
@@ -364,6 +365,7 @@ const EXPECTED_COUNTS: Record<SpreadType, number> = {
 export function ReviewSpreadLayout({
   spreadType,
   cards,
+  onCardImageUpdated,
   className,
 }: ReviewSpreadLayoutProps) {
   const { cardWidth, cardHeight, gap, isMobile } = useResponsiveCardSize(
@@ -382,7 +384,7 @@ export function ReviewSpreadLayout({
     return (
       <div className={cn(className)}>
         <FallbackGrid cards={cards} cardWidth={cardWidth} onCardClick={handleCardClick} />
-        <CardDetailModal {...modalProps} />
+        <CardDetailModal {...modalProps} onCardImageUpdated={onCardImageUpdated} />
       </div>
     );
   }
@@ -416,7 +418,7 @@ export function ReviewSpreadLayout({
         />
       )}
 
-      <CardDetailModal {...modalProps} />
+      <CardDetailModal {...modalProps} onCardImageUpdated={onCardImageUpdated} />
     </div>
   );
 }

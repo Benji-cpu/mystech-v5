@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -152,11 +153,13 @@ export function RetreatArtifactCard({
 
       {/* Image (if generated) */}
       {artifact.imageUrl && (
-        <div className="aspect-[16/9] overflow-hidden">
-          <img
+        <div className="relative aspect-[16/9] overflow-hidden">
+          <Image
             src={artifact.imageUrl}
             alt={`Artifact for ${retreatName}`}
-            className="w-full h-full object-cover"
+            fill
+            sizes="(min-width: 640px) 640px, 100vw"
+            className="object-cover"
           />
         </div>
       )}

@@ -8,7 +8,6 @@ import { createId } from "@paralleldrive/cuid2";
 import { eq, and, gte, sql } from "drizzle-orm";
 
 const feedbackSchema = z.object({
-  category: z.enum(["bug", "feature", "general"]),
   message: z.string().min(1).max(2000),
   pageUrl: z.string().min(1).max(500),
   screenshotDataUrl: z.string().optional(),
@@ -33,7 +32,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { category, message, pageUrl, screenshotDataUrl, email, viewportWidth, viewportHeight } = parsed.data;
+  const { message, pageUrl, screenshotDataUrl, email, viewportWidth, viewportHeight } = parsed.data;
 
   // Rate limit: max 5 per hour per user (or per IP for anonymous)
   if (user?.id) {
@@ -76,7 +75,6 @@ export async function POST(request: NextRequest) {
     id,
     userId: user?.id ?? null,
     email: user?.email ?? email ?? null,
-    category,
     message,
     pageUrl,
     screenshotUrl: screenshotUrl ?? null,

@@ -48,19 +48,36 @@ export default async function StyleDetailPage({
   const isPreset = style.isPreset;
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-2xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold font-display">{style.name}</h1>
-            <Badge variant={isPreset ? "secondary" : "outline"}>
-              {isPreset ? "Preset" : "Custom"}
-            </Badge>
+    <div
+      className="daylight fixed inset-0 overflow-y-auto"
+      style={{ background: "var(--paper)", zIndex: 1 }}
+    >
+      <div className="mx-auto max-w-2xl space-y-8 px-6 pb-28 pt-10 sm:px-10 sm:pt-14">
+        <Link
+          href="/art-styles"
+          className="eyebrow inline-flex items-center gap-2 hover:underline"
+        >
+          ← Art styles
+        </Link>
+
+        <div className="flex items-start justify-between gap-4">
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <h1
+                className="display text-[clamp(2rem,7vw,3rem)] leading-[0.98]"
+                style={{ color: "var(--ink)" }}
+              >
+                {style.name}
+              </h1>
+              <Badge variant={isPreset ? "secondary" : "outline"}>
+                {isPreset ? "Preset" : "Custom"}
+              </Badge>
+            </div>
+            <p className="whisper text-base" style={{ color: "var(--ink-soft)" }}>
+              {style.description}
+            </p>
           </div>
-          <p className="text-muted-foreground">{style.description}</p>
         </div>
-      </div>
 
       {/* Preview gallery (gradient placeholders) */}
       <section className="space-y-3">
@@ -112,6 +129,7 @@ export default async function StyleDetailPage({
             <DeleteStyleButton styleId={style.id} styleName={style.name} />
           </>
         )}
+      </div>
       </div>
     </div>
   );

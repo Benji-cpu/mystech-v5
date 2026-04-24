@@ -313,7 +313,7 @@ export function ChronicleSetupFlow({
   return (
     <div
       className={cn(
-        "flex h-[100dvh] flex-col overflow-hidden",
+        "flex h-[100dvh] flex-col overflow-hidden pb-20",
         "bg-gradient-to-b from-surface-deep via-[#0d0220] to-surface-deep",
         className
       )}

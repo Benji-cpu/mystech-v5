@@ -5,12 +5,10 @@ import { decks, cards, artStyles, users } from "@/lib/db/schema";
 import { requireAuth } from "@/lib/auth/helpers";
 import { getDeckMetadata, hasAdoptedDeck, getUserCardFeedback, getChronicleSettings, getTodayChronicleCard, getChronicleEntries } from "@/lib/db/queries";
 import { eq, and, asc } from "drizzle-orm";
-import { DeckHeader } from "@/components/decks/deck-header";
+import { EditorialDeckHeader } from "@/components/decks/editorial-deck-header";
 import { DeckViewClient } from "@/components/decks/deck-view-client";
 import { ChronicleDeckDetail } from "@/components/chronicle/chronicle-deck-detail";
 import { FirstDeckHint } from "@/components/guide/first-deck-hint";
-import { AnimatedPage } from "@/components/ui/animated-page";
-import { AnimatedItem } from "@/components/ui/animated-item";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Deck, Card, DraftCard } from "@/types";
 
@@ -31,15 +29,20 @@ function DeckCardGridSkeleton() {
 // Skeleton for the entire chronicle hub while chronicle data loads
 function ChronicleContentSkeleton() {
   return (
-    <div className="space-y-6">
-      <div className="rounded-2xl bg-white/5 border border-white/10 p-6 space-y-4">
-        <Skeleton className="h-6 w-48" />
-        <Skeleton className="h-4 w-64" />
-        <div className="flex gap-4">
-          <Skeleton className="h-12 w-24 rounded-xl" />
-          <Skeleton className="h-12 w-24 rounded-xl" />
-          <Skeleton className="h-12 w-24 rounded-xl" />
-        </div>
+    <div className="space-y-8">
+      <Skeleton className="h-10 w-48" />
+      <Skeleton className="h-48 w-full rounded-3xl" />
+      <Skeleton className="h-16 w-32 rounded-full" />
+      <div className="space-y-3">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="flex items-center gap-4 py-4">
+            <Skeleton className="h-16 w-12 rounded-sm" />
+            <div className="flex-1 space-y-2">
+              <Skeleton className="h-3 w-20" />
+              <Skeleton className="h-4 w-48" />
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -69,6 +72,7 @@ async function DeckCardGrid({
     meaning: c.meaning,
     guidance: c.guidance,
     imageUrl: c.imageUrl,
+    imageBlurData: c.imageBlurData,
     imagePrompt: c.imagePrompt,
     imageStatus: c.imageStatus as Card["imageStatus"],
     cardType: (c.cardType ?? 'general') as Card["cardType"],
@@ -196,19 +200,24 @@ export default async function DeckViewPage({ params }: DeckViewPageProps) {
     redirect(`/decks/new/journey/${deckId}/${phase}`);
   }
 
-  // Chronicle deck — suspend the heavy chronicle data fetch, render shell immediately
+  // Chronicle deck — editorial via ChronicleDeckDetail
   if ((deck.deckType ?? "standard") === "chronicle") {
     return (
-      <AnimatedPage className="p-4 sm:p-6 lg:p-8">
-        <Suspense fallback={<ChronicleContentSkeleton />}>
-          <ChronicleDeckContent
-            deckId={deckId}
-            deckTitle={deck.title}
-            cardCount={deck.cardCount}
-            userId={user.id!}
-          />
-        </Suspense>
-      </AnimatedPage>
+      <div
+        className="daylight fixed inset-0 overflow-y-auto"
+        style={{ background: "var(--paper)", zIndex: 1 }}
+      >
+        <div className="mx-auto max-w-3xl px-6 pb-28 pt-10 sm:px-10 sm:pt-14">
+          <Suspense fallback={<ChronicleContentSkeleton />}>
+            <ChronicleDeckContent
+              deckId={deckId}
+              deckTitle={deck.title}
+              cardCount={deck.cardCount}
+              userId={user.id!}
+            />
+          </Suspense>
+        </div>
+      </div>
     );
   }
 
@@ -241,23 +250,24 @@ export default async function DeckViewPage({ params }: DeckViewPageProps) {
   };
 
   return (
-    <AnimatedPage className="space-y-6 p-4 sm:p-6 lg:p-8">
-      {/* DeckHeader renders immediately — deck data already available from page-level query */}
-      <AnimatedItem>
-        <DeckHeader
+    <div
+      className="daylight fixed inset-0 overflow-y-auto"
+      style={{ background: "var(--paper)", zIndex: 1 }}
+    >
+      <div className="mx-auto max-w-4xl space-y-8 px-6 pb-28 pt-10 sm:px-10 sm:pt-14">
+        <EditorialDeckHeader
           deck={deckData}
           artStyleName={artStyleName}
+          artStyleId={deck.artStyleId}
           shareToken={deck.shareToken}
           isAdopter={isAdopter}
           ownerName={ownerName}
         />
-      </AnimatedItem>
-      {/* First-visit hint for new users */}
-      <FirstDeckHint />
-      {/* Card grid is the expensive part — suspend it so the header paints first */}
-      <Suspense fallback={<DeckCardGridSkeleton />}>
-        <DeckCardGrid deckId={deckId} userId={user.id!} deck={deckData} />
-      </Suspense>
-    </AnimatedPage>
+        <FirstDeckHint />
+        <Suspense fallback={<DeckCardGridSkeleton />}>
+          <DeckCardGrid deckId={deckId} userId={user.id!} deck={deckData} />
+        </Suspense>
+      </div>
+    </div>
   );
 }

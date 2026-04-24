@@ -13,8 +13,6 @@ import {
 } from "@/lib/db/queries-paths";
 import { getUserPlan } from "@/lib/db/queries";
 import { PathDetail } from "@/components/paths/path-detail";
-import { AnimatedPage } from "@/components/ui/animated-page";
-import { AnimatedItem } from "@/components/ui/animated-item";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { PathStatus, UserPathProgress, UserRetreatProgress, UserWaypointProgress } from "@/types";
 
@@ -27,19 +25,19 @@ async function CircleBreadcrumb({ pathId }: { pathId: string }) {
   if (!circle) return null;
 
   return (
-    <AnimatedItem>
-      <p className="text-xs text-white/40 -mt-3">
-        <span className="text-gold/60">{pathData.name}</span>
-      </p>
-    </AnimatedItem>
+    <p className="text-xs" style={{ color: "var(--ink-mute)" }}>
+      <span style={{ color: "var(--accent-gold)" }}>{pathData.name}</span>
+    </p>
   );
 }
 
 function PathDetailSkeleton() {
   return (
     <div className="space-y-6">
-      {/* Path header */}
-      <div className="rounded-2xl bg-white/5 border border-white/10 p-6 space-y-4">
+      <div
+        className="rounded-2xl border p-6 space-y-4 hair"
+        style={{ background: "var(--paper-card)" }}
+      >
         <div className="flex items-start gap-4">
           <Skeleton className="h-14 w-14 rounded-2xl shrink-0" />
           <div className="space-y-2 flex-1">
@@ -47,19 +45,15 @@ function PathDetailSkeleton() {
             <Skeleton className="h-4 w-20 rounded-full" />
           </div>
         </div>
-        <div className="space-y-2">
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-4 w-5/6" />
-        </div>
-        <Skeleton className="h-10 w-36 rounded-lg" />
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-5/6" />
       </div>
-
-      {/* Retreat timeline */}
       <div className="space-y-3">
         {Array.from({ length: 4 }).map((_, i) => (
           <div
             key={i}
-            className="rounded-2xl bg-white/5 border border-white/10 p-5"
+            className="rounded-2xl border p-5 hair"
+            style={{ background: "var(--paper-card)" }}
           >
             <div className="flex items-center gap-3">
               <Skeleton className="h-8 w-8 rounded-full shrink-0" />
@@ -67,7 +61,6 @@ function PathDetailSkeleton() {
                 <Skeleton className="h-4 w-36" />
                 <Skeleton className="h-3 w-24" />
               </div>
-              <Skeleton className="h-5 w-20 rounded-full" />
             </div>
           </div>
         ))}
@@ -182,14 +175,19 @@ export default async function PathDetailPage({ params }: PathDetailPageProps) {
   const { pathId } = await params;
 
   return (
-    <AnimatedPage className="space-y-6 p-4 sm:p-6 lg:p-8">
-      <Suspense fallback={null}>
-        <CircleBreadcrumb pathId={pathId} />
-      </Suspense>
+    <div
+      className="daylight fixed inset-0 overflow-y-auto"
+      style={{ background: "var(--paper)", zIndex: 1 }}
+    >
+      <div className="mx-auto max-w-3xl space-y-6 px-6 pb-28 pt-10 sm:px-10 sm:pt-14">
+        <Suspense fallback={null}>
+          <CircleBreadcrumb pathId={pathId} />
+        </Suspense>
 
-      <Suspense fallback={<PathDetailSkeleton />}>
-        <PathDetailContent pathId={pathId} />
-      </Suspense>
-    </AnimatedPage>
+        <Suspense fallback={<PathDetailSkeleton />}>
+          <PathDetailContent pathId={pathId} />
+        </Suspense>
+      </div>
+    </div>
   );
 }

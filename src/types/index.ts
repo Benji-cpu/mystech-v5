@@ -74,6 +74,7 @@ export type Card = {
   meaning: string;
   guidance: string;
   imageUrl: string | null;
+  imageBlurData: string | null;
   imagePrompt: string | null;
   imageStatus: CardImageStatus;
   cardType: CardType;
@@ -103,7 +104,9 @@ export type RetreatCard = {
 };
 
 /** Minimal shape for CardDetailModal — both Card and RetreatCard satisfy this */
-export type CardDetailData = Pick<Card, 'id' | 'title' | 'meaning' | 'guidance' | 'imageUrl' | 'imageStatus' | 'cardType' | 'originContext'>;
+export type CardDetailData = Pick<Card, 'id' | 'title' | 'meaning' | 'guidance' | 'imageUrl' | 'imagePrompt' | 'imageStatus' | 'cardType' | 'originContext'> & {
+  imageBlurData?: string | null;
+};
 
 // Studio parameter types
 export type StyleParameters = {
@@ -271,9 +274,16 @@ export type UsageStatus = {
 };
 
 // API response types
+export type ApiErrorCode =
+  | "USAGE_LIMIT_EXCEEDED"
+  | "PLAN_RESTRICTION"
+  | "UNAUTHORIZED"
+  | "NOT_FOUND"
+  | "VALIDATION";
+
 export type ApiResponse<T> =
   | { success: true; data: T }
-  | { success: false; error: string };
+  | { success: false; error: string; code?: ApiErrorCode };
 
 export type PaginatedResponse<T> = {
   items: T[];
@@ -696,6 +706,7 @@ export type OnboardingMilestone =
   | 'second_reading_complete'
   | 'spread_types_introduced'
   | 'art_styles_introduced'
+  | 'studio_introduced'
   // Stage 3: Daily Practice
   | 'chronicle_introduced'
   | 'first_chronicle_entry'

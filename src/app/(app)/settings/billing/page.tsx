@@ -1,9 +1,10 @@
 import { Suspense } from "react";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { requireAuth } from "@/lib/auth/helpers";
 import { getUserPlan, getUserSubscription } from "@/lib/db/queries";
 import { getUserPlanFromRole, getOrCreateUsageRecord, checkDailyReadings } from "@/lib/usage";
 import { PLAN_LIMITS } from "@/lib/constants";
-import { PageHeader } from "@/components/layout/page-header";
 import { BillingPageClient } from "@/components/billing/billing-page-client";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { PlanType } from "@/types";
@@ -76,14 +77,36 @@ async function BillingContent() {
 
 export default function BillingPage() {
   return (
-    <div className="max-w-2xl mx-auto p-4 sm:p-6 lg:p-8">
-      <PageHeader
-        title="Billing"
-        subtitle="Manage your subscription and view usage."
-      />
-      <Suspense fallback={<BillingContentSkeleton />}>
-        <BillingContent />
-      </Suspense>
+    <div
+      className="daylight fixed inset-0 overflow-y-auto"
+      style={{ background: "var(--paper)", zIndex: 1 }}
+    >
+      <div className="mx-auto max-w-2xl px-6 pb-28 pt-10 sm:px-10 sm:pt-14">
+        <Link
+          href="/settings"
+          className="eyebrow inline-flex items-center gap-2 hover:underline"
+        >
+          <ArrowLeft size={14} /> Settings
+        </Link>
+        <header className="mt-6 mb-8">
+          <p className="eyebrow">Subscription</p>
+          <h1
+            className="display mt-3 text-[clamp(2rem,7vw,3rem)] leading-[0.98]"
+            style={{ color: "var(--ink)" }}
+          >
+            Billing
+          </h1>
+          <p
+            className="whisper mt-3 text-base leading-relaxed"
+            style={{ color: "var(--ink-soft)" }}
+          >
+            Manage your subscription and view usage.
+          </p>
+        </header>
+        <Suspense fallback={<BillingContentSkeleton />}>
+          <BillingContent />
+        </Suspense>
+      </div>
     </div>
   );
 }

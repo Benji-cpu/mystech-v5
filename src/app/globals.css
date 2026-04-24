@@ -157,6 +157,146 @@
   }
 }
 
+/* ─────────────────────────────────────────────────────────────────
+ * Editorial Daylight — scoped utility system for the UI overhaul
+ * Apply `.daylight` to a container to switch its subtree to the
+ * editorial paper palette. Does not affect pages outside the scope.
+ * ───────────────────────────────────────────────────────────────── */
+.daylight {
+  --paper: #F5EFE4;
+  --paper-warm: #EFE7D6;
+  --paper-card: #FBF7EE;
+  --ink: #1A1614;
+  --ink-soft: #3D342E;
+  --ink-mute: #7A6E63;
+  --ink-faint: #B5A898;
+  --line: #E0D5BF;
+  --line-soft: #EBE1CC;
+  --accent-gold: #A8863F;
+  background: var(--paper);
+  color: var(--ink);
+
+  /* Override ShadCN design tokens for components using bg-card / bg-background / etc.
+   * This flips components like GenerationProgress, GlassPanel, Badge variants
+   * to the editorial palette automatically. */
+  --background: #F5EFE4;
+  --foreground: #1A1614;
+  --card: #FBF7EE;
+  --card-foreground: #1A1614;
+  --popover: #FBF7EE;
+  --popover-foreground: #1A1614;
+  --primary: #A8863F;
+  --primary-foreground: #1A1614;
+  --secondary: #EFE7D6;
+  --secondary-foreground: #3D342E;
+  --muted: #EFE7D6;
+  --muted-foreground: #7A6E63;
+  --accent: #EFE7D6;
+  --accent-foreground: #1A1614;
+  --border: #E0D5BF;
+  --input: #E0D5BF;
+  --ring: #A8863F;
+  --gold: #A8863F;
+}
+.daylight .display {
+  font-family: var(--font-fraunces), Georgia, serif;
+  letter-spacing: -0.02em;
+}
+.daylight .whisper {
+  font-family: var(--font-fraunces), Georgia, serif;
+  font-style: italic;
+}
+.daylight .eyebrow {
+  font-family: var(--font-inter), system-ui, sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ink-mute);
+}
+.daylight .hair { border-color: var(--line); }
+
+/* Force-readable overrides for legacy dark-mode utility classes
+ * when they appear inside a .daylight subtree. Targets the most
+ * common patterns: text-white/* and bg-white/[0.0x].
+ * Scoped narrowly to avoid bleeding into intentionally dark elements.
+ */
+.daylight .text-white\/90 { color: var(--ink) !important; }
+.daylight .text-white\/80 { color: var(--ink) !important; }
+.daylight .text-white\/70 { color: var(--ink-soft) !important; }
+.daylight .text-white\/60 { color: var(--ink-soft) !important; }
+.daylight .text-white\/50 { color: var(--ink-mute) !important; }
+.daylight .text-white\/40 { color: var(--ink-mute) !important; }
+.daylight .text-white\/30 { color: var(--ink-faint) !important; }
+.daylight .text-white\/20 { color: var(--ink-faint) !important; }
+
+/* Surface / glass panel overrides — translate dark glass to paper */
+.daylight .bg-white\/\[0\.03\],
+.daylight .bg-white\/5,
+.daylight .bg-white\/\[0\.05\] {
+  background: var(--paper-card) !important;
+}
+.daylight .bg-white\/\[0\.06\],
+.daylight .bg-white\/\[0\.07\],
+.daylight .bg-white\/\[0\.08\],
+.daylight .bg-white\/10 {
+  background: var(--paper-warm) !important;
+}
+.daylight .border-white\/\[0\.06\],
+.daylight .border-white\/\[0\.08\],
+.daylight .border-white\/5,
+.daylight .border-white\/10 {
+  border-color: var(--line) !important;
+}
+.daylight .border-white\/20,
+.daylight .border-white\/30 {
+  border-color: var(--ink-faint) !important;
+}
+/* GlassPanel component often applies backdrop-blur with white translucence —
+ * on cream the blur reads wrong; flatten it */
+.daylight .backdrop-blur-sm,
+.daylight .backdrop-blur,
+.daylight .backdrop-blur-md {
+  backdrop-filter: none !important;
+}
+
+/* Nocturnal — used by reading ceremony reveal/interpret phases and climax moments */
+.nocturnal {
+  --night: #0A0614;
+  --night-mid: #17112B;
+  --night-soft: #251E3A;
+  --night-ink: #EDE4D0;
+  --night-mute: #8A8276;
+  --night-line: rgba(237, 228, 208, 0.12);
+  --night-gold: #D4B158;
+  --night-gold-soft: #8F7635;
+  background: var(--night);
+  color: var(--night-ink);
+}
+.nocturnal .display { font-family: var(--font-alegreya), Georgia, serif; letter-spacing: -0.01em; }
+.nocturnal .whisper { font-family: var(--font-alegreya), Georgia, serif; font-style: italic; }
+.nocturnal .eyebrow {
+  font-family: var(--font-inter), system-ui, sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--night-gold);
+}
+.nocturnal .nocturnal-bg {
+  background:
+    radial-gradient(ellipse 70% 50% at 50% 0%, rgba(78, 47, 122, 0.5) 0%, transparent 60%),
+    radial-gradient(ellipse 80% 80% at 80% 100%, rgba(212, 177, 88, 0.06) 0%, transparent 55%),
+    var(--night);
+}
+
+/* Daylight → Nocturnal smooth transition */
+.daylight,
+.nocturnal {
+  transition: background 800ms cubic-bezier(0.22, 1, 0.36, 1),
+              color 800ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 /* Glass container for content over immersive background */
 .glass-container {
   background: rgba(255, 255, 255, 0.05);

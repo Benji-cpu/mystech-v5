@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 import type { Card } from "@/types";
 
@@ -21,12 +22,14 @@ export function CompactCardStrip({ cards, className }: CompactCardStripProps) {
           key={card.id}
           className="flex flex-col items-center gap-1 shrink-0"
         >
-          <div className="w-12 h-16 rounded-md overflow-hidden border border-white/10 bg-white/5">
+          <div className="relative w-12 h-16 rounded-md overflow-hidden border border-white/10 bg-white/5">
             {card.imageUrl ? (
-              <img
+              <Image
                 src={card.imageUrl}
                 alt={card.title}
-                className="w-full h-full object-cover"
+                fill
+                sizes="48px"
+                className="object-cover"
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-[8px] text-white/30">

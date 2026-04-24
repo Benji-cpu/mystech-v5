@@ -13,6 +13,11 @@ const { mockGetCurrentUser, mockGetUserSubscription, mockInsertResult, mockStrip
         create: vi.fn(),
       },
     },
+    billingPortal: {
+      sessions: {
+        create: vi.fn(),
+      },
+    },
   },
 }));
 
@@ -44,6 +49,7 @@ vi.mock("@/lib/stripe/client", () => ({
 
 vi.mock("@/lib/stripe/plans", () => ({
   STRIPE_PRO_PRICE_ID: "price_test_123",
+  requireStripePriceId: () => "price_test_123",
 }));
 
 vi.mock("drizzle-orm", () => ({
@@ -119,7 +125,7 @@ describe("POST /api/stripe/checkout", () => {
     expect(mockStripe.customers.create).not.toHaveBeenCalled();
   });
 
-  it("returns 400 if already pro", async () => {
+  it("returns billing portal URL when already pro", async () => {
     mockGetCurrentUser.mockResolvedValue({ id: "user-1", email: "test@test.com" });
     mockGetUserSubscription.mockResolvedValue({
       id: "sub-1",
@@ -128,11 +134,39 @@ describe("POST /api/stripe/checkout", () => {
       plan: "pro",
       status: "active",
     });
+    mockStripe.billingPortal.sessions.create.mockResolvedValue({
+      url: "https://billing.stripe.com/portal_session_xyz",
+    });
 
     const res = await POST();
     const json = await res.json();
 
-    expect(res.status).toBe(400);
-    expect(json.error).toContain("Already subscribed");
+    expect(res.status).toBe(200);
+    expect(json.url).toBe("https://billing.stripe.com/portal_session_xyz");
+    expect(mockStripe.checkout.sessions.create).not.toHaveBeenCalled();
+    expect(mockStripe.billingPortal.sessions.create).toHaveBeenCalledWith(
+      expect.objectContaining({ customer: "cus_existing" })
+    );
+  });
+
+  it("passes idempotency key to checkout session create", async () => {
+    mockGetCurrentUser.mockResolvedValue({ id: "user-1", email: "test@test.com" });
+    mockGetUserSubscription.mockResolvedValue({
+      id: "sub-1",
+      userId: "user-1",
+      stripeCustomerId: "cus_existing",
+      plan: "free",
+      status: "active",
+    });
+    mockStripe.checkout.sessions.create.mockResolvedValue({
+      url: "https://checkout.stripe.com/session_idem",
+    });
+
+    await POST();
+
+    expect(mockStripe.checkout.sessions.create).toHaveBeenCalledWith(
+      expect.objectContaining({ customer: "cus_existing" }),
+      expect.objectContaining({ idempotencyKey: expect.stringMatching(/^checkout_user-1_\d+$/) })
+    );
   });
 });

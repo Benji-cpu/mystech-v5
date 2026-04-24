@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Layers, Play, ScrollText, Users } from "lucide-react";
@@ -42,10 +43,12 @@ export function DeckCard({ deck, resumeHref, isAdopted }: DeckCardProps) {
       {/* Cover Image — tarot proportions */}
       <div className="relative aspect-[3/4] overflow-hidden bg-gradient-to-b from-surface-deep to-surface-mid">
         {deck.coverImageUrl ? (
-          <img
+          <Image
             src={deck.coverImageUrl}
             alt={deck.title}
-            className="h-full w-full object-cover transition-transform group-hover:scale-105"
+            fill
+            sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
+            className="object-cover transition-transform group-hover:scale-105"
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center">

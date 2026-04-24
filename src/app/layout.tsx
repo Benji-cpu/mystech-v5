@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Alegreya } from "next/font/google";
+import { Geist, Geist_Mono, Alegreya, Fraunces, Inter } from "next/font/google";
 import { Toaster } from "sonner";
+import { Analytics } from "@vercel/analytics/next";
 import { Providers } from "@/components/providers";
 import "./globals.css";
 
@@ -21,6 +22,19 @@ const alegreya = Alegreya({
   style: ["normal", "italic"],
 });
 
+const fraunces = Fraunces({
+  variable: "--font-fraunces",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  style: ["normal", "italic"],
+});
+
+const inter = Inter({
+  variable: "--font-inter",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+});
+
 export const metadata: Metadata = {
   title: "MysTech - AI Oracle Card Readings",
   description:
@@ -35,10 +49,11 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${alegreya.variable} font-sans antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${alegreya.variable} ${fraunces.variable} ${inter.variable} font-sans antialiased`}
       >
         <Providers>{children}</Providers>
         <Toaster richColors position="bottom-right" />
+        <Analytics />
       </body>
     </html>
   );

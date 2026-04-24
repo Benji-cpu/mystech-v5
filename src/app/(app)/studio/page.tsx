@@ -73,34 +73,47 @@ export default async function StudioPage() {
   await requireAuth();
 
   return (
-    <AnimatedPage className="p-4 sm:p-6 lg:p-8 space-y-8">
-      <AnimatedItem>
-        <PageHeader
-          icon={Palette}
-          title="Studio"
-          subtitle="Your creative workspace"
-        />
-      </AnimatedItem>
+    <div
+      className="daylight fixed inset-0 overflow-y-auto"
+      style={{ background: "var(--paper)", zIndex: 1 }}
+    >
+      <div className="mx-auto max-w-3xl space-y-10 px-6 pb-28 pt-10 sm:px-10 sm:pt-14">
+        <header>
+          <p className="eyebrow">Creator</p>
+          <h1
+            className="display mt-3 text-[clamp(2.25rem,8vw,3.25rem)] leading-[0.98]"
+            style={{ color: "var(--ink)" }}
+          >
+            Studio
+          </h1>
+          <p
+            className="whisper mt-3 text-base leading-relaxed"
+            style={{ color: "var(--ink-soft)" }}
+          >
+            Your creative workspace.
+          </p>
+        </header>
 
-      <AnimatedItem>
-        <SectionHeader className="mb-4">Tools</SectionHeader>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <StudioCard
-            href="/studio/styles"
-            icon={Palette}
-            title="Art Styles"
-            description="Browse 45+ curated templates, create custom styles from reference images, and fine-tune every parameter."
-            badge="45+ styles"
-          />
-          <StudioCard
-            href="/studio/cards"
-            icon={Wand2}
-            title="Card Refinement"
-            description="Refine individual card images with progressive controls, from simple regeneration to full parameter exposure."
-            note="Select a card from a deck to begin refining its artwork."
-          />
-        </div>
-      </AnimatedItem>
-    </AnimatedPage>
+        <section>
+          <p className="eyebrow mb-5">Tools</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <StudioCard
+              href="/studio/styles"
+              icon={Palette}
+              title="Art Styles"
+              description="Browse 45+ curated templates, create custom styles from reference images, and fine-tune every parameter."
+              badge="45+ styles"
+            />
+            <StudioCard
+              href="/studio/cards"
+              icon={Wand2}
+              title="Card Refinement"
+              description="Refine individual card images with progressive controls, from simple regeneration to full parameter exposure."
+              note="Select a card from a deck to begin refining its artwork."
+            />
+          </div>
+        </section>
+      </div>
+    </div>
   );
 }

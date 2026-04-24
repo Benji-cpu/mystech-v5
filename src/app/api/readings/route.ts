@@ -12,6 +12,9 @@ import {
 import { getPathPosition, recordPathReading, canAdvanceWaypoint, getRetreatObstacleCards } from "@/lib/db/queries-paths";
 import { PLAN_LIMITS, SPREAD_POSITIONS } from "@/lib/constants";
 import { getUserPlanFromRole, checkDailyReadings } from "@/lib/usage";
+import { captureServer, ANALYTICS_EVENTS } from "@/lib/analytics";
+import { sendFirstReadingReflection } from "@/lib/email/send";
+import { users } from "@/lib/db/schema";
 import { shuffle } from "@/lib/shuffle";
 import { generateObject } from "ai";
 import { z } from "zod";
@@ -117,14 +120,23 @@ export async function POST(request: NextRequest) {
   if (plan !== "admin") {
     const limits = PLAN_LIMITS[plan];
 
-    // Check daily reading limit (with first-reading exemption)
+    // Check daily reading limit (with first-reading exemption + welcome grant)
     const readingCheck = await checkDailyReadings(user.id, plan);
     if (!readingCheck.allowed) {
+      captureServer(ANALYTICS_EVENTS.PAYWALL_HIT, user.id, {
+        reason: readingCheck.inWelcomeWindow
+          ? "welcome_grant_exhausted"
+          : "daily_reading_limit",
+        plan,
+        performed_today: readingCheck.performedToday,
+        limit: readingCheck.limit,
+        in_welcome_window: readingCheck.inWelcomeWindow,
+      });
+      const message = readingCheck.inWelcomeWindow
+        ? "You've used all 3 of your first-day readings. Come back tomorrow, or upgrade to Pro for 5 readings/day."
+        : "You've used your daily reading. Come back tomorrow, or upgrade to Pro for 5 readings/day.";
       return NextResponse.json<ApiResponse<never>>(
-        {
-          success: false,
-          error: "You've used your daily reading. Come back tomorrow, or upgrade to Pro for 5 readings/day.",
-        },
+        { success: false, error: message, code: "USAGE_LIMIT_EXCEEDED" },
         { status: 403 }
       );
     }
@@ -132,10 +144,16 @@ export async function POST(request: NextRequest) {
     // Check spread type restriction
     const allowedSpreads = limits.spreads as readonly string[];
     if (!allowedSpreads.includes(typedSpread)) {
+      captureServer(ANALYTICS_EVENTS.PAYWALL_HIT, user.id, {
+        reason: "spread_restriction",
+        plan,
+        attempted_spread: typedSpread,
+      });
       return NextResponse.json<ApiResponse<never>>(
         {
           success: false,
           error: "This spread type requires a Pro subscription.",
+          code: "PLAN_RESTRICTION",
         },
         { status: 403 }
       );
@@ -371,9 +389,41 @@ export async function POST(request: NextRequest) {
   mark("db insert");
 
   // Auto-fire onboarding milestone for 2nd reading (non-blocking)
-  getUserTotalReadingCount(user.id).then((totalCount) => {
+  getUserTotalReadingCount(user.id).then(async (totalCount) => {
+    captureServer(
+      totalCount === 1 ? ANALYTICS_EVENTS.FIRST_READING_COMPLETED : ANALYTICS_EVENTS.READING_COMPLETED,
+      user.id,
+      {
+        spread_type: typedSpread,
+        plan,
+        deck_count: resolvedDeckIds.length,
+        has_question: Boolean(question?.trim()),
+        total_readings: totalCount,
+      },
+    );
     if (totalCount >= 2) {
       completeMilestone(user.id, "second_reading_complete").catch(() => {});
+    }
+    // First-reading reflection email (non-blocking)
+    if (totalCount === 1) {
+      try {
+        const [userRow] = await db
+          .select({ email: users.email, name: users.name })
+          .from(users)
+          .where(eq(users.id, user.id));
+        if (userRow?.email) {
+          const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://mystech.app";
+          const spreadLabel = typedSpread.replace("_", " ");
+          sendFirstReadingReflection({
+            to: userRow.email,
+            name: userRow.name,
+            readingUrl: `${appUrl}/readings/${reading.id}`,
+            spreadLabel,
+          }).catch(() => {});
+        }
+      } catch {
+        // non-fatal
+      }
     }
   }).catch(() => {});
 

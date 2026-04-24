@@ -1,7 +1,7 @@
 import { db } from "@/lib/db";
-import { usageTracking, readings } from "@/lib/db/schema";
+import { usageTracking, readings, users } from "@/lib/db/schema";
 import { eq, and, gte, sql, count } from "drizzle-orm";
-import { PLAN_LIMITS } from "@/lib/constants";
+import { PLAN_LIMITS, WELCOME_READING_GRANT, WELCOME_WINDOW_MS } from "@/lib/constants";
 import type { PlanType } from "@/types";
 
 // Far-future date for lifetime (free) usage records
@@ -104,14 +104,28 @@ export async function incrementCredits(userId: string, plan: PlanType, creditCou
 }
 
 /**
- * Check if user can perform a reading today.
+ * Check if user can perform a reading.
+ *
+ * Three gates, in order:
+ *   1. First-ever reading: always allowed.
+ *   2. Free plan + within 24h of signup: up to WELCOME_READING_GRANT readings total.
+ *      (Softens the day-1 cliff — fall-through to the daily limit only after
+ *      the welcome window closes or the grant is exhausted.)
+ *   3. Otherwise: limits.readingsPerDay against today's count.
  */
 export async function checkDailyReadings(
   userId: string,
   plan: PlanType
-): Promise<{ allowed: boolean; remaining: number; limit: number; performedToday: number }> {
+): Promise<{
+  allowed: boolean;
+  remaining: number;
+  limit: number;
+  performedToday: number;
+  inWelcomeWindow: boolean;
+  welcomeRemaining?: number;
+}> {
   if (plan === "admin") {
-    return { allowed: true, remaining: Infinity, limit: Infinity, performedToday: 0 };
+    return { allowed: true, remaining: Infinity, limit: Infinity, performedToday: 0, inWelcomeWindow: false };
   }
 
   const limits = PLAN_LIMITS[plan];
@@ -119,10 +133,47 @@ export async function checkDailyReadings(
   // Check first-reading exemption
   const firstEver = await isFirstReadingEver(userId);
   if (firstEver) {
-    return { allowed: true, remaining: limits.readingsPerDay, limit: limits.readingsPerDay, performedToday: 0 };
+    return { allowed: true, remaining: limits.readingsPerDay, limit: limits.readingsPerDay, performedToday: 0, inWelcomeWindow: false };
   }
 
-  // Count today's readings
+  // Welcome window: only applies to free plan in first 24h
+  let inWelcomeWindow = false;
+  if (plan === "free") {
+    const [userRow] = await db
+      .select({ createdAt: users.createdAt })
+      .from(users)
+      .where(eq(users.id, userId));
+
+    if (userRow && Date.now() - userRow.createdAt.getTime() < WELCOME_WINDOW_MS) {
+      inWelcomeWindow = true;
+      const [totalResult] = await db
+        .select({ count: count() })
+        .from(readings)
+        .where(eq(readings.userId, userId));
+      const totalSoFar = totalResult?.count ?? 0;
+      const welcomeRemaining = Math.max(0, WELCOME_READING_GRANT - totalSoFar);
+
+      // Count today's readings for the response payload
+      const now = new Date();
+      const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const [todayResult] = await db
+        .select({ count: count() })
+        .from(readings)
+        .where(and(eq(readings.userId, userId), gte(readings.createdAt, startOfDay)));
+      const performedToday = todayResult?.count ?? 0;
+
+      return {
+        allowed: welcomeRemaining > 0,
+        remaining: welcomeRemaining,
+        limit: WELCOME_READING_GRANT,
+        performedToday,
+        inWelcomeWindow: true,
+        welcomeRemaining,
+      };
+    }
+  }
+
+  // Regular daily limit
   const now = new Date();
   const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
@@ -139,6 +190,7 @@ export async function checkDailyReadings(
     remaining: Math.max(0, remaining),
     limit: limits.readingsPerDay,
     performedToday,
+    inWelcomeWindow,
   };
 }
 

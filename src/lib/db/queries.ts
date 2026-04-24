@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { decks, cards, artStyles, readings, readingCards, retreatCards, conversations, deckMetadata, subscriptions, users, userProfiles, deckAdoptions, cardFeedback, livingDeckSettings, chronicleSettings, chronicleEntries, chronicleKnowledge, astrologyProfiles, emergenceEvents } from "@/lib/db/schema";
+import { decks, cards, artStyles, readings, readingCards, retreatCards, conversations, deckMetadata, subscriptions, users, userProfiles, deckAdoptions, cardFeedback, livingDeckSettings, chronicleSettings, chronicleEntries, chronicleKnowledge, astrologyProfiles, emergenceEvents, cardOverrides } from "@/lib/db/schema";
 import { eq, and, asc, count, ne, desc, gte, gt, sql, isNotNull } from "drizzle-orm";
 import type { Deck, DeckWithOwner, DraftDeckWithPhase, JourneyPhase, DraftCard, PlanType, UserProfile, UserContextProfile, ReadingLength, CardFeedbackType, VoicePreferences, VoiceSpeed, ChronicleEntry, ChronicleSettings, ChronicleKnowledge, ChronicleInterests, ChronicleBadge, AstrologyProfile, ActivityItem, EmergenceEvent } from "@/types";
 import { getBadgeById } from "@/lib/chronicle/badges";
@@ -153,6 +153,7 @@ export async function getReadingCardsWithData(readingId: string) {
         meaning: cards.meaning,
         guidance: cards.guidance,
         imageUrl: cards.imageUrl,
+        imageBlurData: cards.imageBlurData,
         imagePrompt: cards.imagePrompt,
         imageStatus: cards.imageStatus,
         cardType: cards.cardType,
@@ -394,9 +395,12 @@ export async function getSharedReadingByToken(token: string) {
       createdAt: readings.createdAt,
       deckTitle: decks.title,
       deckCoverImageUrl: decks.coverImageUrl,
+      artStyleId: decks.artStyleId,
+      artStyleName: artStyles.name,
     })
     .from(readings)
     .innerJoin(decks, eq(readings.deckId, decks.id))
+    .leftJoin(artStyles, eq(decks.artStyleId, artStyles.id))
     .where(eq(readings.shareToken, token));
 
   if (!reading) return null;
@@ -419,6 +423,7 @@ export async function getSharedReadingByToken(token: string) {
         meaning: cards.meaning,
         guidance: cards.guidance,
         imageUrl: cards.imageUrl,
+        imageBlurData: cards.imageBlurData,
         imagePrompt: cards.imagePrompt,
         imageStatus: cards.imageStatus,
         cardType: cards.cardType,
@@ -1557,4 +1562,44 @@ export async function updateEmergenceEvent(
     .update(emergenceEvents)
     .set(data)
     .where(eq(emergenceEvents.id, id));
+}
+
+/**
+ * Check which cards (by ID) have been refined in Studio.
+ * Returns a map of cardId → true for cards that have a cardOverride row.
+ */
+export async function getCardOverrideMap(
+  cardIds: string[]
+): Promise<Record<string, boolean>> {
+  if (cardIds.length === 0) return {};
+  const rows = await db
+    .select({ cardId: cardOverrides.cardId })
+    .from(cardOverrides)
+    .where(sql`${cardOverrides.cardId} IN ${cardIds}`);
+  const map: Record<string, boolean> = {};
+  for (const row of rows) {
+    map[row.cardId] = true;
+  }
+  return map;
+}
+
+/**
+ * Get recently refined cards for a user (cards with overrides, ordered by override updatedAt).
+ */
+export async function getRecentlyRefinedCards(userId: string, limit = 5) {
+  return db
+    .select({
+      cardId: cardOverrides.cardId,
+      cardTitle: cards.title,
+      imageUrl: cards.imageUrl,
+      imageStatus: cards.imageStatus,
+      deckId: cards.deckId,
+      updatedAt: cardOverrides.updatedAt,
+    })
+    .from(cardOverrides)
+    .innerJoin(cards, eq(cardOverrides.cardId, cards.id))
+    .innerJoin(decks, eq(cards.deckId, decks.id))
+    .where(eq(decks.userId, userId))
+    .orderBy(desc(cardOverrides.updatedAt))
+    .limit(limit);
 }

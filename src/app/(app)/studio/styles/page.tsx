@@ -42,18 +42,29 @@ export default async function StudioStylesPage() {
   const allStyles = rows.map(toArtStyle);
 
   return (
-    <AnimatedPage className="p-4 sm:p-6 lg:p-8 space-y-8">
-      <AnimatedItem>
-        <PageHeader
-          icon={Palette}
-          title="Art Styles"
-          subtitle="Browse 45+ curated templates or create a custom style from reference images"
-        />
-      </AnimatedItem>
+    <div
+      className="daylight fixed inset-0 overflow-y-auto"
+      style={{ background: "var(--paper)", zIndex: 1 }}
+    >
+      <div className="mx-auto max-w-5xl space-y-10 px-6 pb-28 pt-10 sm:px-10 sm:pt-14">
+        <header>
+          <p className="eyebrow">Studio</p>
+          <h1
+            className="display mt-3 text-[clamp(2.25rem,8vw,3.25rem)] leading-[0.98]"
+            style={{ color: "var(--ink)" }}
+          >
+            Art Styles
+          </h1>
+          <p
+            className="whisper mt-3 text-base leading-relaxed"
+            style={{ color: "var(--ink-soft)" }}
+          >
+            Browse 45+ curated templates or create a custom style from reference images.
+          </p>
+        </header>
 
-      <AnimatedItem>
         <TemplateBrowser styles={allStyles} currentUserId={user.id!} />
-      </AnimatedItem>
-    </AnimatedPage>
+      </div>
+    </div>
   );
 }

@@ -1,5 +1,4 @@
 import { Suspense } from "react";
-import { Settings } from "lucide-react";
 import { requireAuth } from "@/lib/auth/helpers";
 import {
   getUserProfile,
@@ -12,10 +11,7 @@ import {
   getChronicleSettings,
 } from "@/lib/db/queries";
 import { getUserPlanFromRole } from "@/lib/usage";
-import { PageHeader } from "@/components/layout/page-header";
 import { SettingsContent } from "@/components/settings/settings-content";
-import { AnimatedPage } from "@/components/ui/animated-page";
-import { AnimatedItem } from "@/components/ui/animated-item";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { PlanType } from "@/types";
 
@@ -25,11 +21,12 @@ function SettingsContentSkeleton() {
       {Array.from({ length: 6 }).map((_, i) => (
         <div
           key={i}
-          className="rounded-2xl bg-white/5 border border-white/10 p-4"
+          className="rounded-2xl border p-5 hair"
+          style={{ background: "var(--paper-card)" }}
         >
           <Skeleton className="h-3 w-24 mb-3" />
           <Skeleton className="h-4 w-48 mb-4" />
-          <div className="space-y-4">
+          <div className="space-y-3">
             <Skeleton className="h-10 w-full rounded-xl" />
             <Skeleton className="h-10 w-full rounded-xl" />
           </div>
@@ -84,21 +81,34 @@ export default async function SettingsPage() {
   const user = await requireAuth();
 
   return (
-    <AnimatedPage className="space-y-8 p-4 sm:p-6 lg:p-8">
-      <AnimatedItem>
-        <PageHeader
-          title="Settings"
-          subtitle="Manage your preferences, account, and subscription."
-          icon={Settings}
-        />
-      </AnimatedItem>
+    <div
+      className="daylight fixed inset-0 overflow-y-auto"
+      style={{ background: "var(--paper)", zIndex: 1 }}
+    >
+      <div className="mx-auto max-w-2xl space-y-10 px-6 pb-28 pt-10 sm:px-10 sm:pt-14">
+        <header>
+          <p className="eyebrow">Preferences</p>
+          <h1
+            className="display mt-3 text-[clamp(2.25rem,8vw,3.25rem)] leading-[0.98]"
+            style={{ color: "var(--ink)" }}
+          >
+            Settings
+          </h1>
+          <p
+            className="whisper mt-3 text-base leading-relaxed"
+            style={{ color: "var(--ink-soft)" }}
+          >
+            Manage your profile, preferences, and subscription.
+          </p>
+        </header>
 
-      <Suspense fallback={<SettingsContentSkeleton />}>
-        <SettingsData
-          userId={user.id!}
-          userRole={(user as { role?: string }).role}
-        />
-      </Suspense>
-    </AnimatedPage>
+        <Suspense fallback={<SettingsContentSkeleton />}>
+          <SettingsData
+            userId={user.id!}
+            userRole={(user as { role?: string }).role}
+          />
+        </Suspense>
+      </div>
+    </div>
   );
 }

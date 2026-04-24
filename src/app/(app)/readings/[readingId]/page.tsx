@@ -12,11 +12,10 @@ import { Button } from "@/components/ui/button";
 import { LYRA_READING_DETAIL } from "@/components/guide/lyra-constants";
 import { ReadingInterpretation } from "@/components/readings/reading-interpretation";
 import { ReadingFeedback } from "@/components/readings/reading-feedback";
+import { ReadingRefineSection } from "@/components/readings/reading-refine-section";
 import { ShareButton } from "@/components/shared/share-button";
 import { DeleteReadingButton } from "@/components/readings/delete-reading-button";
-import { AnimatedPage } from "@/components/ui/animated-page";
-import { AnimatedItem } from "@/components/ui/animated-item";
-import { GlassPanel } from "@/components/ui/glass-panel";
+import { ArrowLeft } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StaggeredList } from "@/components/ui/staggered-list";
 import type {
@@ -97,6 +96,7 @@ async function ReadingDetailContent({
                 meaning: (c?.meaning ?? r?.meaning)!,
                 guidance: (c?.guidance ?? r?.guidance)!,
                 imageUrl: c?.imageUrl ?? r?.imageUrl ?? null,
+                imageBlurData: c?.imageBlurData ?? null,
                 imagePrompt: c?.imagePrompt ?? r?.imagePrompt ?? null,
                 imageStatus: (c?.imageStatus ?? r?.imageStatus ?? "pending") as CardImageStatus,
                 cardType: ((c?.cardType ?? r?.cardType) ?? "general") as CardType,
@@ -117,6 +117,20 @@ async function ReadingDetailContent({
         <ReadingFeedback
           readingId={readingId}
           existingFeedback={feedback}
+        />
+      </div>
+
+      {/* Refine cards */}
+      <div className="max-w-2xl mx-auto">
+        <ReadingRefineSection
+          cards={cardsWithData
+            .filter((rc) => rc.card?.id)
+            .map((rc) => ({
+              id: rc.card!.id,
+              title: rc.card!.title,
+              imageUrl: rc.card!.imageUrl,
+              imageStatus: rc.card!.imageStatus,
+            }))}
         />
       </div>
 
@@ -147,16 +161,28 @@ export default async function ReadingViewPage({
   const spreadType = reading.spreadType as SpreadType;
 
   return (
-    <AnimatedPage className="p-4 sm:p-6 lg:p-8">
-      {/* Header - renders immediately */}
-      <AnimatedItem className="mb-8">
-        <div className="flex items-start justify-between">
+    <div
+      className="daylight fixed inset-0 overflow-y-auto"
+      style={{ background: "var(--paper)", zIndex: 1 }}
+    >
+      <div className="mx-auto max-w-3xl px-6 pb-28 pt-10 sm:px-10 sm:pt-14">
+        <Link
+          href="/home"
+          className="eyebrow inline-flex items-center gap-2 hover:underline"
+        >
+          <ArrowLeft size={14} /> Home
+        </Link>
+
+        <header className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-white/90 font-display leading-relaxed">
-              {SPREAD_LABELS[spreadType]} Reading
+            <p className="eyebrow">A reading · {SPREAD_LABELS[spreadType]}</p>
+            <h1
+              className="display mt-3 text-[clamp(2rem,7vw,3rem)] leading-[0.98]"
+              style={{ color: "var(--ink)" }}
+            >
+              {deck?.title ?? "Unknown deck"}
             </h1>
-            <p className="text-white/40 text-sm mt-1">
-              {deck?.title ?? "Unknown Deck"} &middot;{" "}
+            <p className="mt-2 text-sm" style={{ color: "var(--ink-mute)" }}>
               {new Date(reading.createdAt).toLocaleDateString("en-US", {
                 year: "numeric",
                 month: "long",
@@ -173,28 +199,35 @@ export default async function ReadingViewPage({
             />
             <DeleteReadingButton readingId={readingId} />
           </div>
-        </div>
+        </header>
 
         {reading.question && (
-          <GlassPanel className="mt-4 p-3">
-            <p className="text-xs text-gold uppercase tracking-wider mb-1">
-              Your Question
+          <div
+            className="mt-6 rounded-2xl border p-5 hair"
+            style={{ background: "var(--paper-card)" }}
+          >
+            <p className="eyebrow">Your question</p>
+            <p
+              className="whisper mt-2 text-base leading-relaxed"
+              style={{ color: "var(--ink-soft)" }}
+            >
+              &ldquo;{reading.question}&rdquo;
             </p>
-            <p className="text-sm italic text-white/90">{reading.question}</p>
-          </GlassPanel>
+          </div>
         )}
-      </AnimatedItem>
 
-      {/* Suspended content */}
-      <Suspense fallback={<ReadingDetailSkeleton />}>
-        <ReadingDetailContent
-          readingId={readingId}
-          deckId={reading.deckId}
-          spreadType={spreadType}
-          interpretation={reading.interpretation}
-          feedback={(reading.feedback as FeedbackType) ?? null}
-        />
-      </Suspense>
-    </AnimatedPage>
+        <div className="mt-10">
+          <Suspense fallback={<ReadingDetailSkeleton />}>
+            <ReadingDetailContent
+              readingId={readingId}
+              deckId={reading.deckId}
+              spreadType={spreadType}
+              interpretation={reading.interpretation}
+              feedback={(reading.feedback as FeedbackType) ?? null}
+            />
+          </Suspense>
+        </div>
+      </div>
+    </div>
   );
 }

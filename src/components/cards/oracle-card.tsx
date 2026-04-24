@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Loader2, AlertCircle, RotateCcw } from "lucide-react";
@@ -14,7 +15,17 @@ interface OracleCardProps {
   onClick?: () => void;
   hideTitle?: boolean;
   animated?: boolean;
+  priority?: boolean;
+  sizes?: string;
+  blurDataURL?: string;
 }
+
+const DEFAULT_SIZES: Record<"sm" | "md" | "lg" | "fill", string> = {
+  sm: "128px",
+  md: "192px",
+  lg: "256px",
+  fill: "(min-width: 1024px) 20vw, (min-width: 640px) 33vw, 50vw",
+};
 
 const sizeClasses = {
   sm: "w-32",
@@ -36,6 +47,9 @@ export function OracleCard({
   onClick,
   hideTitle,
   animated = false,
+  priority,
+  sizes,
+  blurDataURL,
 }: OracleCardProps) {
   const cardType = (card.cardType ?? 'general') as CardType;
   const typeConfig = CARD_TYPE_CONFIG[cardType];
@@ -61,7 +75,13 @@ export function OracleCard({
         typeConfig.borderClass,
         typeConfig.glowClass,
       )}>
-        <CardImage card={card} onRetryImage={onRetryImage} />
+        <CardImage
+          card={card}
+          onRetryImage={onRetryImage}
+          priority={priority}
+          sizes={sizes ?? DEFAULT_SIZES[size]}
+          blurDataURL={blurDataURL ?? card.imageBlurData ?? undefined}
+        />
         {isSpecial && (
           <div className={cn(
             "absolute top-2 left-2 z-10 flex h-6 w-6 items-center justify-center rounded-full",
@@ -90,9 +110,15 @@ export function OracleCard({
 function CardImage({
   card,
   onRetryImage,
+  priority,
+  sizes,
+  blurDataURL,
 }: {
   card: CardDetailData;
   onRetryImage?: () => void;
+  priority?: boolean;
+  sizes?: string;
+  blurDataURL?: string;
 }) {
   const stateKey = `${card.imageStatus}-${card.imageUrl ? 'url' : 'none'}`;
 
@@ -104,13 +130,18 @@ function CardImage({
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.25, ease: "easeInOut" }}
-        className="h-full w-full"
+        className="relative h-full w-full"
       >
         {card.imageStatus === "completed" && card.imageUrl ? (
-          <img
+          <Image
             src={card.imageUrl}
             alt={card.title}
-            className="h-full w-full object-cover"
+            fill
+            sizes={sizes}
+            priority={priority}
+            placeholder={blurDataURL ? "blur" : "empty"}
+            blurDataURL={blurDataURL}
+            className="object-cover"
           />
         ) : card.imageStatus === "none" ? (
           <div className="h-full w-full bg-gradient-to-b from-surface-mid via-surface-deep to-surface-mid" />

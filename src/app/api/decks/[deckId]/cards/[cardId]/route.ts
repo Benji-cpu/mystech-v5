@@ -66,6 +66,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     meaning: updated.meaning,
     guidance: updated.guidance,
     imageUrl: updated.imageUrl,
+    imageBlurData: updated.imageBlurData,
     imagePrompt: updated.imagePrompt,
     imageStatus: updated.imageStatus as Card["imageStatus"],
     cardType: (updated.cardType ?? 'general') as Card["cardType"],

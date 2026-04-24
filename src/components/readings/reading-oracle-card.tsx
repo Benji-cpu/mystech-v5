@@ -12,6 +12,8 @@ interface ReadingOracleCardProps {
   positionName: string;
   revealState: RevealState;
   size?: "sm" | "md" | "lg";
+  priority?: boolean;
+  sizes?: string;
 }
 
 export function ReadingOracleCard({
@@ -19,6 +21,8 @@ export function ReadingOracleCard({
   positionName,
   revealState,
   size = "md",
+  priority,
+  sizes,
 }: ReadingOracleCardProps) {
   if (revealState === "hidden") {
     return <FaceDownCard positionName={positionName} size={size} />;
@@ -38,7 +42,12 @@ export function ReadingOracleCard({
         }}
         style={{ perspective: 1000, transformStyle: "preserve-3d" }}
       >
-        <OracleCard card={card} size={size === "lg" ? "lg" : size === "md" ? "md" : "sm"} />
+        <OracleCard
+          card={card}
+          size={size === "lg" ? "lg" : size === "md" ? "md" : "sm"}
+          priority={priority}
+          sizes={sizes}
+        />
       </motion.div>
 
       {/* Glow effect during reveal — static shadow, animate opacity only */}

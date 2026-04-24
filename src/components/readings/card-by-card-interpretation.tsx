@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { RefreshCw, AlertCircle, Sparkles, ChevronRight, Eye } from "lucide-react";
+import { RefreshCw, AlertCircle, Sparkles, ChevronRight, Eye, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LyraSigil } from "@/components/guide/lyra-sigil";
 import Link from "next/link";
@@ -295,6 +295,13 @@ export function CardByCardInterpretation({
             >
               <Eye className="w-4 h-4" />
               View Complete Reading
+            </Link>
+            <Link
+              href={`/readings/${readingId}`}
+              className="flex items-center gap-1.5 text-xs text-muted-foreground/60 hover:text-primary transition-colors mt-1"
+            >
+              <Wand2 className="h-3 w-3" />
+              Polish Cards
             </Link>
           </motion.div>
         )}

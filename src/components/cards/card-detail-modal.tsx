@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Dialog,
@@ -9,10 +10,13 @@ import {
 } from "@/components/ui/dialog";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { Loader2, AlertCircle, RotateCcw, Wand2 } from "lucide-react";
+import { Loader2, AlertCircle, RotateCcw, Wand2, Download } from "lucide-react";
+import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CardFeedbackButton } from "@/components/cards/card-feedback-button";
+import { QuickRefineChips } from "@/components/studio/quick-refine-chips";
 import { CARD_TYPE_CONFIG } from "@/components/cards/card-type-config";
+import { showUpgradeModal } from "@/components/billing/upgrade-modal";
 import { ORIGIN_SOURCE, type CardDetailData, type CardFeedbackType, type CardType } from "@/types";
 
 interface CardDetailModalProps {
@@ -20,6 +24,7 @@ interface CardDetailModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onRetryImage?: (cardId: string) => void;
+  onCardImageUpdated?: (cardId: string, newImageUrl: string) => void;
   showFeedback?: boolean;
   feedbackMap?: Record<string, CardFeedbackType>;
   onFeedbackChange?: (cardId: string, feedback: CardFeedbackType | null) => void;
@@ -30,13 +35,50 @@ export function CardDetailModal({
   open,
   onOpenChange,
   onRetryImage,
+  onCardImageUpdated,
   showFeedback = false,
   feedbackMap,
   onFeedbackChange,
 }: CardDetailModalProps) {
   const [isFlipped, setIsFlipped] = useState(false);
+  const [downloading, setDownloading] = useState(false);
 
   if (!card) return null;
+
+  const handleDownload = async () => {
+    if (!card.imageUrl || card.imageStatus !== "completed") return;
+    setDownloading(true);
+    try {
+      const res = await fetch(`/api/cards/${card.id}/download`);
+      if (res.status === 402) {
+        showUpgradeModal({
+          reason: "print_download",
+          message: "Download the full-resolution artwork to print or share. Pro unlocks this and more.",
+        });
+        return;
+      }
+      if (!res.ok) {
+        toast.error("Download failed. Please try again.");
+        return;
+      }
+      const filename =
+        res.headers.get("Content-Disposition")?.match(/filename="([^"]+)"/)?.[1] ??
+        `${card.title}.png`;
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error("Download failed. Please try again.");
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   const handleOpenChange = (nextOpen: boolean) => {
     if (!nextOpen) {
@@ -143,8 +185,20 @@ export function CardDetailModal({
           </div>
         </div>
 
+        {/* Quick refine chips — show when front face visible and image ready */}
+        {!isFlipped && card.imageStatus === "completed" && card.imageUrl && (
+          <div className="flex justify-center mt-2">
+            <QuickRefineChips
+              cardId={card.id}
+              currentImagePrompt={card.imagePrompt}
+              onRefineComplete={(newUrl) => onCardImageUpdated?.(card.id, newUrl)}
+              compact
+            />
+          </div>
+        )}
+
         {/* Hint + Studio link */}
-        <div className="flex items-center justify-center gap-3 mt-2">
+        <div className="flex items-center justify-center gap-3 mt-1">
           <p className="text-xs text-muted-foreground/60 select-none">
             {isFlipped ? "Tap to see image" : "Tap to reveal meaning"}
           </p>
@@ -153,12 +207,29 @@ export function CardDetailModal({
               <span className="text-muted-foreground/20">·</span>
               <Link
                 href={`/studio/cards/${card.id}`}
-                className="flex items-center gap-1 text-xs text-muted-foreground/60 hover:text-primary transition-colors"
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-white/5 border border-white/10 text-muted-foreground hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-colors"
                 onClick={(e) => e.stopPropagation()}
               >
                 <Wand2 className="h-3 w-3" />
                 Refine in Studio
               </Link>
+              <span className="text-muted-foreground/20">·</span>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDownload();
+                }}
+                disabled={downloading}
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-white/5 border border-white/10 text-muted-foreground hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-colors disabled:opacity-50"
+              >
+                {downloading ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  <Download className="h-3 w-3" />
+                )}
+                Print-quality
+              </button>
             </>
           )}
         </div>
@@ -195,13 +266,18 @@ function CardImage({
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.25, ease: "easeInOut" }}
-        className="h-full w-full"
+        className="relative h-full w-full"
       >
         {card.imageStatus === "completed" && card.imageUrl ? (
-          <img
+          <Image
             src={card.imageUrl}
             alt={card.title}
-            className="h-full w-full object-cover"
+            fill
+            sizes="(min-width: 640px) 480px, 90vw"
+            priority
+            placeholder={card.imageBlurData ? "blur" : "empty"}
+            blurDataURL={card.imageBlurData ?? undefined}
+            className="object-cover"
           />
         ) : card.imageStatus === "none" ? (
           <div className="h-full w-full bg-gradient-to-b from-surface-mid via-surface-deep to-surface-mid" />

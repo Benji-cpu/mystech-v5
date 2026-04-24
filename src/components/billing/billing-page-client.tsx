@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
+import { useState, useEffect, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { UsageMeter } from "@/components/shared/usage-meter";
+import { startCheckout } from "@/lib/stripe/start-checkout";
 import type { PlanType } from "@/types";
 
 interface BillingPageClientProps {
@@ -40,31 +41,46 @@ export function BillingPageClient({
   cancelAtPeriodEnd,
   usage,
 }: BillingPageClientProps) {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
+  const handledRedirectRef = useRef(false);
 
   useEffect(() => {
-    if (searchParams.get("success") === "true") {
+    if (handledRedirectRef.current) return;
+    const success = searchParams.get("success") === "true";
+    const canceled = searchParams.get("canceled") === "true";
+    if (!success && !canceled) return;
+
+    handledRedirectRef.current = true;
+
+    if (success) {
       toast.success("Welcome to MysTech Pro! Your subscription is now active.");
-    } else if (searchParams.get("canceled") === "true") {
+      // Webhook may still be in flight when Stripe redirects back. Force a server-component
+      // refresh so the Pro badge appears, and retry once if the row hasn't updated yet.
+      router.refresh();
+      if (plan === "free") {
+        const t = setTimeout(() => router.refresh(), 1500);
+        // Strip the query param after the retry to prevent re-firing on refresh.
+        const cleanup = setTimeout(() => router.replace("/settings/billing"), 1700);
+        return () => {
+          clearTimeout(t);
+          clearTimeout(cleanup);
+        };
+      }
+      router.replace("/settings/billing");
+    } else if (canceled) {
       toast.info("Checkout canceled. No charges were made.");
+      router.replace("/settings/billing");
     }
-  }, [searchParams]);
+  }, [searchParams, router, plan]);
 
   const handleCheckout = async () => {
     setCheckoutLoading(true);
-    try {
-      const res = await fetch("/api/stripe/checkout", { method: "POST" });
-      const data = await res.json();
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        toast.error(data.error || "Failed to start checkout");
-        setCheckoutLoading(false);
-      }
-    } catch {
-      toast.error("Something went wrong. Please try again.");
+    const result = await startCheckout();
+    if (!result.ok) {
+      toast.error(result.error);
       setCheckoutLoading(false);
     }
   };

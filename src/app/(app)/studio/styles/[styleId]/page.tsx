@@ -52,11 +52,13 @@ export default async function StyleEditorPage({
   const plan: PlanType = await getUserPlan(user.id!);
 
   return (
-    <StyleEditor
-      style={toArtStyle(style)}
-      isOwner={isOwner}
-      plan={plan}
-      userId={user.id!}
-    />
+    <div className="daylight fixed inset-0 overflow-y-auto" style={{ background: "var(--paper)", zIndex: 1 }}>
+      <StyleEditor
+        style={toArtStyle(style)}
+        isOwner={isOwner}
+        plan={plan}
+        userId={user.id!}
+      />
+    </div>
   );
 }

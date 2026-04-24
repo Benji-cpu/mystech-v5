@@ -50,6 +50,7 @@ const IMMERSIVE_ROUTES = [
   "/mock/navigation",
   "/mock/reading/ceremony-v2",
   "/mock/paths",
+  "/mock/overhaul",
 ];
 
 export default function MockLayout({ children }: { children: React.ReactNode }) {

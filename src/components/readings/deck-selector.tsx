@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -77,12 +78,14 @@ export function DeckSelector({
   if (compact && selectedDeck) {
     return (
       <div className={cn("flex items-center gap-2", className)}>
-        <div className="w-8 h-8 rounded-lg overflow-hidden bg-gradient-to-br from-surface-mid to-surface-deep border border-white/10 shrink-0">
+        <div className="relative w-8 h-8 rounded-lg overflow-hidden bg-gradient-to-br from-surface-mid to-surface-deep border border-white/10 shrink-0">
           {selectedDeck.coverImageUrl ? (
-            <img
+            <Image
               src={selectedDeck.coverImageUrl}
               alt={selectedDeck.title}
-              className="w-full h-full object-cover"
+              fill
+              sizes="32px"
+              className="object-cover"
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
@@ -123,12 +126,14 @@ export function DeckSelector({
             )}
           >
             {/* Cover image or gradient */}
-            <div className="aspect-[3/2] rounded-lg overflow-hidden mb-2 bg-gradient-to-br from-surface-mid to-surface-deep">
+            <div className="relative aspect-[3/2] rounded-lg overflow-hidden mb-2 bg-gradient-to-br from-surface-mid to-surface-deep">
               {deck.coverImageUrl ? (
-                <img
+                <Image
                   src={deck.coverImageUrl}
                   alt={deck.title}
-                  className="w-full h-full object-cover"
+                  fill
+                  sizes="(min-width: 640px) 33vw, 50vw"
+                  className="object-cover"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">

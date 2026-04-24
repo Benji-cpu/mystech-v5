@@ -1,12 +1,14 @@
 "use client";
 
 import { AnimatePresence } from "framer-motion";
+import { useSession } from "next-auth/react";
 import { useOnboarding } from "@/components/guide/onboarding-provider";
 import { LyraNudge } from "@/components/guide/lyra-nudge";
 import { GuidanceOverlay } from "@/components/guide/guidance-overlay";
 import { getActiveNudge } from "@/components/guide/nudge-config";
 import { useGuidance } from "@/hooks/use-guidance";
 import { useCheckInGuidance } from "@/hooks/use-check-in-guidance";
+import type { PlanType } from "@/types";
 
 // Feature nudge IDs that map to guidance overlays
 const FEATURE_GUIDANCE_MAP: Record<string, string> = {
@@ -52,12 +54,14 @@ function CheckInGuidanceSlot() {
   );
 }
 
-export function DashboardNudgeSlot() {
+export function DashboardNudgeSlot({ plan = "free" }: { plan?: PlanType } = {}) {
   const { milestones, stage, completeMilestone, isLoaded } = useOnboarding();
+  const { data: session } = useSession();
+  const resolvedPlan: PlanType = ((session?.user as { plan?: PlanType } | undefined)?.plan) ?? plan;
 
   if (!isLoaded) return null;
 
-  const nudge = getActiveNudge(milestones, stage);
+  const nudge = getActiveNudge(milestones, stage, resolvedPlan);
 
   // Check if the active nudge has a guidance overlay upgrade
   const guidanceTriggerKey = nudge ? FEATURE_GUIDANCE_MAP[nudge.id] : null;

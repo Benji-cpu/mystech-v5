@@ -5,6 +5,7 @@ import { getCurrentUser } from "@/lib/auth/helpers";
 import { getReadingByIdForUser } from "@/lib/db/queries";
 import { eq } from "drizzle-orm";
 import { generateShareToken } from "@/lib/utils";
+import { captureServer, ANALYTICS_EVENTS } from "@/lib/analytics";
 import type { ApiResponse } from "@/types";
 
 export async function POST(
@@ -40,6 +41,11 @@ export async function POST(
   }
 
   const shareUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/shared/reading/${token}`;
+
+  captureServer(ANALYTICS_EVENTS.READING_SHARED, user.id, {
+    reading_id: readingId,
+    spread_type: reading.spreadType,
+  });
 
   return NextResponse.json<ApiResponse<{ shareToken: string; shareUrl: string }>>(
     {

@@ -9,7 +9,8 @@ import { useDeckGeneration } from "@/hooks/use-deck-generation";
 import { GoldButton } from "@/components/ui/gold-button";
 import { SectionHeader } from "@/components/ui/section-header";
 import { cn } from "@/lib/utils";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Wand2 } from "lucide-react";
+import Link from "next/link";
 import {
   LYRA_SIMPLE_CREATE,
   LYRA_QUICK_CREATE_PROMPTS,
@@ -385,7 +386,7 @@ function ForgingView() {
 
 // ── View: Reveal ─────────────────────────────────────────────────────────────
 
-function RevealView({ title, obstacleCount }: { title: string; obstacleCount: number }) {
+function RevealView({ title, obstacleCount, deckId }: { title: string; obstacleCount: number; deckId?: string }) {
   return (
     <motion.div
       key="reveal"
@@ -429,6 +430,23 @@ function RevealView({ title, obstacleCount }: { title: string; obstacleCount: nu
         >
           {LYRA_OBSTACLE_REVEAL[obstacleCount - 1]}
         </motion.p>
+      )}
+
+      {/* Refine hint */}
+      {deckId && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1.2, duration: 0.6 }}
+        >
+          <Link
+            href={`/decks/${deckId}`}
+            className="flex items-center gap-1.5 text-xs text-muted-foreground/60 hover:text-primary transition-colors"
+          >
+            <Wand2 className="h-3 w-3" />
+            Refine your cards in Studio
+          </Link>
+        </motion.div>
       )}
     </motion.div>
   );
@@ -491,12 +509,16 @@ export function SimpleCreateForm({
     }
   }, [canSubmit, generate, vision, state.cardCount, state.artStyleId]);
 
-  // Auto-navigate after reveal
+  // Auto-navigate after reveal (3.5s delay to let user see refine hint)
+  const autoNavCancelledRef = useRef(false);
   useEffect(() => {
     if (state.phase !== "reveal" || !state.generatedDeckId) return;
+    autoNavCancelledRef.current = false;
     const timeout = setTimeout(() => {
-      router.push(`/decks/${state.generatedDeckId}`);
-    }, 2000);
+      if (!autoNavCancelledRef.current) {
+        router.push(`/decks/${state.generatedDeckId}`);
+      }
+    }, 3500);
     return () => clearTimeout(timeout);
   }, [state.phase, state.generatedDeckId, router]);
 
@@ -547,7 +569,7 @@ export function SimpleCreateForm({
           {state.phase === "forging" && <ForgingView />}
 
           {state.phase === "reveal" && state.generatedTitle && (
-            <RevealView title={state.generatedTitle} obstacleCount={state.obstacleCount} />
+            <RevealView title={state.generatedTitle} obstacleCount={state.obstacleCount} deckId={state.generatedDeckId ?? undefined} />
           )}
         </AnimatePresence>
       </div>

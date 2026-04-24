@@ -1,6 +1,6 @@
-import type { OnboardingMilestone, OnboardingStage } from "@/types";
+import type { OnboardingMilestone, OnboardingStage, PlanType } from "@/types";
 
-export type NudgeVariant = "standard" | "discovery";
+export type NudgeVariant = "standard" | "discovery" | "upgrade";
 
 export type NudgeConfig = {
   id: string;
@@ -10,6 +10,10 @@ export type NudgeConfig = {
   message: string;
   cta?: { label: string; href: string };
   priority: number; // lower = higher priority
+  /** If set, the nudge is hidden for users on these plans. */
+  hideForPlans?: PlanType[];
+  /** Milestone that must be COMPLETED before this nudge can show (soft gate). */
+  requires?: OnboardingMilestone;
 };
 
 /**
@@ -40,13 +44,35 @@ const ALL_NUDGES: NudgeConfig[] = [
 
   // Stage 2
   {
+    id: "upgrade_proactive",
+    milestone: "pro_features_introduced",
+    stage: 2,
+    variant: "upgrade",
+    message:
+      "You've found your rhythm. Pro opens up five readings a day, every spread, and the Master Oracle voice — for when the questions go deeper.",
+    cta: { label: "See what Pro unlocks", href: "/settings/billing" },
+    priority: 5,
+    hideForPlans: ["pro", "admin"],
+    requires: "second_reading_complete",
+  },
+  {
+    id: "studio_intro",
+    milestone: "studio_introduced",
+    stage: 2,
+    variant: "discovery",
+    message:
+      "The Studio is where you shape the visual language of your deck — browse styles, refine card artwork, and make every image truly yours.",
+    cta: { label: "Explore Studio", href: "/studio" },
+    priority: 9,
+  },
+  {
     id: "art_styles",
     milestone: "art_styles_introduced",
     stage: 2,
     variant: "discovery",
     message:
       "Your deck has a visual language. There are others to explore — each changes how the cards feel.",
-    cta: { label: "Explore Styles", href: "/art-styles" },
+    cta: { label: "Explore Styles", href: "/studio/styles" },
     priority: 10,
   },
 
@@ -101,7 +127,7 @@ const ALL_NUDGES: NudgeConfig[] = [
     variant: "discovery",
     message:
       "You can create your own art style — describe the visual language you imagine and I'll bring it to life.",
-    cta: { label: "Create a Style", href: "/art-styles/new" },
+    cta: { label: "Create a Style", href: "/studio/styles" },
     priority: 41,
   },
 ];
@@ -112,17 +138,19 @@ const ALL_NUDGES: NudgeConfig[] = [
  */
 export function getActiveNudge(
   milestones: Set<OnboardingMilestone>,
-  stage: OnboardingStage
+  stage: OnboardingStage,
+  plan: PlanType = "free"
 ): NudgeConfig | null {
-  // Filter to nudges that are (a) not yet completed and (b) stage-eligible
-  const eligible = ALL_NUDGES.filter(
-    (n) => stage >= n.stage && !milestones.has(n.milestone)
-  );
+  const eligible = ALL_NUDGES.filter((n) => {
+    if (stage < n.stage) return false;
+    if (milestones.has(n.milestone)) return false;
+    if (n.hideForPlans?.includes(plan)) return false;
+    if (n.requires && !milestones.has(n.requires)) return false;
+    return true;
+  });
 
   if (eligible.length === 0) return null;
 
-  // Sort by priority (lowest number = highest priority)
   eligible.sort((a, b) => a.priority - b.priority);
-
   return eligible[0];
 }

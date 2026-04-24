@@ -1,9 +1,10 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useReducer, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { experimental_useObject as useObject } from "@ai-sdk/react";
-import { Sparkles, RotateCcw, BookOpen, AlertCircle, Loader2 } from "lucide-react";
+import { Sparkles, RotateCcw, BookOpen, AlertCircle, Loader2, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LyraSigil } from "@/components/guide/lyra-sigil";
 import { ReadingInterpretationSchema } from "@/lib/ai/prompts/reading-interpretation";
@@ -290,10 +291,13 @@ export function QuickDraw() {
                 style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}
               >
                 {state.card.imageUrl ? (
-                  <img
+                  <Image
                     src={state.card.imageUrl}
                     alt={state.card.title}
-                    className="w-full h-full object-cover"
+                    fill
+                    sizes={`${Math.round(cardWidth)}px`}
+                    priority
+                    className="object-cover"
                   />
                 ) : (
                   <div className="w-full h-full bg-gradient-to-b from-surface-mid via-[#12022a] to-surface-deep flex flex-col items-center justify-center gap-3 p-3">
@@ -429,6 +433,15 @@ export function QuickDraw() {
                     Full Reading
                   </Link>
                 </Button>
+                {state.card?.imageUrl && (
+                  <Link
+                    href={`/studio/cards/${state.card.id}`}
+                    className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground/60 hover:text-primary transition-colors"
+                  >
+                    <Wand2 className="h-3 w-3" />
+                    Refine this card
+                  </Link>
+                )}
               </motion.div>
             )}
           </AnimatePresence>

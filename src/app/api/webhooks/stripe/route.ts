@@ -1,10 +1,47 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { subscriptions } from "@/lib/db/schema";
-import { getSubscriptionByStripeCustomerId } from "@/lib/db/queries";
 import { stripe } from "@/lib/stripe/client";
 import { eq } from "drizzle-orm";
 import type Stripe from "stripe";
+import { captureServer, ANALYTICS_EVENTS } from "@/lib/analytics";
+
+// Shared mapping from Stripe subscription status -> our internal (plan, status).
+function mapSubscriptionStatus(s: Stripe.Subscription): {
+  plan: "pro" | "free";
+  status: "active" | "past_due" | "canceled";
+} {
+  const isActive = s.status === "active" || s.status === "trialing";
+  const plan = isActive ? "pro" : "free";
+  const status = isActive
+    ? "active"
+    : s.status === "past_due"
+      ? "past_due"
+      : "canceled";
+  return { plan, status };
+}
+
+async function upsertFromSubscription(sub: Stripe.Subscription) {
+  const customerId =
+    typeof sub.customer === "string" ? sub.customer : sub.customer.id;
+  const { plan, status } = mapSubscriptionStatus(sub);
+  const item = sub.items.data[0];
+  const periodStart = item?.current_period_start;
+  const periodEnd = item?.current_period_end;
+
+  await db
+    .update(subscriptions)
+    .set({
+      plan,
+      status,
+      stripeSubscriptionId: sub.id,
+      ...(periodStart && { currentPeriodStart: new Date(periodStart * 1000) }),
+      ...(periodEnd && { currentPeriodEnd: new Date(periodEnd * 1000) }),
+      cancelAtPeriodEnd: sub.cancel_at_period_end,
+      updatedAt: new Date(),
+    })
+    .where(eq(subscriptions.stripeCustomerId, customerId));
+}
 
 export async function POST(request: NextRequest) {
   const body = await request.text();
@@ -69,40 +106,27 @@ export async function POST(request: NextRequest) {
               updatedAt: new Date(),
             })
             .where(eq(subscriptions.stripeCustomerId, customerId));
+
+          // Analytics: checkout completed
+          const userId = (session.metadata?.userId ?? null) as string | null;
+          if (userId) {
+            captureServer(ANALYTICS_EVENTS.CHECKOUT_COMPLETED, userId, {
+              stripe_session_id: session.id,
+              amount_total: session.amount_total ?? null,
+              currency: session.currency ?? null,
+            });
+          }
         }
         break;
       }
 
+      case "customer.subscription.created":
       case "customer.subscription.updated": {
+        // `created` is a safety net: if checkout.session.completed is delayed or fails,
+        // this still records the activation. In the happy path it's a no-op (the row
+        // is already up to date from the checkout completion handler).
         const sub = event.data.object as Stripe.Subscription;
-        const customerId =
-          typeof sub.customer === "string" ? sub.customer : sub.customer.id;
-
-        const plan = sub.status === "active" || sub.status === "trialing" ? "pro" : "free";
-        const status =
-          sub.status === "active" || sub.status === "trialing"
-            ? "active"
-            : sub.status === "past_due"
-              ? "past_due"
-              : "canceled";
-
-        // In Stripe v2025+, period dates are on subscription items
-        const subItem = sub.items.data[0];
-        const subPeriodStart = subItem?.current_period_start;
-        const subPeriodEnd = subItem?.current_period_end;
-
-        await db
-          .update(subscriptions)
-          .set({
-            plan,
-            status,
-            stripeSubscriptionId: sub.id,
-            ...(subPeriodStart && { currentPeriodStart: new Date(subPeriodStart * 1000) }),
-            ...(subPeriodEnd && { currentPeriodEnd: new Date(subPeriodEnd * 1000) }),
-            cancelAtPeriodEnd: sub.cancel_at_period_end,
-            updatedAt: new Date(),
-          })
-          .where(eq(subscriptions.stripeCustomerId, customerId));
+        await upsertFromSubscription(sub);
         break;
       }
 
@@ -123,7 +147,10 @@ export async function POST(request: NextRequest) {
         break;
       }
 
-      case "invoice.payment_failed": {
+      case "invoice.payment_failed":
+      case "invoice.payment_action_required": {
+        // payment_action_required = 3DS / SCA challenge needed; treat as past_due
+        // until the customer completes authentication and a successful invoice.paid arrives.
         const invoice = event.data.object as Stripe.Invoice;
         if (invoice.customer) {
           const customerId =

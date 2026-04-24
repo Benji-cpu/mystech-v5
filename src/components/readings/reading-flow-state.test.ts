@@ -17,6 +17,7 @@ const mockCard: Card = {
   meaning: "Change",
   guidance: "Let go",
   imageUrl: null,
+  imageBlurData: null,
   imagePrompt: null,
   imageStatus: "completed",
   cardType: "general",

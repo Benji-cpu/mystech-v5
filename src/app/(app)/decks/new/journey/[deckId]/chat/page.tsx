@@ -42,14 +42,19 @@ export default async function JourneyChatPage({ params }: Params) {
   };
 
   return (
-    <div className="max-w-3xl mx-auto h-[calc(100vh-8rem)] flex flex-col">
-      <ConversationChat
-        deckId={deckId}
-        deckTitle={deck.title}
-        initialMessages={messages}
-        initialReadiness={readiness}
-        hasDraftCards={draftCards.length > 0}
-      />
+    <div
+      className="daylight fixed inset-0 overflow-hidden"
+      style={{ background: "var(--paper)", zIndex: 1 }}
+    >
+      <div className="mx-auto flex h-full max-w-3xl flex-col px-4 py-4 sm:px-8 sm:py-6">
+        <ConversationChat
+          deckId={deckId}
+          deckTitle={deck.title}
+          initialMessages={messages}
+          initialReadiness={readiness}
+          hasDraftCards={draftCards.length > 0}
+        />
+      </div>
     </div>
   );
 }

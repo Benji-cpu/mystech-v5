@@ -7,6 +7,7 @@ export function draftToCardDetail(card: DraftCard): CardDetailData {
     meaning: card.meaning,
     guidance: card.guidance,
     imageUrl: null,
+    imagePrompt: null,
     imageStatus: 'pending' as CardImageStatus,
     cardType: 'general',
     originContext: null,

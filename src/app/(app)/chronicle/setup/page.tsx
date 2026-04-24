@@ -40,5 +40,9 @@ export default async function ChronicleSetupPage() {
     category: (row.category as StyleCategory) ?? null,
   }));
 
-  return <ChronicleSetupFlow presetStyles={presetStyles} />;
+  return (
+    <div className="daylight fixed inset-0 overflow-y-auto" style={{ background: "var(--paper)", zIndex: 1 }}>
+      <ChronicleSetupFlow presetStyles={presetStyles} />
+    </div>
+  );
 }

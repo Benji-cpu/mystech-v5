@@ -87,8 +87,12 @@ npm run test:e2e:ui  # Playwright with interactive UI
 - Auth-protected routes call `requireAuth()` first
 
 ### Billing Tiers
-- **Free**: 10 cards/mo, 5 readings/mo, 5 images/mo, 3-card spread only
-- **Pro ($4.99/mo)**: 100 cards/mo, 50 readings/mo, 100 images/mo, all spreads
+- Limits live in `src/lib/constants.ts` (`PLAN_LIMITS`) — change there, not here. Enforced by `src/lib/usage/usage.ts` (`checkCredits`, `checkDailyReadings`, `checkVoiceCharacters`) and `src/lib/db/queries.ts` (`getUserPlan`).
+- **Free**: 11 lifetime credits (never reset), 1 reading/day, spreads = `single` + `three_card`, `standard` AI model. First-day welcome grant of 3 readings within 24h of signup (see `WELCOME_READING_GRANT`).
+- **Pro ($4.99/mo)**: 50 credits/month (reset on calendar month boundary), 5 readings/day, all spreads (`single`, `three_card`, `five_card`, `celtic_cross`), `master_oracle` AI model.
+- **Admin** (role-based): unlimited everything, bypasses subscription check.
+- Credits are spent on image generation, card refinement, and deck generation/confirmation. Readings are gated separately by `checkDailyReadings`. Voice TTS has its own monthly character cap.
+- `past_due` status keeps Pro access (grace period); `canceled` keeps Pro until `currentPeriodEnd` then drops to free.
 
 ### Terminology
 - For the Paths feature, use path-oriented language: "path," "trail," "waypoint," "retreat"

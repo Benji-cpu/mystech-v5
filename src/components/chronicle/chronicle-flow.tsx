@@ -13,7 +13,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { Send } from 'lucide-react';
+import { Send, Wand2 } from 'lucide-react';
+import Link from 'next/link';
 import { MicrophoneButton } from '@/components/voice/microphone-button';
 import { useImmersiveOptional } from '@/components/immersive/immersive-provider';
 import { useTextToSpeech } from '@/hooks/use-text-to-speech';
@@ -89,6 +90,7 @@ function toCard(chronicle: NonNullable<ChronicleFlowProps['todayCard']>): Card {
     meaning: chronicle.meaning,
     guidance: chronicle.guidance,
     imageUrl: chronicle.imageUrl,
+    imageBlurData: null,
     imagePrompt: null,
     imageStatus: chronicle.imageStatus as CardImageStatus,
     cardType: 'general' as const,
@@ -919,7 +921,7 @@ export function ChronicleFlow({
   // ── Render ────────────────────────────────────────────────────────────
 
   return (
-    <div className="-mx-4 sm:-mx-6 lg:-mx-8 -mt-6 -mb-6 h-[100dvh] flex flex-col overflow-hidden relative">
+    <div className="-mx-4 sm:-mx-6 lg:-mx-8 -mt-6 -mb-6 h-[100dvh] flex flex-col overflow-hidden relative pb-20">
       {/* ── CARD ZONE — always mounted, resizes ── */}
       <motion.div
         layout
@@ -992,6 +994,21 @@ export function ChronicleFlow({
                     ? 'Your first Chronicle card — tap to explore. Each day you return, another is forged.'
                     : 'Tap to explore your card'}
                 </motion.p>
+                {card.imageUrl && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 1.2 }}
+                  >
+                    <Link
+                      href={`/studio/cards/${card.id}`}
+                      className="flex items-center gap-1 text-[11px] text-muted-foreground/50 hover:text-primary transition-colors"
+                    >
+                      <Wand2 className="h-3 w-3" />
+                      Refine artwork
+                    </Link>
+                  </motion.div>
+                )}
                 <motion.button
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -1097,6 +1114,16 @@ export function ChronicleFlow({
                     )}
                   </AnimatePresence>
 
+                  {/* Polish card link */}
+                  {card?.imageUrl && (
+                    <Link
+                      href={`/studio/cards/${card.id}`}
+                      className="flex items-center gap-1.5 text-xs text-muted-foreground/50 hover:text-primary transition-colors"
+                    >
+                      <Wand2 className="h-3 w-3" />
+                      Polish your Chronicle card
+                    </Link>
+                  )}
                 </motion.div>
               )}
             </div>

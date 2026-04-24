@@ -10,8 +10,16 @@ import { useFeedback } from "@/components/feedback/feedback-provider";
 import { navTabs, BADGE_STORAGE_PREFIX, type NavTab } from "./nav-config";
 import { cn } from "@/lib/utils";
 
+const DAYLIGHT_ROUTES = ["/home", "/decks", "/readings", "/settings", "/paths"];
+const DARK_EXCEPTIONS = ["/readings/new"];
+function isDaylightRoute(pathname: string): boolean {
+  if (DARK_EXCEPTIONS.some((r) => pathname === r || pathname.startsWith(r + "/"))) return false;
+  return DAYLIGHT_ROUTES.some((r) => pathname === r || pathname.startsWith(r + "/"));
+}
+
 export function DesktopNav() {
   const pathname = usePathname();
+  const daylight = isDaylightRoute(pathname);
   const { state } = useImmersive();
   const { stage } = useOnboarding();
   const { open: openFeedback } = useFeedback();
@@ -47,7 +55,15 @@ export function DesktopNav() {
 
   return (
     <motion.nav
-      className="fixed left-0 top-0 bottom-0 z-50 hidden lg:flex flex-col bg-card/80 border-r border-white/[0.06]"
+      className={cn(
+        "fixed left-0 top-0 bottom-0 z-50 hidden lg:flex flex-col border-r",
+        daylight ? "" : "bg-card/80 border-white/[0.06]"
+      )}
+      style={{
+        background: daylight ? "rgba(251, 247, 238, 0.95)" : undefined,
+        borderRightColor: daylight ? "#E0D5BF" : undefined,
+        backdropFilter: daylight ? "blur(12px)" : undefined,
+      }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       animate={{ width: hovered ? 200 : 64 }}
@@ -55,13 +71,27 @@ export function DesktopNav() {
       aria-label="Main navigation"
     >
       {/* Logo area */}
-      <div className="flex items-center h-16 px-4 border-b border-white/[0.06] overflow-hidden">
+      <div
+        className={cn("flex items-center h-16 px-4 border-b overflow-hidden", !daylight && "border-white/[0.06]")}
+        style={{ borderBottomColor: daylight ? "#E0D5BF" : undefined }}
+      >
         <div className="flex items-center gap-3 min-w-0">
-          <div className="h-8 w-8 shrink-0 rounded-lg bg-gold/20 flex items-center justify-center">
-            <span className="text-gold text-sm font-display font-bold">M</span>
+          <div
+            className="h-8 w-8 shrink-0 rounded-lg flex items-center justify-center"
+            style={{
+              background: daylight ? "rgba(168, 134, 63, 0.15)" : undefined,
+            }}
+          >
+            <span
+              className={cn("text-sm font-display font-bold", !daylight && "text-gold")}
+              style={{ color: daylight ? "#A8863F" : undefined }}
+            >
+              M
+            </span>
           </div>
           <motion.span
-            className="text-sm font-display font-semibold text-foreground/80 whitespace-nowrap"
+            className="text-sm font-display font-semibold whitespace-nowrap"
+            style={{ color: daylight ? "#1A1614" : undefined }}
             animate={{ opacity: hovered ? 1 : 0 }}
             transition={{ duration: 0.15 }}
           >
@@ -81,10 +111,20 @@ export function DesktopNav() {
 
           const itemClassName = cn(
             "relative flex items-center gap-3 rounded-xl px-3 py-2.5 min-h-[44px] transition-colors overflow-hidden",
-            isActive
+            daylight
+              ? isActive
+                ? ""
+                : "hover:bg-[var(--paper-warm)]"
+              : isActive
               ? "bg-white/[0.08] text-gold"
               : "text-white/40 hover:text-white/60 hover:bg-white/[0.04]"
           );
+          const itemStyle = daylight
+            ? {
+                background: isActive ? "var(--ink)" : undefined,
+                color: isActive ? "var(--paper)" : "var(--ink-soft)",
+              }
+            : undefined;
 
           const content = (
             <>
@@ -111,6 +151,7 @@ export function DesktopNav() {
                 type="button"
                 onClick={() => handleAction(tab)}
                 className={itemClassName}
+                style={itemStyle}
                 aria-label={tab.label}
               >
                 {content}
@@ -124,6 +165,7 @@ export function DesktopNav() {
               href={tab.href}
               onClick={() => handleTabClick(tab)}
               className={itemClassName}
+              style={itemStyle}
               aria-current={isActive ? "page" : undefined}
             >
               {content}

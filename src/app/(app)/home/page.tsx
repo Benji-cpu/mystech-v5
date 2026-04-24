@@ -2,13 +2,11 @@ import { Suspense } from "react";
 import { requireAuth } from "@/lib/auth/helpers";
 import {
   getUserDeckCount,
-  getUserDraftDecks,
   getUserTotalReadingCount,
   getUserChronicleDeck,
   getChronicleSettings,
   getTodayChronicleCard,
   getLastChronicleCardTitle,
-  getUserActivityFeed,
   getUserPlan,
 } from "@/lib/db/queries";
 import {
@@ -19,36 +17,28 @@ import {
 import { resolveUserName } from "@/lib/auth/get-user-name";
 import { getCurrentCelestialContext } from "@/lib/astrology/birth-chart";
 import { resolveInvitation } from "@/lib/dashboard/resolve-invitation";
-import { CompactLyraGreeting } from "@/components/dashboard/compact-lyra-greeting";
-import { DailyPracticeCard } from "@/components/dashboard/daily-practice-card";
-import { DashboardPracticeCard } from "@/components/dashboard/dashboard-practice-card";
-import { QuickAccessGrid } from "@/components/dashboard/quick-access-grid";
-import { DashboardNudgeSlot } from "@/components/dashboard/dashboard-nudge-slot";
-import { RecentActivity } from "@/components/dashboard/recent-activity";
-import { AnimatedDashboardContent } from "@/components/dashboard/animated-dashboard-content";
-import { Skeleton } from "@/components/ui/skeleton";
 import type { InvitationContext } from "@/lib/dashboard/resolve-invitation";
-import type { QuickAccessData } from "@/components/dashboard/quick-access-grid";
-import type { ActivityItemWithTemporal } from "@/types";
-import type { DailyPracticeData } from "@/components/dashboard/daily-practice-card";
-
-// ── Skeleton ─────────────────────────────────────────────────────────
+import { Skeleton } from "@/components/ui/skeleton";
+import { EditorialHome } from "@/components/dashboard/editorial-home";
 
 function HomeSkeleton() {
   return (
-    <div className="flex flex-col gap-4">
-      <Skeleton className="h-[76px] rounded-2xl" />
-      <Skeleton className="h-[72px] rounded-2xl" />
-      <div className="grid grid-cols-2 gap-4">
-        {[1, 2, 3, 4].map((i) => (
-          <Skeleton key={i} className="h-[100px] rounded-2xl" />
-        ))}
-      </div>
+    <div className="flex flex-col gap-4 max-w-xl mx-auto">
+      <Skeleton className="h-[60px] rounded-2xl" />
+      <Skeleton className="h-[180px] rounded-3xl" />
+      <Skeleton className="h-[80px] rounded-2xl" />
     </div>
   );
 }
 
-// ── Content ──────────────────────────────────────────────────────────
+function timeBasedGreeting(): string {
+  const hour = new Date().getHours();
+  if (hour < 5) return "Good night";
+  if (hour < 12) return "Good morning";
+  if (hour < 17) return "Good afternoon";
+  if (hour < 22) return "Good evening";
+  return "Good night";
+}
 
 async function HomeContent({
   userId,
@@ -59,18 +49,13 @@ async function HomeContent({
   userName: string;
   isPostInitiation: boolean;
 }) {
-  // Parallel batch 1
-  const [deckCount, draftDecks, readingCount, chronicleDeck, pathPosition, activityItems] =
-    await Promise.all([
-      getUserDeckCount(userId),
-      getUserDraftDecks(userId),
-      getUserTotalReadingCount(userId),
-      getUserChronicleDeck(userId),
-      getPathPosition(userId),
-      getUserActivityFeed(userId, 10),
-    ]);
+  const [deckCount, readingCount, chronicleDeck, pathPosition] = await Promise.all([
+    getUserDeckCount(userId),
+    getUserTotalReadingCount(userId),
+    getUserChronicleDeck(userId),
+    getPathPosition(userId),
+  ]);
 
-  // Conditional batch 2 (chronicle details)
   const [chronicleSettings, todayCard, lastCardTitle] = chronicleDeck
     ? await Promise.all([
         getChronicleSettings(chronicleDeck.id),
@@ -79,7 +64,6 @@ async function HomeContent({
       ])
     : [null, null, null];
 
-  // Conditional batch 3 (practice info)
   let practiceNudge: {
     title: string;
     durationMin: number;
@@ -109,7 +93,6 @@ async function HomeContent({
     }
   }
 
-  // Resolve Lyra greeting
   const celestialContext = getCurrentCelestialContext();
   const invitationCtx: InvitationContext = {
     userName,
@@ -132,71 +115,104 @@ async function HomeContent({
   };
   const invitation = resolveInvitation(invitationCtx);
 
-  // Daily practice data
-  const dailyPracticeData: DailyPracticeData = {
-    deckCount,
-    hasChronicle: !!chronicleDeck,
-    completedChronicleToday: !!todayCard,
-    chronicleStreakCount: chronicleSettings?.streakCount ?? 0,
-    practiceNudge: practiceNudge
-      ? {
-          title: practiceNudge.title,
-          durationMin: practiceNudge.durationMin,
-          pathId: practiceNudge.pathId,
-          pathName: practiceNudge.pathName,
-        }
-      : null,
-  };
-
-  // Quick access grid data
-  const quickAccessData: QuickAccessData = {
-    pathName: pathPosition?.path.name ?? null,
-    pathWaypoint: pathPosition?.waypoint.name ?? null,
-    deckCount,
-    draftCount: draftDecks.length,
-    readingCount,
-    chronicleStreakCount: chronicleSettings?.streakCount ?? 0,
-    hasChronicle: !!chronicleDeck,
-  };
-
-  // Tag activity items
-  const now = Date.now();
-  const taggedItems: ActivityItemWithTemporal[] = activityItems.map((item) => ({
-    ...item,
-    isFuture: item.timestamp.getTime() > now,
-  }));
+  const now = new Date();
+  const weekday = now.toLocaleDateString("en-US", { weekday: "long" });
 
   return (
-    <AnimatedDashboardContent>
-      {/* Desktop: two-column layout. Mobile: single column */}
-      <div className="flex flex-col gap-6 lg:grid lg:grid-cols-[1fr_320px] lg:gap-8 lg:items-start">
-        {/* Primary column — greeting + CTA */}
-        <div className="flex flex-col gap-4">
-          <CompactLyraGreeting invitation={invitation} />
-          <DailyPracticeCard data={dailyPracticeData} />
-          {practiceNudge && (
-            <DashboardPracticeCard
-              practiceTitle={practiceNudge.title}
-              durationMin={practiceNudge.durationMin}
-              pathId={practiceNudge.pathId}
-              pathName={practiceNudge.pathName}
-              waypointName={practiceNudge.waypointName}
-            />
-          )}
-          <RecentActivity items={taggedItems} className="lg:mt-2" />
-        </div>
-
-        {/* Secondary column — quick access + nudges */}
-        <div className="flex flex-col gap-4">
-          <QuickAccessGrid data={quickAccessData} />
-          <DashboardNudgeSlot />
-        </div>
-      </div>
-    </AnimatedDashboardContent>
+    <EditorialHome
+      data={{
+        greeting: timeBasedGreeting(),
+        userName,
+        whisper: invitation.greeting,
+        subtitle: invitation.subtitle ?? null,
+        meta: {
+          weekday,
+          moonPhase: celestialContext.moonPhase,
+          moonSign: celestialContext.moonSign,
+        },
+        primary: resolvePrimary({
+          deckCount,
+          hasChronicle: !!chronicleDeck,
+          completedChronicleToday: !!todayCard,
+          streakCount: chronicleSettings?.streakCount ?? 0,
+          practiceNudge,
+        }),
+        secondary: practiceNudge,
+      }}
+    />
   );
 }
 
-// ── Page ─────────────────────────────────────────────────────────────
+function resolvePrimary({
+  deckCount,
+  hasChronicle,
+  completedChronicleToday,
+  streakCount,
+  practiceNudge,
+}: {
+  deckCount: number;
+  hasChronicle: boolean;
+  completedChronicleToday: boolean;
+  streakCount: number;
+  practiceNudge: { title: string; pathId: string; pathName: string } | null;
+}): {
+  eyebrow: string;
+  title: string;
+  description: string;
+  href: string;
+  cta: string;
+  badge?: string;
+} {
+  if (deckCount === 0) {
+    return {
+      eyebrow: "Begin",
+      title: "Begin your initiation",
+      description: "Create your first oracle deck. The path starts here.",
+      href: "/onboarding",
+      cta: "Start",
+    };
+  }
+
+  if (hasChronicle && !completedChronicleToday) {
+    return {
+      eyebrow: "Today's practice",
+      title: "Draw your chronicle card",
+      description: "A single card from your living deck. Five minutes of quiet to begin.",
+      href: "/chronicle/today",
+      cta: "Begin",
+      badge: streakCount > 0 ? `Day ${streakCount}` : undefined,
+    };
+  }
+
+  if (practiceNudge) {
+    return {
+      eyebrow: "Today's practice",
+      title: practiceNudge.title,
+      description: `A waypoint on ${practiceNudge.pathName}.`,
+      href: `/paths/${practiceNudge.pathId}`,
+      cta: "Begin",
+    };
+  }
+
+  if (hasChronicle && completedChronicleToday) {
+    return {
+      eyebrow: "All caught up",
+      title: "Draw a card for extra insight",
+      description: "The chronicle is complete for today. Pull another if you wish.",
+      href: "/readings/new?spread=single",
+      cta: "Draw",
+      badge: streakCount > 0 ? `Day ${streakCount}` : undefined,
+    };
+  }
+
+  return {
+    eyebrow: "Today's practice",
+    title: "Draw a card",
+    description: "Pull a quick insight from your deck.",
+    href: "/readings/new?spread=single",
+    cta: "Draw",
+  };
+}
 
 interface HomePageProps {
   searchParams: Promise<{ initiated?: string }>;

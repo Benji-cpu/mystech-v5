@@ -6,6 +6,12 @@ export const STALE_GENERATION_TIMEOUT_MS = 2 * 60 * 1000; // 2 minutes
 // Master account — only this email can publish prompt overrides to all users
 export const MASTER_EMAIL = "profbenjo@gmail.com";
 
+// Welcome grant: during the first 24h after signup, free users can perform
+// up to WELCOME_READING_GRANT readings total (not per day). This softens the
+// day-1 conversion cliff caused by the 1/day free limit.
+export const WELCOME_READING_GRANT = 3;
+export const WELCOME_WINDOW_MS = 24 * 60 * 60 * 1000;
+
 // Plan limits — credit-based model
 // Credits: 1 credit = 1 card (text + image bundled) or 1 image regen
 // Readings: daily allowance, not credit-based

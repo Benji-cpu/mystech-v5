@@ -57,12 +57,17 @@ export default async function JourneySetupPage() {
   const custom = styles.filter((s) => !s.isPreset);
 
   return (
-    <div className="max-w-2xl mx-auto pt-24">
-      <JourneySetupForm
-        presets={presets}
-        customStyles={custom}
-        atLimit={atLimit}
-      />
+    <div
+      className="daylight fixed inset-0 overflow-y-auto"
+      style={{ background: "var(--paper)", zIndex: 1 }}
+    >
+      <div className="mx-auto max-w-2xl px-6 pb-28 pt-10 sm:px-10 sm:pt-14">
+        <JourneySetupForm
+          presets={presets}
+          customStyles={custom}
+          atLimit={atLimit}
+        />
+      </div>
     </div>
   );
 }

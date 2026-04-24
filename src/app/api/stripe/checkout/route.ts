@@ -4,8 +4,8 @@ import { subscriptions } from "@/lib/db/schema";
 import { getCurrentUser } from "@/lib/auth/helpers";
 import { getUserSubscription } from "@/lib/db/queries";
 import { stripe } from "@/lib/stripe/client";
-import { STRIPE_PRO_PRICE_ID } from "@/lib/stripe/plans";
-import { eq } from "drizzle-orm";
+import { requireStripePriceId } from "@/lib/stripe/plans";
+import { captureServer, ANALYTICS_EVENTS } from "@/lib/analytics";
 
 export async function POST() {
   const user = await getCurrentUser();
@@ -40,24 +40,43 @@ export async function POST() {
     sub = created;
   }
 
-  // If already pro, redirect to portal instead
-  if (sub.plan === "pro" && sub.status === "active") {
-    return NextResponse.json(
-      { error: "Already subscribed to Pro" },
-      { status: 400 }
-    );
-  }
-
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
+  // If already pro, send them to the billing portal instead of erroring out.
+  // Avoids confusing toasts when a user with two tabs clicks "Upgrade" on a stale page.
+  if (sub.plan === "pro" && sub.status === "active") {
+    const portalSession = await stripe.billingPortal.sessions.create({
+      customer: sub.stripeCustomerId,
+      return_url: `${appUrl}/settings/billing`,
+      ...(process.env.STRIPE_PORTAL_CONFIG_ID && {
+        configuration: process.env.STRIPE_PORTAL_CONFIG_ID,
+      }),
+    });
+    return NextResponse.json({ url: portalSession.url });
+  }
+
+  // Idempotency-Key prevents duplicate sessions if the user double-clicks.
+  // Bucket the timestamp to a one-minute window so legitimate retries within that
+  // window short-circuit to the same session, but a session created 2 min ago
+  // doesn't block a fresh attempt.
+  const minuteBucket = Math.floor(Date.now() / 60_000);
+  const idempotencyKey = `checkout_${user.id}_${minuteBucket}`;
+
   // Create Checkout Session
-  const session = await stripe.checkout.sessions.create({
-    customer: sub.stripeCustomerId,
-    mode: "subscription",
-    line_items: [{ price: STRIPE_PRO_PRICE_ID, quantity: 1 }],
-    success_url: `${appUrl}/settings/billing?success=true`,
-    cancel_url: `${appUrl}/settings/billing?canceled=true`,
-    metadata: { userId: user.id },
+  const session = await stripe.checkout.sessions.create(
+    {
+      customer: sub.stripeCustomerId,
+      mode: "subscription",
+      line_items: [{ price: requireStripePriceId(), quantity: 1 }],
+      success_url: `${appUrl}/settings/billing?success=true`,
+      cancel_url: `${appUrl}/settings/billing?canceled=true`,
+      metadata: { userId: user.id },
+    },
+    { idempotencyKey }
+  );
+
+  captureServer(ANALYTICS_EVENTS.CHECKOUT_STARTED, user.id, {
+    stripe_session_id: session.id,
   });
 
   return NextResponse.json({ url: session.url });

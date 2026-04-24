@@ -10,7 +10,7 @@ export default async function AdminLayout({
   const user = await requireAdminPanel();
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="daylight flex h-screen overflow-hidden" style={{ background: "var(--paper)" }}>
       <AdminSidebar />
       <div className="flex flex-1 flex-col overflow-hidden">
         <AdminHeader user={user} />

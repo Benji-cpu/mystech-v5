@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { motion } from "framer-motion";
 import type { Card } from "@/types";
 
@@ -58,10 +59,12 @@ export function ReadingFlipCard({
             style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}
           >
             {card.imageUrl ? (
-              <img
+              <Image
                 src={card.imageUrl}
                 alt={card.title}
-                className="w-full h-full object-cover"
+                fill
+                sizes={`${Math.round(cardWidth)}px`}
+                className="object-cover"
               />
             ) : (
               <div className="w-full h-full bg-gradient-to-b from-surface-mid via-[#12022a] to-surface-deep flex flex-col items-center justify-center gap-3 p-3">

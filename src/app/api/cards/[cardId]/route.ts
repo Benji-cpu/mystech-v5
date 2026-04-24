@@ -28,6 +28,7 @@ export async function GET(request: NextRequest, { params }: Params) {
       meaning: cards.meaning,
       guidance: cards.guidance,
       imageUrl: cards.imageUrl,
+      imageBlurData: cards.imageBlurData,
       imagePrompt: cards.imagePrompt,
       imageStatus: cards.imageStatus,
       cardType: cards.cardType,

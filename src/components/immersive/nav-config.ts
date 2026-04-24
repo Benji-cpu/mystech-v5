@@ -1,4 +1,4 @@
-import { Home, Sparkles, Map, Layers, Settings, MessageSquarePlus } from "lucide-react";
+import { Compass, Layers, MessageCircle, Settings } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 export interface NavTab {
@@ -22,10 +22,34 @@ export interface NavTab {
 export const BADGE_STORAGE_PREFIX = "mystech:dismissed-nav-badges:";
 
 export const navTabs: NavTab[] = [
-  { href: "/home", label: "Home", icon: Home, activePrefixes: ["/home", "/dashboard"], minStage: 0 },
-  { href: "/readings/quick", label: "Draw", icon: Sparkles, activePrefixes: ["/readings"], minStage: 0 },
-  { href: "/decks", label: "Decks", icon: Layers, activePrefixes: ["/decks", "/chronicle"], minStage: 2, badgeKey: "decks" },
-  { href: "/paths", label: "Paths", icon: Map, activePrefixes: ["/paths"], minStage: 3, badgeKey: "paths" },
-  { href: "#", label: "Feedback", icon: MessageSquarePlus, activePrefixes: [], minStage: 0, isAction: true, actionId: "feedback" },
-  { href: "/settings", label: "Settings", icon: Settings, activePrefixes: ["/settings"], minStage: 0, desktopOnly: true },
+  {
+    href: "/home",
+    label: "Path",
+    icon: Compass,
+    activePrefixes: ["/home", "/dashboard", "/paths", "/readings", "/chronicle"],
+    minStage: 0,
+  },
+  {
+    href: "/decks",
+    label: "Deck",
+    icon: Layers,
+    activePrefixes: ["/decks", "/studio"],
+    minStage: 0,
+  },
+  {
+    href: "#feedback",
+    label: "Feedback",
+    icon: MessageCircle,
+    activePrefixes: [],
+    minStage: 0,
+    isAction: true,
+    actionId: "feedback",
+  },
+  {
+    href: "/settings",
+    label: "Settings",
+    icon: Settings,
+    activePrefixes: ["/settings"],
+    minStage: 0,
+  },
 ];

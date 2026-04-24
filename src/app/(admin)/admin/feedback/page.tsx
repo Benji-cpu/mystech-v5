@@ -29,10 +29,6 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   ChevronLeft,
   ChevronRight,
-  Bug,
-  Lightbulb,
-  MessageCircle,
-  ExternalLink,
   Image as ImageIcon,
   Trash2,
 } from "lucide-react";
@@ -44,7 +40,6 @@ type FeedbackRow = {
   userName: string | null;
   userEmail: string | null;
   email: string | null;
-  category: string;
   message: string;
   pageUrl: string;
   screenshotUrl: string | null;
@@ -54,12 +49,6 @@ type FeedbackRow = {
   status: string;
   adminNotes: string | null;
   createdAt: string;
-};
-
-const categoryIcons: Record<string, typeof Bug> = {
-  bug: Bug,
-  feature: Lightbulb,
-  general: MessageCircle,
 };
 
 const statusColors: Record<string, string> = {
@@ -73,7 +62,6 @@ export default function AdminFeedbackPage() {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [selectedItem, setSelectedItem] = useState<FeedbackRow | null>(null);
   const [adminNotes, setAdminNotes] = useState("");
   const pageSize = 20;
@@ -81,7 +69,6 @@ export default function AdminFeedbackPage() {
   const fetchItems = useCallback(async () => {
     const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
     if (statusFilter !== "all") params.set("status", statusFilter);
-    if (categoryFilter !== "all") params.set("category", categoryFilter);
 
     const res = await fetch(`/api/admin/feedback?${params}`);
     if (res.ok) {
@@ -89,7 +76,7 @@ export default function AdminFeedbackPage() {
       setItems(data.items);
       setTotal(data.total);
     }
-  }, [page, statusFilter, categoryFilter]);
+  }, [page, statusFilter]);
 
   useEffect(() => {
     fetchItems();
@@ -154,18 +141,6 @@ export default function AdminFeedbackPage() {
             <SelectItem value="archived">Archived</SelectItem>
           </SelectContent>
         </Select>
-
-        <Select value={categoryFilter} onValueChange={(v) => { setCategoryFilter(v); setPage(1); }}>
-          <SelectTrigger className="w-[140px]">
-            <SelectValue placeholder="Category" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Categories</SelectItem>
-            <SelectItem value="bug">Bug</SelectItem>
-            <SelectItem value="feature">Feature</SelectItem>
-            <SelectItem value="general">General</SelectItem>
-          </SelectContent>
-        </Select>
       </div>
 
       {/* Table */}
@@ -173,7 +148,6 @@ export default function AdminFeedbackPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[100px]">Category</TableHead>
               <TableHead>Message</TableHead>
               <TableHead className="w-[140px]">Page</TableHead>
               <TableHead className="w-[120px]">User</TableHead>
@@ -183,46 +157,37 @@ export default function AdminFeedbackPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {items.map((item) => {
-              const CategoryIcon = categoryIcons[item.category] ?? MessageCircle;
-              return (
-                <TableRow
-                  key={item.id}
-                  className="cursor-pointer hover:bg-white/[0.02]"
-                  onClick={() => { setSelectedItem(item); setAdminNotes(item.adminNotes ?? ""); }}
-                >
-                  <TableCell>
-                    <div className="flex items-center gap-1.5">
-                      <CategoryIcon className="w-3.5 h-3.5 text-white/50" />
-                      <span className="capitalize text-sm">{item.category}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="max-w-[300px] truncate text-sm">
-                    {item.message}
-                  </TableCell>
-                  <TableCell className="text-xs text-white/40 truncate max-w-[140px]">
-                    {item.pageUrl}
-                  </TableCell>
-                  <TableCell className="text-sm text-white/60">
-                    {item.userName ?? item.email ?? item.userEmail ?? "Anonymous"}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className={statusColors[item.status]}>
-                      {item.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {item.screenshotUrl && <ImageIcon className="w-4 h-4 text-white/30" />}
-                  </TableCell>
-                  <TableCell className="text-xs text-white/40">
-                    {new Date(item.createdAt).toLocaleDateString()}
-                  </TableCell>
-                </TableRow>
-              );
-            })}
+            {items.map((item) => (
+              <TableRow
+                key={item.id}
+                className="cursor-pointer hover:bg-white/[0.02]"
+                onClick={() => { setSelectedItem(item); setAdminNotes(item.adminNotes ?? ""); }}
+              >
+                <TableCell className="max-w-[300px] truncate text-sm">
+                  {item.message}
+                </TableCell>
+                <TableCell className="text-xs text-white/40 truncate max-w-[140px]">
+                  {item.pageUrl}
+                </TableCell>
+                <TableCell className="text-sm text-white/60">
+                  {item.userName ?? item.email ?? item.userEmail ?? "Anonymous"}
+                </TableCell>
+                <TableCell>
+                  <Badge variant="outline" className={statusColors[item.status]}>
+                    {item.status}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  {item.screenshotUrl && <ImageIcon className="w-4 h-4 text-white/30" />}
+                </TableCell>
+                <TableCell className="text-xs text-white/40">
+                  {new Date(item.createdAt).toLocaleDateString()}
+                </TableCell>
+              </TableRow>
+            ))}
             {items.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-white/40 py-8">
+                <TableCell colSpan={6} className="text-center text-white/40 py-8">
                   No feedback yet
                 </TableCell>
               </TableRow>
@@ -260,13 +225,7 @@ export default function AdminFeedbackPage() {
       <Dialog open={!!selectedItem} onOpenChange={(open) => { if (!open) setSelectedItem(null); }}>
         <DialogContent className="sm:max-w-lg max-h-[85dvh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              {selectedItem && (() => {
-                const Icon = categoryIcons[selectedItem.category] ?? MessageCircle;
-                return <Icon className="w-4 h-4" />;
-              })()}
-              <span className="capitalize">{selectedItem?.category}</span> Feedback
-            </DialogTitle>
+            <DialogTitle>Feedback</DialogTitle>
             <DialogDescription className="sr-only">
               Feedback detail view
             </DialogDescription>

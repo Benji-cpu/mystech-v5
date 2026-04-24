@@ -1,5 +1,4 @@
 import { Suspense } from "react";
-import { Map as MapIcon } from "lucide-react";
 import { requireAuth } from "@/lib/auth/helpers";
 import {
   getAllPaths,
@@ -10,9 +9,6 @@ import {
 } from "@/lib/db/queries-paths";
 import { PathsHub } from "@/components/paths/paths-hub";
 import { PathsGuidanceWrapper } from "@/components/paths/paths-guidance-wrapper";
-import { PageHeader } from "@/components/layout/page-header";
-import { AnimatedPage } from "@/components/ui/animated-page";
-import { AnimatedItem } from "@/components/ui/animated-item";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { PathStatus } from "@/types";
 
@@ -22,7 +18,8 @@ function PathsContentSkeleton() {
       {Array.from({ length: 3 }).map((_, i) => (
         <div
           key={i}
-          className="rounded-2xl bg-white/5 border border-white/10 overflow-hidden p-4 space-y-3"
+          className="rounded-2xl border p-5 space-y-3 hair"
+          style={{ background: "var(--paper-card)" }}
         >
           {/* Header row */}
           <div className="flex items-center gap-3">
@@ -86,18 +83,31 @@ async function PathsContent() {
 
 export default function PathsPage() {
   return (
-    <AnimatedPage className="space-y-6 p-4 sm:p-6 lg:p-8">
-      <AnimatedItem>
-        <PageHeader
-          title="Paths"
-          subtitle="Deepen your practice through guided paths."
-          icon={MapIcon}
-        />
-      </AnimatedItem>
+    <div
+      className="daylight fixed inset-0 overflow-y-auto"
+      style={{ background: "var(--paper)", zIndex: 1 }}
+    >
+      <div className="mx-auto max-w-3xl space-y-10 px-6 pb-28 pt-10 sm:px-10 sm:pt-14">
+        <header>
+          <p className="eyebrow">Practice</p>
+          <h1
+            className="display mt-3 text-[clamp(2.25rem,8vw,3.25rem)] leading-[0.98]"
+            style={{ color: "var(--ink)" }}
+          >
+            Paths
+          </h1>
+          <p
+            className="whisper mt-3 text-base leading-relaxed"
+            style={{ color: "var(--ink-soft)" }}
+          >
+            Deepen your practice through guided trails.
+          </p>
+        </header>
 
-      <Suspense fallback={<PathsContentSkeleton />}>
-        <PathsContent />
-      </Suspense>
-    </AnimatedPage>
+        <Suspense fallback={<PathsContentSkeleton />}>
+          <PathsContent />
+        </Suspense>
+      </div>
+    </div>
   );
 }

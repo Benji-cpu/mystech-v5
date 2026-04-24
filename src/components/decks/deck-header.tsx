@@ -1,22 +1,24 @@
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Pencil } from "lucide-react";
+import { Pencil, Palette } from "lucide-react";
 import { DeleteDeckButton } from "./delete-deck-button";
 import { ShareButton } from "@/components/shared/share-button";
 import { AdoptDeckButton } from "@/components/shared/adopt-deck-button";
+import { StudioStyleBadge } from "@/components/studio/studio-style-badge";
 import { GlassPanel } from "@/components/ui/glass-panel";
 import type { Deck } from "@/types";
 
 interface DeckHeaderProps {
   deck: Deck;
   artStyleName?: string;
+  artStyleId?: string | null;
   shareToken?: string | null;
   isAdopter?: boolean;
   ownerName?: string | null;
 }
 
-export function DeckHeader({ deck, artStyleName, shareToken, isAdopter, ownerName }: DeckHeaderProps) {
+export function DeckHeader({ deck, artStyleName, artStyleId, shareToken, isAdopter, ownerName }: DeckHeaderProps) {
   return (
     <GlassPanel className="p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -39,7 +41,11 @@ export function DeckHeader({ deck, artStyleName, shareToken, isAdopter, ownerNam
             {artStyleName && (
               <>
                 <span>&middot;</span>
-                <span>{artStyleName}</span>
+                <StudioStyleBadge
+                  styleName={artStyleName}
+                  styleId={artStyleId}
+                  linkToStudio={!isAdopter}
+                />
               </>
             )}
             {isAdopter && ownerName && (
@@ -66,6 +72,14 @@ export function DeckHeader({ deck, artStyleName, shareToken, isAdopter, ownerNam
                   contentType="deck"
                   existingShareToken={shareToken}
                 />
+                {artStyleId && (
+                  <Button variant="outline" size="sm" asChild>
+                    <Link href={`/studio/styles/${artStyleId}`}>
+                      <Palette className="h-4 w-4 mr-1" />
+                      <span className="hidden sm:inline">Customize Style</span>
+                    </Link>
+                  </Button>
+                )}
                 <Button variant="outline" size="sm" asChild>
                   <Link href={`/decks/${deck.id}/edit`}>
                     <Pencil className="h-4 w-4 mr-1" />
@@ -85,9 +99,6 @@ export function DeckHeader({ deck, artStyleName, shareToken, isAdopter, ownerNam
           <p className="text-sm text-white/40 italic leading-relaxed">
             &ldquo;{deck.theme}&rdquo;
           </p>
-          {artStyleName && (
-            <p className="text-xs text-white/25 mt-1">{artStyleName}</p>
-          )}
         </div>
       )}
     </GlassPanel>
