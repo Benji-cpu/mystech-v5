@@ -179,17 +179,17 @@ export function EditorialHome({ data }: { data: EditorialHomeData }) {
 function CardBack({ tint }: { tint: "deep" | "mid" | "soft" }) {
   const bg =
     tint === "deep"
-      ? "linear-gradient(135deg, #2A2130 0%, #0D0A10 100%)"
+      ? "linear-gradient(135deg, var(--paper-warm) 0%, #E5D7B8 100%)"
       : tint === "mid"
-      ? "linear-gradient(135deg, #3D342E 0%, #1A1420 100%)"
-      : "linear-gradient(135deg, #7A6E63 0%, #3D342E 100%)";
+      ? "linear-gradient(135deg, var(--paper-card) 0%, var(--paper-warm) 100%)"
+      : "linear-gradient(135deg, #FDF9F0 0%, var(--paper-card) 100%)";
   return (
     <div
       className="h-12 w-9 rounded border"
       style={{
         background: bg,
-        borderColor: "rgba(168,134,63,0.4)",
-        boxShadow: "0 2px 6px rgba(26, 22, 20, 0.15)",
+        borderColor: "rgba(168, 134, 63, 0.55)",
+        boxShadow: "0 2px 6px rgba(168, 134, 63, 0.18)",
       }}
     />
   );

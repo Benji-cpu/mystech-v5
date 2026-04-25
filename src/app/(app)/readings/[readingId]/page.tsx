@@ -15,9 +15,9 @@ import { ReadingFeedback } from "@/components/readings/reading-feedback";
 import { ReadingRefineSection } from "@/components/readings/reading-refine-section";
 import { ShareButton } from "@/components/shared/share-button";
 import { DeleteReadingButton } from "@/components/readings/delete-reading-button";
-import { ArrowLeft } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StaggeredList } from "@/components/ui/staggered-list";
+import { EditorialShell } from "@/components/editorial";
 import type {
   SpreadType,
   CardImageStatus,
@@ -49,7 +49,10 @@ function ReadingDetailSkeleton() {
       </div>
 
       {/* Interpretation */}
-      <div className="max-w-2xl mx-auto rounded-2xl bg-white/5 border border-white/10 p-6 space-y-3">
+      <div
+        className="max-w-2xl mx-auto rounded-2xl border p-6 space-y-3 hair"
+        style={{ background: "var(--paper-card)" }}
+      >
         <Skeleton className="h-5 w-32" />
         <Skeleton className="h-4 w-full" />
         <Skeleton className="h-4 w-full" />
@@ -161,16 +164,13 @@ export default async function ReadingViewPage({
   const spreadType = reading.spreadType as SpreadType;
 
   return (
-    <div
-      className="daylight fixed inset-0 overflow-y-auto"
-      style={{ background: "var(--paper)", zIndex: 1 }}
-    >
+    <EditorialShell>
       <div className="mx-auto max-w-3xl px-6 pb-28 pt-10 sm:px-10 sm:pt-14">
         <Link
-          href="/home"
+          href="/readings"
           className="eyebrow inline-flex items-center gap-2 hover:underline"
         >
-          <ArrowLeft size={14} /> Home
+          ← Readings
         </Link>
 
         <header className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -228,6 +228,6 @@ export default async function ReadingViewPage({
           </Suspense>
         </div>
       </div>
-    </div>
+    </EditorialShell>
   );
 }

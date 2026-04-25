@@ -221,13 +221,22 @@
  * common patterns: text-white/* and bg-white/[0.0x].
  * Scoped narrowly to avoid bleeding into intentionally dark elements.
  */
-.daylight .text-white\/90 { color: var(--ink) !important; }
+.daylight .text-white,
+.daylight .text-white\/95,
+.daylight .text-white\/90,
+.daylight .text-white\/85,
 .daylight .text-white\/80 { color: var(--ink) !important; }
-.daylight .text-white\/70 { color: var(--ink-soft) !important; }
+.daylight .text-white\/75,
+.daylight .text-white\/70,
+.daylight .text-white\/65,
 .daylight .text-white\/60 { color: var(--ink-soft) !important; }
-.daylight .text-white\/50 { color: var(--ink-mute) !important; }
+.daylight .text-white\/55,
+.daylight .text-white\/50,
+.daylight .text-white\/45,
 .daylight .text-white\/40 { color: var(--ink-mute) !important; }
-.daylight .text-white\/30 { color: var(--ink-faint) !important; }
+.daylight .text-white\/35,
+.daylight .text-white\/30,
+.daylight .text-white\/25,
 .daylight .text-white\/20 { color: var(--ink-faint) !important; }
 
 /* Surface / glass panel overrides — translate dark glass to paper */
@@ -239,19 +248,27 @@
 .daylight .bg-white\/\[0\.06\],
 .daylight .bg-white\/\[0\.07\],
 .daylight .bg-white\/\[0\.08\],
-.daylight .bg-white\/10 {
+.daylight .bg-white\/8,
+.daylight .bg-white\/10,
+.daylight .bg-white\/15 {
   background: var(--paper-warm) !important;
 }
 .daylight .border-white\/\[0\.06\],
 .daylight .border-white\/\[0\.08\],
 .daylight .border-white\/5,
-.daylight .border-white\/10 {
+.daylight .border-white\/8,
+.daylight .border-white\/10,
+.daylight .border-white\/15 {
   border-color: var(--line) !important;
 }
 .daylight .border-white\/20,
+.daylight .border-white\/25,
 .daylight .border-white\/30 {
   border-color: var(--ink-faint) !important;
 }
+.daylight .bg-white\/8 { background: var(--paper-warm) !important; }
+/* Common arbitrary dividers */
+.daylight .bg-white\/8\.backdrop-blur-sm { background: var(--paper-warm) !important; }
 /* GlassPanel component often applies backdrop-blur with white translucence —
  * on cream the blur reads wrong; flatten it */
 .daylight .backdrop-blur-sm,
@@ -260,53 +277,68 @@
   backdrop-filter: none !important;
 }
 
-/* Nocturnal — used by reading ceremony reveal/interpret phases and climax moments */
-.nocturnal {
-  --night: #0A0614;
-  --night-mid: #17112B;
-  --night-soft: #251E3A;
-  --night-ink: #EDE4D0;
-  --night-mute: #8A8276;
-  --night-line: rgba(237, 228, 208, 0.12);
-  --night-gold: #D4B158;
-  --night-gold-soft: #8F7635;
-  background: var(--night);
-  color: var(--night-ink);
-}
-.nocturnal .display { font-family: var(--font-alegreya), Georgia, serif; letter-spacing: -0.01em; }
-.nocturnal .whisper { font-family: var(--font-alegreya), Georgia, serif; font-style: italic; }
-.nocturnal .eyebrow {
-  font-family: var(--font-inter), system-ui, sans-serif;
-  text-transform: uppercase;
-  letter-spacing: 0.2em;
-  font-size: 10px;
-  font-weight: 500;
-  color: var(--night-gold);
-}
-.nocturnal .nocturnal-bg {
-  background:
-    radial-gradient(ellipse 70% 50% at 50% 0%, rgba(78, 47, 122, 0.5) 0%, transparent 60%),
-    radial-gradient(ellipse 80% 80% at 80% 100%, rgba(212, 177, 88, 0.06) 0%, transparent 55%),
-    var(--night);
-}
+/* ─────────────────────────────────────────────────────────────────
+ * Chronicle UI — editorial paper palette
+ * ───────────────────────────────────────────────────────────────── */
 
-/* Daylight → Nocturnal smooth transition */
-.daylight,
-.nocturnal {
-  transition: background 800ms cubic-bezier(0.22, 1, 0.36, 1),
-              color 800ms cubic-bezier(0.22, 1, 0.36, 1);
+.chronicle-acknowledge {
+  background: var(--paper-card);
+  border-color: var(--line);
+  color: var(--ink);
 }
+.chronicle-acknowledge:hover { background: var(--paper-warm); }
 
-/* Glass container for content over immersive background */
-.glass-container {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 1rem;
-  padding: 1.5rem;
-  box-shadow: 0 0 40px rgba(10, 1, 24, 0.5);
+.chronicle-input-row { border-top-color: var(--line); }
+.chronicle-input {
+  background: var(--paper-card) !important;
+  border-color: var(--line) !important;
+  color: var(--ink) !important;
 }
+.chronicle-input::placeholder { color: var(--ink-faint) !important; }
+.chronicle-count { color: var(--ink-faint); }
+
+.chronicle-streak {
+  background: rgba(168, 134, 63, 0.08);
+  border-color: rgba(168, 134, 63, 0.25);
+}
+.chronicle-streak-glyph,
+.chronicle-streak-label { color: var(--accent-gold); }
+
+.chronicle-forge-hint { color: var(--accent-gold); opacity: 0.85; }
+.chronicle-card-title { color: var(--ink); }
+.chronicle-reveal-hint { color: var(--ink-mute); }
+.chronicle-refine { color: var(--ink-mute); }
+.chronicle-refine:hover { color: var(--accent-gold); }
+
+/* ─────────────────────────────────────────────────────────────────
+ * Chronicle dialogue bubbles — editorial paper palette
+ * ───────────────────────────────────────────────────────────────── */
+
+.chronicle-bubble-assistant {
+  background: var(--paper-card);
+  border-color: var(--line);
+  color: var(--ink);
+}
+.chronicle-bubble-user {
+  background: var(--paper-warm);
+  border-color: var(--line);
+  color: var(--ink);
+}
+.chronicle-cursor { background: var(--accent-gold); }
+.chronicle-expand { color: var(--accent-gold); opacity: 0.85; }
+.chronicle-expand:hover { opacity: 1; }
+.chronicle-reading {
+  background: var(--paper-card);
+  border-color: var(--line);
+}
+.chronicle-reading-bar {
+  background: linear-gradient(to bottom, var(--accent-gold), rgba(168, 134, 63, 0.3));
+}
+.chronicle-reading-eyebrow { color: rgba(201, 169, 78, 0.7); }
+.chronicle-reading-body { color: rgba(255, 255, 255, 0.8); }
+
+.chronicle-reading-eyebrow { color: var(--accent-gold); }
+.chronicle-reading-body { color: var(--ink-soft); }
 
 @media (min-width: 640px) {
   .glass-container {

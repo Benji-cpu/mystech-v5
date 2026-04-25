@@ -13,6 +13,7 @@ import {
 import { getUserPlanFromRole } from "@/lib/usage";
 import { SettingsContent } from "@/components/settings/settings-content";
 import { Skeleton } from "@/components/ui/skeleton";
+import { EditorialShell, EditorialHeader } from "@/components/editorial";
 import type { PlanType } from "@/types";
 
 function SettingsContentSkeleton() {
@@ -58,7 +59,7 @@ async function SettingsData({ userId, userRole }: { userId: string; userRole?: s
 
   if (!profile) {
     return (
-      <p className="text-white/40 text-sm">
+      <p className="text-sm" style={{ color: "var(--ink-mute)" }}>
         Unable to load profile. Please try refreshing.
       </p>
     );
@@ -81,26 +82,13 @@ export default async function SettingsPage() {
   const user = await requireAuth();
 
   return (
-    <div
-      className="daylight fixed inset-0 overflow-y-auto"
-      style={{ background: "var(--paper)", zIndex: 1 }}
-    >
+    <EditorialShell>
       <div className="mx-auto max-w-2xl space-y-10 px-6 pb-28 pt-10 sm:px-10 sm:pt-14">
-        <header>
-          <p className="eyebrow">Preferences</p>
-          <h1
-            className="display mt-3 text-[clamp(2.25rem,8vw,3.25rem)] leading-[0.98]"
-            style={{ color: "var(--ink)" }}
-          >
-            Settings
-          </h1>
-          <p
-            className="whisper mt-3 text-base leading-relaxed"
-            style={{ color: "var(--ink-soft)" }}
-          >
-            Manage your profile, preferences, and subscription.
-          </p>
-        </header>
+        <EditorialHeader
+          eyebrow="Preferences"
+          title="Settings"
+          whisper="Manage your profile, preferences, and subscription."
+        />
 
         <Suspense fallback={<SettingsContentSkeleton />}>
           <SettingsData
@@ -109,6 +97,6 @@ export default async function SettingsPage() {
           />
         </Suspense>
       </div>
-    </div>
+    </EditorialShell>
   );
 }

@@ -210,7 +210,10 @@ export function QuickDraw() {
   // ── Render ───────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-[100dvh] flex flex-col items-center justify-center px-4 py-8">
+    <div
+      className="daylight min-h-[100dvh] flex flex-col items-center justify-center px-4 py-8"
+      style={{ background: "var(--paper)" }}
+    >
       {/* Error state */}
       {state.phase === "error" && (
         <motion.div
@@ -300,39 +303,63 @@ export function QuickDraw() {
                     className="object-cover"
                   />
                 ) : (
-                  <div className="w-full h-full bg-gradient-to-b from-surface-mid via-[#12022a] to-surface-deep flex flex-col items-center justify-center gap-3 p-3">
-                    <svg viewBox="0 0 48 48" className="w-1/3 max-w-[48px] opacity-60" fill="none" stroke="var(--gold)" strokeWidth="1">
+                  <div
+                    className="w-full h-full flex flex-col items-center justify-center gap-3 p-3"
+                    style={{
+                      background:
+                        "linear-gradient(to bottom, var(--paper-card), var(--paper-warm))",
+                    }}
+                  >
+                    <svg
+                      viewBox="0 0 48 48"
+                      className="w-1/3 max-w-[48px]"
+                      fill="none"
+                      stroke="var(--accent-gold)"
+                      strokeWidth="1"
+                      opacity="0.7"
+                    >
                       <circle cx="24" cy="24" r="18" />
                       <polygon points="24,8 38,32 10,32" />
                       <circle cx="24" cy="24" r="6" />
                     </svg>
-                    <span className="text-white/70 text-xs font-medium text-center px-2 leading-snug">
+                    <span
+                      className="text-xs font-medium text-center px-2 leading-snug"
+                      style={{ color: "var(--ink-soft)" }}
+                    >
                       {state.card.title}
                     </span>
                   </div>
                 )}
               </div>
 
-              {/* Back face (mystical pattern) */}
+              {/* Back face (paper + gold motif) */}
               <div
-                className="absolute inset-0 rounded-xl overflow-hidden border border-white/20 bg-gradient-to-b from-surface-mid to-surface-deep"
-                style={{ backfaceVisibility: "hidden" }}
+                className="absolute inset-0 rounded-xl overflow-hidden border"
+                style={{
+                  backfaceVisibility: "hidden",
+                  borderColor: "var(--line)",
+                  background:
+                    "linear-gradient(to bottom, var(--paper-card), var(--paper-warm))",
+                }}
               >
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="relative w-3/4 h-3/4">
                     <motion.div
-                      className="absolute inset-0 rounded-full border border-gold/20"
+                      className="absolute inset-0 rounded-full border"
+                      style={{ borderColor: "rgba(168, 134, 63, 0.35)" }}
                       animate={{ rotate: 360 }}
                       transition={{ duration: 20, ease: "linear", repeat: Infinity }}
                     />
                     <motion.div
-                      className="absolute inset-3 rounded-full border border-gold/15"
+                      className="absolute inset-3 rounded-full border"
+                      style={{ borderColor: "rgba(168, 134, 63, 0.25)" }}
                       animate={{ rotate: -360 }}
                       transition={{ duration: 15, ease: "linear", repeat: Infinity }}
                     />
                     <div className="absolute inset-0 flex items-center justify-center">
                       <motion.div
-                        className="w-1/3 h-1/3 rotate-45 border border-gold/25"
+                        className="w-1/3 h-1/3 rotate-45 border"
+                        style={{ borderColor: "rgba(168, 134, 63, 0.4)" }}
                         animate={{ opacity: [0.5, 1, 0.5] }}
                         transition={{ duration: 2, ease: "easeInOut", repeat: Infinity }}
                       />
@@ -342,13 +369,18 @@ export function QuickDraw() {
               </div>
             </motion.div>
 
-            {/* Gold glow burst during reveal */}
+            {/* Warm gold glow burst during reveal */}
             {state.phase === "revealing" && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: [0, 0.6, 0], scale: [0.8, 1.3, 1.5] }}
+                animate={{ opacity: [0, 0.65, 0], scale: [0.8, 1.3, 1.5] }}
                 transition={{ duration: 1.5, ease: "easeOut" }}
-                className="absolute inset-0 -m-4 rounded-2xl bg-[#ffd700]/30 blur-xl pointer-events-none"
+                className="absolute inset-0 -m-4 rounded-2xl pointer-events-none"
+                style={{
+                  background:
+                    "radial-gradient(ellipse at center, rgba(168, 134, 63, 0.45), transparent 70%)",
+                  filter: "blur(16px)",
+                }}
               />
             )}
           </div>
@@ -426,7 +458,8 @@ export function QuickDraw() {
                 </Button>
                 <Button
                   asChild
-                  className="flex-1 bg-gold hover:bg-[#b8993f] text-black"
+                  className="flex-1"
+                  style={{ background: "var(--ink)", color: "var(--paper)" }}
                 >
                   <Link href="/readings/new">
                     <BookOpen className="w-4 h-4 mr-2" />

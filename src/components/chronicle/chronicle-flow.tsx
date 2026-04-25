@@ -148,16 +148,16 @@ function StreakBadge({ count }: { count: number }) {
       initial={{ opacity: 0, scale: 0.8 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={CONTENT_SPRING}
-      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gold/10 border border-gold/20"
+      className="chronicle-streak inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border"
     >
       <motion.span
         animate={{ scale: [1, 1.2, 1] }}
         transition={{ duration: 1.5, repeat: Infinity }}
-        className="text-gold text-xs"
+        className="chronicle-streak-glyph text-xs"
       >
         ✦
       </motion.span>
-      <span className="text-gold text-xs font-medium">{count} day streak</span>
+      <span className="chronicle-streak-label text-xs font-medium">{count} day streak</span>
     </motion.div>
   );
 }
@@ -224,9 +224,8 @@ function ActionBar({
               whileTap={{ scale: 0.98 }}
               onClick={onEmergenceAcknowledge}
               className={cn(
-                'w-full py-3 rounded-xl font-semibold text-sm',
-                'bg-white/10 border border-white/20 text-white/90',
-                'hover:bg-white/15 transition-colors duration-200',
+                'chronicle-acknowledge w-full py-3 rounded-xl font-semibold text-sm border',
+                'transition-colors duration-200',
               )}
             >
               I See This
@@ -257,7 +256,7 @@ function ActionBar({
         return (
           <div className="flex flex-col gap-2">
             {/* Input row — standard pattern matching ConversationChat */}
-            <div className="flex gap-2 pt-2 border-t border-white/10">
+            <div className="chronicle-input-row flex gap-2 pt-2 border-t">
               <Textarea
                 ref={inputRef}
                 value={inputValue}
@@ -267,7 +266,7 @@ function ActionBar({
                 disabled={isStreaming}
                 maxLength={2000}
                 rows={1}
-                className="min-h-[44px] max-h-[120px] resize-none bg-white/5 border-white/10 text-white/90 placeholder:text-white/25 focus-visible:ring-gold/20 focus-visible:border-gold/40"
+                className="chronicle-input min-h-[44px] max-h-[120px] resize-none focus-visible:ring-gold/20 focus-visible:border-gold/40"
               />
               <MicrophoneButton
                 onTranscript={onMicTranscript}
@@ -284,7 +283,7 @@ function ActionBar({
               </Button>
             </div>
             {inputValue.length > 1600 && (
-              <span className="text-xs text-white/30 text-right block">{inputValue.length}/2000</span>
+              <span className="chronicle-count text-xs text-right block">{inputValue.length}/2000</span>
             )}
 
             {/* Forge CTA — shown after Lyra's wrap-up signal */}
@@ -295,7 +294,7 @@ function ActionBar({
                 transition={CONTENT_SPRING}
               >
                 {isFirstEntry && (
-                  <p className="text-xs text-gold/60 text-center mb-2">
+                  <p className="chronicle-forge-hint text-xs text-center mb-2">
                     Your first card is ready to be forged from today&apos;s conversation
                   </p>
                 )}
@@ -921,7 +920,14 @@ export function ChronicleFlow({
   // ── Render ────────────────────────────────────────────────────────────
 
   return (
-    <div className="-mx-4 sm:-mx-6 lg:-mx-8 -mt-6 -mb-6 h-[100dvh] flex flex-col overflow-hidden relative pb-20">
+    <div
+      className="daylight fixed inset-0 flex flex-col overflow-hidden"
+      style={{
+        zIndex: 1,
+        paddingBottom: "5rem",
+        background: "var(--paper)",
+      }}
+    >
       {/* ── CARD ZONE — always mounted, resizes ── */}
       <motion.div
         layout
@@ -978,7 +984,7 @@ export function ChronicleFlow({
               />
             </div>
             {phase !== 'card_reveal' && (
-              <p className="text-sm font-semibold text-white/90 text-center mt-1 max-w-[140px] leading-snug">
+              <p className="chronicle-card-title text-sm font-semibold text-center mt-1 max-w-[140px] leading-snug">
                 {card.title}
               </p>
             )}
@@ -988,7 +994,7 @@ export function ChronicleFlow({
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 1 }}
-                  className="text-xs text-white/40 text-center max-w-xs"
+                  className="chronicle-reveal-hint text-xs text-center max-w-xs"
                 >
                   {isFirstEntry
                     ? 'Your first Chronicle card — tap to explore. Each day you return, another is forged.'
@@ -1002,7 +1008,7 @@ export function ChronicleFlow({
                   >
                     <Link
                       href={`/studio/cards/${card.id}`}
-                      className="flex items-center gap-1 text-[11px] text-muted-foreground/50 hover:text-primary transition-colors"
+                      className="chronicle-refine flex items-center gap-1 text-[11px] transition-colors"
                     >
                       <Wand2 className="h-3 w-3" />
                       Refine artwork
@@ -1118,7 +1124,7 @@ export function ChronicleFlow({
                   {card?.imageUrl && (
                     <Link
                       href={`/studio/cards/${card.id}`}
-                      className="flex items-center gap-1.5 text-xs text-muted-foreground/50 hover:text-primary transition-colors"
+                      className="chronicle-refine flex items-center gap-1.5 text-xs transition-colors"
                     >
                       <Wand2 className="h-3 w-3" />
                       Polish your Chronicle card

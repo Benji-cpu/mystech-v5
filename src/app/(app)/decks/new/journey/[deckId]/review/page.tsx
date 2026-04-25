@@ -2,6 +2,7 @@ import { requireAuth } from "@/lib/auth/helpers";
 import { getDeckByIdForUser, getDeckMetadata } from "@/lib/db/queries";
 import { redirect } from "next/navigation";
 import { DraftReview } from "@/components/decks/draft-review";
+import { EditorialShell } from "@/components/editorial";
 import type { DraftCard } from "@/types";
 
 type Params = { params: Promise<{ deckId: string }> };
@@ -24,10 +25,7 @@ export default async function JourneyReviewPage({ params }: Params) {
   }
 
   return (
-    <div
-      className="daylight fixed inset-0 overflow-y-auto"
-      style={{ background: "var(--paper)", zIndex: 1 }}
-    >
+    <EditorialShell>
       <div className="mx-auto max-w-4xl px-6 pb-28 pt-10 sm:px-10 sm:pt-14">
         <DraftReview
           deckId={deckId}
@@ -35,6 +33,6 @@ export default async function JourneyReviewPage({ params }: Params) {
           initialDraftCards={draftCards}
         />
       </div>
-    </div>
+    </EditorialShell>
   );
 }

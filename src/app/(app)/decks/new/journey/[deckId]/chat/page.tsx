@@ -3,6 +3,7 @@ import { getDeckByIdForUser, getConversationForDeck, getDeckMetadata } from "@/l
 import { redirect } from "next/navigation";
 import { ConversationChat } from "@/components/decks/conversation-chat";
 import { buildReadinessFromAnchors } from "@/lib/ai/prompts/conversation";
+import { EditorialShell } from "@/components/editorial";
 import type { ConversationMessage, JourneyReadinessState, Anchor, DraftCard } from "@/types";
 
 type Params = { params: Promise<{ deckId: string }> };
@@ -42,10 +43,7 @@ export default async function JourneyChatPage({ params }: Params) {
   };
 
   return (
-    <div
-      className="daylight fixed inset-0 overflow-hidden"
-      style={{ background: "var(--paper)", zIndex: 1 }}
-    >
+    <EditorialShell className="!overflow-hidden">
       <div className="mx-auto flex h-full max-w-3xl flex-col px-4 py-4 sm:px-8 sm:py-6">
         <ConversationChat
           deckId={deckId}
@@ -55,6 +53,6 @@ export default async function JourneyChatPage({ params }: Params) {
           hasDraftCards={draftCards.length > 0}
         />
       </div>
-    </div>
+    </EditorialShell>
   );
 }

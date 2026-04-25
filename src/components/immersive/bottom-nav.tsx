@@ -10,18 +10,7 @@ import { useFeedback } from "@/components/feedback/feedback-provider";
 import { navTabs, BADGE_STORAGE_PREFIX, type NavTab } from "./nav-config";
 import { cn } from "@/lib/utils";
 
-// Routes that render with the Editorial Daylight palette.
-// The nav adapts to match so it doesn't float as a dark bar over cream.
-const DAYLIGHT_ROUTES = ["/home", "/decks", "/readings", "/settings", "/paths"];
-// Routes that remain dark even though their parent prefix is daylight.
-const DARK_EXCEPTIONS = ["/readings/new"];
-
-function isDaylightRoute(pathname: string): boolean {
-  if (DARK_EXCEPTIONS.some((r) => pathname === r || pathname.startsWith(r + "/"))) {
-    return false;
-  }
-  return DAYLIGHT_ROUTES.some((r) => pathname === r || pathname.startsWith(r + "/"));
-}
+import { isDaylightRoute } from "./is-daylight-route";
 
 export function BottomNav() {
   const pathname = usePathname();

@@ -92,10 +92,10 @@ function StepIndicator({ phase }: { phase: SetupPhase }) {
             height: 6,
             backgroundColor:
               i === activeIndex
-                ? "rgba(201, 169, 78, 1)"
+                ? "var(--accent-gold)"
                 : i < activeIndex
-                  ? "rgba(201, 169, 78, 0.4)"
-                  : "rgba(255, 255, 255, 0.15)",
+                  ? "rgba(168, 134, 63, 0.45)"
+                  : "var(--line)",
           }}
           transition={SPRING}
           className="rounded-full"
@@ -124,8 +124,16 @@ function LyraSpeech({ children, size = "sm" }: { children: React.ReactNode; size
       >
         <LyraSigil size={size === "lg" ? "xl" : "md"} state="speaking" />
       </motion.div>
-      <div className="max-w-sm rounded-2xl bg-purple-950/60 border border-purple-500/15 px-4 py-3">
-        <p className="text-sm leading-relaxed text-white/70 text-center">{children}</p>
+      <div
+        className="max-w-sm rounded-2xl border px-4 py-3 hair"
+        style={{ background: "var(--paper-card)" }}
+      >
+        <p
+          className="whisper text-base leading-relaxed text-center"
+          style={{ color: "var(--ink-soft)" }}
+        >
+          {children}
+        </p>
       </div>
     </div>
   );
@@ -227,7 +235,10 @@ function ConfirmStep() {
         see what today holds.
       </LyraSpeech>
 
-      <p className="max-w-xs text-center text-xs text-white/30">
+      <p
+        className="whisper max-w-xs text-center text-sm"
+        style={{ color: "var(--ink-mute)" }}
+      >
         Your Chronicle deck will grow with you, one card per day.
       </p>
     </motion.div>
@@ -313,10 +324,10 @@ export function ChronicleSetupFlow({
   return (
     <div
       className={cn(
-        "flex h-[100dvh] flex-col overflow-hidden pb-20",
-        "bg-gradient-to-b from-surface-deep via-[#0d0220] to-surface-deep",
+        "daylight flex h-[100dvh] flex-col overflow-hidden pb-20",
         className
       )}
+      style={{ background: "var(--paper)" }}
     >
       {/* ── Top bar: step indicator ───────────────────────────────────────── */}
       <div className="shrink-0 px-4 pt-[env(safe-area-inset-top,0px)]">
@@ -352,7 +363,10 @@ export function ChronicleSetupFlow({
       </div>
 
       {/* ── Bottom action zone ────────────────────────────────────────────── */}
-      <div className="shrink-0 space-y-2 border-t border-white/5 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3">
+      <div
+        className="shrink-0 space-y-2 border-t px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3"
+        style={{ borderTopColor: "var(--line-soft)" }}
+      >
         {/* Error message */}
         <AnimatePresence>
           {state.error && (
@@ -361,17 +375,19 @@ export function ChronicleSetupFlow({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 4 }}
               transition={SPRING}
-              className="text-center text-xs text-red-400/80"
+              className="text-center text-xs"
+              style={{ color: "#b83a2b" }}
             >
               {state.error}
             </motion.p>
           )}
         </AnimatePresence>
 
-        {/* Primary CTA — always gold, forward-only */}
+        {/* Primary CTA — ink pill in editorial palette */}
         <motion.div whileTap={{ scale: 0.98 }}>
           <Button
-            className="h-12 w-full bg-gold text-sm font-semibold text-black hover:bg-gold/80 disabled:opacity-40 shadow-[0_0_20px_rgba(201,169,78,0.3)]"
+            className="h-12 w-full text-sm font-semibold disabled:opacity-40"
+            style={{ background: "var(--ink)", color: "var(--paper)" }}
             disabled={!canContinue || state.isCreating}
             onClick={isOnLast ? handleComplete : () => dispatch({ type: "NEXT" })}
           >

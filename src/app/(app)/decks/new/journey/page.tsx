@@ -3,6 +3,7 @@ import { artStyles, artStyleShares } from "@/lib/db/schema";
 import { requireAuth } from "@/lib/auth/helpers";
 import { eq, or, and } from "drizzle-orm";
 import { JourneySetupForm } from "@/components/decks/journey-setup-form";
+import { EditorialShell } from "@/components/editorial";
 import type { ArtStyle, StyleCategory } from "@/types";
 
 export default async function JourneySetupPage() {
@@ -57,10 +58,7 @@ export default async function JourneySetupPage() {
   const custom = styles.filter((s) => !s.isPreset);
 
   return (
-    <div
-      className="daylight fixed inset-0 overflow-y-auto"
-      style={{ background: "var(--paper)", zIndex: 1 }}
-    >
+    <EditorialShell>
       <div className="mx-auto max-w-2xl px-6 pb-28 pt-10 sm:px-10 sm:pt-14">
         <JourneySetupForm
           presets={presets}
@@ -68,6 +66,6 @@ export default async function JourneySetupPage() {
           atLimit={atLimit}
         />
       </div>
-    </div>
+    </EditorialShell>
   );
 }

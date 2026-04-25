@@ -89,9 +89,10 @@ function Particle({
   phase: RevealPhase;
   isObstacle: boolean;
 }) {
+  // Editorial palette — both variants warm, obstacles lean copper, thresholds pure gold
   const baseColor = isObstacle
-    ? 'rgba(139,92,246,' // purple
-    : 'rgba(201,169,78,'; // gold
+    ? 'rgba(181, 104, 64,' // warm copper
+    : 'rgba(168, 134, 63,'; // accent gold
 
   // Target positions as percentages of container.
   // gathering/coalescing: drift toward center (50%, 50%)
@@ -154,8 +155,8 @@ function Particle({
  * Only visible during coalescing phase.
  */
 function LightBeam({ isObstacle }: { isObstacle: boolean }) {
-  const midColor = isObstacle ? 'rgba(139,92,246,0.25)' : 'rgba(201,169,78,0.2)';
-  const topColor = isObstacle ? 'rgba(139,92,246,0.15)' : 'rgba(201,169,78,0.12)';
+  const midColor = isObstacle ? 'rgba(181, 104, 64, 0.22)' : 'rgba(168, 134, 63, 0.22)';
+  const topColor = isObstacle ? 'rgba(181, 104, 64, 0.12)' : 'rgba(168, 134, 63, 0.14)';
 
   return (
     <motion.div
@@ -183,8 +184,8 @@ function LightBeam({ isObstacle }: { isObstacle: boolean }) {
  */
 function RevealPulse({ isObstacle }: { isObstacle: boolean }) {
   const color = isObstacle
-    ? 'rgba(139,92,246,0.35)'
-    : 'rgba(201,169,78,0.3)';
+    ? 'rgba(181, 104, 64, 0.35)'
+    : 'rgba(168, 134, 63, 0.35)';
 
   return (
     <motion.div
@@ -213,8 +214,8 @@ function RevealPulse({ isObstacle }: { isObstacle: boolean }) {
  */
 function AtmosphericPulse({ isObstacle }: { isObstacle: boolean }) {
   const color = isObstacle
-    ? 'rgba(139,92,246,0.1)'
-    : 'rgba(201,169,78,0.08)';
+    ? 'rgba(181, 104, 64, 0.12)'
+    : 'rgba(168, 134, 63, 0.1)';
 
   return (
     <motion.div
@@ -300,10 +301,10 @@ export function EmergenceReveal({ card, onCardRevealed }: EmergenceRevealProps) 
     originContext: null,
   };
 
-  // Glow ring color around card
+  // Glow ring color around card — warm tones only
   const glowShadow = isObstacle
-    ? 'shadow-[0_0_40px_rgba(139,92,246,0.4)]'
-    : 'shadow-[0_0_40px_rgba(201,169,78,0.4)]';
+    ? 'shadow-[0_0_40px_rgba(181,104,64,0.4)]'
+    : 'shadow-[0_0_40px_rgba(168,134,63,0.4)]';
 
   return (
     <div className="relative w-full h-full flex flex-col items-center justify-center overflow-hidden">
@@ -339,10 +340,10 @@ export function EmergenceReveal({ card, onCardRevealed }: EmergenceRevealProps) 
         {statusLabel && (
           <motion.p
             key={statusLabel}
-            className={cn(
-              'absolute top-[12%] left-0 right-0 text-center text-sm tracking-widest uppercase z-10',
-              isObstacle ? 'text-purple-300/70' : 'text-gold/70',
-            )}
+            className="absolute top-[12%] left-0 right-0 text-center text-sm tracking-widest uppercase z-10"
+            style={{
+              color: isObstacle ? 'rgba(181, 104, 64, 0.9)' : 'var(--accent-gold)',
+            }}
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -6 }}
@@ -392,8 +393,8 @@ export function EmergenceReveal({ card, onCardRevealed }: EmergenceRevealProps) 
                 width: 180,
                 height: 270,
                 background: isObstacle
-                  ? 'radial-gradient(ellipse, rgba(139,92,246,0.12), transparent 70%)'
-                  : 'radial-gradient(ellipse, rgba(201,169,78,0.1), transparent 70%)',
+                  ? 'radial-gradient(ellipse, rgba(181, 104, 64, 0.12), transparent 70%)'
+                  : 'radial-gradient(ellipse, rgba(168, 134, 63, 0.12), transparent 70%)',
               }}
               animate={{
                 scale: [1, 1.05, 1],

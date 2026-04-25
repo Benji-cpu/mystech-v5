@@ -4,6 +4,7 @@ import { artStyles } from "@/lib/db/schema";
 import { requireAuth } from "@/lib/auth/helpers";
 import { eq } from "drizzle-orm";
 import { CustomStyleForm } from "@/components/art-styles/custom-style-form";
+import { EditorialShell, EditorialHeader } from "@/components/editorial";
 
 export default async function EditArtStylePage({
   params,
@@ -27,23 +28,16 @@ export default async function EditArtStylePage({
   }
 
   return (
-    <div
-      className="daylight fixed inset-0 overflow-y-auto"
-      style={{ background: "var(--paper)", zIndex: 1 }}
-    >
+    <EditorialShell>
       <div className="mx-auto max-w-lg space-y-8 px-6 pb-28 pt-10 sm:px-10 sm:pt-14">
-        <header>
-          <p className="eyebrow">Edit</p>
-          <h1
-            className="display mt-3 text-[clamp(2rem,7vw,2.75rem)] leading-[0.98]"
-            style={{ color: "var(--ink)" }}
-          >
-            Edit style
-          </h1>
-          <p className="whisper mt-3 text-base" style={{ color: "var(--ink-soft)" }}>
-            Update your custom art style.
-          </p>
-        </header>
+        <EditorialHeader
+          backHref={`/art-styles/${style.id}`}
+          backLabel="Style"
+          eyebrow="Edit"
+          title="Edit style"
+          whisper="Update your custom art style."
+          size="md"
+        />
 
         <CustomStyleForm
           initialData={{
@@ -53,6 +47,6 @@ export default async function EditArtStylePage({
           }}
         />
       </div>
-    </div>
+    </EditorialShell>
   );
 }

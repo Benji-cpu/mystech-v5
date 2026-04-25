@@ -91,24 +91,34 @@ function VisualContent({
       >
         {isCompleted && (
           <div className="flex flex-col items-center gap-4 text-center">
-            {/* Gold glow pulse */}
             <motion.div
-              className="w-20 h-20 rounded-full bg-gold/10 border border-gold/30 flex items-center justify-center"
+              className="w-20 h-20 rounded-full border flex items-center justify-center"
+              style={{
+                background: 'rgba(168, 134, 63, 0.08)',
+                borderColor: 'rgba(168, 134, 63, 0.35)',
+                color: 'var(--accent-gold)',
+              }}
               animate={{
                 boxShadow: [
-                  '0 0 20px oklch(0.75 0.12 85 / 0.15)',
-                  '0 0 40px oklch(0.75 0.12 85 / 0.35)',
-                  '0 0 20px oklch(0.75 0.12 85 / 0.15)',
+                  '0 0 20px rgba(168, 134, 63, 0.18)',
+                  '0 0 40px rgba(168, 134, 63, 0.35)',
+                  '0 0 20px rgba(168, 134, 63, 0.18)',
                 ],
               }}
               transition={{ repeat: Infinity, duration: 3, ease: 'easeInOut' }}
             >
               <span className="text-3xl">✦</span>
             </motion.div>
-            <h2 className="text-lg font-light text-gold tracking-wide">
+            <h2
+              className="display text-xl tracking-wide"
+              style={{ color: 'var(--accent-gold)' }}
+            >
               Practice Complete
             </h2>
-            <p className="text-sm text-white/40 max-w-xs">
+            <p
+              className="whisper text-base max-w-xs"
+              style={{ color: 'var(--ink-soft)' }}
+            >
               Take a moment to rest in the stillness you have cultivated.
             </p>
           </div>
@@ -116,10 +126,20 @@ function VisualContent({
 
         {isIdle && (
           <div className="flex flex-col items-center gap-5 text-center">
-            <div className="w-12 h-12 rounded-full bg-gold/5 border border-gold/20 flex items-center justify-center">
-              <span className="text-lg text-gold/50">◈</span>
+            <div
+              className="w-12 h-12 rounded-full border flex items-center justify-center"
+              style={{
+                background: 'rgba(168, 134, 63, 0.05)',
+                borderColor: 'rgba(168, 134, 63, 0.3)',
+                color: 'var(--accent-gold)',
+              }}
+            >
+              <span className="text-lg">◈</span>
             </div>
-            <p className="text-sm text-white/30 max-w-xs leading-relaxed">
+            <p
+              className="whisper text-base max-w-xs leading-relaxed"
+              style={{ color: 'var(--ink-mute)' }}
+            >
               Find a comfortable position and press begin when you are ready.
             </p>
 
@@ -131,11 +151,21 @@ function VisualContent({
                   onClick={() => onSelectDuration(min)}
                   className={cn(
                     'rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors',
-                    'min-w-[44px] min-h-[36px]',
-                    selectedDuration === min
-                      ? 'border border-gold/60 bg-gold/20 text-gold'
-                      : 'border border-white/10 bg-white/5 text-white/40 hover:bg-white/8 hover:text-white/60',
+                    'min-w-[44px] min-h-[36px] border',
                   )}
+                  style={
+                    selectedDuration === min
+                      ? {
+                          borderColor: 'var(--accent-gold)',
+                          background: 'rgba(168, 134, 63, 0.15)',
+                          color: 'var(--accent-gold)',
+                        }
+                      : {
+                          borderColor: 'var(--line)',
+                          background: 'var(--paper-card)',
+                          color: 'var(--ink-mute)',
+                        }
+                  }
                   whileTap={{ scale: 0.95 }}
                 >
                   {min}m
@@ -151,8 +181,16 @@ function VisualContent({
             animate={{ opacity: [0.4, 0.8, 0.4] }}
             transition={{ repeat: Infinity, duration: 1.8, ease: 'easeInOut' }}
           >
-            <div className="w-2 h-2 rounded-full bg-gold/60" />
-            <p className="text-xs text-white/30 tracking-wider uppercase">Preparing</p>
+            <div
+              className="w-2 h-2 rounded-full"
+              style={{ background: 'var(--accent-gold)' }}
+            />
+            <p
+              className="eyebrow"
+              style={{ color: 'var(--ink-mute)' }}
+            >
+              Preparing
+            </p>
           </motion.div>
         )}
 
@@ -164,10 +202,10 @@ function VisualContent({
         )}
 
         {(isSpeech || isPaused || (isLoading && currentSegment?.segmentType === 'speech')) && (
-          <p className={cn(
-            'text-sm italic text-white/50 text-center max-w-sm leading-relaxed',
-            fallbackText && 'text-white/70',
-          )}>
+          <p
+            className="whisper text-base text-center max-w-sm leading-relaxed"
+            style={{ color: fallbackText ? 'var(--ink-soft)' : 'var(--ink-mute)' }}
+          >
             {fallbackText ?? currentSegment?.text ?? ''}
           </p>
         )}
@@ -188,9 +226,13 @@ function ProgressSteps({ currentIndex, total }: ProgressStepsProps) {
   const completedFraction = total > 1 ? currentIndex / (total - 1) : 0;
 
   return (
-    <div className="relative w-full h-0.5 bg-white/10 rounded-full overflow-hidden">
+    <div
+      className="relative w-full h-0.5 rounded-full overflow-hidden"
+      style={{ background: 'var(--line)' }}
+    >
       <motion.div
-        className="absolute inset-y-0 left-0 bg-gold/60 rounded-full"
+        className="absolute inset-y-0 left-0 rounded-full"
+        style={{ background: 'var(--accent-gold)' }}
         animate={{ width: `${completedFraction * 100}%` }}
         transition={ZONE_SPRING}
       />
@@ -275,21 +317,27 @@ export function PracticeScreen({
   return (
     <motion.div
       className={cn(
-        'fixed inset-0 z-50',
+        'daylight fixed inset-0 z-50',
         'flex flex-col',
-        'bg-[#07010f]',
         className,
       )}
+      style={{ background: 'var(--paper)' }}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1, transition: { duration: 0.35 } }}
       exit={{ opacity: 0, transition: { duration: 0.25 } }}
     >
-      {/* Subtle ambient gradient */}
+      {/* Subtle warm ambient gradient */}
       <div
         className="pointer-events-none absolute inset-0 z-0"
         aria-hidden="true"
       >
-        <div className="absolute inset-0 bg-gradient-to-b from-purple-950/30 via-transparent to-black/60" />
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              'radial-gradient(ellipse 80% 60% at 50% 0%, rgba(168, 134, 63, 0.06), transparent 60%)',
+          }}
+        />
       </div>
 
       {/* ── Header zone (FocusHeader-style vertical layout) ────────── */}
@@ -303,7 +351,8 @@ export function PracticeScreen({
           {canClose && (
             <motion.button
               onClick={onClose}
-              className="inline-flex items-center gap-0.5 text-xs text-white/40 hover:text-white/60 transition-colors self-start min-h-[44px]"
+              className="eyebrow inline-flex items-center gap-1 transition-colors self-start min-h-[44px] hover:underline"
+              style={{ color: 'var(--ink-mute)' }}
               initial={{ opacity: 0, x: -8 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -8 }}
@@ -316,15 +365,18 @@ export function PracticeScreen({
         </AnimatePresence>
 
         {/* Title */}
-        <h1 className="text-sm font-medium text-white/70 leading-snug truncate">
+        <h1
+          className="display text-base leading-snug truncate"
+          style={{ color: 'var(--ink)' }}
+        >
           {practice.title}
         </h1>
 
         {/* Elapsed / total time */}
-        <p className="text-xs text-white/35 tabular-nums">
+        <p className="text-xs tabular-nums" style={{ color: 'var(--ink-mute)' }}>
           {formatTime(elapsedMs)}
           {estimatedTotalMs > 0 && (
-            <span className="text-white/20"> / {formatTime(estimatedTotalMs)}</span>
+            <span style={{ color: 'var(--ink-faint)' }}> / {formatTime(estimatedTotalMs)}</span>
           )}
         </p>
 
@@ -342,7 +394,10 @@ export function PracticeScreen({
         className="relative z-10 flex-1 min-h-0 flex items-center justify-center"
       >
         {completionError && (
-          <p className="absolute bottom-2 text-xs text-red-400/60 text-center w-full px-4">
+          <p
+            className="absolute bottom-2 text-xs text-center w-full px-4"
+            style={{ color: '#b83a2b' }}
+          >
             Could not record completion — your progress may not have saved.
           </p>
         )}
@@ -365,7 +420,13 @@ export function PracticeScreen({
         className="relative z-10 flex-shrink-0 pb-safe-bottom pb-6"
       >
         {/* Subtle separator */}
-        <div className="h-px w-full bg-gradient-to-r from-transparent via-white/10 to-transparent mb-4" />
+        <div
+          className="h-px w-full mb-4"
+          style={{
+            background:
+              'linear-gradient(to right, transparent, var(--line), transparent)',
+          }}
+        />
 
         <PracticeControls
           state={state}

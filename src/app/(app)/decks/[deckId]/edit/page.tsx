@@ -6,6 +6,7 @@ import { requireAuth } from "@/lib/auth/helpers";
 import { eq, and } from "drizzle-orm";
 import { DeckEditForm } from "@/components/decks/deck-edit-form";
 import { Skeleton } from "@/components/ui/skeleton";
+import { EditorialShell, EditorialHeader } from "@/components/editorial";
 import type { Deck } from "@/types";
 
 // ---------------------------------------------------------------------------
@@ -99,31 +100,21 @@ export default async function DeckEditPage({ params }: DeckEditPageProps) {
   const { deckId } = await params;
 
   return (
-    <div
-      className="daylight fixed inset-0 overflow-y-auto"
-      style={{ background: "var(--paper)", zIndex: 1 }}
-    >
+    <EditorialShell>
       <div className="mx-auto max-w-2xl space-y-8 px-6 pb-28 pt-10 sm:px-10 sm:pt-14">
-        <header>
-          <p className="eyebrow">Edit</p>
-          <h1
-            className="display mt-3 text-[clamp(2rem,7vw,3rem)] leading-[0.98]"
-            style={{ color: "var(--ink)" }}
-          >
-            Edit deck
-          </h1>
-          <p
-            className="whisper mt-3 text-base"
-            style={{ color: "var(--ink-soft)" }}
-          >
-            Update your deck&rsquo;s details.
-          </p>
-        </header>
+        <EditorialHeader
+          backHref={`/decks/${deckId}`}
+          backLabel="Deck"
+          eyebrow="Edit"
+          title="Edit deck"
+          whisper="Update your deck's details."
+          size="md"
+        />
 
         <Suspense fallback={<DeckEditSkeleton />}>
           <DeckEditContent deckId={deckId} />
         </Suspense>
       </div>
-    </div>
+    </EditorialShell>
   );
 }

@@ -19,22 +19,30 @@ export function FocusHeader() {
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -12 }}
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
-          className="fixed top-0 left-0 z-40 p-4"
+          className="daylight fixed top-0 left-0 z-40 p-4"
         >
           {backTarget && backLabel && (
             <Link
               href={backTarget}
-              className="inline-flex items-center gap-0.5 text-xs text-white/40 hover:text-white/60 transition-colors mb-1"
+              className="eyebrow inline-flex items-center gap-1 hover:underline mb-1"
+              style={{ color: "var(--ink-mute)" }}
             >
               <ChevronLeft className="w-3.5 h-3.5" />
               {backLabel}
             </Link>
           )}
           {focusTitle && (
-            <p className="text-sm font-medium text-white/70">{focusTitle}</p>
+            <p
+              className="text-sm font-medium"
+              style={{ color: "var(--ink)" }}
+            >
+              {focusTitle}
+            </p>
           )}
           {focusSubtitle && (
-            <p className="text-xs text-white/35">{focusSubtitle}</p>
+            <p className="text-xs" style={{ color: "var(--ink-mute)" }}>
+              {focusSubtitle}
+            </p>
           )}
         </motion.div>
       )}

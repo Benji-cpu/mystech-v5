@@ -144,21 +144,43 @@ function CardImage({
             className="object-cover"
           />
         ) : card.imageStatus === "none" ? (
-          <div className="h-full w-full bg-gradient-to-b from-surface-mid via-surface-deep to-surface-mid" />
+          <div
+            className="h-full w-full"
+            style={{
+              background:
+                "linear-gradient(to bottom, var(--paper-card), var(--paper-warm), var(--paper-card))",
+            }}
+          />
         ) : card.imageStatus === "generating" ? (
-          <div className="flex h-full w-full items-center justify-center bg-gradient-to-b from-surface-deep to-surface-mid">
-            <Loader2 className="h-8 w-8 animate-spin text-gold/60" />
+          <div
+            className="flex h-full w-full items-center justify-center"
+            style={{
+              background:
+                "linear-gradient(to bottom, var(--paper-card), var(--paper-warm))",
+            }}
+          >
+            <Loader2
+              className="h-8 w-8 animate-spin"
+              style={{ color: "var(--accent-gold)" }}
+            />
           </div>
         ) : card.imageStatus === "failed" ? (
-          <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-gradient-to-b from-surface-deep to-surface-mid">
-            <AlertCircle className="h-6 w-6 text-red-400/60" />
+          <div
+            className="flex h-full w-full flex-col items-center justify-center gap-2"
+            style={{
+              background:
+                "linear-gradient(to bottom, var(--paper-card), var(--paper-warm))",
+            }}
+          >
+            <AlertCircle className="h-6 w-6" style={{ color: "#b83a2b" }} />
             {onRetryImage && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   onRetryImage();
                 }}
-                className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                className="flex items-center gap-1 text-xs transition-colors"
+                style={{ color: "var(--ink-mute)" }}
               >
                 <RotateCcw className="h-3 w-3" />
                 Retry
@@ -166,7 +188,10 @@ function CardImage({
             )}
           </div>
         ) : (
-          <Skeleton className="h-full w-full rounded-none bg-surface-mid" />
+          <Skeleton
+            className="h-full w-full rounded-none"
+            style={{ background: "var(--paper-warm)" }}
+          />
         )}
       </motion.div>
     </AnimatePresence>

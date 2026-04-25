@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 const DIAMETER = 120;
 const RADIUS = 52;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
-const GOLD = 'var(--gold)';
+const GOLD = 'var(--accent-gold)';
 
 const BREATHING_CYCLE_MS = 4000;
 const BREATHING_CUES = ['Breathe in...', 'Breathe out...'] as const;
@@ -65,7 +65,7 @@ export function PauseTimer({ remainingMs, totalMs, className }: PauseTimerProps)
             cy={DIAMETER / 2}
             r={RADIUS}
             fill="none"
-            stroke="rgba(255,255,255,0.1)"
+            stroke="var(--line)"
             strokeWidth={4}
           />
           {/* Progress arc */}
@@ -85,7 +85,10 @@ export function PauseTimer({ remainingMs, totalMs, className }: PauseTimerProps)
 
         {/* Centered time label */}
         <div className="absolute inset-0 flex items-center justify-center rotate-0">
-          <span className="text-sm font-mono text-white/80 tabular-nums">
+          <span
+            className="text-sm font-mono tabular-nums"
+            style={{ color: 'var(--ink)' }}
+          >
             {formatTime(remainingMs)}
           </span>
         </div>
@@ -99,7 +102,8 @@ export function PauseTimer({ remainingMs, totalMs, className }: PauseTimerProps)
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 28 } }}
             exit={{ opacity: 0, y: -8, transition: { duration: 0.18 } }}
-            className="text-xs text-gold/70 tracking-widest uppercase text-center"
+            className="text-xs tracking-widest uppercase text-center"
+            style={{ color: 'var(--accent-gold)' }}
           >
             {BREATHING_CUES[breathingIndex]}
           </motion.p>

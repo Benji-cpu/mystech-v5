@@ -1,40 +1,21 @@
 import Link from "next/link";
 import { requireAuth } from "@/lib/auth/helpers";
-import { Zap, MessageCircle, ArrowLeft } from "lucide-react";
+import { Zap, MessageCircle } from "lucide-react";
 import { LYRA_DECK_CREATION } from "@/components/guide/lyra-constants";
 import { AstroNudgeBanner } from "@/components/shared/astro-nudge-banner";
+import { EditorialShell, EditorialHeader } from "@/components/editorial";
 
 export default async function NewDeckPage() {
   await requireAuth();
 
   return (
-    <div
-      className="daylight fixed inset-0 overflow-y-auto"
-      style={{ background: "var(--paper)", zIndex: 1 }}
-    >
-      <div className="mx-auto max-w-2xl px-6 pb-28 pt-10 sm:px-10 sm:pt-14">
-        <Link
-          href="/decks"
-          className="eyebrow inline-flex items-center gap-2 hover:underline"
-        >
-          <ArrowLeft size={14} /> Decks
-        </Link>
-
-        <header className="mt-6">
-          <p className="eyebrow">New deck</p>
-          <h1
-            className="display mt-3 text-[clamp(2.25rem,8vw,3.25rem)] leading-[0.98]"
-            style={{ color: "var(--ink)" }}
-          >
-            How shall we begin?
-          </h1>
-          <p
-            className="whisper mt-3 text-base leading-relaxed"
-            style={{ color: "var(--ink-soft)" }}
-          >
-            Two doors to the same room. Pick the one that fits your mood.
-          </p>
-        </header>
+    <EditorialShell>
+      <div className="mx-auto max-w-2xl px-6 pb-28 pt-24 sm:px-10 sm:pt-28">
+        <EditorialHeader
+          eyebrow="New deck"
+          title="How shall we begin?"
+          whisper="Two doors to the same room. Pick the one that fits your mood."
+        />
 
         <div className="mt-8">
           <AstroNudgeBanner />
@@ -114,6 +95,6 @@ export default async function NewDeckPage() {
           </Link>
         </div>
       </div>
-    </div>
+    </EditorialShell>
   );
 }

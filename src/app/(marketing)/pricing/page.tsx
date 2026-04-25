@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { PricingCards } from "@/components/marketing/pricing-cards";
 import { getCurrentUser } from "@/lib/auth/helpers";
 import { getUserPlan } from "@/lib/db/queries";
+import { EditorialShell, EditorialHeader } from "@/components/editorial";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://mystech-v5.vercel.app";
 
@@ -21,15 +22,20 @@ export default async function PricingPage() {
   const currentPlan = user?.id ? await getUserPlan(user.id) : null;
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
-      <div className="mb-12 text-center">
-        <h1 className="text-4xl font-bold tracking-tight font-display">Simple pricing</h1>
-        <p className="mt-3 text-lg text-muted-foreground">
-          Start free. Upgrade when you need more.
-        </p>
-      </div>
+    <EditorialShell>
+      <div className="mx-auto max-w-5xl px-6 pb-28 pt-16 sm:px-10 sm:pt-24">
+        <div className="mb-14 text-center">
+          <EditorialHeader
+            eyebrow="Pricing"
+            title="Simple pricing"
+            whisper="Start free. Upgrade when you need more."
+            size="xl"
+            className="items-center text-center"
+          />
+        </div>
 
-      <PricingCards isAuthenticated={!!user} currentPlan={currentPlan} />
-    </div>
+        <PricingCards isAuthenticated={!!user} currentPlan={currentPlan} />
+      </div>
+    </EditorialShell>
   );
 }

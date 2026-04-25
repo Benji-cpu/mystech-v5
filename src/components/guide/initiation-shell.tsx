@@ -264,7 +264,7 @@ function QuestionPhase({
         onClick={() => value.trim().length >= 10 && onSubmit(value.trim())}
         className={cn(
           "w-full py-3 rounded-xl font-medium text-sm transition-all",
-          "bg-gradient-to-r from-gold to-[#b89840] text-surface-deep",
+          "bg-[var(--ink)] text-[var(--paper)]",
           "shadow-lg shadow-gold/20",
           value.trim().length >= 10 ? "cursor-pointer hover:shadow-xl hover:shadow-gold/30" : "cursor-not-allowed opacity-40"
         )}
@@ -449,7 +449,7 @@ function RevealPhase({
         disabled={!showButton}
         className={cn(
           "w-full py-3 rounded-xl font-medium text-sm transition-all",
-          "bg-gradient-to-r from-gold to-[#b89840] text-surface-deep",
+          "bg-[var(--ink)] text-[var(--paper)]",
           "shadow-lg shadow-gold/20 hover:shadow-xl hover:shadow-gold/30",
           !showButton && "opacity-0"
         )}

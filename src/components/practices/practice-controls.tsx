@@ -80,14 +80,17 @@ function CenterButton({ state, onPlay, onPause, onResume, onClose }: CenterButto
       disabled={isLoading}
       className={cn(
         'relative flex items-center justify-center',
-        'w-16 h-16 rounded-full',
-        'bg-gold/20 border border-gold/40',
-        'shadow-[0_0_24px_oklch(0.75_0.12_85_/_0.25)]',
+        'w-16 h-16 rounded-full border',
         'disabled:opacity-50 disabled:cursor-not-allowed',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/50',
+        'focus-visible:outline-none focus-visible:ring-2',
         'transition-colors',
-        isCompleted && 'bg-gold/30 border-gold/60',
       )}
+      style={{
+        background: isCompleted ? 'rgba(168, 134, 63, 0.2)' : 'rgba(168, 134, 63, 0.12)',
+        borderColor: isCompleted ? 'rgba(168, 134, 63, 0.6)' : 'rgba(168, 134, 63, 0.4)',
+        boxShadow: '0 0 24px rgba(168, 134, 63, 0.28)',
+        color: 'var(--accent-gold)',
+      }}
       whileHover={isLoading ? {} : { scale: 1.06 }}
       whileTap={isLoading ? {} : { scale: 0.94 }}
       transition={{ type: 'spring', stiffness: 400, damping: 28 }}
@@ -101,7 +104,7 @@ function CenterButton({ state, onPlay, onPause, onResume, onClose }: CenterButto
             exit={{ opacity: 0, scale: 0.7 }}
             transition={{ type: 'spring', stiffness: 300, damping: 25 }}
           >
-            <Loader2 className="w-6 h-6 text-gold animate-spin" />
+            <Loader2 className="w-6 h-6 text-[var(--accent-gold)] animate-spin" />
           </motion.span>
         ) : isCompleted ? (
           <motion.span
@@ -111,7 +114,7 @@ function CenterButton({ state, onPlay, onPause, onResume, onClose }: CenterButto
             exit={{ opacity: 0, scale: 0.7 }}
             transition={{ type: 'spring', stiffness: 300, damping: 25 }}
           >
-            <CheckCircle className="w-6 h-6 text-gold" />
+            <CheckCircle className="w-6 h-6 text-[var(--accent-gold)]" />
           </motion.span>
         ) : isPlaying ? (
           <motion.span
@@ -121,7 +124,7 @@ function CenterButton({ state, onPlay, onPause, onResume, onClose }: CenterButto
             exit={{ opacity: 0, scale: 0.7 }}
             transition={{ type: 'spring', stiffness: 300, damping: 25 }}
           >
-            <Pause className="w-6 h-6 text-gold" />
+            <Pause className="w-6 h-6 text-[var(--accent-gold)]" />
           </motion.span>
         ) : (
           <motion.span
@@ -131,7 +134,7 @@ function CenterButton({ state, onPlay, onPause, onResume, onClose }: CenterButto
             exit={{ opacity: 0, scale: 0.7 }}
             transition={{ type: 'spring', stiffness: 300, damping: 25 }}
           >
-            <Play className="w-6 h-6 text-gold translate-x-0.5" />
+            <Play className="w-6 h-6 text-[var(--accent-gold)] translate-x-0.5" />
           </motion.span>
         )}
       </AnimatePresence>
@@ -183,12 +186,15 @@ export function PracticeControls({
             onClick={handleStopRequest}
             className={cn(
               'absolute top-0 right-6',
-              'flex items-center justify-center w-9 h-9 rounded-full',
-              'bg-white/5 border border-white/10',
-              'text-white/30 hover:text-white/60 hover:bg-white/10',
+              'flex items-center justify-center w-9 h-9 rounded-full border',
               'transition-colors',
-              'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/30',
+              'focus-visible:outline-none focus-visible:ring-1',
             )}
+            style={{
+              background: 'var(--paper-card)',
+              borderColor: 'var(--line)',
+              color: 'var(--ink-mute)',
+            }}
             whileHover={{ scale: 1.08 }}
             whileTap={{ scale: 0.92 }}
             transition={{ type: 'spring', stiffness: 400, damping: 28 }}
@@ -215,7 +221,8 @@ export function PracticeControls({
               <motion.button
                 key="return"
                 onClick={onClose}
-                className="text-xs text-gold/80 hover:text-gold transition-colors tracking-wide"
+                className="eyebrow hover:underline transition-colors"
+                style={{ color: 'var(--accent-gold)' }}
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 28 } }}
                 exit={{ opacity: 0, y: -6 }}
@@ -225,7 +232,8 @@ export function PracticeControls({
             ) : showRemainingTime ? (
               <motion.p
                 key="remaining"
-                className="text-xs text-white/40 tabular-nums"
+                className="text-xs tabular-nums"
+                style={{ color: 'var(--ink-mute)' }}
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 28 } }}
                 exit={{ opacity: 0, y: -6 }}
@@ -235,7 +243,8 @@ export function PracticeControls({
             ) : state === 'idle' ? (
               <motion.p
                 key="begin-hint"
-                className="text-xs text-white/30 tracking-wide"
+                className="eyebrow"
+                style={{ color: 'var(--ink-mute)' }}
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 28 } }}
                 exit={{ opacity: 0, y: -6 }}
@@ -285,11 +294,20 @@ export function PracticeControls({
       <Dialog open={showStopDialog} onOpenChange={setShowStopDialog}>
         <DialogContent
           showCloseButton={false}
-          className="bg-[#0d0720] border border-white/10 max-w-sm mx-auto"
+          className="daylight max-w-sm mx-auto"
+          style={{ background: 'var(--paper-card)', borderColor: 'var(--line)' }}
         >
           <DialogHeader>
-            <DialogTitle className="text-white/90 text-base">Stop this practice?</DialogTitle>
-            <DialogDescription className="text-white/50 text-sm">
+            <DialogTitle
+              className="display text-base"
+              style={{ color: 'var(--ink)' }}
+            >
+              Stop this practice?
+            </DialogTitle>
+            <DialogDescription
+              className="text-sm"
+              style={{ color: 'var(--ink-mute)' }}
+            >
               Your progress in this session will not be saved.
             </DialogDescription>
           </DialogHeader>
@@ -297,13 +315,19 @@ export function PracticeControls({
             <Button
               variant="ghost"
               onClick={() => setShowStopDialog(false)}
-              className="flex-1 text-white/60 hover:text-white/90 hover:bg-white/5"
+              className="flex-1"
+              style={{ color: 'var(--ink-soft)' }}
             >
               Keep going
             </Button>
             <Button
               onClick={handleConfirmStop}
-              className="flex-1 bg-white/10 hover:bg-white/15 text-white/80 border border-white/10"
+              className="flex-1 border"
+              style={{
+                background: 'var(--ink)',
+                color: 'var(--paper)',
+                borderColor: 'var(--ink)',
+              }}
             >
               Stop
             </Button>

@@ -270,7 +270,7 @@ export function CardByCardInterpretation({
             </p>
             <button
               onClick={onInitiationComplete}
-              className="flex items-center gap-2 px-6 py-2.5 rounded-xl font-medium text-sm bg-gradient-to-r from-gold to-[#b89840] text-surface-deep shadow-lg shadow-gold/20 hover:shadow-xl hover:shadow-gold/30 transition-all duration-300"
+              className="flex items-center gap-2 px-6 py-2.5 rounded-xl font-medium text-sm bg-[var(--ink)] text-[var(--paper)] shadow-lg shadow-gold/20 hover:shadow-xl hover:shadow-gold/30 transition-all duration-300"
             >
               {GUIDED_READING_ENTER_CTA}
             </button>
@@ -291,7 +291,7 @@ export function CardByCardInterpretation({
             )}
             <Link
               href={`/readings/${readingId}`}
-              className="flex items-center gap-2 px-6 py-2.5 rounded-xl font-medium text-sm bg-gradient-to-r from-gold to-[#b89840] text-surface-deep shadow-lg shadow-gold/20 hover:shadow-xl hover:shadow-gold/30 transition-all duration-300"
+              className="flex items-center gap-2 px-6 py-2.5 rounded-xl font-medium text-sm bg-[var(--ink)] text-[var(--paper)] shadow-lg shadow-gold/20 hover:shadow-xl hover:shadow-gold/30 transition-all duration-300"
             >
               <Eye className="w-4 h-4" />
               View Complete Reading
@@ -313,7 +313,13 @@ export function CardByCardInterpretation({
       {/* Sticky Next Card button — always visible at bottom */}
       {isCurrentSectionComplete && !isLastCard && onAdvance && (
         <div className="sticky bottom-0 z-10">
-          <div className="bg-gradient-to-t from-surface-deep via-surface-deep/90 to-transparent pt-6 pb-4">
+          <div
+            className="pt-6 pb-4"
+            style={{
+              background:
+                "linear-gradient(to top, var(--paper), rgba(245, 239, 228, 0.9), transparent)",
+            }}
+          >
             <motion.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
@@ -322,11 +328,13 @@ export function CardByCardInterpretation({
             >
               <button
                 onClick={onAdvance}
-                className="relative flex items-center gap-2 px-6 py-2.5 rounded-xl font-medium text-sm bg-gradient-to-r from-gold to-[#b89840] text-surface-deep shadow-lg shadow-gold/20 hover:shadow-xl hover:shadow-gold/30 transition-all duration-300 overflow-hidden"
+                className="relative flex items-center gap-2 px-6 py-2.5 rounded-xl font-medium text-sm transition-all duration-300 overflow-hidden"
+                style={{ background: "var(--ink)", color: "var(--paper)" }}
               >
                 {autoAdvanceCountdown && (
                   <motion.div
-                    className="absolute inset-0 bg-surface-deep/20 origin-left"
+                    className="absolute inset-0 origin-left"
+                    style={{ background: "rgba(245, 239, 228, 0.2)" }}
                     initial={{ scaleX: 0 }}
                     animate={{ scaleX: 1 }}
                     transition={{ duration: 1.5, ease: "linear" }}

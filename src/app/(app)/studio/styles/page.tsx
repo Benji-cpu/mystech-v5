@@ -1,11 +1,8 @@
-import { Palette } from "lucide-react";
 import { or, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { artStyles } from "@/lib/db/schema";
 import { requireAuth } from "@/lib/auth/helpers";
-import { PageHeader } from "@/components/layout/page-header";
-import { AnimatedPage } from "@/components/ui/animated-page";
-import { AnimatedItem } from "@/components/ui/animated-item";
+import { EditorialShell, EditorialHeader } from "@/components/editorial";
 import { TemplateBrowser } from "./template-browser";
 import type { ArtStyle, StyleCategory } from "@/types";
 
@@ -42,29 +39,17 @@ export default async function StudioStylesPage() {
   const allStyles = rows.map(toArtStyle);
 
   return (
-    <div
-      className="daylight fixed inset-0 overflow-y-auto"
-      style={{ background: "var(--paper)", zIndex: 1 }}
-    >
+    <EditorialShell>
       <div className="mx-auto max-w-5xl space-y-10 px-6 pb-28 pt-10 sm:px-10 sm:pt-14">
-        <header>
-          <p className="eyebrow">Studio</p>
-          <h1
-            className="display mt-3 text-[clamp(2.25rem,8vw,3.25rem)] leading-[0.98]"
-            style={{ color: "var(--ink)" }}
-          >
-            Art Styles
-          </h1>
-          <p
-            className="whisper mt-3 text-base leading-relaxed"
-            style={{ color: "var(--ink-soft)" }}
-          >
-            Browse 45+ curated templates or create a custom style from reference images.
-          </p>
-        </header>
+        <EditorialHeader
+          backHref="/studio"
+          backLabel="Studio"
+          title="Art Styles"
+          whisper="Browse 45+ curated templates or create a custom style from reference images."
+        />
 
         <TemplateBrowser styles={allStyles} currentUserId={user.id!} />
       </div>
-    </div>
+    </EditorialShell>
   );
 }

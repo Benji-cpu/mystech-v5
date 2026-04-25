@@ -41,7 +41,13 @@ export function DeckCard({ deck, resumeHref, isAdopted }: DeckCardProps) {
       className="group block rounded-2xl bg-white/[0.03] backdrop-blur-sm border border-white/[0.06] overflow-hidden transition-all hover:border-gold/30 hover:shadow-lg hover:shadow-gold/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-[0.98]"
     >
       {/* Cover Image — tarot proportions */}
-      <div className="relative aspect-[3/4] overflow-hidden bg-gradient-to-b from-surface-deep to-surface-mid">
+      <div
+        className="relative aspect-[3/4] overflow-hidden"
+        style={{
+          background:
+            "linear-gradient(to bottom, var(--paper-card), var(--paper-warm))",
+        }}
+      >
         {deck.coverImageUrl ? (
           <Image
             src={deck.coverImageUrl}

@@ -86,7 +86,14 @@ export function ChronicleDashboardCard({
                 />
               </motion.div>
             ) : (
-              <div className="w-14 h-20 rounded-lg bg-gradient-to-br from-gold/20 to-surface-mid border border-gold/20 flex items-center justify-center flex-shrink-0">
+              <div
+                className="w-14 h-20 rounded-lg border flex items-center justify-center flex-shrink-0"
+                style={{
+                  background:
+                    "linear-gradient(to bottom right, rgba(168, 134, 63, 0.2), var(--paper-warm))",
+                  borderColor: "rgba(168, 134, 63, 0.3)",
+                }}
+              >
                 <ScrollText className="h-5 w-5 text-gold/40" />
               </div>
             )}

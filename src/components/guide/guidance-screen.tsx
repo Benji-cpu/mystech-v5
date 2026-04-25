@@ -92,27 +92,40 @@ export function GuidanceScreen({
         animate={{ opacity: 1, y: 0 }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
         className={cn(
-          "fixed inset-0 z-50 flex items-center justify-center bg-surface-deep/95 backdrop-blur-md px-6",
+          "fixed inset-0 z-50 flex items-center justify-center bg-[var(--paper)]/95 backdrop-blur-md px-6",
           className
         )}
       >
         <div className="flex flex-col items-center gap-6 max-w-sm w-full text-center">
           <LyraSigil size="md" state="speaking" />
-          <p className="text-sm text-amber-200/90 italic font-serif leading-relaxed">
+          <p
+            className="whisper text-base leading-relaxed"
+            style={{ color: "var(--ink-soft)" }}
+          >
             {guidance.narrationText}
           </p>
           <div className="flex gap-3">
             {guidance.audioUrl && (
               <button
                 onClick={handleListenAgain}
-                className="px-5 py-2 rounded-xl bg-gold/20 border border-gold/30 text-gold text-sm hover:bg-gold/30 transition-colors"
+                className="px-5 py-2 rounded-xl border text-sm transition-colors"
+                style={{
+                  background: "rgba(168, 134, 63, 0.12)",
+                  borderColor: "rgba(168, 134, 63, 0.35)",
+                  color: "var(--accent-gold)",
+                }}
               >
                 Listen again
               </button>
             )}
             <button
               onClick={handleSkip}
-              className="px-5 py-2 rounded-xl bg-white/5 border border-white/10 text-white/50 text-sm hover:bg-white/10 transition-colors"
+              className="px-5 py-2 rounded-xl border text-sm transition-colors"
+              style={{
+                background: "var(--paper-card)",
+                borderColor: "var(--line)",
+                color: "var(--ink-mute)",
+              }}
             >
               Close
             </button>
@@ -129,7 +142,7 @@ export function GuidanceScreen({
       exit={{ opacity: 0 }}
       transition={{ duration: 0.6 }}
       className={cn(
-        "fixed inset-0 z-50 flex flex-col bg-surface-deep/98 backdrop-blur-md",
+        "fixed inset-0 z-50 flex flex-col bg-[var(--paper)]/98 backdrop-blur-md",
         className
       )}
     >
@@ -145,7 +158,8 @@ export function GuidanceScreen({
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ type: "spring", stiffness: 300, damping: 30, delay: 0.2 }}
-            className="text-xs text-gold/70 uppercase tracking-widest mb-6"
+            className="eyebrow mb-6"
+            style={{ color: "var(--accent-gold)" }}
           >
             {guidance.title}
           </motion.h2>
@@ -167,7 +181,7 @@ export function GuidanceScreen({
           disabled={!narrationDone}
           className={cn(
             "w-full max-w-xs py-3 rounded-xl font-medium text-sm transition-all",
-            "bg-gradient-to-r from-gold to-[#b89840] text-surface-deep",
+            "bg-[var(--ink)] text-[var(--paper)]",
             "shadow-lg shadow-gold/20",
             narrationDone
               ? "cursor-pointer hover:shadow-xl hover:shadow-gold/30"

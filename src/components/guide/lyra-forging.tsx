@@ -59,17 +59,17 @@ export function LyraForging({
         className
       )}
     >
-      {/* Outer ambient glow */}
+      {/* Outer ambient warm glow */}
       <motion.div
         className="absolute inset-0 pointer-events-none"
         animate={
           prefersReducedMotion
-            ? { background: "radial-gradient(ellipse 70% 70% at 50% 50%, rgba(201,169,78,0.1) 0%, transparent 70%)" }
+            ? { background: "radial-gradient(ellipse 70% 70% at 50% 50%, rgba(168,134,63,0.12) 0%, transparent 70%)" }
             : {
                 background: [
-                  "radial-gradient(ellipse 60% 60% at 50% 50%, rgba(201,169,78,0.08) 0%, transparent 70%)",
-                  "radial-gradient(ellipse 80% 80% at 50% 50%, rgba(201,169,78,0.15) 0%, transparent 70%)",
-                  "radial-gradient(ellipse 60% 60% at 50% 50%, rgba(201,169,78,0.08) 0%, transparent 70%)",
+                  "radial-gradient(ellipse 60% 60% at 50% 50%, rgba(168,134,63,0.08) 0%, transparent 70%)",
+                  "radial-gradient(ellipse 80% 80% at 50% 50%, rgba(168,134,63,0.18) 0%, transparent 70%)",
+                  "radial-gradient(ellipse 60% 60% at 50% 50%, rgba(168,134,63,0.08) 0%, transparent 70%)",
                 ],
               }
         }
@@ -102,9 +102,9 @@ export function LyraForging({
             />
             <defs>
               <linearGradient id="goldRingForging" x1="0" y1="0" x2="136" y2="136" gradientUnits="userSpaceOnUse">
-                <stop offset="0%" stopColor="var(--gold)" stopOpacity="0.8" />
-                <stop offset="50%" stopColor="#ffd700" stopOpacity="0.3" />
-                <stop offset="100%" stopColor="var(--gold)" stopOpacity="0.8" />
+                <stop offset="0%" stopColor="var(--accent-gold, #A8863F)" stopOpacity="0.85" />
+                <stop offset="50%" stopColor="var(--accent-gold, #A8863F)" stopOpacity="0.35" />
+                <stop offset="100%" stopColor="var(--accent-gold, #A8863F)" stopOpacity="0.85" />
               </linearGradient>
             </defs>
           </svg>
@@ -124,11 +124,13 @@ export function LyraForging({
             return (
               <motion.span
                 key={rune}
-                className="absolute text-[10px] text-gold/40 font-mono select-none"
+                className="absolute text-[10px] font-mono select-none"
                 style={{
                   left: cx,
                   top: cy,
                   transform: "translate(-50%, -50%)",
+                  color: "var(--accent-gold)",
+                  opacity: 0.55,
                 }}
                 animate={prefersReducedMotion ? { opacity: 0.4 } : { opacity: [0.2, 0.5, 0.2] }}
                 transition={prefersReducedMotion ? { duration: 0 } : { duration: 2, repeat: Infinity, delay: i * 0.25 }}
@@ -147,7 +149,7 @@ export function LyraForging({
           return (
             <motion.div
               key={i}
-              className="absolute rounded-full bg-[#ffd700]"
+              className="absolute rounded-full"
               style={{
                 width: p.size,
                 height: p.size,
@@ -155,6 +157,8 @@ export function LyraForging({
                 top: `${y}%`,
                 translateX: "-50%",
                 translateY: "-50%",
+                background: "var(--accent-gold)",
+                boxShadow: "0 0 8px rgba(168, 134, 63, 0.6)",
               }}
               animate={
                 prefersReducedMotion
@@ -183,7 +187,8 @@ export function LyraForging({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.4, ease: "easeInOut" }}
-            className="text-gold/80 text-xs font-medium tracking-[0.15em] uppercase text-center"
+            className="text-xs font-medium tracking-[0.15em] uppercase text-center"
+            style={{ color: "var(--accent-gold)" }}
           >
             {displayText}
           </motion.p>
@@ -191,9 +196,16 @@ export function LyraForging({
       </div>
 
       {/* Shimmer bar */}
-      <div className="relative w-32 h-0.5 bg-white/5 rounded-full overflow-hidden z-10">
+      <div
+        className="relative w-32 h-0.5 rounded-full overflow-hidden z-10"
+        style={{ background: "var(--line)" }}
+      >
         <motion.div
-          className="absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r from-transparent via-gold/60 to-transparent"
+          className="absolute inset-y-0 left-0 w-1/3"
+          style={{
+            background:
+              "linear-gradient(to right, transparent, rgba(168, 134, 63, 0.7), transparent)",
+          }}
           animate={prefersReducedMotion ? { left: "33%" } : { left: ["-33%", "100%"] }}
           transition={prefersReducedMotion ? { duration: 0 } : { duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
         />

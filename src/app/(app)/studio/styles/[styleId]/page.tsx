@@ -5,6 +5,7 @@ import { artStyles } from "@/lib/db/schema";
 import { requireAuth } from "@/lib/auth/helpers";
 import { getUserPlan } from "@/lib/db/queries";
 import { StyleEditor } from "@/components/studio/style-editor";
+import { EditorialShell } from "@/components/editorial";
 import type { ArtStyle, StyleCategory, PlanType } from "@/types";
 
 function toArtStyle(s: typeof artStyles.$inferSelect): ArtStyle {
@@ -52,13 +53,13 @@ export default async function StyleEditorPage({
   const plan: PlanType = await getUserPlan(user.id!);
 
   return (
-    <div className="daylight fixed inset-0 overflow-y-auto" style={{ background: "var(--paper)", zIndex: 1 }}>
+    <EditorialShell>
       <StyleEditor
         style={toArtStyle(style)}
         isOwner={isOwner}
         plan={plan}
         userId={user.id!}
       />
-    </div>
+    </EditorialShell>
   );
 }

@@ -1,10 +1,7 @@
 import Link from "next/link";
 import { Palette, Wand2, ChevronRight } from "lucide-react";
 import { requireAuth } from "@/lib/auth/helpers";
-import { PageHeader } from "@/components/layout/page-header";
-import { AnimatedPage } from "@/components/ui/animated-page";
-import { AnimatedItem } from "@/components/ui/animated-item";
-import { SectionHeader } from "@/components/ui/section-header";
+import { EditorialShell, EditorialHeader } from "@/components/editorial";
 
 interface StudioCardProps {
   href: string;
@@ -26,41 +23,59 @@ function StudioCard({
   return (
     <Link
       href={href}
-      className="group relative overflow-hidden rounded-2xl bg-white/[0.03] backdrop-blur-sm border border-white/[0.06] p-6 flex flex-col gap-4 transition-colors duration-300 hover:border-gold/30 hover:bg-white/[0.08]"
+      className="group relative overflow-hidden rounded-3xl border p-7 flex flex-col gap-4 transition-colors duration-300 hair hover:border-[var(--ink-soft)]"
+      style={{ background: "var(--paper-card)" }}
     >
-      {/* Gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent pointer-events-none" />
-
-      <div className="relative z-10 flex flex-col gap-4 h-full">
-        {/* Icon row */}
+      <div className="flex flex-col gap-4 h-full">
         <div className="flex items-start justify-between gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gold/10 border border-gold/20 shrink-0">
-            <Icon className="h-6 w-6 text-gold" />
+          <div
+            className="flex h-12 w-12 items-center justify-center rounded-xl border shrink-0"
+            style={{
+              background: "var(--paper-warm)",
+              borderColor: "rgba(168, 134, 63, 0.25)",
+              color: "var(--accent-gold)",
+            }}
+          >
+            <Icon className="h-6 w-6" />
           </div>
           {badge && (
-            <span className="text-[10px] font-semibold tracking-widest uppercase px-2 py-0.5 rounded-full bg-gold/10 text-gold border border-gold/20">
+            <span
+              className="eyebrow rounded-full px-2.5 py-1"
+              style={{
+                background: "var(--paper-warm)",
+                color: "var(--accent-gold)",
+              }}
+            >
               {badge}
             </span>
           )}
         </div>
 
-        {/* Text */}
-        <div className="flex flex-col gap-1 flex-1">
-          <h2 className="text-lg font-semibold text-white/90 group-hover:text-white transition-colors">
+        <div className="flex flex-col gap-2 flex-1">
+          <h2
+            className="display text-2xl leading-tight"
+            style={{ color: "var(--ink)" }}
+          >
             {title}
           </h2>
-          <p className="text-sm text-white/50 leading-relaxed">{description}</p>
+          <p className="text-sm leading-relaxed" style={{ color: "var(--ink-mute)" }}>
+            {description}
+          </p>
         </div>
 
-        {/* Note */}
         {note && (
-          <p className="text-xs text-white/30 italic border-t border-white/5 pt-3">
+          <p
+            className="whisper text-xs border-t pt-3 hair"
+            style={{ color: "var(--ink-mute)" }}
+          >
             {note}
           </p>
         )}
 
-        {/* Arrow */}
-        <div className="flex items-center gap-1 text-gold/60 group-hover:text-gold transition-colors mt-auto">
+        <div
+          className="flex items-center gap-1 mt-auto transition-colors"
+          style={{ color: "var(--ink-soft)" }}
+        >
           <span className="text-xs font-medium">Open</span>
           <ChevronRight className="h-3.5 w-3.5 translate-x-0 group-hover:translate-x-0.5 transition-transform" />
         </div>
@@ -73,26 +88,13 @@ export default async function StudioPage() {
   await requireAuth();
 
   return (
-    <div
-      className="daylight fixed inset-0 overflow-y-auto"
-      style={{ background: "var(--paper)", zIndex: 1 }}
-    >
+    <EditorialShell>
       <div className="mx-auto max-w-3xl space-y-10 px-6 pb-28 pt-10 sm:px-10 sm:pt-14">
-        <header>
-          <p className="eyebrow">Creator</p>
-          <h1
-            className="display mt-3 text-[clamp(2.25rem,8vw,3.25rem)] leading-[0.98]"
-            style={{ color: "var(--ink)" }}
-          >
-            Studio
-          </h1>
-          <p
-            className="whisper mt-3 text-base leading-relaxed"
-            style={{ color: "var(--ink-soft)" }}
-          >
-            Your creative workspace.
-          </p>
-        </header>
+        <EditorialHeader
+          eyebrow="Creator"
+          title="Studio"
+          whisper="Your creative workspace."
+        />
 
         <section>
           <p className="eyebrow mb-5">Tools</p>
@@ -114,6 +116,6 @@ export default async function StudioPage() {
           </div>
         </section>
       </div>
-    </div>
+    </EditorialShell>
   );
 }

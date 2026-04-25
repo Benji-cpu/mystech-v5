@@ -834,15 +834,12 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
 
   return (
     <div
-      className={cn(
-        "fixed inset-0 flex flex-col overflow-hidden transition-colors",
-        isInSetup ? "daylight" : "nocturnal"
-      )}
+      className="daylight fixed inset-0 flex flex-col overflow-hidden"
       style={{
         zIndex: 1,
         paddingTop: "1.5rem",
         paddingBottom: "5rem",
-        background: isInSetup ? "var(--paper)" : "var(--night, #0A0614)",
+        background: "var(--paper)",
       }}
     >
       {/* ── ZONE 0: GUIDED LOADING — only visible in guided mode before reading begins ── */}

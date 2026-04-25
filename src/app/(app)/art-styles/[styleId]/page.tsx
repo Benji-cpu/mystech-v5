@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { StyleThumbnail } from "@/components/art-styles/style-thumbnail";
 import { DeleteStyleButton } from "@/components/art-styles/delete-style-button";
 import { ShareStyleButton } from "@/components/art-styles/share-style-button";
+import { EditorialShell } from "@/components/editorial";
 
 export default async function StyleDetailPage({
   params,
@@ -48,10 +49,7 @@ export default async function StyleDetailPage({
   const isPreset = style.isPreset;
 
   return (
-    <div
-      className="daylight fixed inset-0 overflow-y-auto"
-      style={{ background: "var(--paper)", zIndex: 1 }}
-    >
+    <EditorialShell>
       <div className="mx-auto max-w-2xl space-y-8 px-6 pb-28 pt-10 sm:px-10 sm:pt-14">
         <Link
           href="/art-styles"
@@ -81,7 +79,7 @@ export default async function StyleDetailPage({
 
       {/* Preview gallery (gradient placeholders) */}
       <section className="space-y-3">
-        <h2 className="text-sm font-medium text-muted-foreground">Preview</h2>
+        <p className="eyebrow">Preview</p>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {[0, 1, 2].map((i) => (
             <StyleThumbnail
@@ -100,11 +98,17 @@ export default async function StyleDetailPage({
 
       {/* Style prompt */}
       <section className="space-y-2">
-        <h2 className="text-sm font-medium text-muted-foreground">
-          Style Prompt
-        </h2>
-        <div className="rounded-lg border bg-muted/50 p-4">
-          <p className="text-sm italic">{style.stylePrompt}</p>
+        <p className="eyebrow">Style Prompt</p>
+        <div
+          className="rounded-2xl border p-4 hair"
+          style={{ background: "var(--paper-card)" }}
+        >
+          <p
+            className="whisper text-sm"
+            style={{ color: "var(--ink-soft)" }}
+          >
+            {style.stylePrompt}
+          </p>
         </div>
       </section>
 
@@ -131,6 +135,6 @@ export default async function StyleDetailPage({
         )}
       </div>
       </div>
-    </div>
+    </EditorialShell>
   );
 }

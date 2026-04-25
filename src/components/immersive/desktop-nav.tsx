@@ -10,12 +10,7 @@ import { useFeedback } from "@/components/feedback/feedback-provider";
 import { navTabs, BADGE_STORAGE_PREFIX, type NavTab } from "./nav-config";
 import { cn } from "@/lib/utils";
 
-const DAYLIGHT_ROUTES = ["/home", "/decks", "/readings", "/settings", "/paths"];
-const DARK_EXCEPTIONS = ["/readings/new"];
-function isDaylightRoute(pathname: string): boolean {
-  if (DARK_EXCEPTIONS.some((r) => pathname === r || pathname.startsWith(r + "/"))) return false;
-  return DAYLIGHT_ROUTES.some((r) => pathname === r || pathname.startsWith(r + "/"));
-}
+import { isDaylightRoute } from "./is-daylight-route";
 
 export function DesktopNav() {
   const pathname = usePathname();

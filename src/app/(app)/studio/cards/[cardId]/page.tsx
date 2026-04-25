@@ -5,6 +5,7 @@ import { cards, decks, artStyles, cardOverrides } from "@/lib/db/schema";
 import { requireAuth } from "@/lib/auth/helpers";
 import { getUserPlan } from "@/lib/db/queries";
 import { CardRefinement } from "@/components/studio/card-refinement";
+import { EditorialShell } from "@/components/editorial";
 import type { PlanType, StyleCategory } from "@/types";
 
 export default async function CardStudioPage({
@@ -62,7 +63,7 @@ export default async function CardStudioPage({
   const plan: PlanType = await getUserPlan(user.id!);
 
   return (
-    <div className="daylight fixed inset-0 overflow-y-auto" style={{ background: "var(--paper)", zIndex: 1 }}>
+    <EditorialShell>
       <CardRefinement
         card={{
           id: result.card.id,
@@ -88,6 +89,6 @@ export default async function CardStudioPage({
         }
         plan={plan}
       />
-    </div>
+    </EditorialShell>
   );
 }

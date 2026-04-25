@@ -14,6 +14,7 @@ import {
 import { getUserPlan } from "@/lib/db/queries";
 import { PathDetail } from "@/components/paths/path-detail";
 import { Skeleton } from "@/components/ui/skeleton";
+import { EditorialShell } from "@/components/editorial";
 import type { PathStatus, UserPathProgress, UserRetreatProgress, UserWaypointProgress } from "@/types";
 
 async function CircleBreadcrumb({ pathId }: { pathId: string }) {
@@ -175,10 +176,7 @@ export default async function PathDetailPage({ params }: PathDetailPageProps) {
   const { pathId } = await params;
 
   return (
-    <div
-      className="daylight fixed inset-0 overflow-y-auto"
-      style={{ background: "var(--paper)", zIndex: 1 }}
-    >
+    <EditorialShell>
       <div className="mx-auto max-w-3xl space-y-6 px-6 pb-28 pt-10 sm:px-10 sm:pt-14">
         <Suspense fallback={null}>
           <CircleBreadcrumb pathId={pathId} />
@@ -188,6 +186,6 @@ export default async function PathDetailPage({ params }: PathDetailPageProps) {
           <PathDetailContent pathId={pathId} />
         </Suspense>
       </div>
-    </div>
+    </EditorialShell>
   );
 }

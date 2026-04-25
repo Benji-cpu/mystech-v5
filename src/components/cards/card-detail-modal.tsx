@@ -138,7 +138,13 @@ export function CardDetailModal({
               typeConfig.borderClass,
               typeConfig.glowClass,
             )}>
-              <div className="flex flex-col h-full p-5 sm:p-6 overflow-y-auto bg-gradient-to-b from-surface-deep to-surface-mid">
+              <div
+                className="flex flex-col h-full p-5 sm:p-6 overflow-y-auto"
+                style={{
+                  background:
+                    "linear-gradient(to bottom, var(--paper-card), var(--paper-warm))",
+                }}
+              >
                 {isSpecial && (
                   <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1 flex items-center gap-1">
                     <TypeIcon className="h-3 w-3" />
@@ -280,21 +286,46 @@ function CardImage({
             className="object-cover"
           />
         ) : card.imageStatus === "none" ? (
-          <div className="h-full w-full bg-gradient-to-b from-surface-mid via-surface-deep to-surface-mid" />
+          <div
+            className="h-full w-full"
+            style={{
+              background:
+                "linear-gradient(to bottom, var(--paper-card), var(--paper-warm), var(--paper-card))",
+            }}
+          />
         ) : card.imageStatus === "generating" ? (
-          <div className="flex h-full w-full items-center justify-center bg-gradient-to-b from-surface-deep to-surface-mid">
-            <Loader2 className="h-10 w-10 animate-spin text-gold/60" />
+          <div
+            className="flex h-full w-full items-center justify-center"
+            style={{
+              background:
+                "linear-gradient(to bottom, var(--paper-card), var(--paper-warm))",
+            }}
+          >
+            <Loader2
+              className="h-10 w-10 animate-spin"
+              style={{ color: "var(--accent-gold)" }}
+            />
           </div>
         ) : card.imageStatus === "failed" ? (
-          <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-gradient-to-b from-surface-deep to-surface-mid">
-            <AlertCircle className="h-8 w-8 text-red-400/60" />
+          <div
+            className="flex h-full w-full flex-col items-center justify-center gap-3"
+            style={{
+              background:
+                "linear-gradient(to bottom, var(--paper-card), var(--paper-warm))",
+            }}
+          >
+            <AlertCircle className="h-8 w-8" style={{ color: "#b83a2b" }} />
             {onRetryImage && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   onRetryImage(card.id);
                 }}
-                className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-md border border-border/50"
+                className="flex items-center gap-1.5 text-xs transition-colors px-3 py-1.5 rounded-md border"
+                style={{
+                  color: "var(--ink-soft)",
+                  borderColor: "var(--line)",
+                }}
               >
                 <RotateCcw className="h-3.5 w-3.5" />
                 Regenerate Image
@@ -302,7 +333,10 @@ function CardImage({
             )}
           </div>
         ) : (
-          <Skeleton className="h-full w-full rounded-none bg-surface-mid" />
+          <Skeleton
+            className="h-full w-full rounded-none"
+            style={{ background: "var(--paper-warm)" }}
+          />
         )}
       </motion.div>
     </AnimatePresence>
