@@ -10,18 +10,14 @@ import { useFeedback } from "@/components/feedback/feedback-provider";
 import { navTabs, BADGE_STORAGE_PREFIX, type NavTab } from "./nav-config";
 import { cn } from "@/lib/utils";
 
-import { isDaylightRoute } from "./is-daylight-route";
-
 export function BottomNav() {
   const pathname = usePathname();
-  const daylight = isDaylightRoute(pathname);
   const { state } = useImmersive();
   const { stage } = useOnboarding();
   const { open: openFeedback } = useFeedback();
   const [dismissedBadges, setDismissedBadges] = useState<Set<string>>(new Set());
   const prefersReducedMotion = useReducedMotion();
 
-  // Load dismissed badges from localStorage on mount
   useEffect(() => {
     const dismissed = new Set<string>();
     for (const tab of navTabs) {
@@ -32,10 +28,12 @@ export function BottomNav() {
     setDismissedBadges(dismissed);
   }, []);
 
-  // Filter: visible by stage, exclude desktopOnly
-  const visibleTabs = navTabs.filter(
-    (tab) => stage >= tab.minStage && !tab.desktopOnly
-  );
+  const focusMode = state.focusMode;
+
+  // In focus mode, only render the feedback action — keep it reachable but unobtrusive.
+  const visibleTabs = focusMode
+    ? navTabs.filter((tab) => tab.actionId === "feedback")
+    : navTabs.filter((tab) => stage >= tab.minStage && !tab.desktopOnly);
 
   function handleTabClick(tab: NavTab) {
     if (tab.badgeKey && !dismissedBadges.has(tab.badgeKey)) {
@@ -57,16 +55,12 @@ export function BottomNav() {
   return (
     <nav
       className={cn(
-        "fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around border-t lg:hidden",
-        daylight
-          ? "border-[#E0D5BF]"
-          : "bg-card/80 border-white/[0.06]"
+        "fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around border-t border-border bg-card/90 backdrop-blur-md lg:hidden",
+        focusMode && "opacity-60"
       )}
       style={{
         height: 64,
         paddingBottom: "env(safe-area-inset-bottom)",
-        background: daylight ? "rgba(251, 247, 238, 0.95)" : undefined,
-        backdropFilter: daylight ? "blur(12px)" : undefined,
       }}
       aria-label="Main navigation"
     >
@@ -77,32 +71,19 @@ export function BottomNav() {
         const showBadge = tab.badgeKey && !dismissedBadges.has(tab.badgeKey);
         const Icon = tab.icon;
 
-        const accent = daylight ? "#1A1614" : undefined;
-        const muted = daylight ? "#7A6E63" : undefined;
-
         const content = (
           <>
             <div className="relative">
               <Icon className="w-5 h-5" />
               {showBadge && (
-                <span
-                  className={cn(
-                    "absolute -top-1 -right-1.5 h-2 w-2 rounded-full ring-2",
-                    daylight
-                      ? "bg-[#A8863F] ring-[#FBF7EE]"
-                      : "bg-gold ring-surface-deep"
-                  )}
-                />
+                <span className="absolute -top-1 -right-1.5 h-2 w-2 rounded-full bg-primary ring-2 ring-card" />
               )}
             </div>
             <span className="text-[10px] font-medium leading-none">{tab.label}</span>
             {isActive && (
               <motion.span
                 layoutId="nav-indicator"
-                className={cn(
-                  "absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 w-5 rounded-full",
-                  daylight ? "bg-[#1A1614]" : "bg-gold"
-                )}
+                className="absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 w-5 rounded-full bg-foreground"
                 transition={indicatorTransition}
               />
             )}
@@ -111,17 +92,8 @@ export function BottomNav() {
 
         const className = cn(
           "relative flex flex-col items-center justify-center gap-1 min-w-[64px] min-h-[44px] transition-colors",
-          daylight
-            ? isActive
-              ? ""
-              : ""
-            : isActive
-            ? "text-gold"
-            : "text-white/40 hover:text-white/60"
+          isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground"
         );
-        const dynStyle = daylight
-          ? { color: isActive ? accent : muted }
-          : undefined;
 
         if (tab.isAction) {
           return (
@@ -130,7 +102,6 @@ export function BottomNav() {
               type="button"
               onClick={() => handleAction(tab)}
               className={className}
-              style={dynStyle}
               aria-label={tab.label}
             >
               {content}
@@ -144,7 +115,6 @@ export function BottomNav() {
             href={tab.href}
             onClick={() => handleTabClick(tab)}
             className={className}
-            style={dynStyle}
             aria-current={isActive ? "page" : undefined}
           >
             {content}

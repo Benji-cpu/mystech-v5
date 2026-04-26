@@ -8,13 +8,11 @@ import { useImmersive } from "./immersive-provider";
 import { useOnboarding } from "@/components/guide/onboarding-provider";
 import { useFeedback } from "@/components/feedback/feedback-provider";
 import { navTabs, BADGE_STORAGE_PREFIX, type NavTab } from "./nav-config";
+import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { cn } from "@/lib/utils";
-
-import { isDaylightRoute } from "./is-daylight-route";
 
 export function DesktopNav() {
   const pathname = usePathname();
-  const daylight = isDaylightRoute(pathname);
   const { state } = useImmersive();
   const { stage } = useOnboarding();
   const { open: openFeedback } = useFeedback();
@@ -31,9 +29,12 @@ export function DesktopNav() {
     setDismissedBadges(dismissed);
   }, []);
 
-  if (state.focusMode) return null;
+  // In focus mode, render only the feedback shortcut so users can always reach it.
+  const focusMode = state.focusMode;
 
-  const visibleTabs = navTabs.filter((tab) => stage >= tab.minStage);
+  const visibleTabs = focusMode
+    ? navTabs.filter((tab) => tab.actionId === "feedback")
+    : navTabs.filter((tab) => stage >= tab.minStage);
 
   function handleTabClick(tab: NavTab) {
     if (tab.badgeKey && !dismissedBadges.has(tab.badgeKey)) {
@@ -51,14 +52,9 @@ export function DesktopNav() {
   return (
     <motion.nav
       className={cn(
-        "fixed left-0 top-0 bottom-0 z-50 hidden lg:flex flex-col border-r",
-        daylight ? "" : "bg-card/80 border-white/[0.06]"
+        "fixed left-0 top-0 bottom-0 z-50 hidden lg:flex flex-col border-r bg-card/95 border-border backdrop-blur-md",
+        focusMode && "opacity-60 hover:opacity-100 transition-opacity"
       )}
-      style={{
-        background: daylight ? "rgba(251, 247, 238, 0.95)" : undefined,
-        borderRightColor: daylight ? "#E0D5BF" : undefined,
-        backdropFilter: daylight ? "blur(12px)" : undefined,
-      }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       animate={{ width: hovered ? 200 : 64 }}
@@ -66,34 +62,27 @@ export function DesktopNav() {
       aria-label="Main navigation"
     >
       {/* Logo area */}
-      <div
-        className={cn("flex items-center h-16 px-4 border-b overflow-hidden", !daylight && "border-white/[0.06]")}
-        style={{ borderBottomColor: daylight ? "#E0D5BF" : undefined }}
-      >
-        <div className="flex items-center gap-3 min-w-0">
-          <div
-            className="h-8 w-8 shrink-0 rounded-lg flex items-center justify-center"
-            style={{
-              background: daylight ? "rgba(168, 134, 63, 0.15)" : undefined,
-            }}
-          >
-            <span
-              className={cn("text-sm font-display font-bold", !daylight && "text-gold")}
-              style={{ color: daylight ? "#A8863F" : undefined }}
+      {!focusMode && (
+        <div className="flex items-center h-16 px-4 border-b border-border overflow-hidden">
+          <div className="flex items-center gap-3 min-w-0">
+            <div
+              className="h-8 w-8 shrink-0 rounded-lg flex items-center justify-center"
+              style={{ background: "color-mix(in oklab, var(--accent-gold) 15%, transparent)" }}
             >
-              M
-            </span>
+              <span className="text-sm font-display font-bold" style={{ color: "var(--accent-gold)" }}>
+                M
+              </span>
+            </div>
+            <motion.span
+              className="text-sm font-display font-semibold whitespace-nowrap text-foreground"
+              animate={{ opacity: hovered ? 1 : 0 }}
+              transition={{ duration: 0.15 }}
+            >
+              MysTech
+            </motion.span>
           </div>
-          <motion.span
-            className="text-sm font-display font-semibold whitespace-nowrap"
-            style={{ color: daylight ? "#1A1614" : undefined }}
-            animate={{ opacity: hovered ? 1 : 0 }}
-            transition={{ duration: 0.15 }}
-          >
-            MysTech
-          </motion.span>
         </div>
-      </div>
+      )}
 
       {/* Navigation items */}
       <div className="flex-1 flex flex-col gap-1 px-2 py-4">
@@ -106,27 +95,17 @@ export function DesktopNav() {
 
           const itemClassName = cn(
             "relative flex items-center gap-3 rounded-xl px-3 py-2.5 min-h-[44px] transition-colors overflow-hidden",
-            daylight
-              ? isActive
-                ? ""
-                : "hover:bg-[var(--paper-warm)]"
-              : isActive
-              ? "bg-white/[0.08] text-gold"
-              : "text-white/40 hover:text-white/60 hover:bg-white/[0.04]"
+            isActive
+              ? "bg-foreground text-background"
+              : "text-muted-foreground hover:text-foreground hover:bg-muted"
           );
-          const itemStyle = daylight
-            ? {
-                background: isActive ? "var(--ink)" : undefined,
-                color: isActive ? "var(--paper)" : "var(--ink-soft)",
-              }
-            : undefined;
 
           const content = (
             <>
               <div className="relative shrink-0">
                 <Icon className="w-5 h-5" />
                 {showBadge && (
-                  <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-gold ring-2 ring-card" />
+                  <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-primary ring-2 ring-card" />
                 )}
               </div>
               <motion.span
@@ -146,7 +125,6 @@ export function DesktopNav() {
                 type="button"
                 onClick={() => handleAction(tab)}
                 className={itemClassName}
-                style={itemStyle}
                 aria-label={tab.label}
               >
                 {content}
@@ -160,7 +138,6 @@ export function DesktopNav() {
               href={tab.href}
               onClick={() => handleTabClick(tab)}
               className={itemClassName}
-              style={itemStyle}
               aria-current={isActive ? "page" : undefined}
             >
               {content}
@@ -168,6 +145,13 @@ export function DesktopNav() {
           );
         })}
       </div>
+
+      {/* Theme toggle pinned to bottom */}
+      {!focusMode && (
+        <div className="px-2 py-3 border-t border-border flex items-center justify-center">
+          <ThemeToggle />
+        </div>
+      )}
     </motion.nav>
   );
 }

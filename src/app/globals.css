@@ -65,104 +65,14 @@
   --text-3xl: 3.052rem;
 }
 
-/* Light theme */
+/* ─────────────────────────────────────────────────────────────────
+ * Editorial Paper — Light Theme (default)
+ * Warm cream ground, deep ink, scarce gold accent.
+ * ───────────────────────────────────────────────────────────────── */
 :root {
   --radius: 0.625rem;
-  --background: oklch(0.97 0.005 285);
-  --foreground: oklch(0.2 0.02 285);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.2 0.02 285);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.2 0.02 285);
-  --primary: oklch(0.55 0.12 85);
-  --primary-foreground: oklch(0.15 0.02 285);
-  --secondary: oklch(0.93 0.01 285);
-  --secondary-foreground: oklch(0.25 0.02 285);
-  --muted: oklch(0.94 0.008 285);
-  --muted-foreground: oklch(0.5 0.015 285);
-  --accent: oklch(0.93 0.015 285);
-  --accent-foreground: oklch(0.25 0.02 285);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.88 0.01 285);
-  --input: oklch(0.88 0.01 285);
-  --ring: oklch(0.55 0.12 85);
-  --chart-1: oklch(0.55 0.12 85);
-  --chart-2: oklch(0.5 0.15 285);
-  --chart-3: oklch(0.6 0.1 340);
-  --chart-4: oklch(0.65 0.08 200);
-  --chart-5: oklch(0.7 0.12 60);
-  --sidebar: oklch(0.96 0.008 285);
-  --sidebar-foreground: oklch(0.2 0.02 285);
-  --sidebar-primary: oklch(0.55 0.12 85);
-  --sidebar-primary-foreground: oklch(0.15 0.02 285);
-  --sidebar-accent: oklch(0.93 0.015 285);
-  --sidebar-accent-foreground: oklch(0.25 0.02 285);
-  --sidebar-border: oklch(0.88 0.01 285);
-  --sidebar-ring: oklch(0.55 0.12 85);
-  --gold: oklch(0.75 0.12 85);
-  --gold-muted: oklch(0.65 0.08 85);
-  --gold-bright: oklch(0.82 0.14 85);
-  --gold-dim: oklch(0.45 0.06 85);
-  --surface-deep: oklch(0.05 0.005 285);
-  --surface-mid: oklch(0.12 0.008 285);
-}
 
-/* Dark theme (default) — mystical deep purple */
-.dark {
-  --background: oklch(0.07 0.04 295);
-  --foreground: oklch(0.93 0.01 285);
-  --card: oklch(0.18 0.04 285);
-  --card-foreground: oklch(0.93 0.01 285);
-  --popover: oklch(0.18 0.04 285);
-  --popover-foreground: oklch(0.93 0.01 285);
-  --primary: oklch(0.75 0.12 85);
-  --primary-foreground: oklch(0.13 0.03 285);
-  --secondary: oklch(0.22 0.04 285);
-  --secondary-foreground: oklch(0.9 0.01 285);
-  --muted: oklch(0.22 0.04 285);
-  --muted-foreground: oklch(0.65 0.02 285);
-  --accent: oklch(0.25 0.05 285);
-  --accent-foreground: oklch(0.93 0.01 285);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(0.3 0.04 285);
-  --input: oklch(0.25 0.04 285);
-  --ring: oklch(0.75 0.12 85);
-  --chart-1: oklch(0.75 0.12 85);
-  --chart-2: oklch(0.6 0.15 285);
-  --chart-3: oklch(0.7 0.1 340);
-  --chart-4: oklch(0.65 0.08 200);
-  --chart-5: oklch(0.8 0.12 60);
-  --sidebar: oklch(0.15 0.035 285);
-  --sidebar-foreground: oklch(0.93 0.01 285);
-  --sidebar-primary: oklch(0.75 0.12 85);
-  --sidebar-primary-foreground: oklch(0.13 0.03 285);
-  --sidebar-accent: oklch(0.25 0.05 285);
-  --sidebar-accent-foreground: oklch(0.93 0.01 285);
-  --sidebar-border: oklch(0.3 0.04 285);
-  --sidebar-ring: oklch(0.75 0.12 85);
-  --gold: oklch(0.75 0.12 85);
-  --gold-muted: oklch(0.55 0.08 85);
-  --gold-bright: oklch(0.85 0.1 85);
-  --gold-dim: oklch(0.35 0.05 85);
-  --surface-deep: oklch(0.05 0.03 295);
-  --surface-mid: oklch(0.12 0.035 290);
-}
-
-@layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
-}
-
-/* ─────────────────────────────────────────────────────────────────
- * Editorial Daylight — scoped utility system for the UI overhaul
- * Apply `.daylight` to a container to switch its subtree to the
- * editorial paper palette. Does not affect pages outside the scope.
- * ───────────────────────────────────────────────────────────────── */
-.daylight {
+  /* Editorial paper tokens */
   --paper: #F5EFE4;
   --paper-warm: #EFE7D6;
   --paper-card: #FBF7EE;
@@ -173,12 +83,8 @@
   --line: #E0D5BF;
   --line-soft: #EBE1CC;
   --accent-gold: #A8863F;
-  background: var(--paper);
-  color: var(--ink);
 
-  /* Override ShadCN design tokens for components using bg-card / bg-background / etc.
-   * This flips components like GenerationProgress, GlassPanel, Badge variants
-   * to the editorial palette automatically. */
+  /* ShadCN tokens — editorial paper mapping */
   --background: #F5EFE4;
   --foreground: #1A1614;
   --card: #FBF7EE;
@@ -193,20 +99,115 @@
   --muted-foreground: #7A6E63;
   --accent: #EFE7D6;
   --accent-foreground: #1A1614;
+  --destructive: oklch(0.577 0.245 27.325);
   --border: #E0D5BF;
   --input: #E0D5BF;
   --ring: #A8863F;
+  --chart-1: #A8863F;
+  --chart-2: #7A6E63;
+  --chart-3: #B5A898;
+  --chart-4: #3D342E;
+  --chart-5: #EFE7D6;
+  --sidebar: #FBF7EE;
+  --sidebar-foreground: #1A1614;
+  --sidebar-primary: #A8863F;
+  --sidebar-primary-foreground: #1A1614;
+  --sidebar-accent: #EFE7D6;
+  --sidebar-accent-foreground: #1A1614;
+  --sidebar-border: #E0D5BF;
+  --sidebar-ring: #A8863F;
+
+  /* Legacy gold scale (kept for components that read these directly) */
   --gold: #A8863F;
+  --gold-muted: #7A6E63;
+  --gold-bright: #C9A94E;
+  --gold-dim: #5E5447;
+  --surface-deep: #1A1614;
+  --surface-mid: #3D342E;
 }
-.daylight .display {
+
+/* ─────────────────────────────────────────────────────────────────
+ * Editorial Paper — Dark Theme
+ * Warm ink-charcoal ground, cream text, brighter gold for contrast.
+ * ───────────────────────────────────────────────────────────────── */
+.dark {
+  --paper: #15110E;
+  --paper-warm: #1E1814;
+  --paper-card: #221C18;
+  --ink: #F2EAD9;
+  --ink-soft: #D8CDB6;
+  --ink-mute: #9C907E;
+  --ink-faint: #5E5447;
+  --line: #3A322B;
+  --line-soft: #2A2421;
+  --accent-gold: #C9A94E;
+
+  --background: #15110E;
+  --foreground: #F2EAD9;
+  --card: #221C18;
+  --card-foreground: #F2EAD9;
+  --popover: #221C18;
+  --popover-foreground: #F2EAD9;
+  --primary: #C9A94E;
+  --primary-foreground: #15110E;
+  --secondary: #1E1814;
+  --secondary-foreground: #D8CDB6;
+  --muted: #1E1814;
+  --muted-foreground: #9C907E;
+  --accent: #1E1814;
+  --accent-foreground: #F2EAD9;
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: #3A322B;
+  --input: #3A322B;
+  --ring: #C9A94E;
+  --chart-1: #C9A94E;
+  --chart-2: #9C907E;
+  --chart-3: #5E5447;
+  --chart-4: #D8CDB6;
+  --chart-5: #1E1814;
+  --sidebar: #1E1814;
+  --sidebar-foreground: #F2EAD9;
+  --sidebar-primary: #C9A94E;
+  --sidebar-primary-foreground: #15110E;
+  --sidebar-accent: #221C18;
+  --sidebar-accent-foreground: #F2EAD9;
+  --sidebar-border: #3A322B;
+  --sidebar-ring: #C9A94E;
+
+  --gold: #C9A94E;
+  --gold-muted: #A8863F;
+  --gold-bright: #E0C46B;
+  --gold-dim: #7A6135;
+  --surface-deep: #0B0907;
+  --surface-mid: #15110E;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────
+ * Editorial typography utilities — work in both light and dark
+ * `.daylight` is kept as a no-op alias for legacy class lists.
+ * ───────────────────────────────────────────────────────────────── */
+.daylight {
+  background: var(--paper);
+  color: var(--ink);
+}
+.display {
   font-family: var(--font-fraunces), Georgia, serif;
   letter-spacing: -0.02em;
 }
-.daylight .whisper {
+.whisper {
   font-family: var(--font-fraunces), Georgia, serif;
   font-style: italic;
 }
-.daylight .eyebrow {
+.eyebrow {
   font-family: var(--font-inter), system-ui, sans-serif;
   text-transform: uppercase;
   letter-spacing: 0.14em;
@@ -214,66 +215,63 @@
   font-weight: 500;
   color: var(--ink-mute);
 }
-.daylight .hair { border-color: var(--line); }
+.hair { border-color: var(--line); }
 
-/* Force-readable overrides for legacy dark-mode utility classes
- * when they appear inside a .daylight subtree. Targets the most
- * common patterns: text-white/* and bg-white/[0.0x].
- * Scoped narrowly to avoid bleeding into intentionally dark elements.
- */
-.daylight .text-white,
-.daylight .text-white\/95,
-.daylight .text-white\/90,
-.daylight .text-white\/85,
-.daylight .text-white\/80 { color: var(--ink) !important; }
-.daylight .text-white\/75,
-.daylight .text-white\/70,
-.daylight .text-white\/65,
-.daylight .text-white\/60 { color: var(--ink-soft) !important; }
-.daylight .text-white\/55,
-.daylight .text-white\/50,
-.daylight .text-white\/45,
-.daylight .text-white\/40 { color: var(--ink-mute) !important; }
-.daylight .text-white\/35,
-.daylight .text-white\/30,
-.daylight .text-white\/25,
-.daylight .text-white\/20 { color: var(--ink-faint) !important; }
+/* ─────────────────────────────────────────────────────────────────
+ * Legacy white-translucent utility shim (LIGHT mode only).
+ * Older components ship with `bg-white/[0.0x]`, `border-white/[0.0x]`,
+ * `text-white/*` from the original dark-only design. In editorial
+ * light mode these would render invisible (white on cream), so we
+ * remap them to paper/ink equivalents. In dark mode they pass
+ * through as-is — white-on-dark is exactly what you want.
+ * ───────────────────────────────────────────────────────────────── */
+:root:not(.dark) .text-white,
+:root:not(.dark) .text-white\/95,
+:root:not(.dark) .text-white\/90,
+:root:not(.dark) .text-white\/85,
+:root:not(.dark) .text-white\/80 { color: var(--ink) !important; }
+:root:not(.dark) .text-white\/75,
+:root:not(.dark) .text-white\/70,
+:root:not(.dark) .text-white\/65,
+:root:not(.dark) .text-white\/60 { color: var(--ink-soft) !important; }
+:root:not(.dark) .text-white\/55,
+:root:not(.dark) .text-white\/50,
+:root:not(.dark) .text-white\/45,
+:root:not(.dark) .text-white\/40 { color: var(--ink-mute) !important; }
+:root:not(.dark) .text-white\/35,
+:root:not(.dark) .text-white\/30,
+:root:not(.dark) .text-white\/25,
+:root:not(.dark) .text-white\/20 { color: var(--ink-faint) !important; }
 
-/* Surface / glass panel overrides — translate dark glass to paper */
-.daylight .bg-white\/\[0\.03\],
-.daylight .bg-white\/5,
-.daylight .bg-white\/\[0\.05\] {
+:root:not(.dark) .bg-white\/\[0\.03\],
+:root:not(.dark) .bg-white\/5,
+:root:not(.dark) .bg-white\/\[0\.05\] {
   background: var(--paper-card) !important;
 }
-.daylight .bg-white\/\[0\.06\],
-.daylight .bg-white\/\[0\.07\],
-.daylight .bg-white\/\[0\.08\],
-.daylight .bg-white\/8,
-.daylight .bg-white\/10,
-.daylight .bg-white\/15 {
+:root:not(.dark) .bg-white\/\[0\.06\],
+:root:not(.dark) .bg-white\/\[0\.07\],
+:root:not(.dark) .bg-white\/\[0\.08\],
+:root:not(.dark) .bg-white\/8,
+:root:not(.dark) .bg-white\/10,
+:root:not(.dark) .bg-white\/15 {
   background: var(--paper-warm) !important;
 }
-.daylight .border-white\/\[0\.06\],
-.daylight .border-white\/\[0\.08\],
-.daylight .border-white\/5,
-.daylight .border-white\/8,
-.daylight .border-white\/10,
-.daylight .border-white\/15 {
+:root:not(.dark) .border-white\/\[0\.06\],
+:root:not(.dark) .border-white\/\[0\.08\],
+:root:not(.dark) .border-white\/5,
+:root:not(.dark) .border-white\/8,
+:root:not(.dark) .border-white\/10,
+:root:not(.dark) .border-white\/15 {
   border-color: var(--line) !important;
 }
-.daylight .border-white\/20,
-.daylight .border-white\/25,
-.daylight .border-white\/30 {
+:root:not(.dark) .border-white\/20,
+:root:not(.dark) .border-white\/25,
+:root:not(.dark) .border-white\/30 {
   border-color: var(--ink-faint) !important;
 }
-.daylight .bg-white\/8 { background: var(--paper-warm) !important; }
-/* Common arbitrary dividers */
-.daylight .bg-white\/8\.backdrop-blur-sm { background: var(--paper-warm) !important; }
-/* GlassPanel component often applies backdrop-blur with white translucence —
- * on cream the blur reads wrong; flatten it */
-.daylight .backdrop-blur-sm,
-.daylight .backdrop-blur,
-.daylight .backdrop-blur-md {
+:root:not(.dark) .backdrop-blur-sm,
+:root:not(.dark) .backdrop-blur,
+:root:not(.dark) .backdrop-blur-md {
   backdrop-filter: none !important;
 }
 
@@ -378,6 +376,9 @@
 }
 
 .animate-hero-breathe {
+  animation: none;
+}
+.dark .animate-hero-breathe {
   animation: hero-breathe 20s ease-in-out infinite;
 }
 

@@ -7,11 +7,11 @@ type GlassPanelVariant = "solid" | "translucent" | "elevated";
 
 const variantStyles: Record<GlassPanelVariant, string> = {
   /** Nav bars, modal backdrops, structural containers — no blur */
-  solid: "bg-card border border-white/[0.06]",
+  solid: "bg-card border border-border",
   /** Cards over ambient background — light blur */
-  translucent: "bg-white/[0.03] backdrop-blur-sm border border-white/[0.06]",
+  translucent: "bg-card/70 backdrop-blur-sm border border-border",
   /** Primary CTA, most important element — stronger presence */
-  elevated: "bg-white/[0.08] backdrop-blur-sm border border-white/[0.1]",
+  elevated: "bg-popover backdrop-blur-sm border border-border shadow-sm",
 };
 
 interface GlassPanelProps {

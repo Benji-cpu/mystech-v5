@@ -1,21 +1,34 @@
 "use client";
 
-import { Moon, Sun } from "lucide-react";
+import { Moon, Sun, Monitor } from "lucide-react";
 import { useTheme } from "next-themes";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
-export function ThemeToggle() {
+const order = ["light", "dark", "system"] as const;
+type ThemeMode = (typeof order)[number];
+
+export function ThemeToggle({ className }: { className?: string }) {
   const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  const current = (mounted ? (theme as ThemeMode) : "system") ?? "system";
+  const next = order[(order.indexOf(current) + 1) % order.length];
+  const Icon = current === "dark" ? Moon : current === "light" ? Sun : Monitor;
+  const label = `Theme: ${current}. Switch to ${next}.`;
 
   return (
     <Button
       variant="ghost"
       size="icon"
-      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-      aria-label="Toggle theme"
+      onClick={() => setTheme(next)}
+      aria-label={label}
+      title={label}
+      className={cn("text-foreground/70 hover:text-foreground", className)}
     >
-      <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-      <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+      <Icon className="h-5 w-5" />
     </Button>
   );
 }

@@ -7,16 +7,9 @@ interface EditorialShellProps {
   inline?: boolean;
 }
 
-export function EditorialShell({ children, className, inline = false }: EditorialShellProps) {
+export function EditorialShell({ children, className, inline: _inline = false }: EditorialShellProps) {
   return (
-    <div
-      className={cn(
-        "daylight",
-        inline ? "min-h-full" : "fixed inset-0 overflow-y-auto",
-        className
-      )}
-      style={{ background: "var(--paper)", zIndex: inline ? undefined : 1 }}
-    >
+    <div className={cn("min-h-full bg-background text-foreground", className)}>
       {children}
     </div>
   );

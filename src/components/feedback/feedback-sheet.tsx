@@ -57,7 +57,7 @@ export function FeedbackSheet() {
 
   return (
     <Sheet open={phase === "open"} onOpenChange={handleOpenChange}>
-      <SheetContent side="bottom" className="rounded-t-2xl border-t border-white/[0.08] bg-card max-h-[85dvh]">
+      <SheetContent side="bottom" className="rounded-t-2xl border-t border-border bg-card max-h-[85dvh]">
         <SheetHeader className="pb-3">
           <SheetTitle className="text-base">Send Feedback</SheetTitle>
           <SheetDescription className="sr-only">
@@ -71,17 +71,17 @@ export function FeedbackSheet() {
             <button
               type="button"
               onClick={() => setShowScreenshot(!showScreenshot)}
-              className="flex items-center gap-2 text-xs text-white/50 hover:text-white/70 transition-colors"
+              className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
               <Camera className="w-3.5 h-3.5" />
               <span>Screenshot of this page is included</span>
-              <span className="text-white/30">{showScreenshot ? "hide" : "preview"}</span>
+              <span className="text-muted-foreground/60">{showScreenshot ? "hide" : "preview"}</span>
             </button>
           )}
 
           {/* Screenshot thumbnail */}
           {showScreenshot && screenshotDataUrl && (
-            <div className="rounded-lg overflow-hidden border border-white/[0.06] max-h-32">
+            <div className="rounded-lg overflow-hidden border border-border max-h-32">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={screenshotDataUrl}
@@ -95,8 +95,14 @@ export function FeedbackSheet() {
           <Textarea
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            placeholder="Tell us what's on your mind..."
-            className="min-h-[100px] resize-none bg-white/[0.03] border-white/[0.06]"
+            onKeyDown={(e) => {
+              if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+                e.preventDefault();
+                if (message.trim() && !submitting) handleSubmit();
+              }
+            }}
+            placeholder="Tell us what's on your mind... (⌘/Ctrl + Enter to send)"
+            className="min-h-[100px] resize-none bg-muted border-border"
             maxLength={2000}
           />
 

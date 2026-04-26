@@ -36,10 +36,7 @@ export function ImmersiveShell({
         initialStage={initialStage}
       >
         <FeedbackProvider>
-          <div
-            className="daylight relative min-h-dvh"
-            style={{ background: "var(--paper)" }}
-          >
+          <div className="relative min-h-dvh bg-background text-foreground">
             {/* Content: scrollable, z-10 */}
             <div className="relative z-10 min-h-dvh lg:pl-16">
               <PageTransitionWrapper>
