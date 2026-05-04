@@ -286,15 +286,20 @@ function ActionBar({
               <span className="chronicle-count text-xs text-right block">{inputValue.length}/2000</span>
             )}
 
-            {/* Forge CTA — shown after Lyra's wrap-up signal */}
+            {/* Forge CTA — shown after Lyra's wrap-up signal.
+                Sits above the input row as a clear primary action; uses
+                the editorial primary-button style so it reads as part of
+                the same visual system rather than an out-of-place gold
+                gradient floating in the middle. */}
             {canForge && (
               <motion.div
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={CONTENT_SPRING}
+                className="order-first flex flex-col items-center gap-1.5 pt-2 pb-3"
               >
                 {isFirstEntry && (
-                  <p className="chronicle-forge-hint text-xs text-center mb-2">
+                  <p className="chronicle-forge-hint text-xs text-center">
                     Your first card is ready to be forged from today&apos;s conversation
                   </p>
                 )}
@@ -302,14 +307,15 @@ function ActionBar({
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={onForge}
-                  className={cn(
-                    'w-auto px-8 mx-auto block py-3 rounded-xl font-semibold text-sm',
-                    'bg-gradient-to-r from-gold to-gold-bright text-black',
-                    'shadow-lg shadow-gold/20 hover:shadow-xl hover:shadow-gold/30',
-                    'transition-shadow duration-300',
-                  )}
+                  className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-medium transition-all duration-300"
+                  style={{
+                    background: 'var(--ink)',
+                    color: 'var(--paper)',
+                    boxShadow: '0 6px 18px rgba(20, 16, 12, 0.18)',
+                  }}
                 >
-                  Forge Your Card
+                  Forge today&apos;s card
+                  <span aria-hidden className="text-base leading-none">→</span>
                 </motion.button>
               </motion.div>
             )}

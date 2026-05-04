@@ -1,7 +1,9 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
+import { RefreshCw } from "lucide-react";
 import type { Card } from "@/types";
 
 type RevealState = "hidden" | "revealing" | "revealed";
@@ -29,6 +31,20 @@ export function ReadingFlipCard({
 }: ReadingFlipCardProps) {
   const flipped = revealState === "revealing" || revealState === "revealed";
   const isRevealing = revealState === "revealing";
+
+  // Image-load failure surface — previously the placeholder was indistinguishable
+  // from a card whose image was still being generated. Track local error
+  // state and offer a retry that cache-busts the URL.
+  const [imageError, setImageError] = useState(false);
+  const [retryNonce, setRetryNonce] = useState(0);
+  useEffect(() => {
+    setImageError(false);
+  }, [card.imageUrl]);
+  const imageSrc = card.imageUrl
+    ? retryNonce > 0
+      ? `${card.imageUrl}${card.imageUrl.includes("?") ? "&" : "?"}r=${retryNonce}`
+      : card.imageUrl
+    : null;
 
   return (
     <div className="flex flex-col items-center">
@@ -62,13 +78,15 @@ export function ReadingFlipCard({
               borderColor: "var(--line)",
             }}
           >
-            {card.imageUrl ? (
+            {imageSrc && !imageError ? (
               <Image
-                src={card.imageUrl}
+                key={retryNonce}
+                src={imageSrc}
                 alt={card.title}
                 fill
                 sizes={`${Math.round(cardWidth)}px`}
                 className="object-cover"
+                onError={() => setImageError(true)}
               />
             ) : (
               <div
@@ -96,6 +114,22 @@ export function ReadingFlipCard({
                 >
                   {card.title}
                 </span>
+                {imageError && card.imageUrl && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setImageError(false);
+                      setRetryNonce((n) => n + 1);
+                    }}
+                    className="mt-1 inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium transition-opacity hover:opacity-80"
+                    style={{ background: "var(--ink)", color: "var(--paper)" }}
+                    aria-label="Retry loading card image"
+                  >
+                    <RefreshCw className="h-3 w-3" />
+                    Retry image
+                  </button>
+                )}
               </div>
             )}
           </div>

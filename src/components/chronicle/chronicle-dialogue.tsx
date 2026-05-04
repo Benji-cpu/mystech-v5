@@ -137,6 +137,25 @@ export function ChronicleDialogue({
   }, [messages, miniReading]);
 
   if (messages.length === 0 && !showMiniReading) {
+    // Pre-stream wait: show Lyra's sigil so the user knows we're working,
+    // not stuck. Disappears as soon as the first token streams in.
+    if (isStreaming) {
+      return (
+        <div className={cn('flex flex-col gap-3 py-2', className)}>
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+            className="flex items-center gap-3 py-4"
+          >
+            <LyraSigil size="sm" state="speaking" />
+            <span className="text-sm italic" style={{ color: 'var(--ink-mute)' }}>
+              Lyra is finding her words…
+            </span>
+          </motion.div>
+        </div>
+      );
+    }
     return <div className={cn('flex flex-col gap-3 py-2', className)} />;
   }
 
