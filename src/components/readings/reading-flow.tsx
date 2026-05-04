@@ -211,6 +211,14 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
           if (handoff.question) dispatch({ type: "SET_QUESTION", question: handoff.question });
           if (handoff.chronicleCardId) dispatch({ type: "SET_CHRONICLE_CARD", chronicleCardId: handoff.chronicleCardId });
 
+          // Direct handoff: skip the setup zone entirely. The user already
+          // chose deck + intention in the chronicle — making them re-confirm
+          // here was the "two systems working together" friction Benji
+          // flagged. To switch deck they re-enter via the chronicle.
+          if (handoff.deckId && handoff.question) {
+            dispatch({ type: "BEGIN_READING" });
+          }
+
           return; // Skip localStorage defaults
         }
       } catch { /* sessionStorage unavailable */ }
