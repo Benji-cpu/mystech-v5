@@ -564,6 +564,12 @@ export function ChronicleFlow({
         if (cancelled) return;
         console.warn("[Chronicle] AI greeting failed, using fallback:", err?.message ?? err);
 
+        // Clear any partial TTS audio queued from the failed AI stream
+        // before the fallback speak() — otherwise the user hears the
+        // partial AI greeting AND the canned fallback overlapping, with
+        // the on-screen text only showing the fallback.
+        ttsRef.current.stop();
+
         // Fallback: run template-based typewriter
         const greeting = buildChronicleGreeting({
           timeOfDay: getTimeOfDay(),
@@ -1146,6 +1152,24 @@ export function ChronicleFlow({
               >
                 {error}
               </motion.p>
+            )}
+          </AnimatePresence>
+
+          {/* Audio error — non-blocking; lets the user know voice is silent */}
+          <AnimatePresence>
+            {tts.audioError && (
+              <motion.button
+                key={tts.audioError}
+                type="button"
+                onClick={() => tts.clearError()}
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className="text-[11px] text-amber-300/70 hover:text-amber-300 text-center py-1 transition-colors"
+                aria-label="Dismiss audio notice"
+              >
+                Voice playback unavailable — continuing in text. Tap to dismiss.
+              </motion.button>
             )}
           </AnimatePresence>
         </div>
