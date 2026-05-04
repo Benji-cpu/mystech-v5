@@ -1042,6 +1042,17 @@ export function ChronicleFlow({
                     </Link>
                   </motion.div>
                 )}
+                {card.imageStatus === 'generating' && (
+                  <motion.p
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={CONTENT_SPRING}
+                    className="text-[11px] uppercase tracking-[0.18em] text-center"
+                    style={{ color: 'var(--ink-mute)' }}
+                  >
+                    Preparing your card…
+                  </motion.p>
+                )}
                 <motion.button
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -1055,14 +1066,17 @@ export function ChronicleFlow({
                     'shadow-lg shadow-gold/20',
                   )}
                 >
-                  {/* Progress fill */}
-                  <motion.div
-                    key={progressKey}
-                    className="absolute inset-0 bg-white/20 origin-left"
-                    initial={{ scaleX: 0 }}
-                    animate={{ scaleX: 1 }}
-                    transition={{ duration: progressDuration, ease: 'linear' }}
-                  />
+                  {/* Progress fill — only renders once the image is ready
+                      and the auto-transition timer has actually started */}
+                  {card.imageStatus !== 'generating' && (
+                    <motion.div
+                      key={progressKey}
+                      className="absolute inset-0 bg-white/20 origin-left"
+                      initial={{ scaleX: 0 }}
+                      animate={{ scaleX: 1 }}
+                      transition={{ duration: progressDuration, ease: 'linear' }}
+                    />
+                  )}
                   <span className="relative z-10">Continue to Reading</span>
                 </motion.button>
               </>
