@@ -10,7 +10,11 @@ interface SpeechRecognitionWindow {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyRecognition = any;
 
-const MAX_RESTARTS = 3;
+// Effectively unlimited — the browser stops Web Speech every time it
+// detects "silence" (~ a few seconds of quiet) so we keep restarting until
+// the user explicitly taps stop. Capping low caused the recorder to
+// "judge" when the user paused mid-thought and quit on them.
+const MAX_RESTARTS = 1000;
 
 export class WebSpeechProvider implements STTProvider {
   readonly type = "web-speech" as const;

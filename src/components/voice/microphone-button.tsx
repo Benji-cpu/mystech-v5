@@ -2,11 +2,12 @@
 
 import { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Mic, MicOff, Loader2 } from "lucide-react";
+import { Mic, Square, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useSpeechToText } from "@/hooks/use-speech-to-text";
 import { cn } from "@/lib/utils";
 import { WhisperDownloadIndicator } from "./whisper-download-indicator";
+import { MicWaveform } from "./mic-waveform";
 
 interface MicrophoneButtonProps {
   onTranscript: (text: string, isFinal: boolean) => void;
@@ -50,7 +51,24 @@ export function MicrophoneButton({ onTranscript, onListeningChange, className }:
   }
 
   return (
-    <div className="relative">
+    <div className="relative flex items-center gap-2">
+      {/* Live waveform — only rendered while actively listening so we don't
+          claim a mic stream we don't need. */}
+      <AnimatePresence initial={false}>
+        {isListening && (
+          <motion.div
+            key="waveform"
+            initial={{ opacity: 0, width: 0 }}
+            animate={{ opacity: 1, width: "auto" }}
+            exit={{ opacity: 0, width: 0 }}
+            transition={{ type: "spring", stiffness: 400, damping: 32 }}
+            className="overflow-hidden"
+          >
+            <MicWaveform active className="h-6 w-20" />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <button
         type="button"
         onClick={handleClick}
@@ -58,7 +76,7 @@ export function MicrophoneButton({ onTranscript, onListeningChange, className }:
         className={cn(
           "relative flex h-[44px] w-[44px] items-center justify-center rounded-lg transition-colors",
           "text-muted-foreground hover:text-foreground hover:bg-white/10",
-          isListening && "text-red-400",
+          isListening && "text-red-400 bg-red-400/10 hover:bg-red-400/15",
           isProcessing && "text-amber-400",
           isLoadingModel && "text-purple-400",
           error && !isListening && "text-red-400/60",
@@ -92,10 +110,9 @@ export function MicrophoneButton({ onTranscript, onListeningChange, className }:
                 <span className="absolute inset-0 rounded-lg border-2 border-amber-400 animate-pulse" />
               </>
             ) : isListening ? (
-              <>
-                <Mic className="h-4 w-4" />
-                <span className="absolute inset-0 rounded-lg border-2 border-red-400 animate-pulse" />
-              </>
+              // Square = clear "tap to stop" affordance; the waveform to the
+              // left already conveys the active recording state.
+              <Square className="h-3.5 w-3.5 fill-current" />
             ) : (
               <Mic className="h-4 w-4" />
             )}
