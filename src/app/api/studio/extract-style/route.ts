@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { generateObject } from "ai";
+import { del } from "@vercel/blob";
 import { geminiProModel } from "@/lib/ai/gemini";
 import { getCurrentUser } from "@/lib/auth/helpers";
 import { STYLE_EXTRACTION_SYSTEM_PROMPT } from "@/lib/ai/prompts/style-extraction";
@@ -13,6 +14,17 @@ const extractStyleBodySchema = z.object({
     .min(1, "At least one image URL is required")
     .max(3, "Maximum 3 reference images allowed"),
 });
+
+function ownsBlobUrl(url: string, userId: string): boolean {
+  try {
+    const u = new URL(url);
+    if (!u.hostname.endsWith("blob.vercel-storage.com")) return false;
+    const path = u.pathname.replace(/^\/+/, "");
+    return path.startsWith(`studio/reference-images/${userId}/`);
+  } catch {
+    return false;
+  }
+}
 
 export async function POST(request: Request) {
   const user = await getCurrentUser();
@@ -43,8 +55,14 @@ export async function POST(request: Request) {
 
   const { imageUrls } = parsed.data;
 
+  if (!imageUrls.every((u) => ownsBlobUrl(u, user.id))) {
+    return NextResponse.json<ApiResponse<never>>(
+      { success: false, error: "Invalid image URLs" },
+      { status: 400 }
+    );
+  }
+
   try {
-    // Build image content parts for Gemini Vision
     const imageParts = imageUrls.map((url) => ({
       type: "image" as const,
       image: new URL(url),
@@ -68,7 +86,6 @@ export async function POST(request: Request) {
       ],
     });
 
-    // Map the detailed extraction to the simplified StyleExtraction type
     const extraction: StyleExtraction = {
       palette: {
         primary: object.colorPalette.primary[0]?.hex ?? "#000000",
@@ -92,6 +109,16 @@ export async function POST(request: Request) {
     return NextResponse.json<ApiResponse<never>>(
       { success: false, error: "Failed to extract style from images" },
       { status: 500 }
+    );
+  } finally {
+    await Promise.allSettled(
+      imageUrls.map(async (url) => {
+        try {
+          await del(url);
+        } catch (err) {
+          console.error("[extract-style] del failed", url, err);
+        }
+      }),
     );
   }
 }

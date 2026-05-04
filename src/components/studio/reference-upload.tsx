@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, X, Wand2, Loader2, ImagePlus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { compressImage } from '@/lib/images/compress-image';
 import type { StyleExtraction } from '@/types';
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -15,15 +16,11 @@ interface ReferenceUploadProps {
   className?: string;
 }
 
-// ── Helpers ────────────────────────────────────────────────────────────────
-
-function fileToDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
+interface UploadedImage {
+  id: string;
+  previewUrl: string;
+  url: string | null;
+  uploading: boolean;
 }
 
 // ── Sub-components ─────────────────────────────────────────────────────────
@@ -81,26 +78,61 @@ const resultVariants = {
   exit: { opacity: 0, y: -8, transition: { duration: 0.2 } },
 };
 
+function deleteBlobUrls(urls: string[]) {
+  if (urls.length === 0) return;
+  // Fire-and-forget. keepalive lets it survive page navigation.
+  try {
+    fetch('/api/studio/reference-upload', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ urls }),
+      keepalive: true,
+    }).catch(() => {});
+  } catch {
+    // ignore
+  }
+}
+
 export function ReferenceUpload({
   onStyleExtracted,
   maxImages = 3,
   className,
 }: ReferenceUploadProps) {
-  const [images, setImages] = useState<string[]>([]);
+  const [images, setImages] = useState<UploadedImage[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [isExtracting, setIsExtracting] = useState(false);
   const [extraction, setExtraction] = useState<StyleExtraction | null>(null);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Keep a ref of the current image list so unmount cleanup can read latest state
+  const imagesRef = useRef(images);
+  useEffect(() => {
+    imagesRef.current = images;
+  }, [images]);
+
+  // Cleanup on unmount: revoke object URLs and best-effort delete any uploaded blobs
+  useEffect(() => {
+    return () => {
+      const current = imagesRef.current;
+      const urls: string[] = [];
+      for (const img of current) {
+        URL.revokeObjectURL(img.previewUrl);
+        if (img.url) urls.push(img.url);
+      }
+      deleteBlobUrls(urls);
+    };
+  }, []);
+
   const canAddMore = images.length < maxImages;
 
   const addFiles = useCallback(
     async (files: FileList | File[]) => {
-      if (!canAddMore) return;
+      const remaining = maxImages - imagesRef.current.length;
+      if (remaining <= 0) return;
       setError(null);
 
-      const fileArray = Array.from(files).slice(0, maxImages - images.length);
+      const fileArray = Array.from(files).slice(0, remaining);
       const validFiles = fileArray.filter((f) => f.type.startsWith('image/'));
 
       if (validFiles.length === 0) {
@@ -108,23 +140,73 @@ export function ReferenceUpload({
         return;
       }
 
-      try {
-        const dataUrls = await Promise.all(validFiles.map(fileToDataUrl));
-        setImages((prev) => [...prev, ...dataUrls].slice(0, maxImages));
-        // Clear any prior extraction when new images are added
-        setExtraction(null);
-      } catch {
-        setError('Failed to read image files.');
-      }
+      // Clear any prior extraction when new images are added
+      setExtraction(null);
+
+      await Promise.all(
+        validFiles.map(async (file) => {
+          const id =
+            typeof crypto !== 'undefined' && 'randomUUID' in crypto
+              ? crypto.randomUUID()
+              : `${Date.now()}-${Math.random()}`;
+
+          let previewUrl = '';
+          try {
+            const compressed = await compressImage(file);
+            previewUrl = URL.createObjectURL(compressed);
+
+            // Optimistic placeholder so user sees the thumbnail immediately
+            setImages((prev) =>
+              prev.length >= maxImages
+                ? prev
+                : [...prev, { id, previewUrl, url: null, uploading: true }],
+            );
+
+            const form = new FormData();
+            form.append('file', compressed, file.name.replace(/\.[^.]+$/, '.jpg'));
+
+            const res = await fetch('/api/studio/reference-upload', {
+              method: 'POST',
+              body: form,
+            });
+
+            if (!res.ok) {
+              const data = await res.json().catch(() => ({}));
+              throw new Error(data.error ?? `Upload failed (${res.status})`);
+            }
+
+            const data = await res.json();
+            const url: string | undefined = data.data?.url ?? data.url;
+            if (!url) throw new Error('Upload succeeded but no URL returned');
+
+            setImages((prev) =>
+              prev.map((img) =>
+                img.id === id ? { ...img, url, uploading: false } : img,
+              ),
+            );
+          } catch (err) {
+            URL.revokeObjectURL(previewUrl);
+            setImages((prev) => prev.filter((img) => img.id !== id));
+            setError(err instanceof Error ? err.message : 'Upload failed.');
+          }
+        }),
+      );
     },
-    [canAddMore, images.length, maxImages],
+    [maxImages],
   );
 
-  function removeImage(index: number) {
-    setImages((prev) => prev.filter((_, i) => i !== index));
+  const removeImage = useCallback((id: string) => {
+    setImages((prev) => {
+      const target = prev.find((img) => img.id === id);
+      if (target) {
+        URL.revokeObjectURL(target.previewUrl);
+        if (target.url) deleteBlobUrls([target.url]);
+      }
+      return prev.filter((img) => img.id !== id);
+    });
     setExtraction(null);
     setError(null);
-  }
+  }, []);
 
   // Drag-and-drop handlers
   function handleDragOver(e: React.DragEvent) {
@@ -147,13 +229,18 @@ export function ReferenceUpload({
   function handleFileInput(e: React.ChangeEvent<HTMLInputElement>) {
     if (e.target.files?.length) {
       addFiles(e.target.files);
-      // Reset so the same file can be re-selected
       e.target.value = '';
     }
   }
 
+  const uploadedUrls = images
+    .filter((img) => !img.uploading && img.url)
+    .map((img) => img.url as string);
+  const anyUploading = images.some((img) => img.uploading);
+  const canExtract = uploadedUrls.length > 0 && !anyUploading;
+
   async function handleExtract() {
-    if (images.length === 0) return;
+    if (uploadedUrls.length === 0) return;
     setIsExtracting(true);
     setError(null);
 
@@ -161,7 +248,7 @@ export function ReferenceUpload({
       const res = await fetch('/api/studio/extract-style', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ images }),
+        body: JSON.stringify({ imageUrls: uploadedUrls }),
       });
 
       if (!res.ok) {
@@ -172,6 +259,12 @@ export function ReferenceUpload({
       const data = await res.json();
       const result: StyleExtraction = data.data ?? data;
       setExtraction(result);
+
+      // Server has deleted the blobs — drop them from state and revoke previews
+      setImages((prev) => {
+        prev.forEach((img) => URL.revokeObjectURL(img.previewUrl));
+        return [];
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Extraction failed.');
     } finally {
@@ -263,9 +356,9 @@ export function ReferenceUpload({
             exit={{ opacity: 0, height: 0 }}
             className="flex flex-wrap gap-3"
           >
-            {images.map((src, i) => (
+            {images.map((img, i) => (
               <motion.div
-                key={src.slice(0, 40) + i}
+                key={img.id}
                 variants={itemVariants}
                 initial="initial"
                 animate="animate"
@@ -275,15 +368,20 @@ export function ReferenceUpload({
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={src}
+                  src={img.previewUrl}
                   alt={`Reference ${i + 1}`}
                   className="w-20 h-20 rounded-xl object-cover border border-white/10"
                 />
+                {img.uploading && (
+                  <div className="absolute inset-0 rounded-xl bg-black/50 flex items-center justify-center">
+                    <Loader2 className="size-5 animate-spin text-primary" />
+                  </div>
+                )}
                 <button
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
-                    removeImage(i);
+                    removeImage(img.id);
                   }}
                   className={cn(
                     'absolute -top-1.5 -right-1.5',
@@ -292,7 +390,7 @@ export function ReferenceUpload({
                     'flex items-center justify-center',
                     'opacity-0 group-hover:opacity-100 transition-opacity',
                     'hover:bg-destructive/80 hover:border-destructive/60',
-                    'min-w-[20px] min-h-[20px]', // touch target via group
+                    'min-w-[20px] min-h-[20px]',
                   )}
                   aria-label={`Remove image ${i + 1}`}
                 >
@@ -324,7 +422,7 @@ export function ReferenceUpload({
         <Button
           type="button"
           onClick={handleExtract}
-          disabled={isExtracting}
+          disabled={isExtracting || !canExtract}
           className={cn(
             'w-full h-11',
             'bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20',
@@ -335,6 +433,11 @@ export function ReferenceUpload({
             <>
               <Loader2 className="size-4 animate-spin" />
               Analysing style…
+            </>
+          ) : anyUploading ? (
+            <>
+              <Loader2 className="size-4 animate-spin" />
+              Uploading…
             </>
           ) : (
             <>
