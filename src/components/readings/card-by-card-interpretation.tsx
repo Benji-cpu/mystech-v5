@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { RefreshCw, AlertCircle, Sparkles, ChevronRight, Eye, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -93,13 +92,8 @@ export function CardByCardInterpretation({
   onInitiationComplete,
   autoAdvanceCountdown,
 }: CardByCardInterpretationProps) {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const bottomRef = useRef<HTMLDivElement>(null);
-
-  // Auto-scroll to latest content
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [presentingCardIndex, object, isCurrentSectionComplete]);
+  // No scroll ref needed: the parent container provides scroll, and showing
+  // one section at a time keeps the text panel stable while streaming.
 
   // ── Error state ────────────────────────────────────────────────────
 
@@ -133,7 +127,7 @@ export function CardByCardInterpretation({
         <div className="flex items-center gap-2 mb-3">
           <LyraSigil size="sm" state="speaking" />
           <h2 className="text-sm font-semibold text-white/90">
-            Lyra is reading the cards...
+            Lyra is reading the cards…
           </h2>
         </div>
         <div className="h-4 w-3/4 bg-white/10 rounded animate-pulse" />
@@ -144,111 +138,87 @@ export function CardByCardInterpretation({
   if (!object?.cardSections?.length) return null;
 
   const sections = object.cardSections;
+  const totalCards = drawnCards.length;
+  const isMultiCard = totalCards > 1;
+
+  // The current section is the only one rendered. Anything past
+  // `presentingCardIndex` is hidden until the user advances.
+  const currentSection = sections[presentingCardIndex];
+  const currentDrawnCard = drawnCards[presentingCardIndex];
+  const showCursor = isStreaming && !isCurrentSectionComplete;
 
   return (
-    <div ref={scrollRef}>
-      {/* Header */}
-      <div className="flex items-center gap-2 text-gold mb-4">
-        <Sparkles className="w-4 h-4" />
-        <span className="text-xs font-medium tracking-wider uppercase">
-          Your Reading
-        </span>
-      </div>
-
-      {/* Progress indicator — hidden for single-card readings */}
-      {drawnCards.length > 1 && (
-        <div className="flex items-center gap-2 mb-4">
-          {drawnCards.length <= 6 ? (
-            <div className="flex items-center gap-1.5">
-              {drawnCards.map((_, idx) => (
-                <motion.div
-                  key={idx}
-                  animate={{
-                    width: idx === presentingCardIndex ? 16 : 6,
-                    opacity: idx < presentingCardIndex ? 0.5 : idx === presentingCardIndex ? 1 : 0.2,
-                  }}
-                  transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                  className="h-1.5 rounded-full bg-gold"
-                />
-              ))}
-            </div>
-          ) : (
-            <span className="text-xs text-gold/70 font-medium">
-              Card {presentingCardIndex + 1} of {drawnCards.length}
-            </span>
-          )}
-          <span className="text-xs text-white/30">
-            · {drawnCards[presentingCardIndex]?.positionName}
+    <div>
+      {/* ── Sticky position header ─────────────────────────────────── */}
+      <div
+        className="sticky top-0 z-20 -mx-4 -mt-4 px-4 pt-4 pb-3 sm:-mx-6 sm:-mt-6 sm:px-6 sm:pt-6"
+        style={{ background: "linear-gradient(to bottom, var(--paper) 75%, rgba(245, 239, 228, 0.85) 95%, transparent)" }}
+      >
+        <div className="flex items-center gap-2 text-gold mb-2">
+          <Sparkles className="w-3.5 h-3.5" />
+          <span className="text-[11px] font-medium tracking-wider uppercase">
+            {isMultiCard
+              ? `Card ${presentingCardIndex + 1} of ${totalCards}`
+              : "Your Reading"}
           </span>
         </div>
-      )}
 
-      {/* Card sections — show 0 through presentingCardIndex */}
-      <div className="space-y-6">
-        <AnimatePresence mode="popLayout">
-          {sections.slice(0, presentingCardIndex + 1).map((section, idx) => {
-            const drawnCard = drawnCards[idx];
-            const isCurrentCard = idx === presentingCardIndex;
-
-            if (!section?.text) {
-              return (
-                <motion.div
-                  key={`section-${idx}`}
-                  initial={{ opacity: 0, y: 16 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                >
-                  <p className="text-gold text-xs font-medium tracking-wider uppercase mb-1">
-                    {section?.positionName || drawnCard?.positionName || `Position ${idx + 1}`}
-                  </p>
-                  {drawnCard && (
-                    <p className="font-display text-white/80 text-sm font-semibold mb-2">
-                      {drawnCard.card.title}
-                    </p>
-                  )}
-                  {isCurrentCard && isStreaming ? (
-                    <div className="flex items-center gap-2">
-                      <span className="inline-block w-1.5 h-4 bg-gold/70 animate-pulse" />
-                      <span className="text-sm text-white/40 italic">Lyra is reading...</span>
-                    </div>
-                  ) : (
-                    <p className="text-sm text-white/40 italic">
-                      The cards whisper softly here... Lyra&apos;s interpretation was interrupted.
-                    </p>
-                  )}
-                </motion.div>
-              );
-            }
-
-            const showCursor = isCurrentCard && isStreaming && !isCurrentSectionComplete;
-
-            return (
+        {/* Position dots — animate to current card; serve as a visual cursor */}
+        {isMultiCard && totalCards <= 6 && (
+          <div className="flex items-center gap-1.5 mb-2">
+            {drawnCards.map((_, idx) => (
               <motion.div
-                key={`section-${idx}`}
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
+                key={idx}
+                animate={{
+                  width: idx === presentingCardIndex ? 18 : 6,
+                  opacity: idx === presentingCardIndex ? 1 : idx < presentingCardIndex ? 0.55 : 0.2,
+                }}
                 transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              >
-                {/* Position name header */}
-                <p className="text-gold text-xs font-medium tracking-wider uppercase mb-1">
-                  {section.positionName || drawnCard?.positionName || `Position ${idx + 1}`}
-                </p>
-                {/* Card title */}
-                {drawnCard && (
-                  <p className="font-display text-white/80 text-sm font-semibold mb-2">
-                    {drawnCard.card.title}
-                  </p>
+                className="h-1.5 rounded-full bg-gold"
+              />
+            ))}
+          </div>
+        )}
+
+        <p className="text-gold text-xs font-medium tracking-wider uppercase">
+          {currentSection?.positionName || currentDrawnCard?.positionName || `Position ${presentingCardIndex + 1}`}
+        </p>
+        {currentDrawnCard && (
+          <p className="font-display text-white/85 text-base font-semibold leading-tight mt-0.5">
+            {currentDrawnCard.card.title}
+          </p>
+        )}
+      </div>
+
+      {/* ── Section body — only the active card's text ─────────────── */}
+      <div className="pb-4">
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={`section-${presentingCardIndex}`}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            className="pt-2"
+          >
+            {currentSection?.text ? (
+              <div className="text-sm leading-relaxed text-white/75">
+                {renderBoldMarkdown(currentSection.text)}
+                {showCursor && (
+                  <span className="inline-block w-1.5 h-4 bg-gold/70 animate-pulse ml-0.5 align-text-bottom" />
                 )}
-                {/* Interpretation text */}
-                <div className="text-sm leading-relaxed text-white/70">
-                  {renderBoldMarkdown(section.text)}
-                  {showCursor && (
-                    <span className="inline-block w-1.5 h-4 bg-gold/70 animate-pulse ml-0.5 align-text-bottom" />
-                  )}
-                </div>
-              </motion.div>
-            );
-          })}
+              </div>
+            ) : showCursor ? (
+              <div className="flex items-center gap-2">
+                <span className="inline-block w-1.5 h-4 bg-gold/70 animate-pulse" />
+                <span className="text-sm text-white/40 italic">Lyra is reading…</span>
+              </div>
+            ) : (
+              <p className="text-sm text-white/40 italic">
+                The cards whisper softly here… Lyra&apos;s interpretation was interrupted.
+              </p>
+            )}
+          </motion.div>
         </AnimatePresence>
 
         {/* Spacer so scroll anchor sits above the sticky button */}
@@ -306,9 +276,6 @@ export function CardByCardInterpretation({
           </motion.div>
         )}
       </div>
-
-      {/* Scroll anchor */}
-      <div ref={bottomRef} />
 
       {/* Sticky Next Card button — always visible at bottom */}
       {isCurrentSectionComplete && !isLastCard && onAdvance && (
