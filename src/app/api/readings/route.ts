@@ -8,6 +8,7 @@ import {
   getDeckByIdForUser,
   getUserPlan,
   getUserTotalReadingCount,
+  getCardImageState,
 } from "@/lib/db/queries";
 import { getPathPosition, recordPathReading, canAdvanceWaypoint, getRetreatObstacleCards } from "@/lib/db/queries-paths";
 import { PLAN_LIMITS, SPREAD_POSITIONS } from "@/lib/constants";
@@ -45,6 +46,25 @@ export async function GET() {
   return NextResponse.json<ApiResponse<typeof rows>>(
     { success: true, data: rows }
   );
+}
+
+/**
+ * Poll a card's image-progress fields until the background image task
+ * either completes, fails, or we hit the cap. Returns the most recent state.
+ *
+ * Cap: 20 attempts × 500ms = 10s. Bounds the worst-case latency added to
+ * the readings POST when a chronicle card is still mid-generation.
+ */
+async function waitForCompletedImage(cardId: string) {
+  const MAX_ATTEMPTS = 20;
+  const DELAY_MS = 500;
+  let state = await getCardImageState(cardId);
+  for (let i = 0; i < MAX_ATTEMPTS; i++) {
+    if (!state || state.imageStatus !== "generating") return state;
+    await new Promise((r) => setTimeout(r, DELAY_MS));
+    state = await getCardImageState(cardId);
+  }
+  return state;
 }
 
 export async function POST(request: NextRequest) {
@@ -266,6 +286,11 @@ export async function POST(request: NextRequest) {
   let chroniclePosition: number | null = null;
 
   if (chronicleCardId) {
+    // Wait briefly if the background image task is still in flight so we
+    // snapshot the completed image into the reading rather than the empty
+    // "generating" placeholder.
+    await waitForCompletedImage(chronicleCardId);
+
     // Validate the card exists and belongs to the user (via its deck)
     const [chronicleRow] = await db
       .select({
@@ -276,6 +301,7 @@ export async function POST(request: NextRequest) {
         meaning: cardsTable.meaning,
         guidance: cardsTable.guidance,
         imageUrl: cardsTable.imageUrl,
+        imageBlurData: cardsTable.imageBlurData,
         imagePrompt: cardsTable.imagePrompt,
         imageStatus: cardsTable.imageStatus,
         createdAt: cardsTable.createdAt,
