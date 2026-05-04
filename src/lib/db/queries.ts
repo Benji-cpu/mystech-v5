@@ -42,6 +42,27 @@ export async function getCardsForDeck(deckId: string) {
     .orderBy(asc(cards.cardNumber));
 }
 
+/**
+ * Read just the image-progress fields for a single card.
+ * Used by the readings API to wait for a chronicle card image to land
+ * before snapshotting it into the reading.
+ */
+export async function getCardImageState(cardId: string): Promise<{
+  imageStatus: string;
+  imageUrl: string | null;
+  imageBlurData: string | null;
+} | null> {
+  const [row] = await db
+    .select({
+      imageStatus: cards.imageStatus,
+      imageUrl: cards.imageUrl,
+      imageBlurData: cards.imageBlurData,
+    })
+    .from(cards)
+    .where(eq(cards.id, cardId));
+  return row ?? null;
+}
+
 export async function getArtStyleById(artStyleId: string) {
   const [style] = await db
     .select()
