@@ -876,16 +876,31 @@ export function ChronicleFlow({
     }
   }, [journeyPosition, card, deckId, router]);
 
-  // 7-second pausable auto-timer during card_reveal
+  // 7-second pausable auto-timer during card_reveal — but only once the
+  // image has finished generating. While the background image task is
+  // still in flight, hold the timer so the readings API has a completed
+  // card image to snapshot into the reading.
   useEffect(() => {
     if (phase !== 'card_reveal') return;
+    if (card?.imageStatus === 'generating') return; // re-runs when status flips
     remainingMsRef.current = 7000;
     setProgressDuration(7);
     setProgressKey((k) => k + 1);
     timerStartedAtRef.current = Date.now();
     revealTimerRef.current = setTimeout(transitionToReading, 7000);
     return () => { if (revealTimerRef.current) clearTimeout(revealTimerRef.current); };
-  }, [phase, transitionToReading]);
+  }, [phase, transitionToReading, card?.imageStatus]);
+
+  // Backstop: if we've been in card_reveal waiting on the image for more
+  // than 25s (e.g. Stability outage, retry exhaustion), force the
+  // transition anyway. Reading falls back to the placeholder UI; degraded
+  // is better than stuck.
+  useEffect(() => {
+    if (phase !== 'card_reveal') return;
+    if (card?.imageStatus !== 'generating') return;
+    const id = setTimeout(transitionToReading, 25000);
+    return () => clearTimeout(id);
+  }, [phase, card?.imageStatus, transitionToReading]);
 
   // Pause/resume timer when card detail modal opens/closes
   useEffect(() => {
