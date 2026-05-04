@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { feedback } from "@/lib/db/schema";
-import { getCurrentUser } from "@/lib/auth/helpers";
+import { getCurrentUser, isAdmin } from "@/lib/auth/helpers";
 import { put } from "@vercel/blob";
 import { createId } from "@paralleldrive/cuid2";
 import { eq, and, gte, sql } from "drizzle-orm";
@@ -34,14 +34,14 @@ export async function POST(request: NextRequest) {
 
   const { message, pageUrl, screenshotDataUrl, email, viewportWidth, viewportHeight } = parsed.data;
 
-  // Rate limit: max 5 per hour per user (or per IP for anonymous)
-  if (user?.id) {
+  // Light abuse guard: 50/hour for signed-in users. Admins bypass entirely.
+  if (user?.id && !isAdmin(user)) {
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
     const [countResult] = await db
       .select({ count: sql<number>`count(*)` })
       .from(feedback)
       .where(and(eq(feedback.userId, user.id), gte(feedback.createdAt, oneHourAgo)));
-    if (Number(countResult.count) >= 5) {
+    if (Number(countResult.count) >= 50) {
       return NextResponse.json({ error: "Too many submissions. Try again later." }, { status: 429 });
     }
   }
