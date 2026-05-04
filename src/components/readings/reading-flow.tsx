@@ -1137,6 +1137,27 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
                 </p>
               </motion.div>
             </AnimatePresence>
+            {/* Chronicle handoff escape hatch — surfaced during creating/
+                drawing only, since the auto-handoff bypasses the setup
+                zone. Lets the user back out and pick a different deck
+                without re-entering through the chronicle. */}
+            {chronicleCardId && (phase === "creating" || phase === "drawing") && (
+              <motion.button
+                type="button"
+                onClick={() => {
+                  if (typeof window !== "undefined") {
+                    sessionStorage.removeItem("mystech_reading_handoff");
+                    window.location.assign("/readings/new");
+                  }
+                }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.4 }}
+                className="mt-1 text-[11px] text-white/40 hover:text-white/70 transition-colors underline-offset-2 hover:underline"
+              >
+                From your chronicle · Switch deck
+              </motion.button>
+            )}
           </div>
         )}
 
