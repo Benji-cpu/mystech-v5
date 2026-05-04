@@ -34,13 +34,48 @@ interface MessageBubbleProps {
 
 function MessageBubble({ message, isLast, isStreaming }: MessageBubbleProps) {
   const isAssistant = message.role === 'assistant';
-  const showCursor = isAssistant && isLast && isStreaming;
+  const isWaitingForFirstToken =
+    isAssistant && isLast && isStreaming && message.content.length === 0;
+  const showCursor = isAssistant && isLast && isStreaming && !isWaitingForFirstToken;
   const isLong = !isAssistant && message.content.length > COLLAPSE_THRESHOLD;
   const [expanded, setExpanded] = useState(false);
 
   const displayContent = isLong && !expanded
     ? message.content.slice(0, PREVIEW_LENGTH) + '...'
     : message.content;
+
+  // Pre-token state: render an obvious "thinking" indicator rather than an
+  // almost-empty bubble with a blink. (Addresses qtav3oeh feedback —
+  // "add a loading spinner in here so we have a bit of a nicer experience
+  // while we're waiting for the AI.")
+  if (isWaitingForFirstToken) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+        className="flex items-center gap-3 max-w-[88%] self-start py-1"
+      >
+        <div className="shrink-0 w-8 h-8 flex items-center justify-center">
+          <LyraSigil size="sm" state="speaking" />
+        </div>
+        <span
+          className="text-sm italic"
+          style={{ color: 'var(--ink-mute)' }}
+        >
+          Lyra is finding her words
+          <motion.span
+            aria-hidden
+            animate={{ opacity: [0.2, 1, 0.2] }}
+            transition={{ duration: 1.4, repeat: Infinity, ease: 'easeInOut' }}
+            className="ml-0.5 inline-block"
+          >
+            …
+          </motion.span>
+        </span>
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div
