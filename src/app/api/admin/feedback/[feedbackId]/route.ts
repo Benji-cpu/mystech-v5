@@ -6,7 +6,7 @@ import { requireAdminApi } from "@/lib/auth/helpers";
 import { eq } from "drizzle-orm";
 
 const patchSchema = z.object({
-  status: z.enum(["new", "reviewed", "archived"]).optional(),
+  status: z.enum(["new", "reviewed", "resolved", "dismissed"]).optional(),
   adminNotes: z.string().max(2000).optional(),
 });
 

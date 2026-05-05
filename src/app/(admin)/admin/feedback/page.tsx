@@ -54,7 +54,8 @@ type FeedbackRow = {
 const statusColors: Record<string, string> = {
   new: "bg-blue-500/20 text-blue-400 border-blue-500/30",
   reviewed: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
-  archived: "bg-white/10 text-white/40 border-white/10",
+  resolved: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
+  dismissed: "bg-white/10 text-white/40 border-white/10",
 };
 
 export default function AdminFeedbackPage() {
@@ -138,7 +139,8 @@ export default function AdminFeedbackPage() {
             <SelectItem value="all">All Status</SelectItem>
             <SelectItem value="new">New</SelectItem>
             <SelectItem value="reviewed">Reviewed</SelectItem>
-            <SelectItem value="archived">Archived</SelectItem>
+            <SelectItem value="resolved">Resolved</SelectItem>
+            <SelectItem value="dismissed">Dismissed</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -276,15 +278,20 @@ export default function AdminFeedbackPage() {
               </div>
 
               {/* Status actions */}
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 {selectedItem.status !== "reviewed" && (
                   <Button size="sm" variant="outline" onClick={() => updateStatus(selectedItem.id, "reviewed")}>
                     Mark Reviewed
                   </Button>
                 )}
-                {selectedItem.status !== "archived" && (
-                  <Button size="sm" variant="outline" onClick={() => updateStatus(selectedItem.id, "archived")}>
-                    Archive
+                {selectedItem.status !== "resolved" && (
+                  <Button size="sm" variant="outline" onClick={() => updateStatus(selectedItem.id, "resolved")}>
+                    Mark Resolved
+                  </Button>
+                )}
+                {selectedItem.status !== "dismissed" && (
+                  <Button size="sm" variant="outline" onClick={() => updateStatus(selectedItem.id, "dismissed")}>
+                    Dismiss
                   </Button>
                 )}
                 {selectedItem.status !== "new" && (
