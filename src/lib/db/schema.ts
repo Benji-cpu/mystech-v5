@@ -926,7 +926,7 @@ export const feedback = pgTable(
     viewportWidth: integer("viewport_width"),
     viewportHeight: integer("viewport_height"),
     userAgent: text("user_agent"),
-    status: text("status").notNull().default("new"), // "new" | "reviewed" | "archived"
+    status: text("status").notNull().default("new"), // "new" | "reviewed" | "resolved" | "dismissed"
     adminNotes: text("admin_notes"),
     createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
   },

@@ -39,6 +39,30 @@ npm run test:e2e:ui  # Playwright with interactive UI
 - **Production URL**: https://mystech-v5.vercel.app
 - **Git Remote**: https://github.com/Benji-cpu/mystech-v5.git
 
+## Cron Jobs
+
+Scheduled via GitHub Actions (not Vercel Cron — see `.github/workflows/`). All cron routes verify `Authorization: Bearer ${CRON_SECRET}` and return 401 without it.
+
+| Workflow | Schedule (UTC) | Local (WITA) | Endpoint |
+|----------|----------------|--------------|----------|
+| `nightly-routine.yml` | `22 19 * * *` | 03:22 Bali | `GET /api/cron/nightly-routine?digest=true` |
+
+The nightly route runs feedback digest + project health checks (stuck readings, failed AI generations, idle public decks) and emails a summary to `ADMIN_EMAIL` via Resend.
+
+## Feedback Module
+
+Standardised cross-project feedback collection. Schema: `feedback` table in `src/lib/db/schema.ts`.
+
+- **Status enum**: `new | reviewed | resolved | dismissed` (aligned with Ubudian template)
+- **User-facing**: `FeedbackFab` (marketing/shared layouts, Dialog) and `FeedbackProvider` + `FeedbackSheet` (immersive shell, Sheet with html-to-image screenshot capture)
+- **API**:
+  - `POST /api/feedback` — public, rate-limited 50/h per signed-in user, screenshots → Vercel Blob
+  - `GET /api/admin/feedback` — tester+admin gated, paginated, filterable by status
+  - `PATCH /api/admin/feedback/[id]` — admin only, updates status + adminNotes
+  - `DELETE /api/admin/feedback/[id]` — admin only
+- **Admin UI**: `/admin/feedback` (table + filter + detail dialog with screenshot, status actions, admin notes)
+- **Digest**: included in nightly-routine cron (counts by status + new-in-24h)
+
 ---
 
 ## Critical Conventions
@@ -150,7 +174,9 @@ This is non-negotiable — never claim a UI change is done without visual verifi
 **Required (AI):** `GOOGLE_GENERATIVE_AI_API_KEY`
 **Required (Stripe):** `STRIPE_SECRET_KEY`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `STRIPE_PRO_PRICE_ID`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PORTAL_CONFIG_ID`
 **Required (Storage):** `BLOB_READ_WRITE_TOKEN`
-**Optional:** `NEXT_PUBLIC_APP_URL`
+**Required (Cron):** `CRON_SECRET` (also set the same value as a GitHub repo secret)
+**Required (Email):** `RESEND_API_KEY`, `ADMIN_EMAIL` (digest destination)
+**Optional:** `NEXT_PUBLIC_APP_URL`, `EMAIL_FROM`
 
 ---
 
