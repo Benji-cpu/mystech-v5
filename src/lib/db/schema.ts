@@ -922,11 +922,16 @@ export const feedback = pgTable(
     email: text("email"),
     message: text("message").notNull(),
     pageUrl: text("page_url").notNull(),
+    pageTitle: text("page_title"),
+    routeParams: jsonb("route_params").$type<Record<string, string>>(),
     screenshotUrl: text("screenshot_url"),
     viewportWidth: integer("viewport_width"),
     viewportHeight: integer("viewport_height"),
     userAgent: text("user_agent"),
-    status: text("status").notNull().default("new"), // "new" | "reviewed" | "resolved" | "dismissed"
+    activityTrail: jsonb("activity_trail").$type<
+      Array<{ t: number; kind: string; detail: string }>
+    >(),
+    status: text("status").notNull().default("new"), // "new" | "reviewed" | "actioned" | "dismissed"
     adminNotes: text("admin_notes"),
     createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
   },

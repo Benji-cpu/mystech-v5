@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
 import {
   Sheet,
   SheetContent,
@@ -12,12 +11,12 @@ import {
 import { GoldButton } from "@/components/ui/gold-button";
 import { Textarea } from "@/components/ui/textarea";
 import { useFeedback } from "./feedback-provider";
+import { getActivityTrail } from "@/lib/feedback/activity-trail";
 import { Camera } from "lucide-react";
 import { toast } from "sonner";
 
 export function FeedbackSheet() {
-  const { phase, screenshotDataUrl, close } = useFeedback();
-  const pathname = usePathname();
+  const { phase, screenshotDataUrl, context, close } = useFeedback();
   const [message, setMessage] = useState("");
   const [showScreenshot, setShowScreenshot] = useState(false);
 
@@ -35,10 +34,14 @@ export function FeedbackSheet() {
     // Fire the fetch in the background; only surface a toast on failure.
     const payload = {
       message: trimmed,
-      pageUrl: pathname,
+      pageUrl: context?.pageUrl ?? window.location.pathname,
+      pageTitle: context?.pageTitle,
+      routeParams: context?.routeParams,
       screenshotDataUrl: screenshotDataUrl ?? undefined,
-      viewportWidth: window.innerWidth,
-      viewportHeight: window.innerHeight,
+      viewportWidth: context?.viewportWidth ?? window.innerWidth,
+      viewportHeight: context?.viewportHeight ?? window.innerHeight,
+      userAgent: context?.userAgent,
+      activityTrail: getActivityTrail(),
     };
     close();
     toast.success("Sent", { duration: 1400 });
@@ -78,6 +81,12 @@ export function FeedbackSheet() {
         </SheetHeader>
 
         <div className="px-5 pb-6 pb-safe space-y-4">
+          {context && (
+            <p className="text-xs text-muted-foreground/70 truncate">
+              <span className="opacity-70">Page:</span> {context.contextSummary}
+            </p>
+          )}
+
           {screenshotDataUrl && (
             <button
               type="button"

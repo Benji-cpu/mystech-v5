@@ -54,6 +54,8 @@ type FeedbackRow = {
 const statusColors: Record<string, string> = {
   new: "bg-blue-500/20 text-blue-400 border-blue-500/30",
   reviewed: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
+  actioned: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
+  // Legacy rows that still carry the old "resolved" label render with the same colour.
   resolved: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
   dismissed: "bg-white/10 text-white/40 border-white/10",
 };
@@ -139,7 +141,7 @@ export default function AdminFeedbackPage() {
             <SelectItem value="all">All Status</SelectItem>
             <SelectItem value="new">New</SelectItem>
             <SelectItem value="reviewed">Reviewed</SelectItem>
-            <SelectItem value="resolved">Resolved</SelectItem>
+            <SelectItem value="actioned">Actioned</SelectItem>
             <SelectItem value="dismissed">Dismissed</SelectItem>
           </SelectContent>
         </Select>
@@ -284,9 +286,9 @@ export default function AdminFeedbackPage() {
                     Mark Reviewed
                   </Button>
                 )}
-                {selectedItem.status !== "resolved" && (
-                  <Button size="sm" variant="outline" onClick={() => updateStatus(selectedItem.id, "resolved")}>
-                    Mark Resolved
+                {selectedItem.status !== "actioned" && (
+                  <Button size="sm" variant="outline" onClick={() => updateStatus(selectedItem.id, "actioned")}>
+                    Mark Actioned
                   </Button>
                 )}
                 {selectedItem.status !== "dismissed" && (

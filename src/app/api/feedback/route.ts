@@ -7,13 +7,23 @@ import { put } from "@vercel/blob";
 import { createId } from "@paralleldrive/cuid2";
 import { eq, and, gte, sql } from "drizzle-orm";
 
+const activityEventSchema = z.object({
+  t: z.number(),
+  kind: z.enum(["route", "click", "fetch", "error"]),
+  detail: z.string().max(400),
+});
+
 const feedbackSchema = z.object({
   message: z.string().min(1).max(2000),
   pageUrl: z.string().min(1).max(500),
+  pageTitle: z.string().max(500).optional(),
+  routeParams: z.record(z.string(), z.string()).optional(),
   screenshotDataUrl: z.string().optional(),
   email: z.string().email().optional(),
   viewportWidth: z.number().int().positive().optional(),
   viewportHeight: z.number().int().positive().optional(),
+  userAgent: z.string().max(1000).optional(),
+  activityTrail: z.array(activityEventSchema).max(120).optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -32,7 +42,18 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { message, pageUrl, screenshotDataUrl, email, viewportWidth, viewportHeight } = parsed.data;
+  const {
+    message,
+    pageUrl,
+    pageTitle,
+    routeParams,
+    screenshotDataUrl,
+    email,
+    viewportWidth,
+    viewportHeight,
+    userAgent: clientUserAgent,
+    activityTrail,
+  } = parsed.data;
 
   // Light abuse guard: 50/hour for signed-in users. Admins bypass entirely.
   if (user?.id && !isAdmin(user)) {
@@ -69,7 +90,7 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  const userAgent = request.headers.get("user-agent") ?? undefined;
+  const userAgent = clientUserAgent ?? request.headers.get("user-agent") ?? undefined;
 
   await db.insert(feedback).values({
     id,
@@ -77,10 +98,13 @@ export async function POST(request: NextRequest) {
     email: user?.email ?? email ?? null,
     message,
     pageUrl,
+    pageTitle: pageTitle ?? null,
+    routeParams: routeParams ?? null,
     screenshotUrl: screenshotUrl ?? null,
     viewportWidth: viewportWidth ?? null,
     viewportHeight: viewportHeight ?? null,
     userAgent: userAgent ?? null,
+    activityTrail: activityTrail ?? null,
   });
 
   return NextResponse.json({ success: true, data: { id } });

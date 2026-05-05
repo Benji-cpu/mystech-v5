@@ -130,7 +130,7 @@ async function sendDigest(payload: Payload, to: string) {
     <h3>Feedback</h3>
     <ul>
       <li><strong>${f.newLast24h}</strong> new in last 24h</li>
-      <li>${f.byStatus.new ?? 0} new (open) · ${f.byStatus.reviewed ?? 0} reviewed · ${f.byStatus.resolved ?? 0} resolved · ${f.byStatus.dismissed ?? 0} dismissed (${total} total)</li>
+      <li>${f.byStatus.new ?? 0} new (open) · ${f.byStatus.reviewed ?? 0} reviewed · ${(f.byStatus.actioned ?? 0) + (f.byStatus.resolved ?? 0)} actioned · ${f.byStatus.dismissed ?? 0} dismissed (${total} total)</li>
     </ul>
     <h3>Health</h3>
     <ul>

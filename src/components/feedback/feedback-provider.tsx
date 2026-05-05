@@ -1,20 +1,23 @@
 "use client";
 
-import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
+import { installActivityTrail } from "@/lib/feedback/activity-trail";
+import { captureFeedbackContext, type FeedbackContext } from "@/lib/feedback/capture-context";
 
 type FeedbackPhase = "idle" | "capturing" | "open";
 
 interface FeedbackContextValue {
   phase: FeedbackPhase;
   screenshotDataUrl: string | null;
+  context: FeedbackContext | null;
   open: () => void;
   close: () => void;
 }
 
-const FeedbackContext = createContext<FeedbackContextValue | null>(null);
+const FeedbackContextCtx = createContext<FeedbackContextValue | null>(null);
 
 export function useFeedback() {
-  const ctx = useContext(FeedbackContext);
+  const ctx = useContext(FeedbackContextCtx);
   if (!ctx) throw new Error("useFeedback must be used within FeedbackProvider");
   return ctx;
 }
@@ -22,9 +25,19 @@ export function useFeedback() {
 export function FeedbackProvider({ children }: { children: ReactNode }) {
   const [phase, setPhase] = useState<FeedbackPhase>("idle");
   const [screenshotDataUrl, setScreenshotDataUrl] = useState<string | null>(null);
+  const [context, setContext] = useState<FeedbackContext | null>(null);
+
+  // Install the activity trail once per page-load. Captures route changes,
+  // clicks, fetch failures, errors — attached to feedback on submit.
+  useEffect(() => {
+    installActivityTrail();
+  }, []);
 
   const open = useCallback(async () => {
     setPhase("capturing");
+    // Capture context BEFORE the screenshot so we have the user's pre-screenshot
+    // route/title — useful if their action navigates while the screenshot runs.
+    setContext(captureFeedbackContext());
     try {
       const { toPng } = await import("html-to-image");
       const dataUrl = await toPng(document.body, {
@@ -52,11 +65,12 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
   const close = useCallback(() => {
     setPhase("idle");
     setScreenshotDataUrl(null);
+    setContext(null);
   }, []);
 
   return (
-    <FeedbackContext.Provider value={{ phase, screenshotDataUrl, open, close }}>
+    <FeedbackContextCtx.Provider value={{ phase, screenshotDataUrl, context, open, close }}>
       {children}
-    </FeedbackContext.Provider>
+    </FeedbackContextCtx.Provider>
   );
 }
