@@ -38,6 +38,7 @@ npm run test:e2e:ui  # Playwright with interactive UI
 - **Project**: `mystech-v5`
 - **Production URL**: https://mystech-v5.vercel.app
 - **Git Remote**: https://github.com/Benji-cpu/mystech-v5.git
+- **Shipping mode**: direct-to-production for everything — interactive sessions AND scheduled routines. Commit on `main`, push, Vercel auto-deploys. No PRs. See master `Code/CLAUDE.md` "Shipping Standard."
 
 ## Cron Jobs
 
@@ -47,7 +48,7 @@ Scheduled via a **Claude Code remote agent** registered through claude.ai (https
 |---------|----------------|--------------|-----------------|
 | Claude Code remote agent | `22 19 * * *` | 03:22 Bali | calls `GET /api/cron/nightly-routine?digest=true`; agent prompt at `.claude/agents/nightly-routine.md` |
 
-The nightly route runs feedback digest + project health checks (stuck readings, failed AI generations, idle public decks) and emails a summary to `ADMIN_EMAIL` via Resend. The remote agent calls this route, then writes a versioned `digests/YYYY-MM-DD.md` and opens a draft PR with the human-review layer on top.
+The nightly route runs feedback digest + project health checks (stuck readings, failed AI generations, idle public decks) and emails a summary to `ADMIN_EMAIL` via Resend. The remote agent calls this route, then writes a versioned `digests/YYYY-MM-DD.md` and commits it directly to `main` (no PRs).
 
 ## Feedback Module
 
