@@ -41,13 +41,13 @@ npm run test:e2e:ui  # Playwright with interactive UI
 
 ## Cron Jobs
 
-Scheduled via GitHub Actions (not Vercel Cron — see `.github/workflows/`). All cron routes verify `Authorization: Bearer ${CRON_SECRET}` and return 401 without it.
+Scheduled via a **Claude Code remote agent** registered through claude.ai (https://claude.ai/code/scheduled). The HTTP cron route still verifies `Authorization: Bearer ${CRON_SECRET}` and returns 401 without it.
 
-| Workflow | Schedule (UTC) | Local (WITA) | Endpoint |
-|----------|----------------|--------------|----------|
-| `nightly-routine.yml` | `22 19 * * *` | 03:22 Bali | `GET /api/cron/nightly-routine?digest=true` |
+| Backend | Schedule (UTC) | Local (WITA) | Endpoint / file |
+|---------|----------------|--------------|-----------------|
+| Claude Code remote agent | `22 19 * * *` | 03:22 Bali | calls `GET /api/cron/nightly-routine?digest=true`; agent prompt at `.claude/agents/nightly-routine.md` |
 
-The nightly route runs feedback digest + project health checks (stuck readings, failed AI generations, idle public decks) and emails a summary to `ADMIN_EMAIL` via Resend.
+The nightly route runs feedback digest + project health checks (stuck readings, failed AI generations, idle public decks) and emails a summary to `ADMIN_EMAIL` via Resend. The remote agent calls this route, then writes a versioned `digests/YYYY-MM-DD.md` and opens a draft PR with the human-review layer on top.
 
 ## Feedback Module
 
