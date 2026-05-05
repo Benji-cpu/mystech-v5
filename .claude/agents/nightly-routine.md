@@ -121,13 +121,13 @@ Cron route call failed.
 No feedback queried, no health checks ran, no Resend email sent.
 
 ## Likely causes
-- Vercel Deployment Protection blocking the agent egress (403 with "Host not in allowlist" or similar)
-- \`CRON_SECRET\` mismatch (401 Unauthorized)
-- Vercel Firewall rule
+- **Claude Code sandbox egress** blocks \`*.vercel.app\` hosts and returns \`403 Host not in allowlist\` (this is NOT a Vercel error — it's the agent's own proxy). Confirmed for Ubudian and Programme; same applies here.
+- \`CRON_SECRET\` mismatch (401 Unauthorized).
+- Vercel Firewall / Deployment Protection (less common — Vercel returns its own branded auth page, not the bare "Host not in allowlist" string).
 
 ## Fix path
-- If 403: in Vercel project settings → Deployment Protection, either disable for production, or generate a "Protection Bypass for Automation" secret and seed \`VERCEL_AUTOMATION_BYPASS_SECRET\` into this trigger's prompt.
-- If 401: regenerate \`CRON_SECRET\` in Vercel env, update the trigger seed.
+- **403 "Host not in allowlist"**: route the agent through a custom domain (e.g. \`app.mystech.app\`) that the sandbox does allow. Add the domain in Vercel → Settings → Domains, point DNS at it, then update this trigger's seed and the agent file's curl URL.
+- **401**: regenerate \`CRON_SECRET\` in Vercel env, update the trigger seed.
 EOF
 git add "digests/${TODAY}.md"
 git commit -m "digest: blocked ${TODAY}"
