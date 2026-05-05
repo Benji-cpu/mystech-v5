@@ -1,0 +1,1 @@
+{"error":"HTTP 403 from /api/cron/nightly-routine?digest=true","note":"Endpoint returned 403 Forbidden. CRON_SECRET may be invalid or the route may require a different scope. No digest email was triggered. No database operations were performed."}
