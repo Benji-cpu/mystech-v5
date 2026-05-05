@@ -1,0 +1,7 @@
+{
+  "error": "403 Forbidden",
+  "body": "Host not in allowlist",
+  "note": "Vercel platform-level IP allowlist blocked the agent sandbox host before the request reached the route handler. CRON_SECRET was provided correctly in the Authorization header.",
+  "requestedAt": "2026-05-06T19:22:00+08:00",
+  "endpoint": "/api/cron/nightly-routine?digest=true"
+}
