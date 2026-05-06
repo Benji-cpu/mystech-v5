@@ -405,6 +405,7 @@ export function ChronicleFlow({
   const timerStartedAtRef = useRef<number>(0);
   const [progressKey, setProgressKey] = useState(0);
   const [progressDuration, setProgressDuration] = useState(7);
+  const [regeneratingImage, setRegeneratingImage] = useState(false);
 
   // Refs for one-shot effects
   const forgeFired = useRef(false);
@@ -1052,6 +1053,48 @@ export function ChronicleFlow({
                   >
                     Preparing your card…
                   </motion.p>
+                )}
+                {card.imageStatus === 'failed' && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={CONTENT_SPRING}
+                    className="flex flex-col items-center gap-2"
+                  >
+                    <p
+                      className="text-[11px] uppercase tracking-[0.18em] text-center"
+                      style={{ color: 'var(--ink-mute)' }}
+                    >
+                      The artwork didn’t arrive — your card is still here.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (regeneratingImage) return;
+                        setRegeneratingImage(true);
+                        try {
+                          const res = await fetch(
+                            `/api/chronicle/cards/${card.id}/regenerate-image`,
+                            { method: 'POST' },
+                          );
+                          if (res.ok) {
+                            dispatch({
+                              type: 'UPDATE_CARD_IMAGE',
+                              imageUrl: card.imageUrl,
+                              imageStatus: 'generating',
+                            });
+                          }
+                        } finally {
+                          setRegeneratingImage(false);
+                        }
+                      }}
+                      disabled={regeneratingImage}
+                      className="text-[11px] underline underline-offset-2 disabled:opacity-50"
+                      style={{ color: 'var(--ink-soft)' }}
+                    >
+                      {regeneratingImage ? 'Retrying…' : 'Retry artwork'}
+                    </button>
+                  </motion.div>
                 )}
                 <motion.button
                   initial={{ opacity: 0, y: 8 }}

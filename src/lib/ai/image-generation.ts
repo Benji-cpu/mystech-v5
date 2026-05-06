@@ -5,6 +5,7 @@ import { put } from "@vercel/blob";
 import sharp from "sharp";
 import { generateStabilityImage, type StabilityOptions } from "./stability";
 import { ORACLE_CARD_BASE_PROMPT, ORACLE_CARD_NEGATIVE_PROMPT } from "./prompts/image-base-prompt";
+import { logGeneration } from "./logging";
 
 async function generateBlurDataUrl(imageBuffer: Buffer): Promise<string | null> {
   try {
@@ -73,13 +74,15 @@ export async function generateCardImage(
 ): Promise<{ success: boolean; imageUrl?: string; error?: string }> {
   // Check deck still exists before starting (outside retry loop for efficiency)
   const [deck] = await db
-    .select({ id: decks.id, deckType: decks.deckType })
+    .select({ id: decks.id, deckType: decks.deckType, userId: decks.userId })
     .from(decks)
     .where(eq(decks.id, deckId));
 
   if (!deck) {
     return { success: false, error: "Deck was deleted" };
   }
+
+  const startedAt = Date.now();
 
   // Set status to generating
   await db
@@ -162,6 +165,17 @@ export async function generateCardImage(
         .update(cards)
         .set({ imageStatus: "failed", updatedAt: new Date() })
         .where(eq(cards.id, cardId));
+
+      await logGeneration({
+        userId: deck.userId,
+        deckId: deck.id,
+        operationType: "card_image_generation",
+        modelUsed: "stability-ai-core",
+        userPrompt: finalPrompt,
+        durationMs: Date.now() - startedAt,
+        status: "error",
+        errorMessage,
+      });
 
       return {
         success: false,

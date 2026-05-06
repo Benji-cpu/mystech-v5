@@ -79,6 +79,26 @@ export async function GET(request: Request) {
     return Number(row.count);
   });
 
+  const failedImageGensLast24h = await safeCount("failedImageGensLast24h", async () => {
+    const [row] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(generationLogs)
+      .where(
+        and(
+          eq(generationLogs.status, "error"),
+          eq(generationLogs.operationType, "card_image_generation"),
+          gte(generationLogs.createdAt, oneDayAgo)
+        )
+      );
+    return Number(row.count);
+  });
+
+  const env = {
+    stabilityKey: Boolean(process.env.STABILITY_AI_API_KEY),
+    geminiKey: Boolean(process.env.GOOGLE_GENERATIVE_AI_API_KEY),
+    blobToken: Boolean(process.env.BLOB_READ_WRITE_TOKEN),
+  };
+
   const payload = {
     project: "mystech-v5",
     startedAt,
@@ -90,8 +110,10 @@ export async function GET(request: Request) {
     health: {
       stuckReadings: stuckReadings ?? 0,
       failedGenerationsLast24h: failedGenerationsLast24h ?? 0,
+      failedImageGensLast24h: failedImageGensLast24h ?? 0,
       idleSharedDecks: idleSharedDecks ?? 0,
     },
+    env,
     errors,
   };
 
@@ -112,7 +134,13 @@ type Payload = {
   startedAt: string;
   finishedAt: string;
   feedback: { byStatus: Record<string, number>; newLast24h: number };
-  health: { stuckReadings: number; failedGenerationsLast24h: number; idleSharedDecks: number };
+  health: {
+    stuckReadings: number;
+    failedGenerationsLast24h: number;
+    failedImageGensLast24h: number;
+    idleSharedDecks: number;
+  };
+  env: { stabilityKey: boolean; geminiKey: boolean; blobToken: boolean };
   errors: string[];
 };
 
@@ -120,10 +148,12 @@ async function sendDigest(payload: Payload, to: string) {
   const resend = getResend();
   if (!resend) return;
 
-  const { feedback: f, health, errors } = payload;
+  const { feedback: f, health, env, errors } = payload;
   const date = new Date(payload.startedAt).toISOString().slice(0, 10);
   const total = Object.values(f.byStatus).reduce((a, b) => a + b, 0);
   const subject = `MysTech nightly — ${f.newLast24h} new feedback · ${health.stuckReadings} stuck`;
+
+  const envFlag = (ok: boolean) => (ok ? "configured" : "<strong style='color:#c00'>MISSING</strong>");
 
   const html = `
     <h2>MysTech nightly digest — ${date}</h2>
@@ -135,8 +165,15 @@ async function sendDigest(payload: Payload, to: string) {
     <h3>Health</h3>
     <ul>
       <li>Stuck readings (interpretation null > 5min): <strong>${health.stuckReadings}</strong></li>
-      <li>Failed AI generations (last 24h): <strong>${health.failedGenerationsLast24h}</strong></li>
+      <li>Failed AI text generations (last 24h): <strong>${health.failedGenerationsLast24h}</strong></li>
+      <li>Failed AI image generations (last 24h): <strong>${health.failedImageGensLast24h}</strong></li>
       <li>Public shared decks idle > 7d: ${health.idleSharedDecks}</li>
+    </ul>
+    <h3>Environment</h3>
+    <ul>
+      <li>Stability AI: ${envFlag(env.stabilityKey)}</li>
+      <li>Gemini: ${envFlag(env.geminiKey)}</li>
+      <li>Vercel Blob: ${envFlag(env.blobToken)}</li>
     </ul>
     ${errors.length > 0 ? `<h3>Errors</h3><ul>${errors.map((e) => `<li>${escape(e)}</li>`).join("")}</ul>` : ""}
     <p style="font-size:12px;color:#888">Cron ran ${payload.startedAt} → ${payload.finishedAt}</p>
