@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Alegreya, Fraunces, Inter } from "next/font/google";
 import { Toaster } from "sonner";
 import { Analytics } from "@vercel/analytics/next";
@@ -39,6 +39,11 @@ export const metadata: Metadata = {
   title: "MysTech - AI Oracle Card Readings",
   description:
     "Create personalized oracle card decks from your life experiences, perform AI-powered readings, and share your mystical insights with others.",
+  applicationName: "MysTech",
+};
+
+export const viewport: Viewport = {
+  themeColor: "#15110E",
 };
 
 export default function RootLayout({

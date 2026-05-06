@@ -52,6 +52,12 @@ next-env.d.ts
 # verification screenshots
 *.png
 
+# brand assets — keep these tracked despite the global *.png ignore above
+!public/brand/*.png
+!src/app/icon.png
+!src/app/apple-icon.png
+!src/app/opengraph-image.png
+
 # superpowers plugin
 .superpowers/
 .agents/

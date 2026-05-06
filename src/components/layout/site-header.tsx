@@ -2,9 +2,10 @@
 
 import { useState, ReactNode, isValidElement, cloneElement, ReactElement } from "react";
 import Link from "next/link";
-import { Menu, Sparkles } from "lucide-react";
+import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Logo } from "@/components/brand/logo";
 import { ThemeToggle } from "./theme-toggle";
 
 interface SiteHeaderProps {
@@ -65,7 +66,7 @@ export function SiteHeader({
         href={logoHref}
         className={`flex items-center gap-2 ${showLogoOnDesktop ? "" : "md:hidden"}`}
       >
-        <Sparkles className="h-5 w-5 text-primary" />
+        <Logo size={28} className="h-7 w-7 rounded-md" />
         <span className="font-bold">MysTech</span>
       </Link>
 
