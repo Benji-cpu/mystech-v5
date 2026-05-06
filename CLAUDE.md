@@ -50,6 +50,31 @@ Scheduled via a **Claude Code remote agent** registered through claude.ai (https
 
 The nightly route runs feedback digest + project health checks (stuck readings, failed AI generations, idle public decks) and emails a summary to `ADMIN_EMAIL` via Resend. The remote agent calls this route, then writes a versioned `digests/YYYY-MM-DD.md` and commits it directly to `main` (no PRs).
 
+## Trigger Maintenance
+
+The nightly remote trigger is editable from this CLI — claude.ai/code/scheduled is **not** the only path.
+
+- **Owner**: `b.hemsonstruthers@gmail.com` (account `22cd2bd1-ef82-4a04-b0c1-5c5eaa1123ba`)
+- **Trigger ID**: `trig_01TKZ5AcWYUjmXPffoRd1qaz` ("MysTech — daily nightly-routine")
+- **Cron**: `22 19 * * *` UTC = 03:22 WITA
+- **Environment**: `env_013bqn65fNb8N1mWyLSMV78w` (anthropic_cloud default)
+
+Inspect / edit / fire from any session via the `schedule` skill + `RemoteTrigger` tool:
+- List all: `RemoteTrigger {action: "list"}`
+- Inspect: `RemoteTrigger {action: "get", trigger_id: "trig_01TKZ5AcWYUjmXPffoRd1qaz"}`
+- Update prompt body: `RemoteTrigger {action: "update", trigger_id: "...", body: {job_config: {ccr: {events: [...]}}}}`
+- Fire now: `RemoteTrigger {action: "run", trigger_id: "..."}`
+- Delete: not supported via API — use https://claude.ai/code/scheduled
+
+The trigger prompt body must stay a thin shim: "read `.claude/agents/nightly-routine.md` and follow it exactly," plus the seeded `CRON_SECRET` (and optionally `VERCEL_AUTOMATION_BYPASS_SECRET`). When the agent file changes flow rules (e.g. PR vs. direct-to-main), re-check the prompt.
+
+### Failure runbook
+
+- **401** → `CRON_SECRET` drift. Compare the secret in the trigger's prompt body against Vercel env (`vercel env ls` or dashboard), update whichever is stale via `RemoteTrigger update`.
+- **403 "Host not in allowlist"** → Claude Code sandbox egress block on `*.vercel.app`. NOT a Vercel error. Fix paths: (a) point a custom domain (e.g. `app.mystech.app`) at the Vercel project, then update the agent file's curl URL + the trigger prompt's "Production host" + "Endpoint" lines; (b) seed `VERCEL_AUTOMATION_BYPASS_SECRET` only helps if the 403 is from Vercel Deployment Protection — verify by checking response body wording.
+- **403 with "deployment protection" / Vercel-branded body** → Vercel Deployment Protection. Generate a Protection Bypass for Automation secret and seed it as `VERCEL_AUTOMATION_BYPASS_SECRET` in the trigger prompt. The agent already adds the `x-vercel-protection-bypass` header when this env is present.
+- **5xx** → bug in `/api/cron/nightly-routine`. Check Vercel runtime logs for the route, fix the route, redeploy.
+
 ## Feedback Module
 
 Standardised cross-project feedback collection. Schema: `feedback` table in `src/lib/db/schema.ts`.
