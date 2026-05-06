@@ -13,6 +13,7 @@ import { db } from "@/lib/db";
 import { feedback, readings, generationLogs, decks } from "@/lib/db/schema";
 import { and, eq, gte, isNull, lt, sql } from "drizzle-orm";
 import { getResend, EMAIL_FROM } from "@/lib/email/client";
+import { ingestAndSummarise, type PipelineHealth } from "@/lib/deployment-events";
 
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");
@@ -99,6 +100,11 @@ export async function GET(request: Request) {
     blobToken: Boolean(process.env.BLOB_READ_WRITE_TOKEN),
   };
 
+  let pipeline: PipelineHealth | null = null;
+  if (process.env.VERCEL_TOKEN) {
+    pipeline = await safeCount("pipelineIngest", () => ingestAndSummarise(48));
+  }
+
   const payload = {
     project: "mystech-v5",
     startedAt,
@@ -114,6 +120,7 @@ export async function GET(request: Request) {
       idleSharedDecks: idleSharedDecks ?? 0,
     },
     env,
+    pipeline,
     errors,
   };
 
@@ -193,6 +200,7 @@ type Payload = {
     idleSharedDecks: number;
   };
   env: { stabilityKey: boolean; geminiKey: boolean; blobToken: boolean };
+  pipeline: PipelineHealth | null;
   errors: string[];
 };
 

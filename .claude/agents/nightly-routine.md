@@ -32,8 +32,8 @@ TODAY=$(TZ=Asia/Makassar date +%F)
 git checkout main
 git pull --ff-only origin main
 
-git config user.name "Benji-cpu"
-git config user.email "b.hemsonstruthers@gmail.com"
+git config user.name "Benji"
+git config user.email "profbenjo@gmail.com"
 
 JSON_PATH="digests/${TODAY}.json"
 ```
@@ -86,6 +86,22 @@ Read and parse it. The shape (from `src/app/api/cron/nightly-routine/route.ts`):
     idleSharedDecks: number,
   },
   env: { stabilityKey: boolean, geminiKey: boolean, blobToken: boolean },
+  pipeline: {
+    fetched: number,
+    inserted: number,
+    skipped: number,
+    wrongAuthorCount: number,
+    wrongAuthors: string[],
+    buildErrorCount: number,
+    recent: Array<{
+      vercelDeploymentId: string,
+      state: string,
+      errorCode: string | null,
+      commitAuthorEmail: string | null,
+      commitMessage: string | null,
+      createdAt: string,
+    }>,
+  } | null,
   errors: string[],
   committedSha?: string,
 }
@@ -100,6 +116,7 @@ If ALL of:
 - `health.failedImageGensLast24h === 0`
 - `health.idleSharedDecks === 0`
 - `errors.length === 0`
+- `pipeline === null || (pipeline.buildErrorCount === 0 && pipeline.wrongAuthorCount === 0)`
 
 Then log `no activity, no markdown commit` and exit. The JSON is already on `main` as an audit heartbeat — that's enough.
 
@@ -125,6 +142,22 @@ Write `digests/${TODAY}.md`. Headline first, then sections. Use the JSON values 
 - Stability AI key: ${env.stabilityKey ? "configured" : "MISSING"}
 - Gemini key: ${env.geminiKey ? "configured" : "MISSING"}
 - Vercel Blob token: ${env.blobToken ? "configured" : "MISSING"}
+
+## Pipeline health
+If `pipeline` is non-null AND (`pipeline.buildErrorCount > 0` OR `pipeline.wrongAuthorCount > 0`), include this section. Otherwise omit it. Format:
+
+```markdown
+## Pipeline health
+- Vercel build failures (last 48h): ${pipeline.buildErrorCount}
+- Commits from non-team author: ${pipeline.wrongAuthorCount}${pipeline.wrongAuthorCount > 0 ? ` (${pipeline.wrongAuthors.join(", ")})` : ""}
+- Newly ingested rows: ${pipeline.inserted} (skipped ${pipeline.skipped} duplicates)
+
+### Recent failures
+For each row in `pipeline.recent` (cap at 5), one bullet:
+- `${row.state}` ${row.errorCode ?? ""} — `${row.commitAuthorEmail ?? "no-author"}` — ${row.commitMessage ?? "(no message)"}
+```
+
+If `pipeline === null`, the cron didn't ingest (likely `VERCEL_TOKEN` missing) — surface that as a one-line note in "Suggested follow-ups".
 
 ## Errors during run
 List entries from `errors[]` verbatim. Empty list = no section.

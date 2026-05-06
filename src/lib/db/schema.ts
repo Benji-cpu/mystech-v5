@@ -1029,6 +1029,35 @@ export const userGuidanceCompletions = pgTable(
   ]
 );
 
+// ── Deployment events ───────────────────────────────────────────────────
+
+// Vercel deployment failures ingested by the nightly cron so the AI agent
+// can see what's been breaking. Keyed by vercel_deployment_id for idempotent
+// upserts across nightly re-runs.
+export const deploymentEvents = pgTable(
+  "deployment_event",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    vercelDeploymentId: text("vercel_deployment_id").notNull().unique(),
+    projectName: text("project_name").notNull(),
+    state: text("state").notNull(),
+    errorCode: text("error_code"),
+    errorMessage: text("error_message"),
+    commitSha: text("commit_sha"),
+    commitAuthorEmail: text("commit_author_email"),
+    commitMessage: text("commit_message"),
+    buildUrl: text("build_url"),
+    createdAt: timestamp("created_at", { mode: "date" }).notNull(),
+    ingestedAt: timestamp("ingested_at", { mode: "date" }).defaultNow().notNull(),
+  },
+  (t) => [
+    index("deployment_event_created_at_idx").on(t.createdAt),
+    index("deployment_event_state_idx").on(t.state),
+  ]
+);
+
 // ── Emergence events ────────────────────────────────────────────────────
 
 export const emergenceEvents = pgTable(
