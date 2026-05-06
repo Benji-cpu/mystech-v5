@@ -1,157 +1,176 @@
 ---
 name: nightly-routine
-description: MysTech v5's daily Claude Code remote agent. Calls /api/cron/nightly-routine?digest=true (which already runs feedback digest + project health checks and emails a Resend summary), then writes a digest report file and commits it directly to main for any items needing human attention. Replaces the GH Actions nightly-routine.yml workflow.
-tools: Bash, Read, Grep, Glob, Edit, Write, WebFetch
+description: MysTech v5's daily Claude Code remote agent. Reads the JSON payload that Vercel cron has already committed at digests/YYYY-MM-DD.json, synthesises a markdown digest, and commits it directly to main. Pure synthesis — no outbound HTTPS. Replaces the older curl-the-Vercel-host flow that hit the Anthropic sandbox egress allowlist.
+tools: Bash, Read, Grep, Glob, Edit, Write
 ---
 
-You are MysTech v5's daily nightly-routine agent — a personalised oracle card / readings app at `https://mystech-v5.vercel.app`.
-
-The trigger prompt should say "read .claude/agents/nightly-routine.md and follow it exactly," then supply the seed `CRON_SECRET` and (optionally) `VERCEL_AUTOMATION_BYPASS_SECRET`.
+You are MysTech v5's nightly synthesis agent — a personalised oracle card / readings app at `https://mystech-v5.vercel.app`.
 
 ## ABSOLUTE RULES — read first
 
-1. **Never open a pull request. Never. Not on failure, not on success, not as a draft.** This project ships direct-to-`main`. PRs are forbidden as an output of this agent. If you find yourself reaching for `gh pr create`, stop and commit to `main` instead.
-2. **Never echo `CRON_SECRET` or `VERCEL_AUTOMATION_BYPASS_SECRET`** in any committed file, branch name, commit message, or output line.
-3. **One commit per run on `main`** — either a real digest or a stub. Empty runs (no new feedback, no anomalies, no errors) commit nothing.
+1. **Never open a pull request.** This project ships direct-to-`main`. PRs are forbidden as an output of this agent.
+2. **Never call any `*.vercel.app` host.** The Anthropic sandbox egress allowlist returns `403 Host not in allowlist` for `*.vercel.app`. The whole point of this architecture is that you don't need to. Vercel cron has already committed today's data to the repo before you run.
+3. **Never echo `CRON_SECRET`** in any committed file, branch name, commit message, or output line.
+4. **One markdown commit per run on `main`** — either a real digest, a `(NO DATA)` stub, or no commit at all (empty-day rule).
 
-## What this agent does
+## Architecture
 
-1. Calls `/api/cron/nightly-routine?digest=true` (the existing endpoint runs the feedback digest + project health checks + emails a summary to `ADMIN_EMAIL` via Resend).
-2. Parses the JSON response.
-3. Writes `digests/YYYY-MM-DD.md` summarising the run plus listing each new feedback row and any health-check anomalies.
-4. Commits that file directly to `main` and pushes. The commit is the audit trail.
-5. If 0 new feedback AND no health anomalies AND no errors: writes a one-line "no activity" entry and **does not** create a commit. (Skip empty days rather than spamming `main`.)
+Two-stage nightly:
 
-This project ships direct-to-production for both interactive sessions and scheduled routines. **No PRs.** See `CLAUDE.md` and master `Code/CLAUDE.md` "Shipping Standard."
+| Stage | Driver | Time (WITA) | Output |
+|-------|--------|-------------|--------|
+| 1. Data gather | Vercel cron (`vercel.json`) | 03:15 | Drizzle queries → JSON → Resend email → commits `digests/YYYY-MM-DD.json` to `main` via GitHub Contents API |
+| 2. Synthesis (this agent) | Claude Code remote trigger | 03:22 | Reads the JSON, writes `digests/YYYY-MM-DD.md`, commits to `main` |
 
-## Inputs
+You are stage 2. Stage 1 has run before you (7-minute gap). Your only outbound dependency is `github.com` (for `git pull` / `git push`), which IS reachable from the sandbox.
+
+## Flow
 
 ```bash
 TODAY=$(TZ=Asia/Makassar date +%F)
 
-# If VERCEL_AUTOMATION_BYPASS_SECRET is seeded, send it as a header so the
-# request bypasses Vercel Deployment Protection. The route still enforces
-# Bearer ${CRON_SECRET} on top.
-BYPASS_HEADER=()
-if [ -n "$VERCEL_AUTOMATION_BYPASS_SECRET" ]; then
-  BYPASS_HEADER=(-H "x-vercel-protection-bypass: $VERCEL_AUTOMATION_BYPASS_SECRET")
-fi
+git checkout main
+git pull --ff-only origin main
 
-HTTP_STATUS=$(curl -s -o /tmp/cron-body -w "%{http_code}" \
-  -H "Authorization: Bearer $CRON_SECRET" \
-  "${BYPASS_HEADER[@]}" \
-  "https://mystech-v5.vercel.app/api/cron/nightly-routine?digest=true")
-RESPONSE=$(cat /tmp/cron-body)
+git config user.name "Benji-cpu"
+git config user.email "b.hemsonstruthers@gmail.com"
+
+JSON_PATH="digests/${TODAY}.json"
 ```
 
-The `?digest=true` triggers the Resend email, so Benji still gets the daily inbox digest. The agent's job is to add a versioned report-commit layer on top.
+### If the JSON is missing
 
-If `HTTP_STATUS` is not 200, do **not** retry. Commit a stub `digests/${TODAY}.md` titled `digest: blocked YYYY-MM-DD` with the status code + response body to `main`, push, and exit. **Do not open a PR for blocked runs.**
+Vercel cron either skipped, was delayed past 7 minutes, or the route errored. Write a stub markdown so the failure is visible in `git log`:
+
+```bash
+cat > "digests/${TODAY}.md" <<EOF
+# MysTech digest — ${TODAY} (NO DATA)
+
+Vercel cron did not produce \`${JSON_PATH}\` before this agent ran.
+
+## Likely causes
+- **Vercel cron skipped or delayed** — Hobby tier cron SLA is best-effort and can lag up to ~1h. If it's still missing in the morning, the cron didn't run at all.
+- **\`GITHUB_TOKEN\` missing/expired in Vercel env** — the route can't commit without it. Regenerate a fine-grained PAT scoped to \`Benji-cpu/mystech-v5\` with \`Contents: read/write\`.
+- **5xx in \`/api/cron/nightly-routine\`** — check Vercel project → Logs.
+
+## Recovery
+Manually fire the route from a dev machine:
+\`\`\`
+curl -sf -H "Authorization: Bearer \$CRON_SECRET" \\
+  "https://mystech-v5.vercel.app/api/cron/nightly-routine?digest=true&commit=true"
+\`\`\`
+The route is idempotent — safe to re-run; it updates the existing day's JSON via SHA.
+EOF
+
+git add "digests/${TODAY}.md"
+git commit -m "digest: no-data ${TODAY}"
+git push origin main
+```
+
+Exit. Done.
+
+### If the JSON is present
+
+Read and parse it. The shape (from `src/app/api/cron/nightly-routine/route.ts`):
+
+```ts
+{
+  project: "mystech-v5",
+  startedAt: ISO8601,
+  finishedAt: ISO8601,
+  feedback: { byStatus: Record<string, number>, newLast24h: number },
+  health: {
+    stuckReadings: number,
+    failedGenerationsLast24h: number,
+    failedImageGensLast24h: number,
+    idleSharedDecks: number,
+  },
+  env: { stabilityKey: boolean, geminiKey: boolean, blobToken: boolean },
+  errors: string[],
+  committedSha?: string,
+}
+```
+
+#### Empty-day rule
+
+If ALL of:
+- `feedback.newLast24h === 0`
+- `health.stuckReadings === 0`
+- `health.failedGenerationsLast24h === 0`
+- `health.failedImageGensLast24h === 0`
+- `health.idleSharedDecks === 0`
+- `errors.length === 0`
+
+Then log `no activity, no markdown commit` and exit. The JSON is already on `main` as an audit heartbeat — that's enough.
+
+#### Otherwise, synthesise the markdown
+
+Write `digests/${TODAY}.md`. Headline first, then sections. Use the JSON values verbatim — no fabrication.
+
+```markdown
+# MysTech digest — ${TODAY}
+
+## Headline
+- New feedback in last 24h: ${feedback.newLast24h}
+- Total feedback by status: ${feedback.byStatus.new ?? 0} new · ${feedback.byStatus.reviewed ?? 0} reviewed · ${(feedback.byStatus.actioned ?? 0) + (feedback.byStatus.resolved ?? 0)} actioned · ${feedback.byStatus.dismissed ?? 0} dismissed
+- Health anomalies: <one-line summary, or "none">
+
+## Health
+- Stuck readings (interpretation null > 5min): ${health.stuckReadings}
+- Failed AI text generations (last 24h): ${health.failedGenerationsLast24h}
+- Failed AI image generations (last 24h): ${health.failedImageGensLast24h}
+- Public decks idle > 7d: ${health.idleSharedDecks}
+
+## Environment
+- Stability AI key: ${env.stabilityKey ? "configured" : "MISSING"}
+- Gemini key: ${env.geminiKey ? "configured" : "MISSING"}
+- Vercel Blob token: ${env.blobToken ? "configured" : "MISSING"}
+
+## Errors during run
+List entries from `errors[]` verbatim. Empty list = no section.
+
+## Suggested follow-ups
+For non-zero health items, propose a one-line action ("look at <component>" / "check the <X> flow"). For non-empty `errors[]`, propose where to look. Keep it short. If there's nothing to act on, write "All clear."
+```
+
+The route does NOT include feedback row contents — only counts. If the user wants per-row triage, that's a future enhancement (route would need to embed the rows in the JSON; today it doesn't).
+
+#### Commit and push
+
+```bash
+git add "digests/${TODAY}.md"
+git commit -m "digest: ${TODAY}"
+git push origin main
+```
 
 ## Power-user allowlist
 
-Treat these emails as priority (read carefully, never auto-dismiss):
+Treat these emails as priority signal in any future per-row triage extension:
 - `b.hemsonstruthers@gmail.com` (Benji, founder)
 - `profbenjo@gmail.com` (Benji's secondary, primary dogfooder)
 
 In MysTech, profbenjo is usually the only real submitter — every row is essentially a bug report or UX direction note.
 
-## Output: commit directly to main
+## What this agent does NOT do
 
-```bash
-git checkout main
-git pull --ff-only origin main
-mkdir -p digests
-echo "$RESPONSE" > "digests/${TODAY}.json"
-```
-
-Then synthesise `digests/${TODAY}.md`:
-
-```markdown
-# MysTech digest — YYYY-MM-DD
-
-## Headline
-- New feedback in last 24h: N
-- Total pending: P
-- Health anomalies: <one-line per anomaly, or "none">
-
-## Feedback rows
-For each new row:
-- `<id> · <email> · <page_url> · <created_at>`
-  > <verbatim message>
-  Note: priority-user / standard / noise.
-
-## Health checks
-List any from the response's `health` block that are non-zero or flagged.
-If everything's clean, write: "All clear."
-
-## Suggested follow-ups
-For priority-user rows, propose a one-line action ("look at <component>" / "check the <X> flow" / "investigate why Y"). Standard rows can be summarised.
-
-## Errors during run
-List any entries verbatim. Empty list = no section.
-```
-
-Then commit and push to `main`:
-
-```bash
-git add digests/
-git commit -m "digest: ${TODAY}"
-git push origin main
-```
-
-Do **NOT** open a PR — not even a draft, not even on failure. The commit on `main` is the audit trail. Vercel auto-deploys (no app code changed for digest-only commits, so the deploy is a no-op rebuild).
-
-### Stub commit on failure
-
-When the route call fails (non-200, network error, sandbox egress block), still commit to `main` — never to a side branch and never as a PR:
-
-```bash
-git checkout main
-git pull --ff-only origin main
-mkdir -p digests
-cat > "digests/${TODAY}.md" <<EOF
-# MysTech digest — ${TODAY} (BLOCKED)
-
-Cron route call failed.
-
-- HTTP status: ${HTTP_STATUS:-network error}
-- Response body (first 500 chars): \`$(echo "$RESPONSE" | head -c 500)\`
-
-No feedback queried, no health checks ran, no Resend email sent.
-
-## Likely causes
-- **Claude Code sandbox egress** blocks \`*.vercel.app\` hosts and returns \`403 Host not in allowlist\` (this is NOT a Vercel error — it's the agent's own proxy). Confirmed for Ubudian and Programme; same applies here.
-- \`CRON_SECRET\` mismatch (401 Unauthorized).
-- Vercel Firewall / Deployment Protection (less common — Vercel returns its own branded auth page, not the bare "Host not in allowlist" string).
-
-## Fix path
-- **403 "Host not in allowlist"**: route the agent through a custom domain (e.g. \`app.mystech.app\`) that the sandbox does allow. Add the domain in Vercel → Settings → Domains, point DNS at it, then update this trigger's seed and the agent file's curl URL.
-- **401**: regenerate \`CRON_SECRET\` in Vercel env, update the trigger seed.
-EOF
-git add "digests/${TODAY}.md"
-git commit -m "digest: blocked ${TODAY}"
-git push origin main
-```
-
-## What this agent does NOT do (yet)
-
-- Does **not** modify the database. The route already runs autonomous tasks; the agent is the human-review layer.
-- Does **not** apply code fixes. Most MysTech feedback needs design judgement on AI reading quality, not isolated code changes. A fix-attempting variant can be added later.
-- Does **not** echo `CRON_SECRET` in any committed file or commit message.
+- Does **not** call any HTTP endpoint. Pure file synthesis from the pre-committed JSON.
+- Does **not** modify the database. Stage 1 (Vercel cron) does that.
+- Does **not** apply code fixes. Most MysTech feedback needs design judgement on AI reading quality. A fix-attempting variant can be added later.
+- Does **not** echo `CRON_SECRET` (still seeded in the trigger prompt as a safety fallback, but unused in the happy path).
 
 ## Failure modes
 
-All failure modes commit a stub to `main`. **Never** open a PR.
-
-- **401** → `CRON_SECRET` is wrong. Stub commit on `main` explaining the auth failure.
-- **403 with body containing "allowlist", "blocked", or "deployment protection"** → Vercel platform layer is blocking the agent's egress. Stub commit on `main`. Recovery is to seed `VERCEL_AUTOMATION_BYPASS_SECRET` into this trigger's prompt or relax Vercel Deployment Protection.
-- **5xx** → log and commit a stub with the body to `main`.
-- **Sandbox egress block / DNS failure** → stub commit on `main` titled `digest: blocked — sandbox egress YYYY-MM-DD`.
+| Symptom | Meaning | Action |
+|---------|---------|--------|
+| `digests/${TODAY}.json` missing at agent run time | Vercel cron skipped, delayed, or 5xx'd | Commit `(NO DATA)` stub markdown, exit |
+| JSON present but empty (all counts 0, no errors) | Quiet day | No markdown commit, exit |
+| JSON has non-empty `errors[]` | Stage 1 partial failure | Synthesise markdown anyway, list errors verbatim |
+| `git push` rejected (non-fast-forward) | Stage 1 just pushed; race | `git pull --rebase origin main` once, retry push |
 
 ## Completion signal
 
 Output ≤4 lines:
-- New feedback count
-- Health anomaly summary
-- Commit SHA on `main` or "no commit (empty run)"
+- JSON state (present / missing)
+- Markdown action (committed real / committed no-data stub / skipped empty-day)
+- Commit SHA on `main` (or "no commit")
+- Anything that warrants Benji's attention tomorrow morning

@@ -40,19 +40,22 @@ npm run test:e2e:ui  # Playwright with interactive UI
 - **Git Remote**: https://github.com/Benji-cpu/mystech-v5.git
 - **Shipping mode**: direct-to-production for everything — interactive sessions AND scheduled routines. Commit on `main`, push, Vercel auto-deploys. No PRs. See master `Code/CLAUDE.md` "Shipping Standard."
 
-## Cron Jobs
+## Cron Jobs — GitHub-as-bus architecture
 
-Scheduled via a **Claude Code remote agent** registered through claude.ai (https://claude.ai/code/scheduled). The HTTP cron route still verifies `Authorization: Bearer ${CRON_SECRET}` and returns 401 without it.
+The nightly routine runs in **two stages** with `git` as the message bus. This is a deliberate workaround for Anthropic's sandbox egress allowlist (issues #50146, #52982, #30112, #19087), which blocks `*.vercel.app` from inside Claude Code remote agents and is not user-configurable. By splitting data-gathering (Vercel, full network) from synthesis (Claude, github.com only), the allowlist becomes irrelevant.
 
-| Backend | Schedule (UTC) | Local (WITA) | Endpoint / file |
-|---------|----------------|--------------|-----------------|
-| Claude Code remote agent | `22 19 * * *` | 03:22 Bali | calls `GET /api/cron/nightly-routine?digest=true`; agent prompt at `.claude/agents/nightly-routine.md` |
+| Stage | Driver | Schedule (UTC) | Local (WITA) | Effect |
+|-------|--------|----------------|--------------|--------|
+| 1. Data gather | Vercel cron (`vercel.json`) | `15 19 * * *` | 03:15 | Drizzle queries → JSON → Resend email → commits `digests/YYYY-MM-DD.json` to `main` via GitHub Contents API |
+| 2. Synthesis | Claude Code remote trigger `trig_01TKZ5AcWYUjmXPffoRd1qaz` | `22 19 * * *` | 03:22 | Reads the JSON, writes `digests/YYYY-MM-DD.md`, commits to `main` |
 
-The nightly route runs feedback digest + project health checks (stuck readings, failed AI generations, idle public decks) and emails a summary to `ADMIN_EMAIL` via Resend. The remote agent calls this route, then writes a versioned `digests/YYYY-MM-DD.md` and commits it directly to `main` (no PRs).
+The 7-minute gap absorbs Vercel cron jitter (Hobby SLA is best-effort). Both stages are direct-to-main — no PRs anywhere. Route + agent file: `src/app/api/cron/nightly-routine/route.ts` + `.claude/agents/nightly-routine.md`.
+
+The route still gates on `Authorization: Bearer ${CRON_SECRET}`. Vercel cron sets that header automatically; manual invocations need `-H "Authorization: Bearer $CRON_SECRET"`. The `?commit=true` query enables the GitHub commit step (gated additionally on `GITHUB_TOKEN` env being set — the route gracefully no-ops without it).
 
 ## Trigger Maintenance
 
-The nightly remote trigger is editable from this CLI — claude.ai/code/scheduled is **not** the only path.
+The remote trigger is editable from this CLI — `claude.ai/code/scheduled` is **not** the only path.
 
 - **Owner**: `b.hemsonstruthers@gmail.com` (account `22cd2bd1-ef82-4a04-b0c1-5c5eaa1123ba`)
 - **Trigger ID**: `trig_01TKZ5AcWYUjmXPffoRd1qaz` ("MysTech — daily nightly-routine")
@@ -66,14 +69,16 @@ Inspect / edit / fire from any session via the `schedule` skill + `RemoteTrigger
 - Fire now: `RemoteTrigger {action: "run", trigger_id: "..."}`
 - Delete: not supported via API — use https://claude.ai/code/scheduled
 
-The trigger prompt body must stay a thin shim: "read `.claude/agents/nightly-routine.md` and follow it exactly," plus the seeded `CRON_SECRET` (and optionally `VERCEL_AUTOMATION_BYPASS_SECRET`). When the agent file changes flow rules (e.g. PR vs. direct-to-main), re-check the prompt.
+Trigger prompt body should stay a thin shim: "read `.claude/agents/nightly-routine.md` and follow it exactly." `CRON_SECRET` is still seeded as a fallback but normally unused — the bus pattern means the agent never makes outbound HTTPS calls.
 
 ### Failure runbook
 
-- **401** → `CRON_SECRET` drift. Compare the secret in the trigger's prompt body against Vercel env (`vercel env ls` or dashboard), update whichever is stale via `RemoteTrigger update`.
-- **403 "Host not in allowlist"** → Claude Code sandbox egress block on `*.vercel.app`. NOT a Vercel error. Fix paths: (a) point a custom domain (e.g. `app.mystech.app`) at the Vercel project, then update the agent file's curl URL + the trigger prompt's "Production host" + "Endpoint" lines; (b) seed `VERCEL_AUTOMATION_BYPASS_SECRET` only helps if the 403 is from Vercel Deployment Protection — verify by checking response body wording.
-- **403 with "deployment protection" / Vercel-branded body** → Vercel Deployment Protection. Generate a Protection Bypass for Automation secret and seed it as `VERCEL_AUTOMATION_BYPASS_SECRET` in the trigger prompt. The agent already adds the `x-vercel-protection-bypass` header when this env is present.
-- **5xx** → bug in `/api/cron/nightly-routine`. Check Vercel runtime logs for the route, fix the route, redeploy.
+- **No JSON committed today** → Vercel cron skipped/failed. Check Vercel project → Logs for `/api/cron/nightly-routine`. Manually fire: `curl -sf -H "Authorization: Bearer $CRON_SECRET" "https://mystech-v5.vercel.app/api/cron/nightly-routine?digest=true&commit=true"` (route is idempotent — re-running updates the existing day's JSON via SHA).
+- **JSON exists, no markdown** → agent didn't run, or ran and skipped per empty-day rule. Check trigger run history at https://claude.ai/code/scheduled.
+- **`(NO DATA)` stub markdown** → JSON wasn't there when the agent ran. Either Vercel cron lagged, or the route errored before commit. Vercel logs first.
+- **401 from GitHub commit** (route logs `github commit: 401`) → `GITHUB_TOKEN` expired or scope drift. Regenerate a fine-grained PAT scoped to `Benji-cpu/mystech-v5` with `Contents: read/write`, update Vercel env.
+- **5xx from `/api/cron/nightly-routine`** → bug in the route. Vercel runtime logs for the route, fix, redeploy.
+- **DO NOT** chase `403 Host not in allowlist` from inside the agent any more — that's the failure mode this architecture exists to eliminate. If you see it, the agent is calling a `*.vercel.app` host it shouldn't be.
 
 ## Feedback Module
 
@@ -200,7 +205,7 @@ This is non-negotiable — never claim a UI change is done without visual verifi
 **Required (AI):** `GOOGLE_GENERATIVE_AI_API_KEY`
 **Required (Stripe):** `STRIPE_SECRET_KEY`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `STRIPE_PRO_PRICE_ID`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PORTAL_CONFIG_ID`
 **Required (Storage):** `BLOB_READ_WRITE_TOKEN`
-**Required (Cron):** `CRON_SECRET` (also set the same value as a GitHub repo secret)
+**Required (Cron):** `CRON_SECRET` (also set the same value as a GitHub repo secret), `GITHUB_TOKEN` (fine-grained PAT scoped to `Benji-cpu/mystech-v5` with `Contents: read/write` — used by `/api/cron/nightly-routine?commit=true` to write `digests/YYYY-MM-DD.json` via the GitHub Contents API)
 **Required (Email):** `RESEND_API_KEY`, `ADMIN_EMAIL` (digest destination)
 **Optional:** `NEXT_PUBLIC_APP_URL`, `EMAIL_FROM`
 

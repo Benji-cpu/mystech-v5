@@ -126,7 +126,59 @@ export async function GET(request: Request) {
     }
   }
 
+  if (url.searchParams.get("commit") === "true" && process.env.GITHUB_TOKEN) {
+    try {
+      const result = await commitDigestJson(payload, process.env.GITHUB_TOKEN);
+      (payload as Payload & { committedSha?: string }).committedSha = result.sha;
+    } catch (err) {
+      payload.errors.push(`github commit: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+
   return NextResponse.json(payload);
+}
+
+async function commitDigestJson(payload: Payload, token: string): Promise<{ sha: string }> {
+  const date = payload.startedAt.slice(0, 10);
+  const path = `digests/${date}.json`;
+  const repo = "Benji-cpu/mystech-v5";
+  const url = `https://api.github.com/repos/${repo}/contents/${path}`;
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    Accept: "application/vnd.github+json",
+    "X-GitHub-Api-Version": "2022-11-28",
+    "User-Agent": "mystech-v5-cron",
+  };
+
+  const existing = await fetch(`${url}?ref=main`, { headers });
+  let existingSha: string | undefined;
+  if (existing.status === 200) {
+    const json = (await existing.json()) as { sha?: string };
+    existingSha = json.sha;
+  } else if (existing.status !== 404) {
+    throw new Error(`GET contents returned ${existing.status}: ${await existing.text()}`);
+  }
+
+  const content = Buffer.from(JSON.stringify(payload, null, 2) + "\n", "utf8").toString("base64");
+  const body = {
+    message: `digest(json): ${date}`,
+    content,
+    branch: "main",
+    committer: { name: "MysTech Cron", email: "hello@mystech.app" },
+    author: { name: "MysTech Cron", email: "hello@mystech.app" },
+    ...(existingSha ? { sha: existingSha } : {}),
+  };
+
+  const put = await fetch(url, {
+    method: "PUT",
+    headers: { ...headers, "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!put.ok) {
+    throw new Error(`PUT contents returned ${put.status}: ${await put.text()}`);
+  }
+  const putJson = (await put.json()) as { content?: { sha?: string }; commit?: { sha?: string } };
+  return { sha: putJson.commit?.sha ?? putJson.content?.sha ?? "" };
 }
 
 type Payload = {

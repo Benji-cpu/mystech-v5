@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/nightly-routine?digest=true&commit=true",
+      "schedule": "15 19 * * *"
+    }
+  ]
+}
