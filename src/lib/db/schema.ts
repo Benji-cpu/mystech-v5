@@ -158,6 +158,12 @@ export const decks = pgTable(
     artStyleId: text("art_style_id").references(() => artStyles.id, {
       onDelete: "set null",
     }),
+    // Print-on-Demand assets — generated on demand before checkout
+    cardBackImageUrl: text("card_back_image_url"),
+    cardBackImagePrompt: text("card_back_image_prompt"),
+    boxArtImageUrl: text("box_art_image_url"),
+    boxArtImagePrompt: text("box_art_image_prompt"),
+    printableMinCards: integer("printable_min_cards").notNull().default(22),
     createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
   },
@@ -507,9 +513,44 @@ export const userProfiles = pgTable("user_profile", {
   contextVersion: integer("context_version").default(0).notNull(),
   activePathId: text("active_path_id").references(() => paths.id, { onDelete: "set null" }),
   guidanceEnabled: boolean("guidance_enabled").default(true).notNull(),
+  // Daily Card retention loop — see /api/cron/daily-card and /lib/daily-card
+  timezone: text("timezone").notNull().default("UTC"),
+  dailyCardEnabled: boolean("daily_card_enabled").default(true).notNull(),
+  dailyCardTime: integer("daily_card_time").notNull().default(8), // local hour 0-23
+  dailyCardDeckId: text("daily_card_deck_id"), // FK to decks; nullable. No inline ref to avoid cycle.
+  dailyCardLastSentDate: date("daily_card_last_sent_date", { mode: "string" }),
+  dailyCardStreak: integer("daily_card_streak").notNull().default(0),
+  dailyCardLongestStreak: integer("daily_card_longest_streak").notNull().default(0),
+  dailyCardLastOpenedDate: date("daily_card_last_opened_date", { mode: "string" }),
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
 });
+
+// Daily Card delivery log — append-only; idempotency anchor for the hourly cron.
+// Unique (userId, deliveryDate, channel) prevents double-sending in the same local day.
+export const dailyCardDeliveries = pgTable(
+  "daily_card_delivery",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    deliveryDate: date("delivery_date", { mode: "string" }).notNull(), // user's local YYYY-MM-DD
+    cardId: text("card_id").references(() => cards.id, { onDelete: "set null" }),
+    deckId: text("deck_id").references(() => decks.id, { onDelete: "set null" }),
+    readingId: text("reading_id").references(() => readings.id, { onDelete: "set null" }),
+    channel: text("channel").notNull().default("email"), // 'email' | 'push'
+    emailMessageId: text("email_message_id"),
+    sentAt: timestamp("sent_at", { mode: "date" }).defaultNow().notNull(),
+    openedAt: timestamp("opened_at", { mode: "date" }),
+  },
+  (t) => [
+    unique().on(t.userId, t.deliveryDate, t.channel),
+    index("daily_card_delivery_user_idx").on(t.userId),
+  ]
+);
 
 // Astrology profiles (1:1 with users)
 export const astrologyProfiles = pgTable("astrology_profile", {
@@ -1055,6 +1096,62 @@ export const deploymentEvents = pgTable(
   (t) => [
     index("deployment_event_created_at_idx").on(t.createdAt),
     index("deployment_event_state_idx").on(t.state),
+  ]
+);
+
+// ── Print orders (Phase 2 — print-on-demand decks) ──────────────────────
+
+export const printOrders = pgTable(
+  "print_order",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }), // never lose a paid order
+    deckId: text("deck_id")
+      .notNull()
+      .references(() => decks.id, { onDelete: "restrict" }),
+    deckSnapshot: jsonb("deck_snapshot")
+      .$type<{
+        title: string;
+        cardCount: number;
+        cardIds: string[];
+        coverImageUrl: string | null;
+        cardBackImageUrl: string;
+        boxArtImageUrl: string;
+      }>()
+      .notNull(),
+    status: text("status").notNull().default("pending_payment"),
+    // pending_payment | paid | pack_ready | submitted_to_vendor | in_production | shipped | delivered | canceled | refunded
+    stripeCheckoutSessionId: text("stripe_checkout_session_id").unique(),
+    stripePaymentIntentId: text("stripe_payment_intent_id").unique(),
+    amountTotal: integer("amount_total").notNull(), // cents
+    currency: text("currency").notNull().default("usd"),
+    shippingName: text("shipping_name"),
+    shippingAddress: jsonb("shipping_address").$type<{
+      line1: string;
+      line2?: string;
+      city: string;
+      state?: string;
+      postalCode: string;
+      country: string;
+    }>(),
+    printPackUrl: text("print_pack_url"),
+    vendor: text("vendor"),
+    vendorOrderId: text("vendor_order_id"),
+    trackingCarrier: text("tracking_carrier"),
+    trackingNumber: text("tracking_number"),
+    notes: text("notes"),
+    createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+    paidAt: timestamp("paid_at", { mode: "date" }),
+    shippedAt: timestamp("shipped_at", { mode: "date" }),
+    deliveredAt: timestamp("delivered_at", { mode: "date" }),
+  },
+  (t) => [
+    index("print_order_user_idx").on(t.userId),
+    index("print_order_status_idx").on(t.status),
   ]
 );
 
