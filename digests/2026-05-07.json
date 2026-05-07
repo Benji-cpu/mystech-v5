@@ -1,19 +1,19 @@
 {
   "project": "mystech-v5",
-  "startedAt": "2026-05-07T00:17:21.594Z",
-  "finishedAt": "2026-05-07T00:17:22.765Z",
+  "startedAt": "2026-05-07T19:37:42.674Z",
+  "finishedAt": "2026-05-07T19:37:43.786Z",
   "feedback": {
     "byStatus": {
       "reviewed": 13,
       "dismissed": 2,
       "new": 21
     },
-    "newLast24h": 6
+    "newLast24h": 0
   },
   "health": {
     "stuckReadings": 11,
-    "failedGenerationsLast24h": 9,
-    "failedImageGensLast24h": 9,
+    "failedGenerationsLast24h": 0,
+    "failedImageGensLast24h": 0,
     "idleSharedDecks": 0
   },
   "env": {
