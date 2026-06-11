@@ -25,7 +25,7 @@ export default async function OnboardingPage() {
     .where(eq(users.id, user.id!));
 
   if (userData?.initiationCompletedAt) {
-    redirect("/home");
+    redirect("/today");
   }
 
   // Infer resume phase from existing data
@@ -57,7 +57,7 @@ export default async function OnboardingPage() {
       .update(users)
       .set({ initiationCompletedAt: new Date() })
       .where(eq(users.id, user.id!));
-    redirect("/home");
+    redirect("/today");
   }
 
   // If user has a deck but no reading, skip to reveal phase

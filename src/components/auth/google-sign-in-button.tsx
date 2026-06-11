@@ -7,7 +7,7 @@ interface GoogleSignInButtonProps {
   callbackUrl?: string;
 }
 
-export function GoogleSignInButton({ callbackUrl = "/home" }: GoogleSignInButtonProps = {}) {
+export function GoogleSignInButton({ callbackUrl = "/today" }: GoogleSignInButtonProps = {}) {
   const [isLoading, setIsLoading] = useState(false);
 
   function handleClick() {

@@ -49,9 +49,9 @@ interface CtaConfig {
 function freeCta(isAuthenticated: boolean, currentPlan: PlanType | null): CtaConfig {
   if (!isAuthenticated) return { kind: "link", label: "Get Started", href: "/login" };
   if (currentPlan === "pro" || currentPlan === "admin") {
-    return { kind: "link", label: "Go to Dashboard", href: "/home" };
+    return { kind: "link", label: "Go to Dashboard", href: "/today" };
   }
-  return { kind: "link", label: "Open MysTech", href: "/home" };
+  return { kind: "link", label: "Open MysTech", href: "/today" };
 }
 
 function proCta(isAuthenticated: boolean, currentPlan: PlanType | null): CtaConfig {

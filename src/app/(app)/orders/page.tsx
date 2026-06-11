@@ -42,7 +42,7 @@ export default async function OrdersPage() {
     <EditorialShell>
       <div className="mb-6">
         <Link
-          href="/home"
+          href="/today"
           className="inline-flex items-center gap-2 text-sm hover:opacity-80"
           style={{ color: "var(--ink-mute)" }}
         >

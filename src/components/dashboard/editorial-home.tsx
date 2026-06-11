@@ -42,6 +42,8 @@ export function EditorialHome({ data }: { data: EditorialHomeData }) {
       <div className="mx-auto max-w-xl px-6 py-10 pb-28 sm:px-10 sm:py-14">
         {/* Meta row */}
         <motion.div {...fade} transition={spring} className="flex flex-wrap items-center gap-2">
+          <span className="eyebrow" style={{ color: "var(--accent-gold)" }}>Today</span>
+          <span style={{ color: "var(--line)" }}>·</span>
           <span className="eyebrow">{data.meta.weekday}</span>
           {data.meta.moonPhase && (
             <>

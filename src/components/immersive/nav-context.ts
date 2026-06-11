@@ -34,7 +34,7 @@ const routeRules: RouteRule[] = [
   { pattern: /^\/decks\/[^/]+$/, backTarget: "/decks", backLabel: "Decks" },
 
   // Readings (focus mode for new reading flow)
-  { pattern: /^\/readings\/quick$/, backTarget: "/home", backLabel: "Home", focusMode: true, focusTitle: "Quick Draw", focusSubtitle: "Pull a card" },
+  { pattern: /^\/readings\/quick$/, backTarget: "/today", backLabel: "Today", focusMode: true, focusTitle: "Quick Draw", focusSubtitle: "Pull a card" },
   { pattern: /^\/readings\/new$/, backTarget: "/readings", backLabel: "Readings", focusMode: true, focusTitle: "New Reading", focusSubtitle: "Consult the cards" },
   { pattern: /^\/readings\/[^/]+$/, backTarget: "/readings", backLabel: "Readings" },
 
@@ -42,15 +42,15 @@ const routeRules: RouteRule[] = [
   { pattern: /^\/paths\/[^/]+$/, backTarget: "/paths", backLabel: "Paths" },
 
   // Chronicle (focus mode — process flows)
-  { pattern: /^\/chronicle\/today$/, backTarget: "/decks", backLabel: "Decks", focusMode: true, focusTitle: "Daily Chronicle", focusSubtitle: "Today's practice" },
-  { pattern: /^\/chronicle\/setup$/, backTarget: "/home", backLabel: "Home", focusMode: true, focusTitle: "Chronicle Setup", focusSubtitle: "Begin your practice" },
+  { pattern: /^\/chronicle\/today$/, backTarget: "/today", backLabel: "Today", focusMode: true, focusTitle: "Daily Chronicle", focusSubtitle: "Today's practice" },
+  { pattern: /^\/chronicle\/setup$/, backTarget: "/today", backLabel: "Today", focusMode: true, focusTitle: "Chronicle Setup", focusSubtitle: "Begin your practice" },
 
   // Settings
   { pattern: /^\/settings\/billing$/, backTarget: "/settings", backLabel: "Settings" },
   { pattern: /^\/settings\/[^/]+$/, backTarget: "/settings", backLabel: "Settings" },
 
   // Onboarding (focus mode — immersive first-run experience)
-  { pattern: /^\/onboarding$/, backTarget: "/home", backLabel: "Home", focusMode: true },
+  { pattern: /^\/onboarding$/, backTarget: "/today", backLabel: "Today", focusMode: true },
 
   // Admin sub-pages
   { pattern: /^\/admin\/[^/]+$/, backTarget: "/admin", backLabel: "Admin" },

@@ -124,7 +124,7 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
       return;
     }
     await fetch("/api/onboarding/complete", { method: "POST" });
-    router.push("/home?initiated=true");
+    router.push("/today?initiated=true");
   }, [onInitiationComplete, router]);
   const defaultsRestored = useRef(false);
 

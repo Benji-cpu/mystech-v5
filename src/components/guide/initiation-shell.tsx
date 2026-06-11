@@ -543,7 +543,7 @@ export function InitiationShell({
   const handleSkip = useCallback(async () => {
     tts.stop();
     await fetch("/api/onboarding/complete", { method: "POST" });
-    router.push("/home");
+    router.push("/today");
   }, [router, tts]);
 
   const handleQuestionSubmit = useCallback(async (input: string) => {

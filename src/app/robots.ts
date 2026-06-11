@@ -10,6 +10,7 @@ export default function robots(): MetadataRoute.Robots {
         allow: ["/", "/pricing", "/shared/"],
         disallow: [
           "/api/",
+          "/today",
           "/home",
           "/dashboard",
           "/settings/",

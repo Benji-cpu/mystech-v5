@@ -15,8 +15,8 @@ const emailAuthEnabled = Boolean(process.env.RESEND_API_KEY);
 
 // Only allow internal paths to prevent open-redirect via ?next=
 function safeCallbackUrl(next: string | undefined): string {
-  if (!next) return "/home";
-  if (!next.startsWith("/") || next.startsWith("//")) return "/home";
+  if (!next) return "/today";
+  if (!next.startsWith("/") || next.startsWith("//")) return "/today";
   return next;
 }
 

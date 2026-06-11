@@ -30,7 +30,8 @@ export default {
   callbacks: {
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
-      const isOnApp = nextUrl.pathname.startsWith("/home") ||
+      const isOnApp = nextUrl.pathname.startsWith("/today") ||
+        nextUrl.pathname.startsWith("/home") ||
         nextUrl.pathname.startsWith("/dashboard") ||
         nextUrl.pathname.startsWith("/profile") ||
         nextUrl.pathname.startsWith("/decks") ||
@@ -54,7 +55,7 @@ export default {
       }
 
       if (isOnLogin && isLoggedIn) {
-        return Response.redirect(new URL("/home", nextUrl));
+        return Response.redirect(new URL("/today", nextUrl));
       }
 
       return true;

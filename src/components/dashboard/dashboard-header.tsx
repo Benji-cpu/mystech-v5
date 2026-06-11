@@ -29,7 +29,7 @@ export function DashboardHeader({ userName, className }: DashboardHeaderProps) {
       transition={spring}
     >
       <Link
-        href="/home"
+        href="/today"
         className="shrink-0 group"
         aria-label="Return to Lyra"
       >

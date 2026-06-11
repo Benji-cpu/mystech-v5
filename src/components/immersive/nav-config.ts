@@ -1,4 +1,4 @@
-import { Compass, Layers, MessageCircle, Settings } from "lucide-react";
+import { Sun, Layers, MessageCircle, Settings } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 export interface NavTab {
@@ -23,17 +23,17 @@ export const BADGE_STORAGE_PREFIX = "mystech:dismissed-nav-badges:";
 
 export const navTabs: NavTab[] = [
   {
-    href: "/home",
-    label: "Path",
-    icon: Compass,
-    activePrefixes: ["/home", "/dashboard", "/paths", "/readings", "/chronicle"],
+    href: "/today",
+    label: "Today",
+    icon: Sun,
+    activePrefixes: ["/today", "/home", "/dashboard", "/paths", "/readings", "/chronicle", "/daily"],
     minStage: 0,
   },
   {
     href: "/decks",
     label: "Deck",
     icon: Layers,
-    activePrefixes: ["/decks", "/studio"],
+    activePrefixes: ["/decks", "/studio", "/art-styles"],
     minStage: 0,
   },
   {

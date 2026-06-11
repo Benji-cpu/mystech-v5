@@ -17,6 +17,8 @@ export default auth((req: NextRequest & { auth: unknown }) => {
 
 export const config = {
   matcher: [
+    "/today/:path*",
+    "/today",
     "/home/:path*",
     "/home",
     "/dashboard/:path*",

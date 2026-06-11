@@ -11,7 +11,7 @@ interface EmailSignInFormProps {
   callbackUrl?: string;
 }
 
-export function EmailSignInForm({ callbackUrl = "/home" }: EmailSignInFormProps = {}) {
+export function EmailSignInForm({ callbackUrl = "/today" }: EmailSignInFormProps = {}) {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
