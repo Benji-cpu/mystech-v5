@@ -29,8 +29,6 @@ export async function GET() {
       hour: userProfiles.dailyCardTime,
       timezone: userProfiles.timezone,
       deckId: userProfiles.dailyCardDeckId,
-      streak: userProfiles.dailyCardStreak,
-      longestStreak: userProfiles.dailyCardLongestStreak,
       lastSentDate: userProfiles.dailyCardLastSentDate,
     })
     .from(userProfiles)
@@ -43,8 +41,6 @@ export async function GET() {
       hour: 8,
       timezone: "UTC",
       deckId: null,
-      streak: 0,
-      longestStreak: 0,
       lastSentDate: null,
     },
   });

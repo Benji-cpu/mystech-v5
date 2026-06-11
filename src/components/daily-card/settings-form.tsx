@@ -14,8 +14,6 @@ type Initial = {
   hour: number;
   timezone: string;
   deckId: string | null;
-  streak: number;
-  longestStreak: number;
 };
 
 type DeckOption = { id: string; title: string; cardCount: number };
@@ -80,10 +78,10 @@ export function DailyCardSettingsForm({
         <div className="flex items-start justify-between gap-4">
           <div>
             <Label className="text-base font-medium" style={{ color: "var(--ink-strong)" }}>
-              Daily card
+              Daily reminder
             </Label>
             <p className="mt-1 text-sm" style={{ color: "var(--ink-mute)" }}>
-              One card from your deck delivered each morning at your local time.
+              A morning email nudging you toward the day&rsquo;s ritual, at your local time.
             </p>
           </div>
           <Switch
@@ -164,29 +162,13 @@ export function DailyCardSettingsForm({
         )}
       </EditorialCard>
 
-      <EditorialCard padding="md" tone="warm">
-        <div className="flex items-baseline justify-between">
-          <div>
-            <p className="text-xs uppercase tracking-widest" style={{ color: "var(--ink-mute)" }}>
-              Current streak
-            </p>
-            <p className="mt-1 text-3xl font-light" style={{ color: "var(--ink-strong)" }}>
-              {initial.streak} {initial.streak === 1 ? "day" : "days"}
-            </p>
-          </div>
-          <p className="text-sm" style={{ color: "var(--ink-mute)" }}>
-            Longest: {initial.longestStreak}
-          </p>
-        </div>
-      </EditorialCard>
-
       <p className="text-xs text-center" style={{ color: "var(--ink-mute)" }}>
-        We&rsquo;ll never send more than one card a day. Toggle off any time.
+        We&rsquo;ll never send more than one reminder a day. Toggle off any time.
       </p>
 
       <div className="flex justify-center">
         <Button asChild variant="outline" size="sm">
-          <a href="/daily">Open today&rsquo;s card</a>
+          <a href="/today">Go to Today</a>
         </Button>
       </div>
     </div>

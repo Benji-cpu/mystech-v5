@@ -18,8 +18,6 @@ export default async function DailyCardSettingsPage() {
       hour: userProfiles.dailyCardTime,
       timezone: userProfiles.timezone,
       deckId: userProfiles.dailyCardDeckId,
-      streak: userProfiles.dailyCardStreak,
-      longestStreak: userProfiles.dailyCardLongestStreak,
     })
     .from(userProfiles)
     .where(eq(userProfiles.userId, user.id!))
@@ -36,16 +34,14 @@ export default async function DailyCardSettingsPage() {
     hour: profile?.hour ?? 8,
     timezone: profile?.timezone ?? "UTC",
     deckId: profile?.deckId ?? null,
-    streak: profile?.streak ?? 0,
-    longestStreak: profile?.longestStreak ?? 0,
   };
 
   return (
     <EditorialShell>
       <EditorialHeader
         eyebrow="Settings"
-        title="Daily Card"
-        whisper="A single card delivered to your inbox at your local morning hour. The cards listen — let them open the day with you."
+        title="Daily Reminder"
+        whisper="A morning nudge toward your daily practice, delivered at your local hour."
       />
 
       <div className="mb-6">
