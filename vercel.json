@@ -3,10 +3,6 @@
     {
       "path": "/api/cron/nightly-routine?digest=true&commit=true",
       "schedule": "15 19 * * *"
-    },
-    {
-      "path": "/api/cron/daily-card",
-      "schedule": "5 * * * *"
     }
   ]
 }

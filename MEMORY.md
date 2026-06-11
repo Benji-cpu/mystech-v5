@@ -14,7 +14,7 @@ Learned-experience notes that don't belong in CLAUDE.md. Keep entries concise (1
 
 ## Daily Card (Phase 1) + Print-on-Demand (Phase 2)
 
-- Daily Card cron runs hourly at minute 5 (`vercel.json`). Per-user fanout: filter on user's local hour matches `dailyCardTime`, idempotent via `daily_card_delivery (userId, deliveryDate, channel)` unique index. Skips users with no deck — no starter-deck seed has been built yet (see plan §12.8).
+- Daily Card cron ticks hourly at minute 5 via GitHub Actions (`.github/workflows/daily-card-tick.yml`), NOT vercel.json — Vercel Hobby rejects sub-daily crons and an hourly vercel.json entry silently failed EVERY prod deploy 2026-05-07→2026-06-11. Per-user fanout: filter on user's local hour matches `dailyCardTime`, idempotent via `daily_card_delivery (userId, deliveryDate, channel)` unique index. Skips users with no deck — no starter-deck seed has been built yet (see plan §12.8).
 - Daily Card draws insert directly into `readings` with `spreadType='daily'` — they bypass `checkDailyReadings` because the cron path doesn't call that gate (not a code-level bypass; just don't route through `/api/readings`).
 - Print orders use `printOrders.deckSnapshot` JSONB frozen at order time + `onDelete: 'restrict'` on userId/deckId so a paid deck can't be orphaned by deletion.
 - Print fulfillment is **manual in Phase 2** — webhook auto-forges a JSON manifest (not a ZIP) and sets order to `pack_ready`; admin downloads the manifest URL and places vendor order by hand. Mark-shipped UI sends the tracking email.
@@ -34,7 +34,7 @@ Learned-experience notes that don't belong in CLAUDE.md. Keep entries concise (1
 ## Known gaps to revisit
 
 - No automatic spam dedup on feedback. Identical message from same user can be submitted repeatedly.
-- `vercel.json` does not exist yet; if Pro plan is adopted later, sub-daily project-specific crons can move there.
+- `vercel.json` exists and may ONLY contain daily-or-slower crons on the Hobby plan; sub-daily jobs go in GitHub Actions. If Pro is adopted later they can move back.
 - 12 pre-existing Vitest failures (4 files: ai/reading, ai/generate-deck, readings route, reading-flow-state) + matching tsc errors in test files — mock/type drift on main, predates the 2026-06 IA overhaul. `npm run build` unaffected.
 
 ## IA overhaul (2026-06, Phase 1 of 4 shipped)

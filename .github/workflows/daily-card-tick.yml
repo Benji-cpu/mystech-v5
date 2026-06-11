@@ -1,0 +1,27 @@
+# Hourly tick for the daily-card delivery route.
+#
+# Lives in GitHub Actions because Vercel Hobby only allows daily cron jobs —
+# an hourly entry in vercel.json fails EVERY production deployment with
+# "Hobby accounts are limited to daily cron jobs" (this broke all deploys
+# 2026-05-07 → 2026-06-11). Per the master Code/CLAUDE.md convention,
+# GitHub Actions owns sub-daily project jobs.
+#
+# The route itself is timezone-aware: it no-ops for users whose local
+# delivery hour doesn't match, so an hourly global tick is correct.
+
+name: daily-card-tick
+
+on:
+  schedule:
+    - cron: "5 * * * *"
+  workflow_dispatch:
+
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call daily-card cron route
+        run: |
+          curl -sf --max-time 290 \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "https://mystech-v5.vercel.app/api/cron/daily-card"
