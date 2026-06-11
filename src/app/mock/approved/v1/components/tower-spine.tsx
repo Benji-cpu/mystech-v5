@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import type { ViewId } from "@/app/mock/full/_shared/types";
+import type { ViewId } from "@/app/mock/approved/_shared/types";
 
 const FLOOR_ORDER: { id: ViewId; label: string }[] = [
   { id: "dashboard", label: "Home" },

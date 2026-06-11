@@ -2,14 +2,14 @@
 
 import { useReducer, useEffect, useRef, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MOCK_DECKS, MOCK_READING_INTERPRETATION, shuffleArray } from "@/app/mock/full/_shared/mock-data-v1";
+import { MOCK_DECKS, MOCK_READING_INTERPRETATION, shuffleArray } from "@/app/mock/approved/_shared/mock-data-v1";
 import { useMockImmersive } from "@/components/mock/mock-immersive-provider";
 import { MockCardFront, MockCardBack } from "@/components/mock/mock-card";
 import { useCardReveal } from "@/hooks/use-card-reveal";
 import { GlassPanel } from "./shared/glass-panel";
 import { GoldButton } from "./shared/gold-button";
-import type { ReadingPhase } from "@/app/mock/full/_shared/types";
-import type { MockFullCard } from "@/app/mock/full/_shared/types";
+import type { ReadingPhase } from "@/app/mock/approved/_shared/types";
+import type { MockFullCard } from "@/app/mock/approved/_shared/types";
 // ---- State Machine ----
 
 interface ReadingState {

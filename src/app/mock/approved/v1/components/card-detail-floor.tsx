@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { getCardById } from "@/app/mock/full/_shared/mock-data-v1";
+import { getCardById } from "@/app/mock/approved/_shared/mock-data-v1";
 
 interface CardDetailFloorProps {
   cardId: string;

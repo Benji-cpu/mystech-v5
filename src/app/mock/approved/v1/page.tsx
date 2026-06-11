@@ -3,7 +3,7 @@
 import { useReducer, useCallback, useMemo } from "react";
 import { motion, LayoutGroup } from "framer-motion";
 import { MockImmersiveShell } from "@/components/mock/mock-immersive-shell";
-import type { ViewId, ViewParams, AppState, AppAction } from "@/app/mock/full/_shared/types";
+import type { ViewId, ViewParams, AppState, AppAction } from "@/app/mock/approved/_shared/types";
 import { cn } from "@/lib/utils";
 
 // Floor components

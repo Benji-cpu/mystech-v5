@@ -2,8 +2,8 @@
 
 import { motion } from "framer-motion";
 import { useEffect, useState, useRef } from "react";
-import { MOCK_DECKS } from "@/app/mock/full/_shared/mock-data-v1";
-import type { ViewId, ViewParams } from "@/app/mock/full/_shared/types";
+import { MOCK_DECKS } from "@/app/mock/approved/_shared/mock-data-v1";
+import type { ViewId, ViewParams } from "@/app/mock/approved/_shared/types";
 
 interface GenerationFloorProps {
   onNavigate: (view: ViewId, params?: ViewParams) => void;

@@ -111,7 +111,7 @@ Standardised cross-project feedback collection. Schema: `feedback` table in `src
 - `AnimatePresence mode="wait"` between phases is an anti-pattern — refactor to zones
 - `AnimatePresence` is only for elements that truly enter/exit (modals, toasts, overlays)
 - See `.claude/rules/flow-patterns.md` for full details and code patterns
-- Reference implementation: `src/app/mock/reading/ceremony/page.tsx`
+- Reference implementation: `src/app/mock/approved/ceremony/page.tsx`
 
 ### Immersive UI
 - Next.js routing is the backbone — real URLs, deep links, SSR all work normally

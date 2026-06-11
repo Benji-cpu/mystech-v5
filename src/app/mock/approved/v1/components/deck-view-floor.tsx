@@ -1,10 +1,10 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { getDeckById, getStyleById } from "@/app/mock/full/_shared/mock-data-v1";
+import { getDeckById, getStyleById } from "@/app/mock/approved/_shared/mock-data-v1";
 import { GlassPanel } from "./shared/glass-panel";
 import { GoldButton } from "./shared/gold-button";
-import type { ViewId, ViewParams } from "@/app/mock/full/_shared/types";
+import type { ViewId, ViewParams } from "@/app/mock/approved/_shared/types";
 
 interface DeckViewFloorProps {
   deckId: string;

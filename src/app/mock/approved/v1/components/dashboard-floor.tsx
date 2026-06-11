@@ -1,10 +1,10 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { MOCK_STATS, MOCK_ACTIVITY } from "@/app/mock/full/_shared/mock-data-v1";
+import { MOCK_STATS, MOCK_ACTIVITY } from "@/app/mock/approved/_shared/mock-data-v1";
 import { GlassPanel } from "./shared/glass-panel";
 import { GoldButton } from "./shared/gold-button";
-import type { ViewId } from "@/app/mock/full/_shared/types";
+import type { ViewId } from "@/app/mock/approved/_shared/types";
 
 function getTimeGreeting(): string {
   const hour = new Date().getHours();

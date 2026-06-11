@@ -2,10 +2,10 @@
 
 import { motion } from "framer-motion";
 import { useState } from "react";
-import { MOCK_ART_STYLES } from "@/app/mock/full/_shared/mock-data-v1";
+import { MOCK_ART_STYLES } from "@/app/mock/approved/_shared/mock-data-v1";
 import { GlassPanel } from "./shared/glass-panel";
 import { GoldButton } from "./shared/gold-button";
-import type { ViewId } from "@/app/mock/full/_shared/types";
+import type { ViewId } from "@/app/mock/approved/_shared/types";
 
 type CreatePhaseLocal = "input" | "style";
 

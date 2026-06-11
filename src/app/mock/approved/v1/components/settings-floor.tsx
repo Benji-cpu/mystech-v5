@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { useState } from "react";
-import { MOCK_USER } from "@/app/mock/full/_shared/mock-data-v1";
+import { MOCK_USER } from "@/app/mock/approved/_shared/mock-data-v1";
 import { GlassPanel } from "./shared/glass-panel";
 import { GoldButton } from "./shared/gold-button";
 

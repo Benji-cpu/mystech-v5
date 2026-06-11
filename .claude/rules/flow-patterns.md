@@ -56,6 +56,5 @@ Every multi-step flow (reading ceremony, card forging, chronicle) uses a single 
 
 ## Reference Implementations
 
-- Reading ceremony: `src/app/mock/reading/ceremony/page.tsx`
-- Materialization flow: `src/app/mock/reading/materialization/page.tsx`
-- Path flow: `src/app/mock/paths/path-flow-shell.tsx`
+- Reading ceremony: `src/app/mock/approved/ceremony/page.tsx`
+- Card morph flows: `src/app/mock/approved/card-morph/flows/`

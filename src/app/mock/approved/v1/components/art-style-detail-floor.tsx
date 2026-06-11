@@ -1,9 +1,9 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { getStyleById } from "@/app/mock/full/_shared/mock-data-v1";
+import { getStyleById } from "@/app/mock/approved/_shared/mock-data-v1";
 import { GoldButton } from "./shared/gold-button";
-import type { ViewId } from "@/app/mock/full/_shared/types";
+import type { ViewId } from "@/app/mock/approved/_shared/types";
 
 interface ArtStyleDetailFloorProps {
   styleId: string;

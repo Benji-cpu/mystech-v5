@@ -1,9 +1,9 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { MOCK_DECKS, getStyleById } from "@/app/mock/full/_shared/mock-data-v1";
+import { MOCK_DECKS, getStyleById } from "@/app/mock/approved/_shared/mock-data-v1";
 import { GlassPanel } from "./shared/glass-panel";
-import type { ViewId, ViewParams } from "@/app/mock/full/_shared/types";
+import type { ViewId, ViewParams } from "@/app/mock/approved/_shared/types";
 
 interface DecksFloorProps {
   onNavigate: (view: ViewId, params?: ViewParams) => void;
