@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { streamObject } from "ai";
 import { db } from "@/lib/db";
-import { readings, astrologyProfiles, readingPathContext } from "@/lib/db/schema";
+import { readings } from "@/lib/db/schema";
 import { getCurrentUser } from "@/lib/auth/helpers";
 import { geminiFreeModel, geminiProModel } from "@/lib/ai/gemini";
 import { logGeneration } from "@/lib/ai/logging";
@@ -9,19 +9,16 @@ import { eq } from "drizzle-orm";
 import {
   getReadingByIdForUser,
   getReadingCardsWithData,
-  getUserReadingContext,
-  getUserDisplayName,
 } from "@/lib/db/queries";
-import { getCardPathHistory } from "@/lib/db/queries-paths";
+import { buildSeekerContext } from "@/lib/ai/seeker-context";
 import { maybeCompressUserContext } from "@/lib/ai/context-compression";
-import { getCurrentCelestialContext } from "@/lib/astrology/birth-chart";
 import {
   buildReadingSystemPrompt,
   buildReadingInterpretationPrompt,
   ReadingInterpretationSchema,
   STRUCTURE_TARGETS,
 } from "@/lib/ai/prompts/reading-interpretation";
-import type { SpreadType, AstrologicalReadingContext, PathContextForPrompt } from "@/types";
+import type { SpreadType } from "@/types";
 
 export const maxDuration = 60;
 
@@ -48,13 +45,18 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Fetch all data in parallel instead of sequentially
-  const [reading, cardsWithData, userContextWithLength, astroProfileResult, userName] = await Promise.all([
+  // Fetch all data in parallel instead of sequentially. The seeker-context
+  // builder receives the card-id promise so its journey lookup stays parallel.
+  const cardsPromise = getReadingCardsWithData(readingId);
+  const cardIdsPromise = cardsPromise.then((rows) =>
+    rows.map((rc) => rc.cardId).filter((id): id is string => id !== null)
+  );
+  const [reading, cardsWithData, seeker] = await Promise.all([
     getReadingByIdForUser(readingId, user.id),
-    getReadingCardsWithData(readingId),
-    getUserReadingContext(user.id),
-    db.select().from(astrologyProfiles).where(eq(astrologyProfiles.userId, user.id)),
-    getUserDisplayName(user.id),
+    cardsPromise,
+    buildSeekerContext(user.id, {
+      reading: { readingId, cardIds: cardIdsPromise },
+    }),
   ]);
   mark("parallel queries");
 
@@ -86,80 +88,7 @@ export async function POST(request: NextRequest) {
   }
 
   const spreadType = reading.spreadType as SpreadType;
-  const { readingLength, ...userContext } = userContextWithLength;
-
-  // Build astrology context if profile exists
-  let astroContext: AstrologicalReadingContext | undefined;
-  const astroProfile = astroProfileResult[0];
-
-  if (astroProfile) {
-    const celestial = getCurrentCelestialContext();
-    astroContext = {
-      sunSign: astroProfile.sunSign,
-      moonSign: astroProfile.moonSign,
-      risingSign: astroProfile.risingSign,
-      elementBalance: astroProfile.elementBalance as AstrologicalReadingContext["elementBalance"],
-      currentMoonPhase: celestial.moonPhase,
-      currentMoonSign: celestial.moonSign,
-    };
-  }
-
-  // Build journey context if this reading has a journey context snapshot
-  let journeyContext: PathContextForPrompt | undefined;
-  const [journeyContextRow] = await db
-    .select()
-    .from(readingPathContext)
-    .where(eq(readingPathContext.readingId, readingId));
-
-  if (journeyContextRow) {
-    // Get card IDs for "Cards Remember" lookup (deck cards only — retreat cards don't have journey history)
-    const cardIds = cardsWithData
-      .map((rc) => rc.cardId)
-      .filter((id): id is string => id !== null);
-
-    const cardsRemember = await getCardPathHistory(
-      user.id,
-      cardIds,
-      readingId,
-      journeyContextRow.retreatId
-    );
-
-    journeyContext = {
-      circleName: null,
-      circleNumber: null,
-      pathName: "", // We'll use the snapshot lens text directly
-      pathLens: journeyContextRow.pathLensSnapshot,
-      retreatName: "", // Filled from snapshot context below
-      retreatLens: journeyContextRow.retreatLensSnapshot,
-      waypointName: "",
-      waypointLens: journeyContextRow.waypointLensSnapshot,
-      suggestedIntention: journeyContextRow.waypointIntentionSnapshot,
-      cardsRemember,
-    };
-
-    // Fetch the actual names for display in the prompt
-    const { paths, retreats, waypoints, circles } = await import("@/lib/db/schema");
-    const [pathRow, retreatRow, waypointRow] = await Promise.all([
-      db.select({ name: paths.name }).from(paths).where(eq(paths.id, journeyContextRow.pathId)).then((r) => r[0]),
-      db.select({ name: retreats.name }).from(retreats).where(eq(retreats.id, journeyContextRow.retreatId)).then((r) => r[0]),
-      db.select({ name: waypoints.name }).from(waypoints).where(eq(waypoints.id, journeyContextRow.waypointId)).then((r) => r[0]),
-    ]);
-    journeyContext.pathName = pathRow?.name ?? "Unknown Path";
-    journeyContext.retreatName = retreatRow?.name ?? "Unknown Retreat";
-    journeyContext.waypointName = waypointRow?.name ?? "Unknown Waypoint";
-
-    // Fetch circle name if the reading has circle context
-    if (journeyContextRow.circleId) {
-      const [circleRow] = await db
-        .select({ name: circles.name, circleNumber: circles.circleNumber })
-        .from(circles)
-        .where(eq(circles.id, journeyContextRow.circleId));
-      if (circleRow) {
-        journeyContext.circleName = circleRow.name;
-        journeyContext.circleNumber = circleRow.circleNumber;
-      }
-    }
-  }
+  const { userContext, readingLength, userName, astroContext, journeyContext } = seeker;
 
   const prompt = buildReadingInterpretationPrompt({
     spreadType,

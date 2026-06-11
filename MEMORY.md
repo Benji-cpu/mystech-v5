@@ -37,8 +37,14 @@ Learned-experience notes that don't belong in CLAUDE.md. Keep entries concise (1
 - `vercel.json` exists and may ONLY contain daily-or-slower crons on the Hobby plan; sub-daily jobs go in GitHub Actions. If Pro is adopted later they can move back.
 - 12 pre-existing Vitest failures (4 files: ai/reading, ai/generate-deck, readings route, reading-flow-state) + matching tsc errors in test files — mock/type drift on main, predates the 2026-06 IA overhaul. `npm run build` unaffected.
 
-## IA overhaul (2026-06, Phase 1 of 4 shipped)
+## Database (CRITICAL)
 
-- Nav is now Today (/today) / Deck (/decks) / Story (/story) / Settings. /home, /dashboard, /readings, /studio/*, /art-styles/* are all redirects — don't link to them in new code.
-- Art styles live at /decks/styles; card refinement at /decks/[deckId]/cards/[cardId]. Legacy /studio/cards/[cardId] resolves deckId server-side then redirects (some components without deckId in scope still use it intentionally: card-detail-modal, quick-draw, chronicle-flow, reading-refine-section).
-- Phases 2–4 pending (see master plan): merge daily systems into /today (one streak), flatten Paths UX, then living→chronicle migration + unified seeker context.
+- Local `.env.local` DATABASE_URL is the **PRODUCTION** Neon DB (`ep-rough-wave-ahjjbb5b`) — same as Vercel prod env. `npm run db:push` from local migrates prod directly. Always pre-check data with read-only SQL before destructive DDL. Table names are singular (`deck`, `user_profile`, `chronicle_entry`).
+- `npx drizzle-kit push` needs DATABASE_URL exported explicitly (`DATABASE_URL=$(grep ...) npx drizzle-kit push`); it doesn't read .env.local.
+
+## IA overhaul (2026-06, ALL 4 phases shipped)
+
+- Nav is Today (/today) / Deck (/decks) / Story (/story) / Settings. /home, /dashboard, /readings, /studio/*, /art-styles/*, /chronicle/today, /daily are all redirects — don't link to them in new code.
+- /today IS the chronicle ritual for chronicle users (ChronicleFlow mounts directly); non-chronicle users get the editorial invitation with a /chronicle/setup CTA. Art styles live at /decks/styles; card refinement at /decks/[deckId]/cards/[cardId]; legacy /studio/cards/[cardId] resolves deckId server-side then redirects (used intentionally by components without deckId in scope: card-detail-modal, quick-draw, chronicle-flow, reading-refine-section).
+- One streak only: chronicleSettings.streakCount. Daily email is a nudge (no pre-drawn card); old /daily?d= email links route to reading detail.
+- deckType 'living' is gone (type, routes, table all removed); /decks/living redirect kept. AI reading context is assembled by buildSeekerContext (src/lib/ai/seeker-context.ts) — chronicle dialogue routes intentionally use only getChronicleKnowledge.
