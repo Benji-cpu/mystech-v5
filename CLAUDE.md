@@ -150,7 +150,7 @@ Standardised cross-project feedback collection. Schema: `feedback` table in `src
 - `past_due` status keeps Pro access (grace period); `canceled` keeps Pro until `currentPeriodEnd` then drops to free.
 
 ### Terminology
-- For the Paths feature, use path-oriented language: "path," "trail," "waypoint," "retreat"
+- For the Paths feature, code/data keep the vocabulary "path," "trail," "waypoint," "retreat" — but the **UX hides the hierarchy words**: users see "focus" (their active path), "trail" (progress), "step" / "Now:" (waypoint), and content names. Don't surface "circle," "retreat," or "waypoint" as labels in new UI.
 - Never use the word "journey" when referring to Paths
 
 ### Imports

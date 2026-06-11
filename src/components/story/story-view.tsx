@@ -6,6 +6,7 @@ import { EditorialCard } from "@/components/editorial";
 import { StoryStreakHeader } from "./story-streak-header";
 import { StoryThemes } from "./story-themes";
 import { StoryTimeline, type StoryItem } from "./story-timeline";
+import { FocusTrail, type FocusTrailData } from "./focus-trail";
 import type { ChronicleBadge, ChronicleKnowledge } from "@/types";
 
 interface StoryViewProps {
@@ -15,7 +16,7 @@ interface StoryViewProps {
   totalEntries: number;
   readingCount: number;
   badges: ChronicleBadge[];
-  activeFocus: { pathId: string; pathName: string } | null;
+  focusTrail: FocusTrailData | null;
   isFree: boolean;
   className?: string;
 }
@@ -27,7 +28,7 @@ export function StoryView({
   totalEntries,
   readingCount,
   badges,
-  activeFocus,
+  focusTrail,
   isFree,
   className,
 }: StoryViewProps) {
@@ -42,23 +43,7 @@ export function StoryView({
 
       <StoryThemes knowledge={knowledge} />
 
-      {activeFocus && (
-        <Link
-          href={`/paths/${activeFocus.pathId}`}
-          className="block rounded-3xl border p-6 hair transition-colors hover:border-[var(--ink-soft)]"
-          style={{ background: "var(--paper-card)" }}
-        >
-          <p className="eyebrow" style={{ color: "var(--accent-gold)" }}>
-            Current focus
-          </p>
-          <p className="display mt-2 text-xl leading-tight" style={{ color: "var(--ink)" }}>
-            {activeFocus.pathName}
-          </p>
-          <p className="mt-1 text-xs" style={{ color: "var(--ink-mute)" }}>
-            Continue your trail →
-          </p>
-        </Link>
-      )}
+      {focusTrail && <FocusTrail trail={focusTrail} />}
 
       <section>
         <p className="eyebrow">Timeline</p>

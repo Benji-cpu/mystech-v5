@@ -53,22 +53,28 @@ export function PathsHub({
 
   return (
     <div className={cn('space-y-4', className)}>
-      {/* Active path callout */}
+      {/* Current focus callout */}
       {activePosition && (
         <AnimatedItem>
-          <div className="rounded-2xl bg-gradient-to-r from-gold/10 to-purple-900/10 border border-gold/20 p-4">
-            <p className="text-xs text-gold font-medium uppercase tracking-wider mb-0.5">
-              Active Path
-            </p>
-            <p className="text-sm text-white/80">
-              <span className="font-semibold text-white/90">{activePosition.path.name}</span>
-              {' — '}
-              <span className="text-white/60">{activePosition.retreat.name}</span>
-            </p>
-            <p className="text-xs text-white/40 mt-0.5">
-              Step: {activePosition.waypoint.name}
-            </p>
-          </div>
+          <a
+            href={`/paths/${activePosition.path.id}`}
+            className="block rounded-2xl bg-gradient-to-r from-gold/10 to-purple-900/10 border border-gold/20 p-4 transition-colors hover:border-gold/40"
+          >
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-xs text-gold font-medium uppercase tracking-wider mb-0.5">
+                  Current focus
+                </p>
+                <p className="text-sm text-white/80">
+                  <span className="font-semibold text-white/90">{activePosition.path.name}</span>
+                </p>
+                <p className="text-xs text-white/40 mt-0.5 truncate">
+                  Now: {activePosition.waypoint.name}
+                </p>
+              </div>
+              <span className="text-gold/60 shrink-0">Continue →</span>
+            </div>
+          </a>
         </AnimatedItem>
       )}
 

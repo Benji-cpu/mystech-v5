@@ -1217,6 +1217,18 @@ export function ChronicleFlow({
 
                   {/* Onward — the ritual is done for today */}
                   <div className="flex flex-col gap-2 pt-2">
+                    {journeyPosition && (
+                      <Link
+                        href={`/paths/${journeyPosition.path.id}`}
+                        className="flex items-center justify-between rounded-2xl border border-gold/25 bg-gold/[0.06] px-4 py-3 text-sm text-white/85 transition-colors hover:border-gold/45"
+                      >
+                        <span>
+                          <span className="text-gold/80 text-xs uppercase tracking-wider block">Today&rsquo;s focus</span>
+                          {journeyPosition.waypoint.name}
+                        </span>
+                        <span className="text-gold/60">→</span>
+                      </Link>
+                    )}
                     <Link
                       href="/readings/new"
                       className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white/80 transition-colors hover:border-white/25"

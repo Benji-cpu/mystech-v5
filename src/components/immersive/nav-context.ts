@@ -47,8 +47,9 @@ const routeRules: RouteRule[] = [
   { pattern: /^\/readings\/new$/, backTarget: "/story", backLabel: "Story", focusMode: true, focusTitle: "New Reading", focusSubtitle: "Consult the cards" },
   { pattern: /^\/readings\/[^/]+$/, backTarget: "/story", backLabel: "Story" },
 
-  // Paths (journey system)
-  { pattern: /^\/paths\/[^/]+$/, backTarget: "/paths", backLabel: "Paths" },
+  // Paths — the "focus" picker, reached from Story
+  { pattern: /^\/paths\/[^/]+$/, backTarget: "/paths", backLabel: "Focus" },
+  { pattern: /^\/paths$/, backTarget: "/story", backLabel: "Story" },
 
   // Chronicle (focus mode — process flows). /chronicle/today now redirects to /today.
   { pattern: /^\/chronicle\/setup$/, backTarget: "/today", backLabel: "Today", focusMode: true, focusTitle: "Chronicle Setup", focusSubtitle: "Begin your practice" },

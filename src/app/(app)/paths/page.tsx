@@ -83,9 +83,9 @@ export default function PathsPage() {
     <EditorialShell>
       <div className="mx-auto max-w-3xl space-y-10 px-6 pb-28 pt-10 sm:px-10 sm:pt-14">
         <EditorialHeader
-          eyebrow="Practice"
-          title="Paths"
-          whisper="Deepen your practice through guided trails."
+          eyebrow="Story"
+          title="Choose your focus"
+          whisper="One trail at a time. Pick what you're working through, and your daily practice will walk it with you."
         />
 
         <Suspense fallback={<PathsContentSkeleton />}>

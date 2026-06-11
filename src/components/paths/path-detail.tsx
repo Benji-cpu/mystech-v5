@@ -222,7 +222,7 @@ export function PathDetail({
             {/* Interpretive lens */}
             <div className="rounded-xl bg-white/5 border border-white/8 p-3">
               <p className="text-[11px] text-white/30 uppercase tracking-wider font-medium mb-1">
-                Interpretive Lens
+                How the cards will speak here
               </p>
               <p className="text-xs text-white/50 leading-relaxed">
                 {path.interpretiveLens}
@@ -267,7 +267,7 @@ export function PathDetail({
       <AnimatedItem>
         <div className="space-y-3">
           <h2 className="text-sm font-semibold text-white/40 uppercase tracking-wider px-1">
-            Chapters
+            Your trail
           </h2>
           <RetreatMap
             retreats={path.retreats}
