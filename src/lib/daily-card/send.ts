@@ -1,20 +1,29 @@
 /**
- * Daily Card orchestrator: pick → reading row → delivery row → email.
+ * Daily reminder orchestrator: gather ritual context → delivery row → email.
+ *
+ * The email is a nudge toward the /today ritual — it no longer pre-draws a
+ * card (the only "today's card" is the one forged in the chronicle flow).
+ * For chronicle users it carries the streak and yesterday's forged card art;
+ * for others it features a card from their decks as a visual invitation.
  *
  * Idempotency comes from `dailyCardDeliveries`'s unique
  * (userId, deliveryDate, channel) index — re-running the cron in the same
- * local day is a no-op for a user who already received their card.
+ * local day is a no-op for a user who already received their reminder.
  */
 import { db } from "@/lib/db";
-import { readings, readingCards, dailyCardDeliveries, userProfiles, users } from "@/lib/db/schema";
+import { dailyCardDeliveries, userProfiles, users } from "@/lib/db/schema";
 import { and, eq } from "drizzle-orm";
-import { SPREAD_POSITIONS } from "@/lib/constants";
+import {
+  getUserChronicleDeck,
+  getChronicleSettings,
+  getRecentChronicleCards,
+} from "@/lib/db/queries";
 import { pickDailyCard, pickDailyDeckForUser } from "./pick-card";
 import { localDateFor } from "./timezone";
 import { sendDailyCardEmail } from "@/lib/email/send";
 
 export type SendResult =
-  | { ok: true; status: "delivered"; readingId: string; cardId: string; deckId: string }
+  | { ok: true; status: "delivered"; cardId: string | null; deckId: string | null }
   | { ok: false; status: "skipped_already_sent" }
   | { ok: false; status: "skipped_no_deck" }
   | { ok: false; status: "skipped_no_card" }
@@ -45,12 +54,6 @@ export async function sendDailyCardForUser(args: {
     .limit(1);
   if (existing) return { ok: false, status: "skipped_already_sent" };
 
-  const deck = await pickDailyDeckForUser(args.userId, args.preferredDeckId);
-  if (!deck) return { ok: false, status: "skipped_no_deck" };
-
-  const card = await pickDailyCard(args.userId, deck.id, { random: args.random });
-  if (!card) return { ok: false, status: "skipped_no_card" };
-
   const [userRow] = await db
     .select({ email: users.email, name: users.name, displayName: users.displayName })
     .from(users)
@@ -58,41 +61,49 @@ export async function sendDailyCardForUser(args: {
     .limit(1);
   if (!userRow?.email) return { ok: false, status: "skipped_no_email" };
 
-  const positions = SPREAD_POSITIONS.daily;
+  // Gather ritual context. Chronicle users: streak + yesterday's forged card.
+  // Others: feature a card from their decks as the invitation art.
+  let streakCount = 0;
+  let featured: { title: string; imageUrl: string | null } | null = null;
+  let featuredCardId: string | null = null;
+  let featuredDeckId: string | null = null;
+
+  const chronicleDeck = await getUserChronicleDeck(args.userId);
+  if (chronicleDeck) {
+    const [settings, recentCards] = await Promise.all([
+      getChronicleSettings(chronicleDeck.id),
+      getRecentChronicleCards(chronicleDeck.id, 1),
+    ]);
+    streakCount = settings?.streakCount ?? 0;
+    featuredDeckId = chronicleDeck.id;
+    const lastCard = recentCards[0];
+    if (lastCard) {
+      featured = { title: lastCard.title, imageUrl: lastCard.imageUrl };
+      featuredCardId = lastCard.id;
+    }
+  } else {
+    const deck = await pickDailyDeckForUser(args.userId, args.preferredDeckId);
+    if (!deck) return { ok: false, status: "skipped_no_deck" };
+    featuredDeckId = deck.id;
+    const card = await pickDailyCard(args.userId, deck.id, { random: args.random });
+    if (card) {
+      featured = { title: card.title, imageUrl: card.imageUrl };
+      featuredCardId = card.id;
+    }
+  }
 
   try {
-    const [reading] = await db
-      .insert(readings)
-      .values({
-        userId: args.userId,
-        deckId: deck.id,
-        spreadType: "daily",
-        question: null,
-      })
-      .returning();
-
-    await db.insert(readingCards).values({
-      readingId: reading.id,
-      position: positions[0].position,
-      positionName: positions[0].name,
-      cardId: card.id,
-    });
-
-    // Insert delivery FIRST so a downstream send-failure doesn't double-charge
-    // a re-run of the cron. Email sender swallows its own errors.
+    // Insert delivery FIRST so a downstream send-failure doesn't double-send
+    // on a cron re-run. Email sender swallows its own errors.
     let messageId: string | null = null;
     try {
       const result = await sendDailyCardEmail({
         to: userRow.email,
         name: userRow.displayName ?? userRow.name ?? null,
-        card: {
-          title: card.title,
-          meaning: card.meaning,
-          guidance: card.guidance,
-          imageUrl: card.imageUrl,
-        },
-        deck: { id: deck.id, title: deck.title },
-        deepLinkPath: `/daily?d=${reading.id}`,
+        streakCount,
+        hasChronicle: !!chronicleDeck,
+        card: featured,
+        deepLinkPath: "/today",
       });
       messageId = result?.id ?? null;
     } catch (err) {
@@ -104,9 +115,9 @@ export async function sendDailyCardForUser(args: {
       .values({
         userId: args.userId,
         deliveryDate,
-        cardId: card.id,
-        deckId: deck.id,
-        readingId: reading.id,
+        cardId: featuredCardId,
+        deckId: featuredDeckId,
+        readingId: null,
         channel: "email",
         emailMessageId: messageId,
       })
@@ -117,7 +128,7 @@ export async function sendDailyCardForUser(args: {
       .set({ dailyCardLastSentDate: deliveryDate, updatedAt: new Date() })
       .where(eq(userProfiles.userId, args.userId));
 
-    return { ok: true, status: "delivered", readingId: reading.id, cardId: card.id, deckId: deck.id };
+    return { ok: true, status: "delivered", cardId: featuredCardId, deckId: featuredDeckId };
   } catch (err) {
     return {
       ok: false,

@@ -148,21 +148,26 @@ export async function sendPrintOrderRefunded(opts: BaseOptions & {
 }
 
 export async function sendDailyCardEmail(opts: BaseOptions & {
-  card: { title: string; meaning: string; guidance: string; imageUrl: string | null };
-  deck: { id: string; title: string };
-  deepLinkPath: string; // e.g. "/daily?d=<readingId>"
+  streakCount: number;
+  hasChronicle: boolean;
+  card: { title: string; imageUrl: string | null } | null;
+  deepLinkPath: string; // e.g. "/today"
 }): Promise<{ id: string } | null> {
   const resend = getResend();
   if (!resend) return null;
-  const cardUrl = `${APP_URL}${opts.deepLinkPath}`;
-  const subject = `Today's card: ${opts.card.title}`;
+  const ctaUrl = `${APP_URL}${opts.deepLinkPath}`;
+  const subject =
+    opts.streakCount > 0
+      ? `Day ${opts.streakCount} and counting — your card awaits`
+      : "Your card awaits";
   try {
     const html = await render(
       DailyCardEmail({
         name: opts.name ?? undefined,
+        streakCount: opts.streakCount,
+        hasChronicle: opts.hasChronicle,
         card: opts.card,
-        deck: opts.deck,
-        cardUrl,
+        ctaUrl,
         appUrl: APP_URL,
       }),
     );

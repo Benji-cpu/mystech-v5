@@ -14,39 +14,50 @@ import {
 
 type Props = {
   name?: string | null;
-  card: {
-    title: string;
-    meaning: string;
-    guidance: string;
-    imageUrl: string | null;
-  };
-  deck: { id: string; title: string };
-  cardUrl: string;
+  streakCount: number;
+  hasChronicle: boolean;
+  /** Yesterday's forged card (chronicle users) or a card from the user's decks. */
+  card: { title: string; imageUrl: string | null } | null;
+  ctaUrl: string;
   appUrl: string;
 };
 
-export function DailyCardEmail({ name, card, deck, cardUrl, appUrl }: Props) {
+export function DailyCardEmail({
+  name,
+  streakCount,
+  hasChronicle,
+  card,
+  ctaUrl,
+  appUrl,
+}: Props) {
   const greeting = name ? `Good morning, ${name}` : "Good morning";
+  const invitation = hasChronicle
+    ? streakCount > 0
+      ? `You're on a ${streakCount}-day streak. Today's card is waiting to be forged.`
+      : "Today's card is waiting to be forged from whatever the day holds."
+    : "A few quiet minutes with the cards to begin the day.";
 
   return (
     <Html>
       <Head />
       <Preview>
-        Your card today: {card.title}. {card.meaning.slice(0, 80)}…
+        {streakCount > 0
+          ? `Day ${streakCount} and counting — your card awaits.`
+          : "Your card awaits."}
       </Preview>
       <Body style={body}>
         <Container style={container}>
           <Section style={brand}>
             <Text style={brandMark}>✦ MysTech</Text>
-            <Text style={dateline}>Today&rsquo;s card</Text>
+            <Text style={dateline}>
+              {streakCount > 0 ? `${streakCount}-day streak` : "Daily practice"}
+            </Text>
           </Section>
 
           <Heading style={heading}>{greeting}</Heading>
-          <Text style={paragraph}>
-            From <em>{deck.title}</em>, the cards have offered:
-          </Text>
+          <Text style={paragraph}>{invitation}</Text>
 
-          {card.imageUrl ? (
+          {card?.imageUrl ? (
             <Section style={cardWrap}>
               <Img
                 src={card.imageUrl}
@@ -55,32 +66,24 @@ export function DailyCardEmail({ name, card, deck, cardUrl, appUrl }: Props) {
                 height="420"
                 style={cardImage}
               />
+              {hasChronicle && (
+                <Text style={cardCaption}>
+                  Yesterday you forged &ldquo;{card.title}&rdquo;
+                </Text>
+              )}
             </Section>
           ) : null}
 
-          <Heading as="h2" style={cardTitle}>
-            {card.title}
-          </Heading>
-
-          <Text style={cardMeaning}>{card.meaning}</Text>
-
-          {card.guidance ? (
-            <Text style={cardGuidance}>
-              <strong style={guidanceLabel}>Today, ask yourself:</strong>{" "}
-              {card.guidance}
-            </Text>
-          ) : null}
-
           <Section style={ctaWrap}>
-            <Link href={cardUrl} style={cta}>
-              Sit with this card
+            <Link href={ctaUrl} style={cta}>
+              Begin today&rsquo;s ritual
             </Link>
           </Section>
 
           <Hr style={hr} />
 
           <Text style={footer}>
-            You&rsquo;re receiving this because you opted into daily cards.{" "}
+            You&rsquo;re receiving this daily reminder by choice.{" "}
             <Link href={`${appUrl}/settings/daily-card`} style={footerLink}>
               Manage
             </Link>
@@ -161,33 +164,12 @@ const cardImage = {
   height: "auto",
 };
 
-const cardTitle = {
-  color: "#d4a853",
-  fontSize: "22px",
-  fontWeight: 500,
-  textAlign: "center" as const,
-  margin: "0 0 14px",
-  letterSpacing: "0.02em",
-};
-
-const cardMeaning = {
-  color: "rgba(230,225,217,0.92)",
-  fontSize: "16px",
-  lineHeight: 1.7,
-  margin: "0 0 18px",
-};
-
-const cardGuidance = {
-  color: "rgba(230,225,217,0.78)",
-  fontSize: "15px",
-  lineHeight: 1.7,
-  margin: "0 0 8px",
+const cardCaption = {
+  color: "rgba(230,225,217,0.55)",
+  fontSize: "13px",
   fontStyle: "italic" as const,
-};
-
-const guidanceLabel = {
-  fontStyle: "normal" as const,
-  color: "#d4a853",
+  textAlign: "center" as const,
+  margin: "12px 0 0",
 };
 
 const ctaWrap = { textAlign: "center" as const, margin: "30px 0 12px" };
