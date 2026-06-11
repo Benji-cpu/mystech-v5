@@ -150,7 +150,7 @@ export const decks = pgTable(
     description: text("description"),
     theme: text("theme"),
     status: text("status").notNull().default("draft"),
-    deckType: text("deck_type").notNull().default("standard"), // "standard" | "living"
+    deckType: text("deck_type").notNull().default("standard"), // "standard" | "chronicle"
     cardCount: integer("card_count").notNull().default(0),
     isPublic: boolean("is_public").default(false).notNull(),
     shareToken: text("share_token").unique(),
@@ -269,18 +269,7 @@ export const deckMetadata = pgTable("deck_metadata", {
   updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
 });
 
-// Living Deck settings
-export const livingDeckSettings = pgTable("living_deck_settings", {
-  deckId: text("deck_id")
-    .primaryKey()
-    .references(() => decks.id, { onDelete: "cascade" }),
-  generationMode: text("generation_mode").notNull().default("manual"), // "manual" | "auto"
-  lastCardGeneratedAt: timestamp("last_card_generated_at", { mode: "date" }),
-  createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
-});
-
-// Chronicle settings (evolves from livingDeckSettings, adds gamification + streak tracking)
+// Chronicle settings (gamification + streak tracking for the daily ritual deck)
 export const chronicleSettings = pgTable("chronicle_settings", {
   deckId: text("deck_id")
     .primaryKey()
@@ -519,8 +508,6 @@ export const userProfiles = pgTable("user_profile", {
   dailyCardTime: integer("daily_card_time").notNull().default(8), // local hour 0-23
   dailyCardDeckId: text("daily_card_deck_id"), // FK to decks; nullable. No inline ref to avoid cycle.
   dailyCardLastSentDate: date("daily_card_last_sent_date", { mode: "string" }),
-  dailyCardStreak: integer("daily_card_streak").notNull().default(0),
-  dailyCardLongestStreak: integer("daily_card_longest_streak").notNull().default(0),
   dailyCardLastOpenedDate: date("daily_card_last_opened_date", { mode: "string" }),
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),

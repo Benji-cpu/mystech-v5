@@ -10,7 +10,7 @@ export type VoicePreferences = {
 
 // Deck types
 export type DeckStatus = 'draft' | 'generating' | 'completed';
-export type DeckType = 'standard' | 'living' | 'chronicle';
+export type DeckType = 'standard' | 'chronicle';
 export type ChronicleGenerationMode = 'manual' | 'auto';
 /** @deprecated Use ChronicleGenerationMode instead */
 export type LivingDeckGenerationMode = ChronicleGenerationMode;

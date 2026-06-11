@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { decks, cards, artStyles, readings, readingCards, retreatCards, conversations, deckMetadata, subscriptions, users, userProfiles, deckAdoptions, cardFeedback, livingDeckSettings, chronicleSettings, chronicleEntries, chronicleKnowledge, astrologyProfiles, emergenceEvents, cardOverrides } from "@/lib/db/schema";
+import { decks, cards, artStyles, readings, readingCards, retreatCards, conversations, deckMetadata, subscriptions, users, userProfiles, deckAdoptions, cardFeedback, chronicleSettings, chronicleEntries, chronicleKnowledge, astrologyProfiles, emergenceEvents, cardOverrides } from "@/lib/db/schema";
 import { eq, and, asc, count, ne, desc, gte, gt, sql, isNotNull } from "drizzle-orm";
 import type { Deck, DeckWithOwner, DraftDeckWithPhase, JourneyPhase, DraftCard, PlanType, UserProfile, UserContextProfile, ReadingLength, CardFeedbackType, VoicePreferences, VoiceSpeed, ChronicleEntry, ChronicleSettings, ChronicleKnowledge, ChronicleInterests, ChronicleBadge, AstrologyProfile, ActivityItem, EmergenceEvent } from "@/types";
 import { getBadgeById } from "@/lib/chronicle/badges";
@@ -840,50 +840,6 @@ export async function getUserCardPreferences(userId: string) {
   }
 
   return { lovedCards, dismissedCards };
-}
-
-// --- Living Deck queries (DEPRECATED — kept for backward compat with old /api/decks/living routes) ---
-
-export async function getUserLivingDeck(userId: string) {
-  const [deck] = await db
-    .select()
-    .from(decks)
-    .where(and(eq(decks.userId, userId), eq(decks.deckType, "living")));
-  return deck ?? null;
-}
-
-export async function getLivingDeckSettings(deckId: string) {
-  const [settings] = await db
-    .select()
-    .from(livingDeckSettings)
-    .where(eq(livingDeckSettings.deckId, deckId));
-  return settings ?? null;
-}
-
-export async function canGenerateLivingDeckCard(deckId: string): Promise<boolean> {
-  const settings = await getLivingDeckSettings(deckId);
-  if (!settings?.lastCardGeneratedAt) return true;
-
-  const now = new Date();
-  const lastGen = new Date(settings.lastCardGeneratedAt);
-  // Compare dates (not times) — allow one card per calendar day
-  return (
-    now.getUTCFullYear() !== lastGen.getUTCFullYear() ||
-    now.getUTCMonth() !== lastGen.getUTCMonth() ||
-    now.getUTCDate() !== lastGen.getUTCDate()
-  );
-}
-
-export async function getRecentLivingDeckCards(deckId: string, limit = 10) {
-  return db
-    .select({
-      title: cards.title,
-      meaning: cards.meaning,
-    })
-    .from(cards)
-    .where(eq(cards.deckId, deckId))
-    .orderBy(desc(cards.createdAt))
-    .limit(limit);
 }
 
 // --- Voice preference queries ---
