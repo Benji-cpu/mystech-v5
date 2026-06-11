@@ -1214,6 +1214,24 @@ export function ChronicleFlow({
                       Polish your Chronicle card
                     </Link>
                   )}
+
+                  {/* Onward — the ritual is done for today */}
+                  <div className="flex flex-col gap-2 pt-2">
+                    <Link
+                      href="/readings/new"
+                      className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white/80 transition-colors hover:border-white/25"
+                    >
+                      Go deeper — draw a full reading
+                      <span className="text-white/40">→</span>
+                    </Link>
+                    <Link
+                      href="/story"
+                      className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white/80 transition-colors hover:border-white/25"
+                    >
+                      View your story
+                      <span className="text-white/40">→</span>
+                    </Link>
+                  </div>
                 </motion.div>
               )}
             </div>

@@ -117,7 +117,7 @@ export function ChronicleDashboardCard({
               &ldquo;The cards are waiting to hear from you today.&rdquo;
             </p>
           </div>
-          <Link href="/chronicle/today">
+          <Link href="/today">
             <Button className="w-full bg-gold hover:bg-gold/80 text-black font-semibold">
               Chronicle Your Day
             </Button>

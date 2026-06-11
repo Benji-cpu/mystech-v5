@@ -96,7 +96,7 @@ export function resolveInvitation(ctx: InvitationContext): Invitation {
         ? `Last time, ${ctx.lastChronicleCardTitle} guided your thread.`
         : undefined,
       ctaLabel: "Open Chronicle",
-      ctaHref: "/chronicle/today",
+      ctaHref: "/today",
     };
   }
 

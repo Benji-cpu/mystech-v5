@@ -54,7 +54,7 @@ function resolveAction(data: DailyPracticeData): ResolvedAction {
       icon: BookOpen,
       title: "Your Daily Card Awaits",
       subtitle: "Continue your Chronicle practice",
-      href: "/chronicle/today",
+      href: "/today",
       badge:
         data.chronicleStreakCount > 0
           ? `${data.chronicleStreakCount}-day streak`

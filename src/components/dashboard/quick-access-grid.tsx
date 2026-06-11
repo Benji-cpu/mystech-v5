@@ -53,7 +53,7 @@ function resolveCards(data: QuickAccessData): QuickAccessCard[] {
         : data.chronicleStreakCount > 0
           ? `${data.chronicleStreakCount}-day streak`
           : "Start streak",
-      href: data.hasChronicle ? "/chronicle/today" : "/chronicle/setup",
+      href: data.hasChronicle ? "/today" : "/chronicle/setup",
       accent: "text-orange-400/80",
       tint: "bg-orange-500/[0.04]",
       minStage: 0,

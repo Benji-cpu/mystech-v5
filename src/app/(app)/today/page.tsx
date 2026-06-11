@@ -1,12 +1,18 @@
 import { Suspense } from "react";
 import { requireAuth } from "@/lib/auth/helpers";
+import type { User } from "next-auth";
 import {
   getUserDeckCount,
   getUserTotalReadingCount,
   getUserChronicleDeck,
+  getTodayChronicleEntry,
   getChronicleSettings,
   getTodayChronicleCard,
-  getLastChronicleCardTitle,
+  getChronicleEntries,
+  getChronicleKnowledge,
+  getRecentChronicleEntries,
+  getRecentChronicleCards,
+  getPendingEmergenceEvent,
   getUserPlan,
 } from "@/lib/db/queries";
 import {
@@ -20,6 +26,11 @@ import { resolveInvitation } from "@/lib/dashboard/resolve-invitation";
 import type { InvitationContext } from "@/lib/dashboard/resolve-invitation";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EditorialHome } from "@/components/dashboard/editorial-home";
+import { ChronicleFlow } from "@/components/chronicle/chronicle-flow";
+
+export const metadata = {
+  title: "Today — MysTech",
+};
 
 function TodaySkeleton() {
   return (
@@ -40,6 +51,61 @@ function timeBasedGreeting(): string {
   return "Good night";
 }
 
+/** The daily ritual — chronicle users land directly in the flow. */
+async function ChronicleToday({
+  user,
+  deckId,
+}: {
+  user: User;
+  deckId: string;
+}) {
+  const [entry, settings, todayCard, pastEntries, journeyPosition, knowledge, recentEntries, recentCards, pendingEmergence] = await Promise.all([
+    getTodayChronicleEntry(user.id!),
+    getChronicleSettings(deckId),
+    getTodayChronicleCard(user.id!),
+    getChronicleEntries(user.id!, 1),
+    getPathPosition(user.id!),
+    getChronicleKnowledge(user.id!),
+    getRecentChronicleEntries(user.id!, 3),
+    getRecentChronicleCards(deckId, 1),
+    getPendingEmergenceEvent(user.id!),
+  ]);
+
+  // First entry if there are no past completed entries (excluding today's)
+  const isFirstEntry = pastEntries.length === 0 && !entry?.cardId;
+
+  // Determine which phase to resume from
+  const initialPhase =
+    entry?.status === "completed"
+      ? "complete"
+      : entry?.cardId
+      ? "card_reveal"
+      : entry?.conversation && entry.conversation.length > 0
+      ? "dialogue"
+      : "greeting";
+
+  return (
+    <ChronicleFlow
+      deckId={deckId}
+      initialEntry={entry}
+      settings={settings}
+      todayCard={todayCard}
+      initialPhase={initialPhase}
+      isFirstEntry={isFirstEntry}
+      journeyPosition={journeyPosition}
+      userName={resolveUserName(user)}
+      knowledge={knowledge}
+      recentEntries={recentEntries.map((e, i) => ({
+        mood: e.mood,
+        themes: e.themes ?? [],
+        cardTitle: i === 0 ? recentCards[0]?.title : undefined,
+      }))}
+      pendingEmergence={pendingEmergence}
+    />
+  );
+}
+
+/** Editorial invitation for users without a chronicle practice yet. */
 async function TodayContent({
   userId,
   userName,
@@ -49,20 +115,11 @@ async function TodayContent({
   userName: string;
   isPostInitiation: boolean;
 }) {
-  const [deckCount, readingCount, chronicleDeck, pathPosition] = await Promise.all([
+  const [deckCount, readingCount, pathPosition] = await Promise.all([
     getUserDeckCount(userId),
     getUserTotalReadingCount(userId),
-    getUserChronicleDeck(userId),
     getPathPosition(userId),
   ]);
-
-  const [chronicleSettings, todayCard, lastCardTitle] = chronicleDeck
-    ? await Promise.all([
-        getChronicleSettings(chronicleDeck.id),
-        getTodayChronicleCard(userId),
-        getLastChronicleCardTitle(userId),
-      ])
-    : [null, null, null];
 
   let practiceNudge: {
     title: string;
@@ -98,9 +155,9 @@ async function TodayContent({
     userName,
     deckCount,
     readingCount,
-    hasChronicle: !!chronicleDeck,
-    completedChronicleToday: !!todayCard,
-    streakCount: chronicleSettings?.streakCount ?? 0,
+    hasChronicle: false,
+    completedChronicleToday: false,
+    streakCount: 0,
     pathPosition: pathPosition
       ? {
           pathId: pathPosition.path.id,
@@ -111,7 +168,7 @@ async function TodayContent({
     moonPhase: celestialContext.moonPhase,
     moonSign: celestialContext.moonSign,
     isPostInitiation,
-    lastChronicleCardTitle: lastCardTitle,
+    lastChronicleCardTitle: null,
   };
   const invitation = resolveInvitation(invitationCtx);
 
@@ -130,14 +187,12 @@ async function TodayContent({
           moonPhase: celestialContext.moonPhase,
           moonSign: celestialContext.moonSign,
         },
-        primary: resolvePrimary({
-          deckCount,
-          hasChronicle: !!chronicleDeck,
-          completedChronicleToday: !!todayCard,
-          streakCount: chronicleSettings?.streakCount ?? 0,
-          practiceNudge,
-        }),
+        primary: resolvePrimary({ deckCount, practiceNudge }),
         secondary: practiceNudge,
+        tertiary:
+          deckCount > 0
+            ? { label: "Quick draw — pull a single card", href: "/readings/quick" }
+            : null,
       }}
     />
   );
@@ -145,15 +200,9 @@ async function TodayContent({
 
 function resolvePrimary({
   deckCount,
-  hasChronicle,
-  completedChronicleToday,
-  streakCount,
   practiceNudge,
 }: {
   deckCount: number;
-  hasChronicle: boolean;
-  completedChronicleToday: boolean;
-  streakCount: number;
   practiceNudge: { title: string; pathId: string; pathName: string } | null;
 }): {
   eyebrow: string;
@@ -173,17 +222,6 @@ function resolvePrimary({
     };
   }
 
-  if (hasChronicle && !completedChronicleToday) {
-    return {
-      eyebrow: "Today's practice",
-      title: "Draw your chronicle card",
-      description: "A single card from your living deck. Five minutes of quiet to begin.",
-      href: "/chronicle/today",
-      cta: "Begin",
-      badge: streakCount > 0 ? `Day ${streakCount}` : undefined,
-    };
-  }
-
   if (practiceNudge) {
     return {
       eyebrow: "Today's practice",
@@ -194,23 +232,13 @@ function resolvePrimary({
     };
   }
 
-  if (hasChronicle && completedChronicleToday) {
-    return {
-      eyebrow: "All caught up",
-      title: "Draw a card for extra insight",
-      description: "The chronicle is complete for today. Pull another if you wish.",
-      href: "/readings/new?spread=single",
-      cta: "Draw",
-      badge: streakCount > 0 ? `Day ${streakCount}` : undefined,
-    };
-  }
-
   return {
-    eyebrow: "Today's practice",
-    title: "Draw a card",
-    description: "Pull a quick insight from your deck.",
-    href: "/readings/new?spread=single",
-    cta: "Draw",
+    eyebrow: "Your daily practice",
+    title: "Begin your daily practice",
+    description:
+      "A few minutes each day. Lyra listens, and a card is forged from what you share — your deck grows with your story.",
+    href: "/chronicle/setup",
+    cta: "Begin",
   };
 }
 
@@ -223,6 +251,12 @@ export default async function TodayPage({ searchParams }: TodayPageProps) {
   const params = await searchParams;
   const isPostInitiation = params.initiated === "true";
   const userName = resolveUserName(user);
+
+  const chronicleDeck = await getUserChronicleDeck(user.id!);
+
+  if (chronicleDeck) {
+    return <ChronicleToday user={user} deckId={chronicleDeck.id} />;
+  }
 
   return (
     <Suspense fallback={<TodaySkeleton />}>

@@ -28,6 +28,10 @@ interface EditorialHomeData {
     pathName: string;
     waypointName: string;
   } | null;
+  tertiary?: {
+    label: string;
+    href: string;
+  } | null;
 }
 
 const fade = { initial: { opacity: 0, y: 12 }, animate: { opacity: 1, y: 0 } };
@@ -157,6 +161,26 @@ export function EditorialHome({ data }: { data: EditorialHomeData }) {
               <span
                 className="text-lg transition-transform group-hover:translate-x-1"
                 style={{ color: "var(--ink)" }}
+              >
+                →
+              </span>
+            </Link>
+          </motion.div>
+        )}
+
+        {/* Tertiary — quiet link */}
+        {data.tertiary && (
+          <motion.div {...fade} transition={{ ...spring, delay: 0.35 }} className="mt-5">
+            <Link
+              href={data.tertiary.href}
+              className="group flex items-center justify-between rounded-2xl border p-4 hair transition-colors hover:border-[var(--ink-soft)]"
+            >
+              <p className="text-sm" style={{ color: "var(--ink-soft)" }}>
+                {data.tertiary.label}
+              </p>
+              <span
+                className="text-base transition-transform group-hover:translate-x-1"
+                style={{ color: "var(--ink-mute)" }}
               >
                 →
               </span>

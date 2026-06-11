@@ -25,7 +25,7 @@ export function ChronicleNudge({
   if (hasChronicle && completedToday) return null;
 
   const href = hasChronicle
-    ? "/chronicle/today"
+    ? "/today"
     : "/chronicle/setup";
 
   const message = hasChronicle

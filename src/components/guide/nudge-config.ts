@@ -84,7 +84,7 @@ const ALL_NUDGES: NudgeConfig[] = [
     variant: "discovery",
     message:
       "The Chronicle is a daily conversation with the cards. Each day, a new card is forged from what you share.",
-    cta: { label: "Begin Daily Practice", href: "/chronicle/today" },
+    cta: { label: "Begin Daily Practice", href: "/today" },
     priority: 20,
   },
 

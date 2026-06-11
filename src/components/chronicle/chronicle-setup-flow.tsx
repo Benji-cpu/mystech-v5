@@ -300,7 +300,7 @@ export function ChronicleSetupFlow({
         return;
       }
 
-      router.push("/chronicle/today");
+      router.push("/today");
     } catch {
       dispatch({
         type: "CREATION_ERROR",

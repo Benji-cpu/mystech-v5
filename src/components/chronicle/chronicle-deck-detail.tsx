@@ -202,7 +202,7 @@ export function ChronicleDeckDetail({
               &mdash; The cards are waiting to hear from you today &mdash;
             </p>
             <Link
-              href="/chronicle/today"
+              href="/today"
               className="mt-6 inline-flex items-center gap-2 rounded-full px-7 py-3 text-sm font-medium transition-opacity hover:opacity-90"
               style={{ background: "var(--ink)", color: "var(--paper)" }}
             >

@@ -45,7 +45,7 @@ describe("resolveInvitation", () => {
       makeCtx({ hasChronicle: true, completedChronicleToday: false })
     );
     expect(result.type).toBe("chronicle");
-    expect(result.ctaHref).toBe("/chronicle/today");
+    expect(result.ctaHref).toBe("/today");
     expect(result.ctaLabel).toBe("Open Chronicle");
   });
 

@@ -50,8 +50,7 @@ const routeRules: RouteRule[] = [
   // Paths (journey system)
   { pattern: /^\/paths\/[^/]+$/, backTarget: "/paths", backLabel: "Paths" },
 
-  // Chronicle (focus mode — process flows)
-  { pattern: /^\/chronicle\/today$/, backTarget: "/today", backLabel: "Today", focusMode: true, focusTitle: "Daily Chronicle", focusSubtitle: "Today's practice" },
+  // Chronicle (focus mode — process flows). /chronicle/today now redirects to /today.
   { pattern: /^\/chronicle\/setup$/, backTarget: "/today", backLabel: "Today", focusMode: true, focusTitle: "Chronicle Setup", focusSubtitle: "Begin your practice" },
 
   // Settings
