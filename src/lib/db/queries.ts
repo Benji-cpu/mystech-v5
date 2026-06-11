@@ -1115,8 +1115,10 @@ export async function upsertChronicleKnowledge(
 export async function getRecentChronicleCards(deckId: string, limit = 10) {
   return db
     .select({
+      id: cards.id,
       title: cards.title,
       meaning: cards.meaning,
+      imageUrl: cards.imageUrl,
       createdAt: cards.createdAt,
     })
     .from(cards)
