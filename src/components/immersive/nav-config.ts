@@ -1,4 +1,4 @@
-import { Sun, Layers, MessageCircle, Settings } from "lucide-react";
+import { Sun, Layers, BookOpen, MessageCircle, Settings } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 export interface NavTab {
@@ -26,7 +26,7 @@ export const navTabs: NavTab[] = [
     href: "/today",
     label: "Today",
     icon: Sun,
-    activePrefixes: ["/today", "/home", "/dashboard", "/paths", "/readings", "/chronicle", "/daily"],
+    activePrefixes: ["/today", "/home", "/dashboard", "/chronicle", "/daily"],
     minStage: 0,
   },
   {
@@ -34,6 +34,13 @@ export const navTabs: NavTab[] = [
     label: "Deck",
     icon: Layers,
     activePrefixes: ["/decks", "/studio", "/art-styles"],
+    minStage: 0,
+  },
+  {
+    href: "/story",
+    label: "Story",
+    icon: BookOpen,
+    activePrefixes: ["/story", "/readings", "/paths"],
     minStage: 0,
   },
   {

@@ -40,7 +40,7 @@ function resolveCards(data: QuickAccessData): QuickAccessCard[] {
       stat: data.readingCount === 0
         ? "Draw first"
         : `${data.readingCount} reading${data.readingCount !== 1 ? "s" : ""}`,
-      href: data.readingCount === 0 ? "/readings/new" : "/readings",
+      href: data.readingCount === 0 ? "/readings/new" : "/story",
       accent: "text-purple-400/80",
       tint: "bg-purple-500/[0.04]",
       minStage: 0,

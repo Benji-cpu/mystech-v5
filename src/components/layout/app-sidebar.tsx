@@ -15,10 +15,10 @@ import { cn } from "@/lib/utils";
 import { UsageIndicator } from "@/components/shared/usage-indicator";
 
 const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: Home },
+  { href: "/today", label: "Today", icon: Home },
   { href: "/decks", label: "My Decks", icon: Layers },
   { href: "/chronicle", label: "Chronicle", icon: ScrollText },
-  { href: "/readings", label: "Readings", icon: BookOpen },
+  { href: "/story", label: "Story", icon: BookOpen },
   { href: "/paths", label: "Paths", icon: Map },
   { href: "/studio", label: "Studio", icon: Palette },
 ];

@@ -31,6 +31,7 @@ export default {
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
       const isOnApp = nextUrl.pathname.startsWith("/today") ||
+        nextUrl.pathname.startsWith("/story") ||
         nextUrl.pathname.startsWith("/home") ||
         nextUrl.pathname.startsWith("/dashboard") ||
         nextUrl.pathname.startsWith("/profile") ||

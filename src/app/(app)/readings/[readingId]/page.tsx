@@ -167,10 +167,10 @@ export default async function ReadingViewPage({
     <EditorialShell>
       <div className="mx-auto max-w-3xl px-6 pb-28 pt-10 sm:px-10 sm:pt-14">
         <Link
-          href="/readings"
+          href="/story"
           className="eyebrow inline-flex items-center gap-2 hover:underline"
         >
-          ← Readings
+          ← Story
         </Link>
 
         <header className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">

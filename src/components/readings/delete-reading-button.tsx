@@ -27,7 +27,7 @@ export function DeleteReadingButton({ readingId }: { readingId: string }) {
         method: "DELETE",
       });
       if (res.ok) {
-        router.push("/readings");
+        router.push("/story");
       }
     } catch {
       // Silently fail

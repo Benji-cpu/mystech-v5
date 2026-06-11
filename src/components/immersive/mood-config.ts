@@ -19,6 +19,8 @@ export type MoodPresetName = keyof typeof moodPresets;
 
 const routeMoods: Record<string, Mood> = {
   "/dashboard": { primaryHue: 285, sparkleColor: "var(--gold)" },
+  "/today": { primaryHue: 285, sparkleColor: "var(--gold)" },
+  "/story": { primaryHue: 280, sparkleColor: "var(--gold)" },
   "/decks": { primaryHue: 270, sparkleColor: "var(--gold)" },
   "/decks/new": { primaryHue: 30, sparkleColor: "#ff8c00" },
   "/readings": { primaryHue: 280, sparkleColor: "var(--gold)" },
