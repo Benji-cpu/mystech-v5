@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Lock, ChevronDown } from "lucide-react";
@@ -31,32 +31,38 @@ const SPREAD_OPTIONS: {
   label: string;
   description: string;
   count: number;
+  deepDive?: boolean;
 }[] = [
   {
     type: "single",
-    label: "Single Card",
+    label: "One Card",
     description: "A focused moment of clarity",
     count: 1,
   },
   {
     type: "three_card",
-    label: "Three Card",
-    description: "Past, Present, Future",
+    label: "Three Cards",
+    description: "Past, present, future",
     count: 3,
   },
   {
     type: "five_card",
-    label: "Five Card Cross",
-    description: "Situation, Challenge, Foundation, Past, Future",
+    label: "Five-Card Cross",
+    description: "Situation, challenge, foundation, past, future",
     count: 5,
+    deepDive: true,
   },
   {
     type: "celtic_cross",
     label: "Celtic Cross",
     description: "The classic 10-card deep reading",
     count: 10,
+    deepDive: true,
   },
 ];
+
+/** The first deep-dive option gets a section divider above it */
+const FIRST_DEEP_DIVE = SPREAD_OPTIONS.find((s) => s.deepDive)?.type;
 
 export function SpreadSelector({
   selectedSpread,
@@ -113,8 +119,13 @@ export function SpreadSelector({
           const isSelected = selectedSpread === spread.type;
 
           return (
+            <div key={spread.type} className="space-y-2">
+              {spread.type === FIRST_DEEP_DIVE && (
+                <p className="pt-2 text-xs font-medium uppercase tracking-wider text-white/40">
+                  Deep dive
+                </p>
+              )}
             <motion.button
-              key={spread.type}
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{
@@ -172,6 +183,7 @@ export function SpreadSelector({
                 )}
               </div>
             </motion.button>
+            </div>
           );
         })}
       </div>
@@ -185,8 +197,13 @@ export function SpreadSelector({
           const isSelected = selectedSpread === spread.type;
 
           return (
+            <Fragment key={spread.type}>
+              {spread.type === FIRST_DEEP_DIVE && (
+                <p className="col-span-2 pt-2 text-xs font-medium uppercase tracking-wider text-white/40">
+                  Deep dive
+                </p>
+              )}
             <motion.button
-              key={spread.type}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{
@@ -256,6 +273,7 @@ export function SpreadSelector({
                 </div>
               )}
             </motion.button>
+            </Fragment>
           );
         })}
       </div>
