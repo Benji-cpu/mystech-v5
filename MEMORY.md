@@ -35,3 +35,10 @@ Learned-experience notes that don't belong in CLAUDE.md. Keep entries concise (1
 
 - No automatic spam dedup on feedback. Identical message from same user can be submitted repeatedly.
 - `vercel.json` does not exist yet; if Pro plan is adopted later, sub-daily project-specific crons can move there.
+- 12 pre-existing Vitest failures (4 files: ai/reading, ai/generate-deck, readings route, reading-flow-state) + matching tsc errors in test files — mock/type drift on main, predates the 2026-06 IA overhaul. `npm run build` unaffected.
+
+## IA overhaul (2026-06, Phase 1 of 4 shipped)
+
+- Nav is now Today (/today) / Deck (/decks) / Story (/story) / Settings. /home, /dashboard, /readings, /studio/*, /art-styles/* are all redirects — don't link to them in new code.
+- Art styles live at /decks/styles; card refinement at /decks/[deckId]/cards/[cardId]. Legacy /studio/cards/[cardId] resolves deckId server-side then redirects (some components without deckId in scope still use it intentionally: card-detail-modal, quick-draw, chronicle-flow, reading-refine-section).
+- Phases 2–4 pending (see master plan): merge daily systems into /today (one streak), flatten Paths UX, then living→chronicle migration + unified seeker context.
