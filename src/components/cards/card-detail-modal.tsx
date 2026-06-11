@@ -217,7 +217,7 @@ export function CardDetailModal({
                 onClick={(e) => e.stopPropagation()}
               >
                 <Wand2 className="h-3 w-3" />
-                Refine in Studio
+                Refine
               </Link>
               <span className="text-muted-foreground/20">·</span>
               <button

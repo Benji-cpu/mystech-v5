@@ -444,7 +444,7 @@ function RevealView({ title, obstacleCount, deckId }: { title: string; obstacleC
             className="flex items-center gap-1.5 text-xs text-muted-foreground/60 hover:text-primary transition-colors"
           >
             <Wand2 className="h-3 w-3" />
-            Refine your cards in Studio
+            Refine your cards
           </Link>
         </motion.div>
       )}

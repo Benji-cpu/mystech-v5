@@ -92,7 +92,7 @@ export function UserMenu({ user }: UserMenuProps) {
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <Link href="/art-styles" className="cursor-pointer">
+          <Link href="/decks/styles" className="cursor-pointer">
             <Palette className="mr-2 h-4 w-4" />
             Art Styles
           </Link>

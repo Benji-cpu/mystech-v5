@@ -20,7 +20,7 @@ const navItems = [
   { href: "/chronicle", label: "Chronicle", icon: ScrollText },
   { href: "/story", label: "Story", icon: BookOpen },
   { href: "/paths", label: "Paths", icon: Map },
-  { href: "/studio", label: "Studio", icon: Palette },
+  { href: "/decks/styles", label: "Art Styles", icon: Palette },
 ];
 
 interface AppSidebarProps {

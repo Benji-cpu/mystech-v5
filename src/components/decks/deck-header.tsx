@@ -74,7 +74,7 @@ export function DeckHeader({ deck, artStyleName, artStyleId, shareToken, isAdopt
                 />
                 {artStyleId && (
                   <Button variant="outline" size="sm" asChild>
-                    <Link href={`/studio/styles/${artStyleId}`}>
+                    <Link href={`/decks/styles/${artStyleId}`}>
                       <Palette className="h-4 w-4 mr-1" />
                       <span className="hidden sm:inline">Customize Style</span>
                     </Link>

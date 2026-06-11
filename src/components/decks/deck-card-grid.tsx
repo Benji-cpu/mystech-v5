@@ -79,7 +79,7 @@ export function DeckCardGrid({ cards: initialCards, onRetryImage, feedbackMap }:
             {/* Studio refine icon — desktop hover only */}
             {card.imageStatus === "completed" && card.imageUrl && (
               <Link
-                href={`/studio/cards/${card.id}`}
+                href={`/decks/${card.deckId}/cards/${card.id}`}
                 className="absolute top-1.5 left-1.5 hidden sm:flex opacity-0 group-hover:opacity-100 transition-opacity z-10 h-8 w-8 items-center justify-center rounded-full bg-black/60 border border-white/10 text-white/70 hover:text-primary hover:border-primary/30"
                 onClick={(e) => e.stopPropagation()}
               >

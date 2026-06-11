@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, Pencil, Palette, Play } from "lucide-react";
+import { ArrowLeft, Pencil, Palette, Play, Printer } from "lucide-react";
 import { DeleteDeckButton } from "./delete-deck-button";
 import { ShareButton } from "@/components/shared/share-button";
 import { AdoptDeckButton } from "@/components/shared/adopt-deck-button";
@@ -96,12 +96,22 @@ export function EditorialDeckHeader({
               />
               {artStyleId && (
                 <Link
-                  href={`/studio/styles/${artStyleId}`}
+                  href={`/decks/styles/${artStyleId}`}
                   className="inline-flex items-center gap-1.5 rounded-full border px-3 py-2 text-sm transition-colors hover:border-[var(--ink-soft)]"
                   style={{ borderColor: "var(--line)", color: "var(--ink-soft)" }}
                 >
                   <Palette size={14} />
                   <span className="hidden sm:inline">Style</span>
+                </Link>
+              )}
+              {!isChronicle && (
+                <Link
+                  href={`/decks/${deck.id}/print`}
+                  className="inline-flex items-center gap-1.5 rounded-full border px-3 py-2 text-sm transition-colors hover:border-[var(--ink-soft)]"
+                  style={{ borderColor: "var(--line)", color: "var(--ink-soft)" }}
+                >
+                  <Printer size={14} />
+                  <span className="hidden sm:inline">Print</span>
                 </Link>
               )}
               <Link

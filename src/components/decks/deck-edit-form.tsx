@@ -123,11 +123,11 @@ export function DeckEditForm({ deck, artStyleName, artStyleId }: DeckEditFormPro
           <div className="flex items-center gap-3">
             <StudioStyleBadge styleName={artStyleName} styleId={artStyleId} />
             <Link
-              href={`/studio/styles/${artStyleId}`}
+              href={`/decks/styles/${artStyleId}`}
               className="text-xs text-muted-foreground hover:text-primary transition-colors flex items-center gap-1"
             >
               <Palette className="h-3 w-3" />
-              Customize in Studio
+              Customize style
             </Link>
           </div>
           <p className="text-xs text-muted-foreground/60">

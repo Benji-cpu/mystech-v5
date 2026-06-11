@@ -29,7 +29,7 @@ export function RecentlyRefinedRow({ cards, className }: RecentlyRefinedRowProps
           Recently Refined
         </h3>
         <Link
-          href="/studio"
+          href="/decks/styles"
           className="text-xs text-muted-foreground/60 hover:text-primary transition-colors"
         >
           Studio
@@ -40,7 +40,7 @@ export function RecentlyRefinedRow({ cards, className }: RecentlyRefinedRowProps
         {cards.map((card) => (
           <Link
             key={card.cardId}
-            href={`/studio/cards/${card.cardId}`}
+            href={`/decks/${card.deckId}/cards/${card.cardId}`}
             className="shrink-0 group"
           >
             <div className="relative w-14 aspect-[2/3] rounded-lg overflow-hidden border border-white/10 group-hover:border-primary/30 transition-colors">

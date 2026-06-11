@@ -116,7 +116,7 @@ export function StyleEditor({ style, isOwner, plan, userId }: StyleEditorProps) 
           const json = await res.json();
           if (json.success) {
             toast.success("Style saved as new custom style");
-            router.push(`/studio/styles/${json.data.id}`);
+            router.push(`/decks/styles/${json.data.id}/edit`);
           } else {
             toast.error(json.error ?? "Failed to save style");
           }
@@ -149,7 +149,7 @@ export function StyleEditor({ style, isOwner, plan, userId }: StyleEditorProps) 
       {/* Header */}
       <div className="flex items-center gap-3 p-4 sm:px-6 border-b border-white/5">
         <Button asChild variant="ghost" size="sm" className="shrink-0">
-          <Link href="/studio/styles">
+          <Link href="/decks/styles">
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>

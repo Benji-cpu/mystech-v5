@@ -32,7 +32,7 @@ export function StudioStyleBadge({
 
   if (linkToStudio && styleId) {
     return (
-      <Link href={`/studio/styles/${styleId}`} onClick={(e) => e.stopPropagation()}>
+      <Link href={`/decks/styles/${styleId}`} onClick={(e) => e.stopPropagation()}>
         {badge}
       </Link>
     );

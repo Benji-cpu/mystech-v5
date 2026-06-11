@@ -61,7 +61,7 @@ export function CustomStyleForm({
       }
 
       if (redirectOnSuccess) {
-        router.push(`/art-styles/${data.data.id}`);
+        router.push(`/decks/styles/${data.data.id}`);
         router.refresh();
       }
     } catch {

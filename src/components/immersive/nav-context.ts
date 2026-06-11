@@ -29,6 +29,15 @@ const routeRules: RouteRule[] = [
   { pattern: /^\/decks\/new\/simple$/, backTarget: "/decks/new", backLabel: "Create Deck", focusMode: true, focusTitle: "Quick Create", focusSubtitle: "Build a deck in minutes" },
   { pattern: /^\/decks\/new$/, backTarget: "/decks", backLabel: "Decks", focusMode: true, focusTitle: "Create Deck", focusSubtitle: "Choose your path" },
 
+  // Art styles (folded under /decks — static segment wins over [deckId])
+  { pattern: /^\/decks\/styles\/new$/, backTarget: "/decks/styles", backLabel: "Art Styles" },
+  { pattern: /^\/decks\/styles\/[^/]+\/edit$/, backTarget: "PARENT", backLabel: "Style" },
+  { pattern: /^\/decks\/styles\/[^/]+$/, backTarget: "/decks/styles", backLabel: "Art Styles" },
+  { pattern: /^\/decks\/styles$/, backTarget: "/decks", backLabel: "Decks" },
+
+  // Card refinement (focus mode — lives under its deck)
+  { pattern: /^\/decks\/[^/]+\/cards\/[^/]+$/, backTarget: "PARENT2", backLabel: "Deck", focusMode: true, focusTitle: "Card Refinement", focusSubtitle: "Refine the artwork" },
+
   // Deck detail + edit (NOT focus mode — simple forms)
   { pattern: /^\/decks\/[^/]+\/edit$/, backTarget: "PARENT", backLabel: "Back" },
   { pattern: /^\/decks\/[^/]+$/, backTarget: "/decks", backLabel: "Decks" },
@@ -56,10 +65,10 @@ const routeRules: RouteRule[] = [
   { pattern: /^\/admin\/[^/]+$/, backTarget: "/admin", backLabel: "Admin" },
 ];
 
-function getParentPath(pathname: string): string {
+function getParentPath(pathname: string, levels = 1): string {
   const segments = pathname.split("/").filter(Boolean);
-  if (segments.length <= 1) return "/";
-  return "/" + segments.slice(0, -1).join("/");
+  if (segments.length <= levels) return "/";
+  return "/" + segments.slice(0, -levels).join("/");
 }
 
 export function getNavContext(pathname: string): NavContext {
@@ -70,7 +79,12 @@ export function getNavContext(pathname: string): NavContext {
   // Check specific rules FIRST (handles depth-1 focus-mode paths like /onboarding)
   for (const rule of routeRules) {
     if (rule.pattern.test(pathname)) {
-      const backTarget = rule.backTarget === "PARENT" ? getParentPath(pathname) : rule.backTarget;
+      const backTarget =
+        rule.backTarget === "PARENT"
+          ? getParentPath(pathname)
+          : rule.backTarget === "PARENT2"
+            ? getParentPath(pathname, 2)
+            : rule.backTarget;
       return {
         section,
         depth,

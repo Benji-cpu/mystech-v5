@@ -158,15 +158,15 @@ export function EnhancedStylePicker({
         ))}
       </div>
 
-      {/* Customize in Studio link */}
+      {/* Customize style link */}
       {selectedStyleId && (
         <div className="flex justify-center pt-1">
           <Link
-            href={`/studio/styles/${selectedStyleId}`}
+            href={`/decks/styles/${selectedStyleId}/edit`}
             className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors"
           >
             <Settings2 className="h-3 w-3" />
-            Customize in Studio
+            Customize style
           </Link>
         </div>
       )}
