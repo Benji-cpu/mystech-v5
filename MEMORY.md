@@ -36,6 +36,8 @@ Learned-experience notes that don't belong in CLAUDE.md. Keep entries concise (1
 - No automatic spam dedup on feedback. Identical message from same user can be submitted repeatedly.
 - `vercel.json` exists and may ONLY contain daily-or-slower crons on the Hobby plan; sub-daily jobs go in GitHub Actions. If Pro is adopted later they can move back.
 - 12 pre-existing Vitest failures (4 files: ai/reading, ai/generate-deck, readings route, reading-flow-state) + matching tsc errors in test files — mock/type drift on main, predates the 2026-06 IA overhaul. `npm run build` unaffected.
+- **Vercel Blob store SUSPENDED as of 2026-06-12** — all image uploads fail (card art, refinement, feedback screenshots). Needs dashboard action (Storage → Blob, quota/billing). UI degrades gracefully since the audit fixes.
+- Visual/red-team audit harness: `scripts/audit-walk.mts` (npx tsx, needs dev server on :3000) — records screenshots/video/trace to `.audit/<date>/`. Report pattern: `docs/audit/`. Test user `test-user-e2e` has an ACTIVE PRO subscription in the prod DB — don't use it to test free-plan gating.
 
 ## Database (CRITICAL)
 
