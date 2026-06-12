@@ -891,7 +891,8 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
         transition={SPRINGS.zone}
         className="min-h-0 overflow-hidden"
       >
-        <div className="px-4 sm:px-6 pt-4 pb-6 max-w-3xl mx-auto w-full h-full overflow-y-auto">
+        {/* pt-24 clears the fixed FocusHeader ("New Reading / Consult the cards") */}
+        <div className="px-4 sm:px-6 pt-24 pb-6 max-w-3xl mx-auto w-full h-full overflow-y-auto">
           {/* Astrology nudge — hidden once profile exists */}
           {!astroProfile && <AstroNudgeBanner className="mb-4" />}
 

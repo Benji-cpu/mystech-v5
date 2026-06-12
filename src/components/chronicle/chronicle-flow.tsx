@@ -956,10 +956,12 @@ export function ChronicleFlow({
         background: "var(--paper)",
       }}
     >
-      {/* ── CARD ZONE — always mounted, resizes ── */}
+      {/* ── CARD ZONE — always mounted, resizes. Must be `relative`: the
+          revealed-card wrapper is absolute inset-0 and would otherwise
+          position against the fixed shell, floating over the reading panel. */}
       <motion.div
         layout
-        className="min-h-0 overflow-hidden flex items-center justify-center px-4 pt-14"
+        className="relative min-h-0 overflow-hidden flex items-center justify-center px-4 pt-14"
         animate={{
           ...cardZoneStyle,
           opacity: showCardZone ? 1 : 0,

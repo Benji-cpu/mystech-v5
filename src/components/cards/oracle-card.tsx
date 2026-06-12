@@ -165,15 +165,18 @@ function CardImage({
             />
           </div>
         ) : card.imageStatus === "failed" ? (
-          <div
-            className="flex h-full w-full flex-col items-center justify-center gap-2"
-            style={{
-              background:
-                "linear-gradient(to bottom, var(--paper-card), var(--paper-warm))",
-            }}
-          >
-            <AlertCircle className="h-6 w-6" style={{ color: "#b83a2b" }} />
-            {onRetryImage && (
+          // With a retry handler this is an actionable error; without one
+          // (e.g. the ritual reveal) degrade to the calm mystic placeholder
+          // rather than a red alert glyph.
+          onRetryImage ? (
+            <div
+              className="flex h-full w-full flex-col items-center justify-center gap-2"
+              style={{
+                background:
+                  "linear-gradient(to bottom, var(--paper-card), var(--paper-warm))",
+              }}
+            >
+              <AlertCircle className="h-6 w-6" style={{ color: "#b83a2b" }} />
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -185,8 +188,19 @@ function CardImage({
                 <RotateCcw className="h-3 w-3" />
                 Retry
               </button>
-            )}
-          </div>
+            </div>
+          ) : (
+            <div
+              className="flex h-full w-full items-center justify-center"
+              style={{
+                background: "linear-gradient(160deg, #2A2130 0%, #0D0A10 100%)",
+              }}
+            >
+              <span className="text-4xl" style={{ color: "rgba(168,134,63,0.4)" }}>
+                ✦
+              </span>
+            </div>
+          )
         ) : (
           <Skeleton
             className="h-full w-full rounded-none"

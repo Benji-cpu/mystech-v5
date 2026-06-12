@@ -40,6 +40,20 @@ The full chronicle ritual was completed live (greeting → 3 dialogue exchanges 
 
 Landing, pricing, login; unauth gating (`/today`→login); **prod test-login returns 404**; protected APIs 401; full ritual loop incl. **double-tap forge guard** and **mid-ritual reload resume**; Story timeline/themes/streak; quick draw; decks library; deck detail (chronicle view), print gating (0/22 cards); styles gallery/detail/editor/new; paths picker ("Choose your focus") + path detail; settings hub / Daily Reminder / billing / profile; feedback FAB submit (`[audit]` entry); the full overhaul redirect table; admin locked for non-admin; bottom-nav active states (5 items, all ≥40px touch targets); desktop spot-checks.
 
+## Resolution (same day)
+
+| # | Outcome |
+|---|---------|
+| 1 | **Open — needs Benji**: unsuspend the Blob store in the Vercel dashboard (Storage → Blob; Hobby quota/billing). Code now degrades gracefully (see #2). |
+| 2 | **Fixed**: card zone got `relative` (the absolute card wrapper was positioning against the fixed shell and floating over the reading panel), and `OracleCard`'s `failed` state without a retry handler now shows the calm gradient+✦ placeholder instead of a red alert glyph. Verified: `52/53-…FIXED.png`. |
+| 3 | **Not reproducible** — 5 clean loads across desktop/mobile and en-GB/Asia-Makassar after the audit; likely a dev-server artifact during rapid state change. Monitor. |
+| 4 | **Fixed**: setup zone `pt-24` clears the fixed FocusHeader. Verified: `54/55-…png`. |
+| 5 | **Fixed**: banner now reads "Settings →" → `/settings` (birth data lives in the celestial profile there). |
+| 6 | **Open — design call**: options are (a) vertically centering the greeting, (b) a date/streak strip in the idle card zone, or (c) leave as a quiet opening beat. |
+| 7 | **By design**: spread section is progressive disclosure (appears after deck selection, collapsed — a prior deliberate decision: "deck auto-advance removed per Fix 1"). Expanded view verified perfect: One Card / Three Cards / DEEP DIVE divider / Five-Card Cross / Celtic Cross (`56-spread-expanded.png`). No Pro locks shown because the test user has an active Pro subscription — gating logic intact. |
+| 8 | **Acceptable**: links sit in the scrollable reading zone and scroll into view cleanly (`53-…png`). |
+| 9 | **Open — low priority**: consider an always-visible refine affordance on mobile card grids once Blob is restored and images exist again. |
+
 ## Recording index
 
-`01–47` PNGs per step (`*-FAILED.png` for the two harness misfires), `48–51` retest captures, `video/` (webm per context), `trace-mobile.zip`, `findings.json`.
+`01–47` PNGs per step (`*-FAILED.png` for the two harness misfires), `48–51` retest captures, `52–56` post-fix verification, `video/` (webm per context), `trace-mobile.zip`, `findings.json`.
