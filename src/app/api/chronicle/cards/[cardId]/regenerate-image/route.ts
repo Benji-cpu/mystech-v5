@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { db } from "@/lib/db";
 import { cards, decks } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
@@ -65,9 +65,17 @@ export async function POST(
     stabilityPreset = ART_STYLE_PRESETS.find((p) => p.id === row.artStyleId)?.stabilityPreset;
   }
 
-  // Fire-and-forget — client polls /api/chronicle/today for imageStatus updates.
-  generateCardImage(row.cardId, row.imagePrompt, artStylePrompt, row.deckId, stabilityPreset).catch(
-    (err) => console.error("[chronicle/cards/regenerate-image] error:", err)
+  // Client polls /api/chronicle/today for imageStatus updates, so we respond
+  // before the image exists — but the work MUST be handed to after(). A bare
+  // dangling promise is killed the instant the response is sent on serverless,
+  // and generateCardImage sets imageStatus='generating' as its very first act:
+  // the status write lands, the Stability call never completes, and the card is
+  // stuck in "generating" forever with no error logged anywhere. That is exactly
+  // how the Retry artwork button became unable to recover a failed card.
+  after(
+    generateCardImage(row.cardId, row.imagePrompt, artStylePrompt, row.deckId, stabilityPreset).catch(
+      (err) => console.error("[chronicle/cards/regenerate-image] error:", err)
+    )
   );
 
   return NextResponse.json<ApiResponse<{ accepted: true }>>(

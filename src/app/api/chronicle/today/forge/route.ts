@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { generateObject } from "ai";
 import { z } from "zod";
 import { db } from "@/lib/db";
@@ -212,12 +212,20 @@ export async function POST() {
     status: "success",
   });
 
-  // Fire-and-forget image generation
+  // The card is returned before its artwork exists, so the image work has to
+  // outlive the response — but it MUST go through after(). A bare dangling
+  // promise is killed the moment the response is sent on serverless, and
+  // generateCardImage sets imageStatus='generating' as its very first act: that
+  // write lands, the Stability call never finishes, and the card sits in
+  // "generating" forever with nothing logged. That is the whole reason
+  // "The artwork didn't arrive" appears on /today.
   const artStylePrompt = deck.artStyleId
     ? (await getArtStyleById(deck.artStyleId))?.stylePrompt ?? ""
     : "";
-  generateCardImage(card.id, generatedCard.imagePrompt, artStylePrompt, deck.id).catch(
-    (err) => console.error("[chronicle/today/forge] image generation error:", err)
+  after(
+    generateCardImage(card.id, generatedCard.imagePrompt, artStylePrompt, deck.id).catch(
+      (err) => console.error("[chronicle/today/forge] image generation error:", err)
+    )
   );
 
   return NextResponse.json<ApiResponse<typeof card>>(
