@@ -32,6 +32,14 @@ npm run test:e2e     # Run Playwright E2E tests
 npm run test:e2e:ui  # Playwright with interactive UI
 ```
 
+**Art styles** live in `ART_STYLE_PRESETS` (`src/lib/constants.ts`) — that is the source of truth, not the DB. The style picker reads the `art_style` table, so a style only exists for users once seeded:
+
+```bash
+npx tsx scripts/seed-art-styles.ts              # upsert all 45 + fill missing preview swatches
+npx tsx scripts/seed-art-styles.ts --rows-only  # no image spend
+npx tsx scripts/seed-art-styles.ts --only=celtic --force
+```
+
 ## Deployment
 
 - **Platform**: Vercel
@@ -146,7 +154,8 @@ Standardised cross-project feedback collection. Schema: `feedback` table in `src
 - **Free**: 11 lifetime credits (never reset), 1 reading/day, spreads = `single` + `three_card`, `standard` AI model. First-day welcome grant of 3 readings within 24h of signup (see `WELCOME_READING_GRANT`).
 - **Pro ($4.99/mo)**: 50 credits/month (reset on calendar month boundary), 5 readings/day, all spreads (`single`, `three_card`, `five_card`, `celtic_cross`), `master_oracle` AI model.
 - **Admin** (role-based): unlimited everything, bypasses subscription check.
-- Credits are spent on image generation, card refinement, and deck generation/confirmation. Readings are gated separately by `checkDailyReadings`. Voice TTS has its own monthly character cap.
+- **One credit buys one whole card, artwork included, and is claimed once** — at `/api/ai/generate-deck` (simple) or `/api/decks/[deckId]/confirm` (guided). `/api/ai/generate-images-batch` must NEVER bill: it only ever touches cards that are pending, failed or stale, i.e. already paid for. `/api/ai/generate-image` bills only when re-rolling an image the user already has (`imageStatus === 'completed'`), never when retrying a failure. Billing the image pass separately meant a 7-card deck cost 14 of a free account's 11 lifetime credits — the text succeeded, took the credits, and the image pass then 403'd. Card refinement (`/api/studio/cards/[cardId]/refine`) and chronicle forging each claim their own credit; those are separate creations, not re-deliveries.
+- Readings are gated separately by `checkDailyReadings`. Voice TTS has its own monthly character cap.
 - `past_due` status keeps Pro access (grace period); `canceled` keeps Pro until `currentPeriodEnd` then drops to free.
 
 ### Terminology

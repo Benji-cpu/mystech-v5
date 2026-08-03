@@ -36,8 +36,15 @@ Learned-experience notes that don't belong in CLAUDE.md. Keep entries concise (1
 - No automatic spam dedup on feedback. Identical message from same user can be submitted repeatedly.
 - `vercel.json` exists and may ONLY contain daily-or-slower crons on the Hobby plan; sub-daily jobs go in GitHub Actions. If Pro is adopted later they can move back.
 - 12 pre-existing Vitest failures (4 files: ai/reading, ai/generate-deck, readings route, reading-flow-state) + matching tsc errors in test files — mock/type drift on main, predates the 2026-06 IA overhaul. `npm run build` unaffected.
-- **Vercel Blob store SUSPENDED as of 2026-06-12** — all image uploads fail (card art, refinement, feedback screenshots). Needs dashboard action (Storage → Blob, quota/billing). UI degrades gracefully since the audit fixes.
+- **Vercel Blob store RESOLVED** — was suspended 2026-06-12; verified 2026-08-03 serving reads AND accepting writes (45 style swatches uploaded). Re-check with an actual `put` before ever claiming otherwise.
 - Visual/red-team audit harness: `scripts/audit-walk.mts` (npx tsx, needs dev server on :3000) — records screenshots/video/trace to `.audit/<date>/`. Report pattern: `docs/audit/`. Test user `test-user-e2e` has an ACTIVE PRO subscription in the prod DB — don't use it to test free-plan gating.
+
+## Card image generation (UNRESOLVED)
+
+- **Cards still frequently render a robed human figure regardless of the card's own imagePrompt.** Prompts that read "a star seed in a nebula" / "a veiled galaxy" come back as the same woman. Fixed contributors so far: base prompt no longer says "portrait composition" / "divination card"; negative prompt now excludes humans; 8 style prompts had accidental figure language stripped; tarot-classic / byzantine / ukiyo-e carry a "Still life composition." prefix. None of it reliably solves the problem.
+- **Do not tune this with single images.** Generations are unseeded, so one sample proves nothing — several confident conclusions in the 2026-08-03 session (base prompt alone fixes it; "oracle card" inside style prompts is the attractor; `fantasy-art` preset is the cause; "No human figures are present" in the imagePrompt back-summons them) were each contradicted by the next draw. Build a seeded, N-sample-per-variant harness before the next attempt.
+- Styles anchored to figurative canons (Mucha, Hokusai) resist every prompt-side fix — the artist reference itself is the pull. Removing artist names is the untested lever.
+- `deck-generation.ts` tells the LLM to "state excluded elements explicitly in the imagePrompt", which writes negations like "No human figures are present" into a positive diffusion prompt. Suspicious, unproven, worth testing properly.
 
 ## Database (CRITICAL)
 
