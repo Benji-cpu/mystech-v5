@@ -11,6 +11,7 @@ import { MicrophoneButton } from "@/components/voice/microphone-button";
 import { useVoiceInput } from "@/hooks/use-voice-input";
 import { cn } from "@/lib/utils";
 import { MessageCircle, Loader2, AlertCircle } from "lucide-react";
+import { LYRA_SIMPLE_CREATE } from "@/components/guide/lyra-constants";
 import type { ArtStyle } from "@/types";
 
 interface JourneySetupFormProps {
@@ -187,6 +188,11 @@ export function JourneySetupForm({
             </button>
           )}
         </div>
+        {/* Cost has to be visible HERE, not at finalize — by then the seeker has
+            already spent a whole conversation on a deck they may not be able to afford. */}
+        <p className="text-sm text-muted-foreground">
+          {LYRA_SIMPLE_CREATE.creditPreview(cardCount)}
+        </p>
       </div>
 
       {/* Art Style */}

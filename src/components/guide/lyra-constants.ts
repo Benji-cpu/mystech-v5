@@ -136,7 +136,7 @@ export const LYRA_SIMPLE_CREATE = {
   submitButton: "Bring It to Life",
   generatingButton: "Shaping the cards...",
   creditPreview: (count: number) =>
-    `This will use ${count} card credits and ${count} image credits.`,
+    `This will use ${count} credit${count !== 1 ? "s" : ""} — one per card, artwork included.`,
 } as const;
 
 export const LYRA_QUICK_CREATE_PROMPTS = [

@@ -2,10 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { cards, decks } from "@/lib/db/schema";
 import { getCurrentUser } from "@/lib/auth/helpers";
-import { getDeckByIdForUser, getArtStyleById, getUserPlan } from "@/lib/db/queries";
+import { getDeckByIdForUser, getArtStyleById } from "@/lib/db/queries";
 import { generateCardImage } from "@/lib/ai/image-generation";
 import { logGeneration } from "@/lib/ai/logging";
-import { getUserPlanFromRole, checkCredits, incrementCredits } from "@/lib/usage";
 import { ART_STYLE_PRESETS, STALE_GENERATION_TIMEOUT_MS } from "@/lib/constants";
 import { eq, and, lt } from "drizzle-orm";
 import { asc } from "drizzle-orm";
@@ -113,24 +112,15 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Check credits upfront — block entirely if insufficient
-  const role = (user as { role?: string }).role;
-  let plan = getUserPlanFromRole(role);
-  if (plan === "free") {
-    const subPlan = await getUserPlan(user.id);
-    if (subPlan === "pro") plan = "pro";
-  }
-
-  const creditCheck = await checkCredits(user.id, plan, cardsToProcess.length);
-  if (!creditCheck.allowed) {
-    return NextResponse.json<ApiResponse<never>>(
-      {
-        success: false,
-        error: `You need ${cardsToProcess.length} credits but have ${creditCheck.remaining} remaining. Upgrade to Pro for 50 credits/month.`,
-      },
-      { status: 403 }
-    );
-  }
+  // NO CREDIT CHARGE HERE. A credit buys a whole card — text and image together —
+  // and it was already claimed when the card was created (`/api/ai/generate-deck`
+  // simple mode, or `/api/decks/[deckId]/confirm` for the guided flow). This route
+  // only ever touches cards that are pending, failed, or stale, i.e. cards the user
+  // has already paid for and not yet received. Billing again here meant a 7-card
+  // deck cost 14 of a free account's 11 lifetime credits: the text succeeded, took
+  // the credits, and then the image pass 403'd — leaving a deck of blank cards and
+  // an account that could never generate another. Delivering a paid card, and
+  // retrying one that failed on our side, are both free.
 
   let processed = 0;
   let failed = 0;
@@ -199,11 +189,6 @@ export async function POST(request: NextRequest) {
         updatedAt: new Date(),
       })
       .where(eq(decks.id, deckId));
-  }
-
-  // Increment credits for successfully processed images
-  if (processed > 0) {
-    await incrementCredits(user.id, plan, processed);
   }
 
   await logGeneration({

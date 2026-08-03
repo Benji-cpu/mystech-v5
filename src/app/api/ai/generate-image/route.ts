@@ -64,7 +64,12 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Check credits (1 credit per image regen)
+  // A credit buys a whole card — text and image together — and it was already
+  // claimed when the card was created. So delivering that image for the first
+  // time, or retrying one that failed on our side, costs nothing. Only a
+  // deliberate re-roll of an image the user already has is a new credit.
+  const isReRoll = card.imageStatus === "completed" && !!card.imageUrl;
+
   const role = (user as { role?: string }).role;
   let plan = getUserPlanFromRole(role);
   if (plan === "free") {
@@ -72,15 +77,17 @@ export async function POST(request: NextRequest) {
     if (subPlan === "pro") plan = "pro";
   }
 
-  const creditCheck = await checkCredits(user.id, plan, 1);
-  if (!creditCheck.allowed) {
-    return NextResponse.json<ApiResponse<never>>(
-      {
-        success: false,
-        error: `You need 1 credit but have ${creditCheck.remaining} remaining. Upgrade to Pro for 50 credits/month.`,
-      },
-      { status: 403 }
-    );
+  if (isReRoll) {
+    const creditCheck = await checkCredits(user.id, plan, 1);
+    if (!creditCheck.allowed) {
+      return NextResponse.json<ApiResponse<never>>(
+        {
+          success: false,
+          error: `You need 1 credit to regenerate this image but have ${creditCheck.remaining} remaining. Upgrade to Pro for 50 credits/month.`,
+        },
+        { status: 403 }
+      );
+    }
   }
 
   // Get art style prompt and stability preset
@@ -111,8 +118,10 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Increment credits after successful image generation
-  await incrementCredits(user.id, plan, 1);
+  // Only a deliberate re-roll spends a credit — see isReRoll above.
+  if (isReRoll) {
+    await incrementCredits(user.id, plan, 1);
+  }
 
   // Check if all cards in the deck are now resolved — if so, mark deck as completed
   const allCards = await db
