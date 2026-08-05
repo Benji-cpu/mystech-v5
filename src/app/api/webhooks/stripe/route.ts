@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { db } from "@/lib/db";
 import { printOrders, subscriptions, users } from "@/lib/db/schema";
 import { stripe } from "@/lib/stripe/client";
@@ -118,10 +118,17 @@ export async function POST(request: NextRequest) {
             })
             .where(eq(printOrders.id, orderId));
 
-          // Best-effort: generate the pack manifest now so the admin queue
-          // shows "ready" without an extra click. Failure is non-fatal.
-          forgePrintPack(orderId).catch((err) =>
-            console.error("[webhook] forgePrintPack failed:", err)
+          // Generate the pack manifest now so the admin queue shows "ready"
+          // without an extra click. A genuine failure is non-fatal — the admin
+          // can forge by hand — but it MUST go through after(). A bare dangling
+          // promise is not "best effort" on serverless, it is no effort: the
+          // function is frozen the instant this webhook answers 200 to Stripe,
+          // so the forge is killed every time and every paid $49 order would
+          // sit at 'paid' instead of 'pack_ready'.
+          after(
+            forgePrintPack(orderId).catch((err) =>
+              console.error("[webhook] forgePrintPack failed:", err)
+            )
           );
 
           // Best-effort confirmation email.
