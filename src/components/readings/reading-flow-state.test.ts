@@ -276,6 +276,51 @@ describe("readingFlowReducer", () => {
       });
     });
 
+    describe("SET_CARD (browser history sync)", () => {
+      const threeCards: ReadingFlowState = {
+        ...initialReadingFlowState,
+        phase: "presenting",
+        presentingCardIndex: 1,
+        activeCardIndex: 1,
+        drawnCards: [
+          { card: mockCard, positionName: "Past" },
+          { card: { ...mockCard, id: "c2" }, positionName: "Present" },
+          { card: { ...mockCard, id: "c3" }, positionName: "Future" },
+        ],
+      };
+
+      it("moves forward, unlike GO_TO_CARD — Forward is a legitimate step", () => {
+        const state = readingFlowReducer(threeCards, { type: "SET_CARD", index: 2 });
+        expect(state.presentingCardIndex).toBe(2);
+      });
+
+      it("returns from the close to a card rather than stranding the reader", () => {
+        const closed: ReadingFlowState = { ...threeCards, phase: "complete" };
+        const state = readingFlowReducer(closed, { type: "SET_CARD", index: 2 });
+        expect(state.phase).toBe("presenting");
+        expect(state.presentingCardIndex).toBe(2);
+      });
+
+      it("clamps out-of-range indices instead of blanking the stage", () => {
+        expect(
+          readingFlowReducer(threeCards, { type: "SET_CARD", index: 99 })
+            .presentingCardIndex
+        ).toBe(2);
+        expect(
+          readingFlowReducer(threeCards, { type: "SET_CARD", index: -5 })
+            .presentingCardIndex
+        ).toBe(0);
+      });
+
+      it("is inert before any cards are drawn", () => {
+        const state = readingFlowReducer(initialReadingFlowState, {
+          type: "SET_CARD",
+          index: 0,
+        });
+        expect(state).toBe(initialReadingFlowState);
+      });
+    });
+
     it("SHOW_SYNTHESIS sets showSynthesis and clears activeCardIndex", () => {
       const prev: ReadingFlowState = {
         ...initialReadingFlowState,

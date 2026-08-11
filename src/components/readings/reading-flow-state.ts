@@ -65,6 +65,7 @@ export type ReadingFlowAction =
   | { type: "START_PRESENTING" }
   | { type: "ADVANCE_CARD" }
   | { type: "GO_TO_CARD"; index: number }
+  | { type: "SET_CARD"; index: number }
   | { type: "SHOW_SYNTHESIS" }
   | { type: "COMPLETE" }
   | { type: "RESTORE_DEFAULTS"; deckIds: string[]; spread: SpreadType | null }
@@ -212,6 +213,26 @@ export function readingFlowReducer(
       if (index > state.presentingCardIndex) return state;
       return {
         ...state,
+        presentingCardIndex: index,
+        activeCardIndex: index,
+      };
+    }
+
+    case "SET_CARD": {
+      // Unconditional, unlike GO_TO_CARD: this serves browser history, where
+      // Forward legitimately moves ahead and Back out of the close must
+      // return to the last card rather than strand the reader on it.
+      if (state.drawnCards.length === 0) return state;
+      const index = Math.min(
+        Math.max(action.index, 0),
+        state.drawnCards.length - 1
+      );
+      if (index === state.presentingCardIndex && state.phase === "presenting") {
+        return state;
+      }
+      return {
+        ...state,
+        phase: "presenting",
         presentingCardIndex: index,
         activeCardIndex: index,
       };

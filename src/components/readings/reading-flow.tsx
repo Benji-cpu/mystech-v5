@@ -67,6 +67,13 @@ function devLog(milestone: string, detail?: string) {
 
 const DEFAULTS_KEY = "mystech_reading_defaults";
 
+/**
+ * Key the reading's step is stored under inside the browser's history state.
+ * Namespaced because the App Router keeps its own routing data in the same
+ * object.
+ */
+const HISTORY_STEP_KEY = "mystechReadingStep";
+
 type ReadingDefaults = {
   deckIds: string[];
   spreadType: SpreadType | null;
@@ -627,6 +634,62 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
     return presentation.isSectionReady(presentingCardIndex + 1) || !presentation.isStreaming;
   }, [phase, presentingCardIndex, drawnCards.length, presentation]);
 
+  // ── Browser history: back/forward walks the cards ────────────────────
+  //
+  // The whole reading lives at one URL, so without this the Back button
+  // ejects the reader to /story part-way through and the reading they were
+  // in the middle of is simply gone. Each step pushes an entry, so Back
+  // walks the spread in reverse and only leaves once it reaches the first
+  // card.
+  //
+  // The step rides *inside* the existing history state rather than replacing
+  // it — Next's App Router keeps its own routing data there — and the URL
+  // never changes, so the router has nothing to re-resolve.
+
+  const pushHistoryStep = useCallback((step: number) => {
+    if (typeof window === "undefined") return;
+    window.history.pushState(
+      { ...window.history.state, [HISTORY_STEP_KEY]: step },
+      ""
+    );
+  }, []);
+
+  // Stamp the entry the reading begins on, so popping back to it lands on
+  // card one instead of falling through to an entry we don't recognise.
+  const historyAnchored = useRef(false);
+  useEffect(() => {
+    if (phase !== "presenting" || historyAnchored.current) return;
+    if (typeof window === "undefined") return;
+    historyAnchored.current = true;
+    window.history.replaceState(
+      { ...window.history.state, [HISTORY_STEP_KEY]: 0 },
+      ""
+    );
+  }, [phase]);
+
+  useEffect(() => {
+    if (!isPresenting) return;
+
+    const onPopState = (event: PopStateEvent) => {
+      const step = (event.state as Record<string, unknown> | null)?.[
+        HISTORY_STEP_KEY
+      ];
+      // No step on this entry means we've popped clear of the reading —
+      // let the browser leave.
+      if (typeof step !== "number") return;
+
+      tts.stop();
+      if (step >= drawnCards.length) {
+        dispatch({ type: "COMPLETE" });
+      } else {
+        dispatch({ type: "SET_CARD", index: step });
+      }
+    };
+
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, [isPresenting, drawnCards.length, tts]);
+
   // ── Manual advance handler ───────────────────────────────────────────
 
   const handleAdvanceCard = useCallback(() => {
@@ -640,10 +703,12 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
     const isLastCard = presentingCardIndex >= drawnCards.length - 1;
     if (isLastCard) {
       dispatch({ type: "COMPLETE" });
+      pushHistoryStep(drawnCards.length);
     } else {
       dispatch({ type: "ADVANCE_CARD" });
+      pushHistoryStep(presentingCardIndex + 1);
     }
-  }, [tts, presentingCardIndex, drawnCards.length]);
+  }, [tts, presentingCardIndex, drawnCards.length, pushHistoryStep]);
 
   // ── Speak section text when complete ──────────────────────────────────
 
@@ -843,8 +908,11 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
       if (index > presentingCardIndex) return;
       tts.stop();
       dispatch({ type: "GO_TO_CARD", index });
+      // A rail tap is a step like any other, so Back returns to the card the
+      // reader jumped away from.
+      pushHistoryStep(index);
     },
-    [presentingCardIndex, tts]
+    [presentingCardIndex, tts, pushHistoryStep]
   );
 
   // ── Header ────────────────────────────────────────────────────────────
