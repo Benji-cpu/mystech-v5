@@ -16,6 +16,11 @@ interface ReadingFlipCardProps {
   cardHeight: number;
   isActive?: boolean;
   showLabel?: boolean;
+  /**
+   * Card title beneath the art. Off when the caller positions the card in an
+   * exact slot (the reading stage) and renders its own labels.
+   */
+  showTitle?: boolean;
   onClick?: () => void;
 }
 
@@ -27,6 +32,7 @@ export function ReadingFlipCard({
   cardHeight,
   isActive,
   showLabel = true,
+  showTitle = true,
   onClick,
 }: ReadingFlipCardProps) {
   const flipped = revealState === "revealing" || revealState === "revealed";
@@ -212,7 +218,7 @@ export function ReadingFlipCard({
       </div>
 
       {/* Card title — shown when card is face-up */}
-      {flipped && (
+      {flipped && showTitle && (
         <p
           className="mt-1.5 text-center text-xs sm:text-sm font-medium leading-snug line-clamp-2 mx-auto"
           style={{ maxWidth: cardWidth + 20, color: "var(--ink)" }}

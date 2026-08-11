@@ -23,6 +23,8 @@ interface SpreadSelectorProps {
   expanded?: boolean;
   /** Callback when header is clicked in controlled mode */
   onToggleExpanded?: () => void;
+  /** Suppress the built-in caption when the container already titles this step. */
+  hideLabel?: boolean;
   className?: string;
 }
 
@@ -74,6 +76,7 @@ export function SpreadSelector({
   defaultExpanded = true,
   expanded: controlledExpanded,
   onToggleExpanded,
+  hideLabel,
   className,
 }: SpreadSelectorProps) {
   const [internalExpanded, setInternalExpanded] = useState(defaultExpanded);
@@ -319,9 +322,11 @@ export function SpreadSelector({
 
   return (
     <div className={cn(className)}>
-      <label className="text-sm font-medium text-white/70 mb-3 block">
-        Choose your spread
-      </label>
+      {!hideLabel && (
+        <label className="text-sm font-medium text-white/70 mb-3 block">
+          Choose your spread
+        </label>
+      )}
       {content}
     </div>
   );

@@ -15,6 +15,13 @@ interface RouteRule {
   focusMode?: boolean;
   focusTitle?: string;
   focusSubtitle?: string;
+  /**
+   * Suppress the global `FocusHeader` because the route renders its own
+   * header inside its layout. `FocusHeader` is `fixed top-0` with no
+   * background, so on a route that owns its chrome it prints itself on top of
+   * the content. Keeps `focusMode` (which dims the navs) intact.
+   */
+  ownHeader?: boolean;
 }
 
 /**
@@ -44,7 +51,7 @@ const routeRules: RouteRule[] = [
 
   // Readings (focus mode for new reading flow)
   { pattern: /^\/readings\/quick$/, backTarget: "/today", backLabel: "Today", focusMode: true, focusTitle: "Quick Draw", focusSubtitle: "Pull a card" },
-  { pattern: /^\/readings\/new$/, backTarget: "/story", backLabel: "Story", focusMode: true, focusTitle: "New Reading", focusSubtitle: "Consult the cards" },
+  { pattern: /^\/readings\/new$/, backTarget: "/story", backLabel: "Story", focusMode: true, ownHeader: true },
   { pattern: /^\/readings\/[^/]+$/, backTarget: "/story", backLabel: "Story" },
 
   // Paths — the "focus" picker, reached from Story
@@ -85,6 +92,20 @@ export function getNavContext(pathname: string): NavContext {
           : rule.backTarget === "PARENT2"
             ? getParentPath(pathname, 2)
             : rule.backTarget;
+      // A route that renders its own header contributes no header content, so
+      // `FocusHeader` finds nothing to draw and stays out of the way.
+      if (rule.ownHeader) {
+        return {
+          section,
+          depth,
+          backTarget: null,
+          backLabel: null,
+          focusMode: rule.focusMode ?? false,
+          focusTitle: null,
+          focusSubtitle: null,
+        };
+      }
+
       return {
         section,
         depth,

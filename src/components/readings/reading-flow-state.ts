@@ -64,6 +64,7 @@ export type ReadingFlowAction =
   | { type: "CREATION_ERROR"; error: string }
   | { type: "START_PRESENTING" }
   | { type: "ADVANCE_CARD" }
+  | { type: "GO_TO_CARD"; index: number }
   | { type: "SHOW_SYNTHESIS" }
   | { type: "COMPLETE" }
   | { type: "RESTORE_DEFAULTS"; deckIds: string[]; spread: SpreadType | null }
@@ -200,6 +201,19 @@ export function readingFlowReducer(
         ...state,
         presentingCardIndex: nextIndex,
         activeCardIndex: nextIndex,
+      };
+    }
+
+    case "GO_TO_CARD": {
+      // Revisiting a card already read. Never a way to skip ahead of Lyra —
+      // the rail only offers cards behind the current one.
+      const { index } = action;
+      if (index < 0 || index >= state.drawnCards.length) return state;
+      if (index > state.presentingCardIndex) return state;
+      return {
+        ...state,
+        presentingCardIndex: index,
+        activeCardIndex: index,
       };
     }
 

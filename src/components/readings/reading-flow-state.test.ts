@@ -241,6 +241,41 @@ describe("readingFlowReducer", () => {
       expect(state).toBe(prev); // no change
     });
 
+    describe("GO_TO_CARD", () => {
+      const threeCards: ReadingFlowState = {
+        ...initialReadingFlowState,
+        phase: "presenting",
+        presentingCardIndex: 2,
+        activeCardIndex: 2,
+        drawnCards: [
+          { card: mockCard, positionName: "Past" },
+          { card: { ...mockCard, id: "c2" }, positionName: "Present" },
+          { card: { ...mockCard, id: "c3" }, positionName: "Future" },
+        ],
+      };
+
+      it("revisits a card already read", () => {
+        const state = readingFlowReducer(threeCards, { type: "GO_TO_CARD", index: 0 });
+        expect(state.presentingCardIndex).toBe(0);
+        expect(state.activeCardIndex).toBe(0);
+      });
+
+      it("refuses to skip ahead of where Lyra has reached", () => {
+        const prev = { ...threeCards, presentingCardIndex: 0, activeCardIndex: 0 };
+        const state = readingFlowReducer(prev, { type: "GO_TO_CARD", index: 2 });
+        expect(state).toBe(prev); // no change
+      });
+
+      it("ignores out-of-range indices", () => {
+        expect(readingFlowReducer(threeCards, { type: "GO_TO_CARD", index: -1 })).toBe(
+          threeCards
+        );
+        expect(readingFlowReducer(threeCards, { type: "GO_TO_CARD", index: 9 })).toBe(
+          threeCards
+        );
+      });
+    });
+
     it("SHOW_SYNTHESIS sets showSynthesis and clears activeCardIndex", () => {
       const prev: ReadingFlowState = {
         ...initialReadingFlowState,
@@ -310,9 +345,12 @@ describe("isCardPhase", () => {
     expect(isCardPhase("complete")).toBe(true);
   });
 
-  it("returns false for non-card phases", () => {
+  it("returns false only for setup", () => {
+    // `creating` IS a card phase: the spread is already on stage as
+    // face-down placeholders while the API deals. Setup is the only phase
+    // with no cards.
     expect(isCardPhase("setup")).toBe(false);
-    expect(isCardPhase("creating")).toBe(false);
+    expect(isCardPhase("creating")).toBe(true);
   });
 });
 
