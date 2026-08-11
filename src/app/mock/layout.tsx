@@ -49,6 +49,8 @@ const IMMERSIVE_ROUTES = [
   "/mock/lyra/integrated",
   "/mock/navigation",
   "/mock/reading/ceremony-v2",
+  "/mock/reading-v2/threshold",
+  "/mock/reading-v2/invocation",
   "/mock/paths",
   "/mock/overhaul",
 ];
