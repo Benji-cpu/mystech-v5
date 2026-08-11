@@ -359,6 +359,7 @@ export function DrawButton({
   label,
   showGlyphs = true,
   outline = false,
+  hint = "Hold to settle first",
 }: {
   depth: Depth;
   onDraw: () => void;
@@ -369,6 +370,8 @@ export function DrawButton({
   showGlyphs?: boolean;
   /** Quiet treatment — used when nothing has been asked yet */
   outline?: boolean;
+  /** Line under the button; pass null to omit */
+  hint?: string | null;
 }) {
   const [holding, setHolding] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -440,9 +443,11 @@ export function DrawButton({
           )}
         </span>
       </motion.button>
-      <p className="mt-2 text-center text-[11px]" style={{ color: "var(--ink-faint)" }}>
-        Hold to settle first
-      </p>
+      {hint && (
+        <p className="mt-2 text-center text-[11px]" style={{ color: "var(--ink-faint)" }}>
+          {hint}
+        </p>
+      )}
     </div>
   );
 }

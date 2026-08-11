@@ -51,6 +51,7 @@ const IMMERSIVE_ROUTES = [
   "/mock/reading/ceremony-v2",
   "/mock/reading-v2/threshold",
   "/mock/reading-v2/invocation",
+  "/mock/reading-v3",
   "/mock/paths",
   "/mock/overhaul",
 ];

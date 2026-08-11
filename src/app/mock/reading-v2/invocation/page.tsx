@@ -20,8 +20,8 @@ import {
   DrawButton,
   DrawTransition,
   RitualOverlay,
-} from "../_shared/parts";
-import { AMBIENT_LINE, DEPTHS, MOCK_DECKS, SUGGESTIONS, type DepthKey } from "../_shared/data";
+} from "@/app/mock/_shared/reading/parts";
+import { AMBIENT_LINE, DEPTHS, MOCK_DECKS, SUGGESTIONS, type DepthKey } from "@/app/mock/_shared/reading/data";
 
 const SPRING = { type: "spring" as const, stiffness: 320, damping: 32 };
 

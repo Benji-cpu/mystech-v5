@@ -21,7 +21,7 @@ export default function ReadingV2Index() {
   return (
     <div className="daylight min-h-screen px-5 py-10" style={{ background: "var(--paper)" }}>
       <div className="mx-auto max-w-md">
-        <p className="eyebrow">Pre-reading, re-envisioned</p>
+        <p className="eyebrow">Superseded — kept for reference</p>
         <h1 className="display mt-2 text-[28px] leading-tight" style={{ color: "var(--ink)" }}>
           Two ways into the cards
         </h1>
@@ -30,6 +30,18 @@ export default function ReadingV2Index() {
           bottom third, and deck + depth treated as state you can tap rather than questions
           you must answer. They differ only in what owns the screen.
         </p>
+
+        <Link
+          href="/mock/reading-v3"
+          className="mt-5 block rounded-2xl p-4"
+          style={{ background: "var(--paper-warm)", border: "1px solid var(--accent-gold)" }}
+        >
+          <p className="text-[13px] leading-relaxed" style={{ color: "var(--ink)" }}>
+            <strong>These two are now one screen.</strong> Making the user pick between them
+            was only justified as a one-time setup, so the choice moved into a fold that
+            replaces onboarding and re-opens in place. → <u>/mock/reading-v3</u>
+          </p>
+        </Link>
 
         <div className="mt-8 space-y-3">
           {VARIANTS.map((v) => (

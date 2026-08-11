@@ -23,8 +23,8 @@ import {
   DrawTransition,
   IntentionLine,
   RitualOverlay,
-} from "../_shared/parts";
-import { AMBIENT_LINE, DEPTHS, MOCK_DECKS, SUGGESTIONS, type DepthKey } from "../_shared/data";
+} from "@/app/mock/_shared/reading/parts";
+import { AMBIENT_LINE, DEPTHS, MOCK_DECKS, SUGGESTIONS, type DepthKey } from "@/app/mock/_shared/reading/data";
 
 export default function ThresholdPage() {
   const [selectedIds, setSelectedIds] = useState<string[]>(["chronicle"]);
