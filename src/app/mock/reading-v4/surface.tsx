@@ -28,13 +28,20 @@ import { MOCK_DECKS, AMBIENT_LINE } from "@/app/mock/_shared/reading/data";
 
 const HINT_KEY = "mystech_mock_inhand_hint_v1";
 
+interface Tier {
+  count: number;
+  ms: number;
+  label: string;
+  pro?: boolean;
+}
+
 /** Dwell thresholds. Ten cards asks four seconds of your attention. */
-const TIERS = [
+const TIERS: readonly Tier[] = [
   { count: 1, ms: 500, label: "One card" },
   { count: 3, ms: 1400, label: "Three cards" },
   { count: 5, ms: 2500, label: "Five cards", pro: true },
   { count: 10, ms: 4000, label: "Ten cards — the long look", pro: true },
-] as const;
+];
 
 const SLOT_RATIO = 0.62; // deck occupies 62% of the viewport width
 
@@ -184,11 +191,8 @@ export default function InHandSurface() {
       : "Hold to draw · longer for more";
 
   return (
-    <div
-      className="dark fixed inset-0 flex flex-col overflow-hidden"
-      style={{ background: "var(--paper)" }}
-    >
-      {/* Warm floor light behind the deck */}
+    <div className="dark fixed inset-0" style={{ background: "var(--paper)" }}>
+      {/* Warm floor light behind the deck — full bleed */}
       <div
         className="pointer-events-none absolute inset-0"
         style={{
@@ -196,6 +200,13 @@ export default function InHandSurface() {
             "radial-gradient(120% 55% at 50% 42%, rgba(201,169,78,0.13), transparent 70%)",
         }}
       />
+
+      {/* The deck is sized as a share of THIS column, not the viewport.
+          Unconstrained, a 1440px-wide desktop produced an 893px card
+          1340px tall — taller than the window, so the page rendered
+          empty. Everything below lives in the column, including the
+          absolutely-positioned overlays. */}
+      <div className="relative mx-auto flex h-full w-full max-w-[460px] flex-col overflow-hidden">
 
       {/* ── Thin chrome ────────────────────────────────────────── */}
       <header className="relative z-20 flex shrink-0 items-center justify-between px-4 pt-[calc(env(safe-area-inset-top)+12px)]">
@@ -232,6 +243,12 @@ export default function InHandSurface() {
             scrollbarWidth: "none",
             // holding must not be interpreted as a scroll gesture
             touchAction: holding ? "none" : "pan-x",
+            // Neighbouring decks fade out rather than being sliced off at
+            // the column edge, which read as a rendering artifact.
+            WebkitMaskImage:
+              "linear-gradient(to right, transparent 0, #000 9%, #000 91%, transparent 100%)",
+            maskImage:
+              "linear-gradient(to right, transparent 0, #000 9%, #000 91%, transparent 100%)",
           }}
         >
           {/* Spacers, not container padding — snap-center measures against
@@ -547,6 +564,7 @@ export default function InHandSurface() {
           </>
         )}
       </AnimatePresence>
+      </div>
     </div>
   );
 }

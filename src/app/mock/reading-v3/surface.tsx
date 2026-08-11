@@ -117,10 +117,11 @@ export default function ReadingSurface() {
   );
 
   return (
-    <div
-      className="daylight fixed inset-0 flex flex-col overflow-hidden"
-      style={{ background: "var(--paper)" }}
-    >
+    <div className="daylight fixed inset-0" style={{ background: "var(--paper)" }}>
+      {/* Mobile-first, but desktop still has to be deliberate: without a
+          column the intention field and draw button stretched the full
+          1440px. The fold and every overlay live inside it. */}
+      <div className="relative mx-auto flex h-full w-full max-w-[460px] flex-col overflow-hidden">
       {/* ── Ambient header ─────────────────────────────────────── */}
       <motion.header
         layout
@@ -509,6 +510,7 @@ export default function ReadingSurface() {
           setQuestion("");
         }}
       />
+      </div>
     </div>
   );
 }
