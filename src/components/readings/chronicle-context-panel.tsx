@@ -9,16 +9,23 @@ import { Textarea } from "@/components/ui/textarea";
 interface ChronicleContextPanelProps {
   conversation: Array<{ role: "user" | "assistant"; content: string }>;
   question: string;
+  /** Omit to render the question read-only (it stays editable by default). */
+  onQuestionChange?: (question: string) => void;
+  /** Enter in the question field means "go" — Shift+Enter still breaks lines. */
+  onSubmit?: () => void;
   notes: string;
   onNotesChange: (notes: string) => void;
   className?: string;
 }
 
 const MAX_NOTES = 300;
+const MAX_QUESTION = 500;
 
 export function ChronicleContextPanel({
   conversation,
   question,
+  onQuestionChange,
+  onSubmit,
   notes,
   onNotesChange,
   className,
@@ -105,14 +112,42 @@ export function ChronicleContextPanel({
         </div>
       )}
 
-      {/* ── Question (always visible) ── */}
+      {/* ── Question (always visible, and editable) ──
+          It arrives from the chronicle, but a question carried over from
+          another surface is still the reader's to change — a stray keystroke
+          there used to become an unfixable question here. */}
       <div className="px-4 py-3 rounded-xl bg-white/5 border border-gold/30 mb-2">
         <p className="text-[10px] text-gold/60 uppercase tracking-wider mb-1.5">
           Your Question
+          {onQuestionChange && (
+            <span className="ml-1.5 normal-case tracking-normal text-white/30">
+              — edit if it&apos;s not quite right
+            </span>
+          )}
         </p>
-        <p className="text-sm text-white/80 italic leading-relaxed">
-          &ldquo;{question}&rdquo;
-        </p>
+        {onQuestionChange ? (
+          <Textarea
+            value={question}
+            onChange={(e) =>
+              onQuestionChange(e.target.value.slice(0, MAX_QUESTION))
+            }
+            onKeyDown={(e) => {
+              if (e.key !== "Enter" || e.shiftKey || !onSubmit) return;
+              e.preventDefault();
+              e.currentTarget.blur();
+              onSubmit();
+            }}
+            placeholder="What are you bringing to the cards?"
+            aria-label="Your question"
+            maxLength={MAX_QUESTION}
+            rows={2}
+            className="bg-transparent border-0 px-0 py-0 text-sm text-white/80 italic leading-relaxed placeholder:text-white/30 resize-none min-h-0 shadow-none focus-visible:ring-0"
+          />
+        ) : (
+          <p className="text-sm text-white/80 italic leading-relaxed">
+            &ldquo;{question}&rdquo;
+          </p>
+        )}
       </div>
 
       {/* ── Add more context ── */}

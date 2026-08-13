@@ -3,6 +3,7 @@
 import { useReducer, useEffect, useRef, useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { BookOpen, Wand2, X } from "lucide-react";
@@ -1053,30 +1054,82 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
     ? SPREAD_LABELS[selectedSpread] ?? null
     : null;
 
+  // ── Closed-row summaries ──────────────────────────────────────────────
+  //
+  // Each setup row has to carry its own answer while shut, or the reader has
+  // to open all three to see what they are about to draw.
+
+  const deckSummary =
+    selectedDecks.length > 0 ? (
+      <span className="flex min-w-0 items-center justify-end gap-2">
+        <span className="flex shrink-0 -space-x-1.5">
+          {selectedDecks.slice(0, 3).map((deck) => (
+            <span
+              key={deck.id}
+              className="relative h-6 w-[18px] overflow-hidden rounded-[3px] border"
+              style={{
+                borderColor: "var(--line)",
+                background: "var(--paper-card)",
+              }}
+            >
+              {deck.coverImageUrl ? (
+                <Image
+                  src={deck.coverImageUrl}
+                  alt=""
+                  fill
+                  sizes="18px"
+                  className="object-cover"
+                />
+              ) : null}
+            </span>
+          ))}
+        </span>
+        <span className="truncate">
+          {selectedDecks.length === 1
+            ? selectedDecks[0].title
+            : `${selectedDecks.length} decks`}
+        </span>
+      </span>
+    ) : null;
+
+  const spreadSummary = selectedSpread ? (
+    <span className="flex items-center justify-end gap-2">
+      <span className="truncate">{selectedSpreadLabel}</span>
+      <span className="flex shrink-0 gap-[2px]" aria-hidden>
+        {Array.from({ length: cardCount }).map((_, i) => (
+          <span
+            key={i}
+            className="h-3 w-[6px] rounded-[1px]"
+            style={{ background: "var(--accent-gold)", opacity: 0.45 }}
+          />
+        ))}
+      </span>
+    </span>
+  ) : null;
+
+  const intentionSummary = trimmedQuestion ? (
+    <span className="truncate italic">“{trimmedQuestion}”</span>
+  ) : null;
+
   let secondary: React.ReactNode;
 
   if (isInSetup && !guided) {
     secondary = (
       <ReadingSetup
         banners={setupBanners}
-        deckSummary={
-          selectedDecks.length === 1
-            ? selectedDecks[0].title
-            : selectedDecks.length > 1
-              ? `${selectedDecks.length} decks`
-              : null
-        }
+        deckSummary={deckSummary}
+        deckAnswered={selectedDeckIds.length > 0}
         deckStep={
           <DeckSelector
             decks={decks}
             selectedDeckIds={selectedDeckIds}
             onToggle={(deckId) => dispatch({ type: "TOGGLE_DECK", deckId })}
-            compact={decks.length === 1}
             hideLabel
           />
         }
-        spreadSummary={selectedSpreadLabel}
+        spreadSummary={spreadSummary}
         spreadEnabled={selectedDeckIds.length > 0}
+        spreadAnswered={!!selectedSpread}
         spreadStep={
           <SpreadSelector
             selectedSpread={selectedSpread}
@@ -1088,11 +1141,16 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
           />
         }
         intentionEnabled={selectedDeckIds.length > 0 && !!selectedSpread}
+        intentionSummary={intentionSummary}
         intentionStep={
           isChronicleHandoff && question ? (
             <ChronicleContextPanel
               conversation={chronicleConversation ?? []}
               question={question}
+              onQuestionChange={(q) =>
+                dispatch({ type: "SET_QUESTION", question: q })
+              }
+              onSubmit={canBegin ? handleBeginReading : undefined}
               notes={chronicleNotes}
               onNotesChange={setChronicleNotes}
             />
@@ -1106,6 +1164,11 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
             <IntentionInput
               question={question}
               onChange={(q) => dispatch({ type: "SET_QUESTION", question: q })}
+              onSubmit={handleBeginReading}
+              submitDisabledReason={
+                canBegin ? null : "Choose a deck and a spread first."
+              }
+              hideLabel
             />
           )
         }
