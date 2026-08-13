@@ -20,6 +20,7 @@ import {
   CHRONICLE_CONVERSATION_SYSTEM_PROMPT,
   buildChronicleConversationContext,
 } from "@/lib/ai/prompts/chronicle";
+import { stripReadySignal } from "@/lib/chronicle/ready-signal";
 import { eq } from "drizzle-orm";
 import { createId } from "@paralleldrive/cuid2";
 import { getPathPosition } from "@/lib/db/queries-paths";
@@ -194,9 +195,11 @@ export async function POST(request: NextRequest) {
     maxOutputTokens: 800,
     onFinish: async ({ text }) => {
       try {
+        // Strip Lyra's readiness token before it lands in history — otherwise
+        // it feeds back into the next turn's context and into the card prompt.
         const assistantMessage: ChronicleConversationMessage = {
           role: "assistant",
-          content: text,
+          content: stripReadySignal(text),
           timestamp: new Date().toISOString(),
         };
         const finalConversation: ChronicleConversationMessage[] = [

@@ -21,6 +21,7 @@ import { useTextToSpeech } from '@/hooks/use-text-to-speech';
 import { useVoicePreferences } from '@/hooks/use-voice-preferences';
 import { useVoiceInput } from '@/hooks/use-voice-input';
 import { useCardDetailModal } from '@/hooks/use-card-detail-modal';
+import { useIsDesktop } from '@/hooks/use-media-query';
 import { CardDetailModal } from '@/components/cards/card-detail-modal';
 
 import {
@@ -37,6 +38,7 @@ import { CardForgingAnimation } from './card-forging-animation';
 import { EmergenceReveal } from './emergence-reveal';
 import { OracleCard } from '@/components/cards/oracle-card';
 import { buildChronicleGreeting } from '@/lib/ai/prompts/chronicle';
+import { hasReadySignal, stripReadySignal } from '@/lib/chronicle/ready-signal';
 
 import type { Card, CardImageStatus, CardType, ChronicleEntry, ChronicleKnowledge, ChronicleSettings, EmergenceEvent, PathPosition } from '@/types';
 
@@ -262,7 +264,11 @@ function ActionBar({
                 value={inputValue}
                 onChange={(e) => onInputChange(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Share what's on your mind..."
+                placeholder={
+                  canForge
+                    ? 'Add anything else, or forge your card…'
+                    : "Share what's on your mind..."
+                }
                 disabled={isStreaming}
                 maxLength={2000}
                 rows={1}
@@ -324,7 +330,9 @@ function ActionBar({
 
       case 'empty':
       default:
-        return <div className="h-11" />;
+        // Nothing to act on — collapse entirely so the phases that own the
+        // full screen (card reveal) centre against the real viewport.
+        return null;
     }
   };
 
@@ -360,6 +368,7 @@ export function ChronicleFlow({
 }: ChronicleFlowProps) {
   const immersive = useImmersiveOptional();
   const setMoodPreset = immersive?.setMoodPreset;
+  const isDesktop = useIsDesktop();
 
   // TTS integration
   const { preferences: voicePrefs } = useVoicePreferences();
@@ -810,16 +819,21 @@ export function ChronicleFlow({
 
       const decoder = new TextDecoder();
       let accumulated = '';
+      let spoken = '';
 
       // eslint-disable-next-line no-constant-condition
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        const chunk = decoder.decode(value, { stream: true });
-        accumulated += chunk;
-        dispatch({ type: 'STREAM_TOKEN', token: chunk });
-        if (voiceEnabledRef.current) {
-          ttsRef.current.pushToken(chunk);
+        accumulated += decoder.decode(value, { stream: true });
+
+        // Render (and speak) the cleaned text — Lyra's readiness token is a
+        // control signal, not something the seeker should ever see or hear.
+        const visible = stripReadySignal(accumulated);
+        dispatch({ type: 'STREAM_CONTENT', content: visible });
+        if (voiceEnabledRef.current && visible.length > spoken.length) {
+          ttsRef.current.pushToken(visible.slice(spoken.length));
+          spoken = visible;
         }
       }
 
@@ -827,11 +841,13 @@ export function ChronicleFlow({
         ttsRef.current.flush();
       }
 
-      dispatch({ type: 'STREAM_COMPLETE', content: accumulated });
+      dispatch({ type: 'STREAM_COMPLETE', content: stripReadySignal(accumulated) });
 
-      // Check if Lyra signaled readiness (2+ exchanges, response doesn't end with a question)
+      // Lyra closes a wrap-up message with the readiness token. The message
+      // count is a safety net for the turn where she forgets it — without one
+      // the seeker can talk forever with no way to forge.
       const totalUserMsgs = userMessageCount(messages) + 1; // +1 for the just-sent message
-      if (totalUserMsgs >= 2 && !accumulated.trim().endsWith('?')) {
+      if (hasReadySignal(accumulated) || totalUserMsgs >= 4) {
         dispatch({ type: 'LYRA_READY' });
       }
     } catch {
@@ -928,11 +944,14 @@ export function ChronicleFlow({
   const showDialogueZone = isDialogueZoneVisible(phase);
   const isReadingActive = isReadingZoneActive(phase);
 
-  // Card zone: dominant during forging, half during reveal/emergence, compact during reading/complete
+  // Card zone: dominant during forging, half during emergence, compact during
+  // reading/complete. During card_reveal nothing else is on screen — the zone
+  // takes the whole shell so the card sits in the true centre of the viewport
+  // rather than in the middle of an arbitrary top 60%.
   const cardZoneStyle = (() => {
     if (phase === 'emergence_reveal') return { flex: '0 0 55%' };
     if (phase === 'card_forging') return { flex: '1 1 auto' };
-    if (phase === 'card_reveal') return { flex: '0 0 60%' };
+    if (phase === 'card_reveal') return { flex: '1 1 auto' };
     if (phase === 'reading' || phase === 'complete') return { flex: '0 0 35%' };
     return { flex: 0 };
   })();
@@ -949,10 +968,12 @@ export function ChronicleFlow({
 
   return (
     <div
-      className="daylight fixed inset-0 flex flex-col overflow-hidden"
+      // pb clears the mobile bottom nav; from `lg` the nav is a left rail that
+      // `nav-inset` already accounts for, so the bottom padding would just be
+      // dead space pulling every centred phase off-centre.
+      className="daylight nav-inset fixed inset-0 flex flex-col overflow-hidden pb-20 lg:pb-0"
       style={{
         zIndex: 1,
-        paddingBottom: "5rem",
         background: "var(--paper)",
       }}
     >
@@ -1008,7 +1029,13 @@ export function ChronicleFlow({
             >
               <OracleCard
                 card={toCard(card)}
-                size={phase === 'card_reveal' ? 'md' : 'sm'}
+                size={
+                  phase === 'card_reveal'
+                    ? isDesktop
+                      ? 'lg'
+                      : 'md'
+                    : 'sm'
+                }
                 hideTitle={phase !== 'card_reveal'}
                 animated
               />
@@ -1288,7 +1315,12 @@ export function ChronicleFlow({
       {/* ── ACTION ZONE — always mounted, fades during forging transition ── */}
       <motion.div
         layout
-        className="shrink-0 p-4 pb-[max(16px,env(safe-area-inset-bottom))]"
+        className={cn(
+          'shrink-0',
+          getActionBarCategory(phase) === 'empty'
+            ? 'p-0'
+            : 'p-4 pb-[max(16px,env(safe-area-inset-bottom))]',
+        )}
         animate={{ opacity: forgingTransition ? 0 : 1 }}
         transition={CONTENT_SPRING}
       >

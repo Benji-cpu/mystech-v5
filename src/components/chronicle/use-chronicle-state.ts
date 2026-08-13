@@ -68,6 +68,7 @@ export type ChronicleAction =
   | { type: 'ADD_USER_MESSAGE'; content: string }
   | { type: 'START_STREAMING' }
   | { type: 'STREAM_TOKEN'; token: string }
+  | { type: 'STREAM_CONTENT'; content: string }
   | { type: 'STREAM_COMPLETE'; content: string }
   | { type: 'START_FORGING' }
   | { type: 'FORGE_COMPLETE'; card: ChronicleCard }
@@ -136,6 +137,18 @@ export function chronicleReducer(
       const last = msgs[msgs.length - 1];
       if (last?.role === 'assistant') {
         msgs[msgs.length - 1] = { ...last, content: last.content + action.token };
+      }
+      return { ...state, messages: msgs };
+    }
+
+    case 'STREAM_CONTENT': {
+      // Replaces (rather than appends to) the in-flight assistant message.
+      // Used when the raw stream needs cleaning before display — see
+      // stripReadySignal, which holds back partial control tokens.
+      const msgs = [...state.messages];
+      const last = msgs[msgs.length - 1];
+      if (last?.role === 'assistant') {
+        msgs[msgs.length - 1] = { ...last, content: action.content };
       }
       return { ...state, messages: msgs };
     }
