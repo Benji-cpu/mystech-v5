@@ -19,7 +19,7 @@ export function FocusHeader() {
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -12 }}
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
-          className="daylight fixed top-0 left-0 z-40 p-4"
+          className="daylight nav-inset-start fixed top-0 z-40 p-4"
         >
           {backTarget && backLabel && (
             <Link

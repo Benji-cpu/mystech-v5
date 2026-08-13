@@ -192,6 +192,33 @@
 }
 
 /* ─────────────────────────────────────────────────────────────────
+ * Desktop nav rail inset.
+ * `DesktopNav` is `fixed left-0` and 64px wide from `lg` up. Anything
+ * that escapes the shell's flow — every `fixed inset-0` surface — sits
+ * underneath it and loses its left edge unless it clears the rail.
+ * `--nav-rail` is the single source of truth for that width; keep it in
+ * sync with the collapsed width in `desktop-nav.tsx`.
+ * ───────────────────────────────────────────────────────────────── */
+:root {
+  --nav-rail: 0px;
+}
+@media (min-width: 1024px) {
+  :root {
+    --nav-rail: 64px;
+  }
+}
+/* In-flow containers — the shell's scrolling column. */
+.nav-inset {
+  padding-left: var(--nav-rail);
+}
+/* Positioned surfaces — anything `fixed`/`absolute` that would otherwise span
+   from the viewport's left edge. Offsets the box rather than padding it, so a
+   surface keeps whatever `px-*` it already had. */
+.nav-inset-start {
+  left: var(--nav-rail);
+}
+
+/* ─────────────────────────────────────────────────────────────────
  * Editorial typography utilities — work in both light and dark
  * `.daylight` is kept as a no-op alias for legacy class lists.
  * ───────────────────────────────────────────────────────────────── */

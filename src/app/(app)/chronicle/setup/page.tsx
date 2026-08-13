@@ -41,7 +41,7 @@ export default async function ChronicleSetupPage() {
   }));
 
   return (
-    <div className="fixed inset-0" style={{ zIndex: 1 }}>
+    <div className="nav-inset-start fixed inset-0" style={{ zIndex: 1 }}>
       <ChronicleSetupFlow presetStyles={presetStyles} />
     </div>
   );

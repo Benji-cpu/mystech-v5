@@ -64,7 +64,7 @@ export function ReadingStage({
 
   return (
     <div
-      className="fixed inset-0 flex flex-col overflow-hidden lg:pl-16"
+      className="nav-inset-start fixed inset-0 flex flex-col overflow-hidden"
       style={{ zIndex: 1, background: "var(--paper)", color: "var(--ink)" }}
     >
       <header className="shrink-0">{header}</header>

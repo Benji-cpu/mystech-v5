@@ -92,7 +92,7 @@ export function GuidanceScreen({
         animate={{ opacity: 1, y: 0 }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
         className={cn(
-          "fixed inset-0 z-50 flex items-center justify-center bg-[var(--paper)]/95 backdrop-blur-md px-6",
+          "nav-inset-start fixed inset-0 z-50 flex items-center justify-center bg-[var(--paper)]/95 backdrop-blur-md px-6",
           className
         )}
       >
@@ -142,7 +142,7 @@ export function GuidanceScreen({
       exit={{ opacity: 0 }}
       transition={{ duration: 0.6 }}
       className={cn(
-        "fixed inset-0 z-50 flex flex-col bg-[var(--paper)]/98 backdrop-blur-md",
+        "nav-inset-start fixed inset-0 z-50 flex flex-col bg-[var(--paper)]/98 backdrop-blur-md",
         className
       )}
     >

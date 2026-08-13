@@ -53,6 +53,13 @@ Every multi-step flow (reading ceremony, card forging, chronicle) uses a single 
 - Toast notifications
 - Decorative overlays (celebration particles, golden sweeps)
 - Individual list items being added/removed
+- Disclosure panels *within* a single phase — an accordion body genuinely
+  enters and exits. This is not the anti-pattern: the phase itself never
+  unmounts, only the panel the user opened. Reading setup
+  (`src/components/readings/reading-setup.tsx`) is the reference — it collapses
+  to three rows so the whole step fits one 390px screen. Two rules keep it from
+  fighting the user: nothing opens or closes on a timer, and a pointer-down
+  inside a panel pins it open so multi-select never collapses mid-choice.
 
 ## Reference Implementations
 

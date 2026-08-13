@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { useImmersive } from "./immersive-provider";
 import { useOnboarding } from "@/components/guide/onboarding-provider";
 import { useFeedback } from "@/components/feedback/feedback-provider";
@@ -11,12 +11,22 @@ import { navTabs, BADGE_STORAGE_PREFIX, type NavTab } from "./nav-config";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { cn } from "@/lib/utils";
 
+/**
+ * The desktop rail is a fixed 64px and never changes width.
+ *
+ * It used to expand to 200px on hover, which floated an opaque panel over the
+ * left edge of whatever was on screen — a chronicle bubble, a reading header.
+ * Labels now appear as a pill beside the hovered icon instead, so the rail
+ * never covers content and the page never reflows.
+ *
+ * 64px is mirrored by `--nav-rail` in globals.css, which is what every
+ * full-bleed (`fixed inset-0`) surface insets by. Change both together.
+ */
 export function DesktopNav() {
   const pathname = usePathname();
   const { state } = useImmersive();
   const { stage } = useOnboarding();
   const { open: openFeedback } = useFeedback();
-  const [hovered, setHovered] = useState(false);
   const [dismissedBadges, setDismissedBadges] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -50,98 +60,44 @@ export function DesktopNav() {
   }
 
   return (
-    <motion.nav
+    <nav
       className={cn(
-        "fixed left-0 top-0 bottom-0 z-50 hidden lg:flex flex-col border-r bg-card/95 border-border backdrop-blur-md",
+        "fixed left-0 top-0 bottom-0 z-50 w-16 hidden lg:flex flex-col border-r bg-card/95 border-border backdrop-blur-md",
         focusMode && "opacity-60 hover:opacity-100 transition-opacity"
       )}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      animate={{ width: hovered ? 200 : 64 }}
-      transition={{ type: "spring", stiffness: 400, damping: 30 }}
       aria-label="Main navigation"
     >
       {/* Logo area */}
       {!focusMode && (
-        <div className="flex items-center h-16 px-4 border-b border-border overflow-hidden">
-          <div className="flex items-center gap-3 min-w-0">
-            <div
-              className="h-8 w-8 shrink-0 rounded-lg flex items-center justify-center"
-              style={{ background: "color-mix(in oklab, var(--accent-gold) 15%, transparent)" }}
-            >
-              <span className="text-sm font-display font-bold" style={{ color: "var(--accent-gold)" }}>
-                M
-              </span>
-            </div>
-            <motion.span
-              className="text-sm font-display font-semibold whitespace-nowrap text-foreground"
-              animate={{ opacity: hovered ? 1 : 0 }}
-              transition={{ duration: 0.15 }}
-            >
-              MysTech
-            </motion.span>
+        <div className="flex h-16 shrink-0 items-center justify-center border-b border-border">
+          <div
+            className="h-8 w-8 rounded-lg flex items-center justify-center"
+            style={{ background: "color-mix(in oklab, var(--accent-gold) 15%, transparent)" }}
+          >
+            <span className="text-sm font-display font-bold" style={{ color: "var(--accent-gold)" }}>
+              M
+            </span>
           </div>
         </div>
       )}
 
       {/* Navigation items */}
-      <div className="flex-1 flex flex-col gap-1 px-2 py-4">
+      <div className="flex-1 flex flex-col gap-1 py-4">
         {visibleTabs.map((tab) => {
-          const isActive = !tab.isAction && tab.activePrefixes.some(
-            (prefix) => pathname === prefix || pathname.startsWith(prefix + "/")
-          );
-          const showBadge = tab.badgeKey && !dismissedBadges.has(tab.badgeKey);
-          const Icon = tab.icon;
-
-          const itemClassName = cn(
-            "relative flex items-center gap-3 rounded-xl px-3 py-2.5 min-h-[44px] transition-colors overflow-hidden",
-            isActive
-              ? "bg-foreground text-background"
-              : "text-muted-foreground hover:text-foreground hover:bg-muted"
-          );
-
-          const content = (
-            <>
-              <div className="relative shrink-0">
-                <Icon className="w-5 h-5" />
-                {showBadge && (
-                  <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-primary ring-2 ring-card" />
-                )}
-              </div>
-              <motion.span
-                className="text-sm font-medium whitespace-nowrap"
-                animate={{ opacity: hovered ? 1 : 0 }}
-                transition={{ duration: 0.15 }}
-              >
-                {tab.label}
-              </motion.span>
-            </>
-          );
-
-          if (tab.isAction) {
-            return (
-              <button
-                key={tab.actionId}
-                type="button"
-                onClick={() => handleAction(tab)}
-                className={itemClassName}
-                aria-label={tab.label}
-              >
-                {content}
-              </button>
+          const isActive =
+            !tab.isAction &&
+            tab.activePrefixes.some(
+              (prefix) => pathname === prefix || pathname.startsWith(prefix + "/")
             );
-          }
 
           return (
-            <Link
-              key={tab.href}
-              href={tab.href}
-              onClick={() => handleTabClick(tab)}
-              className={itemClassName}
-              aria-current={isActive ? "page" : undefined}
-            >
-              {content}
-            </Link>
+            <RailItem
+              key={tab.isAction ? tab.actionId : tab.href}
+              tab={tab}
+              isActive={isActive}
+              showBadge={Boolean(tab.badgeKey && !dismissedBadges.has(tab.badgeKey))}
+              onSelect={() => (tab.isAction ? handleAction(tab) : handleTabClick(tab))}
+            />
           );
         })}
       </div>
@@ -152,6 +108,86 @@ export function DesktopNav() {
           <ThemeToggle />
         </div>
       )}
-    </motion.nav>
+    </nav>
+  );
+}
+
+interface RailItemProps {
+  tab: NavTab;
+  isActive: boolean;
+  showBadge: boolean;
+  onSelect: () => void;
+}
+
+/** One icon in the rail, with its label revealed beside it on hover or focus. */
+function RailItem({ tab, isActive, showBadge, onSelect }: RailItemProps) {
+  const [revealed, setRevealed] = useState(false);
+  const Icon = tab.icon;
+
+  const triggerClassName = cn(
+    "flex h-11 w-11 items-center justify-center rounded-xl transition-colors",
+    isActive
+      ? "bg-foreground text-background"
+      : "text-muted-foreground hover:text-foreground hover:bg-muted"
+  );
+
+  const body = (
+    <>
+      <div className="relative">
+        <Icon className="w-5 h-5" />
+        {showBadge && (
+          <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-primary ring-2 ring-card" />
+        )}
+      </div>
+      {/* The pill is decorative — this is what names the control. */}
+      <span className="sr-only">{tab.label}</span>
+    </>
+  );
+
+  return (
+    <div
+      className="relative flex justify-center"
+      onMouseEnter={() => setRevealed(true)}
+      onMouseLeave={() => setRevealed(false)}
+      onFocus={() => setRevealed(true)}
+      onBlur={() => setRevealed(false)}
+    >
+      {tab.isAction ? (
+        <button type="button" onClick={onSelect} className={triggerClassName}>
+          {body}
+        </button>
+      ) : (
+        <Link
+          href={tab.href}
+          onClick={onSelect}
+          className={triggerClassName}
+          aria-current={isActive ? "page" : undefined}
+        >
+          {body}
+        </Link>
+      )}
+
+      <AnimatePresence>
+        {revealed && (
+          <motion.span
+            aria-hidden
+            // y is animated rather than set with a class: Framer's inline
+            // transform would otherwise wipe out `-translate-y-1/2`.
+            initial={{ opacity: 0, x: -6, y: "-50%" }}
+            animate={{ opacity: 1, x: 0, y: "-50%" }}
+            exit={{
+              opacity: 0,
+              x: -4,
+              y: "-50%",
+              transition: { type: "spring", stiffness: 500, damping: 40 },
+            }}
+            transition={{ type: "spring", stiffness: 400, damping: 30 }}
+            className="pointer-events-none absolute left-full top-1/2 ml-2 z-10 whitespace-nowrap rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs font-medium text-foreground shadow-sm"
+          >
+            {tab.label}
+          </motion.span>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }

@@ -38,7 +38,7 @@ export function ImmersiveShell({
         <FeedbackProvider>
           <div className="relative min-h-dvh bg-background text-foreground">
             {/* Content: scrollable, z-10 */}
-            <div className="relative z-10 min-h-dvh lg:pl-16">
+            <div className="nav-inset relative z-10 min-h-dvh">
               <PageTransitionWrapper>
                 <main className="mx-auto max-w-6xl px-4 py-6 pb-20 sm:px-6 lg:px-8 lg:pb-8">
                   {children}

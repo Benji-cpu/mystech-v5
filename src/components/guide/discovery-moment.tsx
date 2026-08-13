@@ -36,7 +36,7 @@ export function DiscoveryMoment({
     <AnimatePresence>
       {visible && (
         <motion.div
-          className="fixed inset-0 z-[90] pointer-events-none flex items-center justify-center"
+          className="nav-inset-start fixed inset-0 z-[90] pointer-events-none flex items-center justify-center"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}

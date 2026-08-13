@@ -317,7 +317,7 @@ export function PracticeScreen({
   return (
     <motion.div
       className={cn(
-        'daylight fixed inset-0 z-50',
+        'daylight nav-inset-start fixed inset-0 z-50',
         'flex flex-col',
         className,
       )}

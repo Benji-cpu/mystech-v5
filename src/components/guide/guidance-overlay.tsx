@@ -121,7 +121,7 @@ export function GuidanceOverlay({
             exit={{ y: "100%" }}
             transition={{ type: "spring", stiffness: 300, damping: 32 }}
             className={cn(
-              "fixed bottom-0 left-0 right-0 z-50",
+              "nav-inset-start fixed bottom-0 right-0 z-50",
               "max-h-[60dvh] overflow-y-auto",
               "bg-[#0f0520]/95 backdrop-blur-xl border-t border-white/10",
               "rounded-t-2xl px-6 pt-5 pb-8",

@@ -4,7 +4,7 @@ import { LyraLoading } from "@/components/guide/lyra-loading";
 export default function ChronicleLoading() {
   return (
     <div
-      className="daylight fixed inset-0 overflow-y-auto"
+      className="daylight nav-inset-start fixed inset-0 overflow-y-auto"
       style={{ background: "var(--paper)", zIndex: 1 }}
     >
       <div className="mx-auto max-w-xl px-6 py-10 pb-28 sm:px-10 sm:py-14">

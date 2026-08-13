@@ -10,7 +10,7 @@ import type { Deck } from "@/types";
 
 function DecksSkeleton() {
   return (
-    <div className="fixed inset-0 overflow-y-auto" style={{ background: "#F5EFE4", zIndex: 1 }}>
+    <div className="nav-inset-start fixed inset-0 overflow-y-auto" style={{ background: "#F5EFE4", zIndex: 1 }}>
       <div className="mx-auto max-w-3xl px-6 pb-28 pt-10 sm:px-10 sm:pt-14">
         <Skeleton className="h-10 w-40" />
         <div className="mt-10 grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3">

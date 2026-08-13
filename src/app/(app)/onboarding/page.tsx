@@ -12,7 +12,7 @@ export default async function OnboardingPage() {
   // Admin bypass — always start at welcome for full arc testing
   if (isAdmin(user as { role?: string })) {
     return (
-      <div className="daylight fixed inset-0 overflow-y-auto" style={{ background: "var(--paper)", zIndex: 1 }}>
+      <div className="daylight nav-inset-start fixed inset-0 overflow-y-auto" style={{ background: "var(--paper)", zIndex: 1 }}>
         <InitiationShell initialPhase="welcome" />
       </div>
     );
@@ -72,7 +72,7 @@ export default async function OnboardingPage() {
     }
 
     return (
-      <div className="daylight fixed inset-0 overflow-y-auto" style={{ background: "var(--paper)", zIndex: 1 }}>
+      <div className="daylight nav-inset-start fixed inset-0 overflow-y-auto" style={{ background: "var(--paper)", zIndex: 1 }}>
         <InitiationShell
           initialPhase="reveal"
           existingDeckId={existingDeck.id}
@@ -85,7 +85,7 @@ export default async function OnboardingPage() {
 
   // Fresh start — begin at welcome
   return (
-    <div className="daylight fixed inset-0 overflow-y-auto" style={{ background: "var(--paper)", zIndex: 1 }}>
+    <div className="daylight nav-inset-start fixed inset-0 overflow-y-auto" style={{ background: "var(--paper)", zIndex: 1 }}>
       <InitiationShell initialPhase="welcome" />
     </div>
   );

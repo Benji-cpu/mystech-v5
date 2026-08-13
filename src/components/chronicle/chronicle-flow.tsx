@@ -969,9 +969,9 @@ export function ChronicleFlow({
   return (
     <div
       // pb clears the mobile bottom nav; from `lg` the nav is a left rail that
-      // `nav-inset` already accounts for, so the bottom padding would just be
+      // `nav-inset-start` already accounts for, so the bottom padding would just be
       // dead space pulling every centred phase off-centre.
-      className="daylight nav-inset fixed inset-0 flex flex-col overflow-hidden pb-20 lg:pb-0"
+      className="daylight nav-inset-start fixed inset-0 flex flex-col overflow-hidden pb-20 lg:pb-0"
       style={{
         zIndex: 1,
         background: "var(--paper)",
