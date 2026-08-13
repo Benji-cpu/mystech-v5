@@ -1,5 +1,6 @@
 import { ImageResponse } from "next/og";
 import { getSharedDeckByToken } from "@/lib/db/queries";
+import { printImageUrl } from "@/lib/images";
 
 export const runtime = "edge";
 export const alt = "MysTech Oracle Deck";
@@ -37,8 +38,12 @@ export default async function OgImage({
     );
   }
 
-  // Pick up to 5 cards with images for the collage
-  const cards = deck.cards.filter((c) => c.imageUrl).slice(0, 5);
+  // Pick up to 5 cards with images for the collage. Satori cannot decode WebP,
+  // so the collage takes the PNG master rather than the web derivative.
+  const cards = deck.cards
+    .filter((c) => printImageUrl(c))
+    .slice(0, 5)
+    .map((c) => ({ ...c, imageUrl: printImageUrl(c) }));
 
   return new ImageResponse(
     (

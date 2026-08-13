@@ -1,5 +1,6 @@
 import { ImageResponse } from "next/og";
 import { getSharedReadingByToken } from "@/lib/db/queries";
+import { printImageUrl } from "@/lib/images";
 import type { SpreadType } from "@/types";
 
 export const runtime = "edge";
@@ -31,12 +32,13 @@ export default async function OgImage({
   const spreadLabel = SPREAD_LABELS[reading.spreadType as SpreadType] ?? reading.spreadType;
   const question = reading.question?.split("\n\nAdditional context:")[0]?.trim() ?? null;
 
-  // Collect up to 3 cards with images
+  // Collect up to 3 cards with images. Satori cannot decode WebP, so this
+  // takes the PNG master rather than the web derivative.
   const displayCards = reading.cards
-    .filter((rc) => (rc.card?.imageUrl ?? rc.retreatCard?.imageUrl))
+    .filter((rc) => (printImageUrl(rc.card) ?? rc.retreatCard?.imageUrl))
     .slice(0, 3)
     .map((rc) => ({
-      imageUrl: rc.card?.imageUrl ?? rc.retreatCard?.imageUrl!,
+      imageUrl: (printImageUrl(rc.card) ?? rc.retreatCard?.imageUrl)!,
       title: rc.card?.title ?? rc.retreatCard?.title ?? "",
       positionName: rc.positionName,
     }));

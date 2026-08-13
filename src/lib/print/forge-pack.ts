@@ -87,6 +87,7 @@ export async function forgePrintPack(
       cardNumber: cards.cardNumber,
       title: cards.title,
       imageUrl: cards.imageUrl,
+      imagePrintUrl: cards.imagePrintUrl,
       imageStatus: cards.imageStatus,
     })
     .from(cards)
@@ -97,13 +98,16 @@ export async function forgePrintPack(
     )
     .orderBy(asc(cards.cardNumber));
 
+  // The pack must carry the full-resolution master, never the web derivative.
+  // Cards forged before the split have no imagePrintUrl — for those imageUrl
+  // is still the original PNG.
   const renderedCards = cardRows
-    .filter((c) => c.imageStatus === "completed" && c.imageUrl)
+    .filter((c) => c.imageStatus === "completed" && (c.imagePrintUrl || c.imageUrl))
     .map((c) => ({
       cardId: c.id,
       cardNumber: c.cardNumber,
       title: c.title,
-      imageUrl: c.imageUrl as string,
+      imageUrl: (c.imagePrintUrl ?? c.imageUrl) as string,
     }));
 
   if (renderedCards.length === 0) {

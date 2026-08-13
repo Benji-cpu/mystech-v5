@@ -27,6 +27,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
     .select({
       title: cards.title,
       imageUrl: cards.imageUrl,
+      imagePrintUrl: cards.imagePrintUrl,
       imageStatus: cards.imageStatus,
     })
     .from(cards)
@@ -37,7 +38,10 @@ export async function GET(_req: NextRequest, { params }: Params) {
   if (!row) {
     return NextResponse.json({ error: "not_found" }, { status: 404 });
   }
-  if (!row.imageUrl || row.imageStatus !== "completed") {
+  // Serve the full-resolution master. Cards forged before the print/web split
+  // have no imagePrintUrl — for those imageUrl is still the original PNG.
+  const sourceUrl = row.imagePrintUrl ?? row.imageUrl;
+  if (!sourceUrl || row.imageStatus !== "completed") {
     return NextResponse.json({ error: "image_not_ready" }, { status: 409 });
   }
 
@@ -46,7 +50,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: "upgrade_required" }, { status: 402 });
   }
 
-  const upstream = await fetch(row.imageUrl);
+  const upstream = await fetch(sourceUrl);
   if (!upstream.ok || !upstream.body) {
     return NextResponse.json({ error: "fetch_failed" }, { status: 502 });
   }

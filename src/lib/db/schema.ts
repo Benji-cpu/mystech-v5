@@ -184,7 +184,13 @@ export const cards = pgTable(
     title: text("title").notNull(),
     meaning: text("meaning").notNull(),
     guidance: text("guidance").notNull(),
+    // Web-optimised derivative (WebP, ~250KB) — what every UI surface renders.
+    // Stability returns ~3.5MB PNGs; serving those raw blew Next's 7s image
+    // optimiser timeout and saturated the uplink during deck generation.
     imageUrl: text("image_url"),
+    // Full-resolution PNG master. Print packs and the Pro download serve this;
+    // null on cards forged before the split, where imageUrl is still the master.
+    imagePrintUrl: text("image_print_url"),
     imageBlurData: text("image_blur_data"),
     imagePrompt: text("image_prompt"),
     imageStatus: text("image_status").notNull().default("pending"),

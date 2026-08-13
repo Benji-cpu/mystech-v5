@@ -70,6 +70,30 @@ function StreamCursor() {
 /** Reading measure — long-form text is capped so lines stay readable. */
 const MEASURE = "mx-auto w-full max-w-[62ch]";
 
+/**
+ * Shown when the stream broke but text had already arrived. Sits beneath the
+ * words Lyra managed to speak rather than replacing them.
+ */
+function InlineBreak({ onRetry }: { onRetry?: () => void }) {
+  return (
+    <div
+      className="mt-8 flex flex-wrap items-center gap-x-3 gap-y-2 border-t pt-4"
+      style={{ borderColor: "var(--line-soft)" }}
+    >
+      <span className="flex items-center gap-2 text-xs" style={{ color: "var(--ink-mute)" }}>
+        <AlertCircle className="h-3.5 w-3.5 text-destructive" />
+        The thread broke here.
+      </span>
+      {onRetry && (
+        <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={onRetry}>
+          <RefreshCw className="mr-1.5 h-3 w-3" />
+          Pick it back up
+        </Button>
+      )}
+    </div>
+  );
+}
+
 // ── Component ──────────────────────────────────────────────────────────
 
 /**
@@ -93,7 +117,11 @@ export function ReadingColumn({
   closingSlot,
 }: ReadingColumnProps) {
   // ── Error ───────────────────────────────────────────────────────────
-  if (error) {
+  // Only take over the column when there is nothing to show. A break partway
+  // through used to replace text that had already streamed, throwing away a
+  // reading the user could still have read.
+  const hasContent = !!object?.cardSections?.length;
+  if (error && !hasContent) {
     return (
       <div className={cn(MEASURE, "px-4 py-8 sm:px-8")}>
         <div
@@ -121,7 +149,7 @@ export function ReadingColumn({
   }
 
   // ── Waiting for the first token ─────────────────────────────────────
-  if (!object?.cardSections?.length) {
+  if (!hasContent) {
     if (!isStreaming) return null;
     return (
       <div className={cn(MEASURE, "px-4 py-10 sm:px-8")}>
@@ -196,13 +224,15 @@ export function ReadingColumn({
           </motion.figure>
         ) : null}
 
+        {error ? <InlineBreak onRetry={onRetry} /> : null}
+
         {closingSlot ? <div className="mt-10">{closingSlot}</div> : null}
       </div>
     );
   }
 
   // ── A single card's reading ─────────────────────────────────────────
-  const section = object.cardSections[presentingCardIndex];
+  const section = object?.cardSections?.[presentingCardIndex];
   const showCursor = isStreaming && !isCurrentSectionComplete;
   const resonance = section?.astroResonance?.relevantPlacement;
 
@@ -247,6 +277,8 @@ export function ReadingColumn({
               {resonance}
             </p>
           ) : null}
+
+          {error ? <InlineBreak onRetry={onRetry} /> : null}
         </motion.div>
       </AnimatePresence>
     </div>

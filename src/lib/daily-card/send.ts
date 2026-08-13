@@ -21,6 +21,7 @@ import {
 import { pickDailyCard, pickDailyDeckForUser } from "./pick-card";
 import { localDateFor } from "./timezone";
 import { sendDailyCardEmail } from "@/lib/email/send";
+import { printImageUrl } from "@/lib/images";
 
 export type SendResult =
   | { ok: true; status: "delivered"; cardId: string | null; deckId: string | null }
@@ -78,7 +79,8 @@ export async function sendDailyCardForUser(args: {
     featuredDeckId = chronicleDeck.id;
     const lastCard = recentCards[0];
     if (lastCard) {
-      featured = { title: lastCard.title, imageUrl: lastCard.imageUrl };
+      // The email carries the PNG master — Outlook cannot render WebP.
+      featured = { title: lastCard.title, imageUrl: printImageUrl(lastCard) };
       featuredCardId = lastCard.id;
     }
   } else {
@@ -87,7 +89,7 @@ export async function sendDailyCardForUser(args: {
     featuredDeckId = deck.id;
     const card = await pickDailyCard(args.userId, deck.id, { random: args.random });
     if (card) {
-      featured = { title: card.title, imageUrl: card.imageUrl };
+      featured = { title: card.title, imageUrl: printImageUrl(card) };
       featuredCardId = card.id;
     }
   }

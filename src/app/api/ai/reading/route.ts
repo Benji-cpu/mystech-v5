@@ -158,8 +158,23 @@ export async function POST(request: NextRequest) {
         }).catch(() => {});
       }
     },
-    onError: (err) => {
+    onError: ({ error: err }) => {
+      // A mid-stream failure never reaches onFinish, so without this the
+      // interpretation just dies in the browser ("The thread broke") leaving
+      // no trace anywhere — generation_log held zero error rows despite real
+      // failures in the wild. Record it like any other failed generation.
       console.error("[ai/reading] stream error:", err);
+      logGeneration({
+        userId: user.id,
+        readingId,
+        operationType: "reading_interpretation",
+        modelUsed: role === "admin" ? "gemini-2.5-flash" : "gemini-2.5-flash-lite",
+        systemPrompt: readingSystemPrompt,
+        userPrompt: prompt,
+        durationMs: Date.now() - readingStart,
+        status: "error",
+        errorMessage: err instanceof Error ? err.message : String(err),
+      }).catch(() => {});
     },
   });
 

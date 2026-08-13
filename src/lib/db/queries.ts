@@ -174,6 +174,7 @@ export async function getReadingCardsWithData(readingId: string) {
         meaning: cards.meaning,
         guidance: cards.guidance,
         imageUrl: cards.imageUrl,
+        imagePrintUrl: cards.imagePrintUrl,
         imageBlurData: cards.imageBlurData,
         imagePrompt: cards.imagePrompt,
         imageStatus: cards.imageStatus,
@@ -444,6 +445,7 @@ export async function getSharedReadingByToken(token: string) {
         meaning: cards.meaning,
         guidance: cards.guidance,
         imageUrl: cards.imageUrl,
+        imagePrintUrl: cards.imagePrintUrl,
         imageBlurData: cards.imageBlurData,
         imagePrompt: cards.imagePrompt,
         imageStatus: cards.imageStatus,
@@ -1075,6 +1077,7 @@ export async function getRecentChronicleCards(deckId: string, limit = 10) {
       title: cards.title,
       meaning: cards.meaning,
       imageUrl: cards.imageUrl,
+      imagePrintUrl: cards.imagePrintUrl,
       createdAt: cards.createdAt,
     })
     .from(cards)

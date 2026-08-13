@@ -846,6 +846,20 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
     dispatch({ type: "RESET" });
   }, [reveal]);
 
+  // Retrying a broken interpretation re-streams the reading the user already
+  // has. It used to call handleReset, which threw the whole thing away and
+  // sent them back to setup to draw again — spending another of the day's
+  // readings on cards they had already been dealt. /api/ai/reading neither
+  // charges credits nor counts against the daily limit, so this is free.
+  const handleRetryInterpretation = useCallback(() => {
+    if (!readingId) {
+      handleReset();
+      return;
+    }
+    streamStarted.current = true;
+    startStreamingRef.current(readingId);
+  }, [readingId, handleReset]);
+
   // Stable ref for stop — used internally by safety timeout
   const stopRef = useRef(presentation.stop);
   stopRef.current = presentation.stop;
@@ -1217,7 +1231,7 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
         isStreaming={presentation.isStreaming}
         presentingCardIndex={presentingCardIndex}
         error={presentation.error}
-        onRetry={handleReset}
+        onRetry={handleRetryInterpretation}
         isCurrentSectionComplete={isCurrentSectionComplete}
         isClosing={isClosing}
         closingSlot={

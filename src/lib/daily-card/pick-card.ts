@@ -25,6 +25,8 @@ export type DailyCard = {
   meaning: string;
   guidance: string;
   imageUrl: string | null;
+  /** PNG master — the daily email uses this, since Outlook cannot render WebP. */
+  imagePrintUrl: string | null;
   imageBlurData: string | null;
 };
 
@@ -84,6 +86,7 @@ export async function pickDailyCard(
       meaning: cards.meaning,
       guidance: cards.guidance,
       imageUrl: cards.imageUrl,
+      imagePrintUrl: cards.imagePrintUrl,
       imageBlurData: cards.imageBlurData,
     })
     .from(cards)

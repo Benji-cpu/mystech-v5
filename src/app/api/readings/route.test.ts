@@ -193,8 +193,8 @@ describe("POST /api/readings", () => {
       updatedAt: new Date(),
     });
     vi.mocked(getCardsForDeck).mockResolvedValue([
-      { id: "c1", deckId: "d1", cardNumber: 1, title: "A", meaning: "m", guidance: "g", imageUrl: null, imageBlurData: null, imagePrompt: null, imageStatus: "pending", cardType: "general", originContext: null, chronicleEntryId: null, createdAt: new Date(), updatedAt: new Date() },
-      { id: "c2", deckId: "d1", cardNumber: 2, title: "B", meaning: "m", guidance: "g", imageUrl: null, imageBlurData: null, imagePrompt: null, imageStatus: "pending", cardType: "general", originContext: null, chronicleEntryId: null, createdAt: new Date(), updatedAt: new Date() },
+      { id: "c1", deckId: "d1", cardNumber: 1, title: "A", meaning: "m", guidance: "g", imageUrl: null, imagePrintUrl: null, imageBlurData: null, imagePrompt: null, imageStatus: "pending", cardType: "general", originContext: null, chronicleEntryId: null, createdAt: new Date(), updatedAt: new Date() },
+      { id: "c2", deckId: "d1", cardNumber: 2, title: "B", meaning: "m", guidance: "g", imageUrl: null, imagePrintUrl: null, imageBlurData: null, imagePrompt: null, imageStatus: "pending", cardType: "general", originContext: null, chronicleEntryId: null, createdAt: new Date(), updatedAt: new Date() },
     ]);
     const response = await POST(makeRequest({ deckId: "d1", spreadType: "three_card" }));
     const data = await response.json();
@@ -211,6 +211,7 @@ describe("POST /api/readings", () => {
       meaning: "meaning",
       guidance: "guidance",
       imageUrl: null,
+      imagePrintUrl: null,
       imageBlurData: null,
       imagePrompt: null,
       imageStatus: "completed" as const,
@@ -319,6 +320,7 @@ describe("POST /api/readings", () => {
         meaning: "meaning",
         guidance: "guidance",
         imageUrl: null,
+        imagePrintUrl: null,
         imageBlurData: null,
         imagePrompt: null,
         imageStatus: "completed" as const,

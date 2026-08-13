@@ -19,6 +19,26 @@ async function generateBlurDataUrl(imageBuffer: Buffer): Promise<string | null> 
   }
 }
 
+/**
+ * Web derivative of the print master.
+ *
+ * Stability hands back a ~3.5MB PNG at 2:3. That is the print master and stays
+ * untouched, but it must never reach a browser: Next's image optimiser aborts
+ * external fetches at 7s (not configurable) and a single card took 5–9s to pull
+ * from Blob, so card art 500'd and three concurrent uploads saturated the
+ * uplink during deck generation. WebP q82 at 1024x1536 lands around 250KB —
+ * still above every rendered size, so the optimiser has headroom to work with.
+ */
+export const WEB_IMAGE_MAX_WIDTH = 1024;
+export const WEB_IMAGE_QUALITY = 82;
+
+export async function toWebImage(imageBuffer: Buffer): Promise<Buffer> {
+  return sharp(imageBuffer)
+    .resize(WEB_IMAGE_MAX_WIDTH, null, { withoutEnlargement: true })
+    .webp({ quality: WEB_IMAGE_QUALITY })
+    .toBuffer();
+}
+
 const MAX_RETRIES = 3;
 const BACKOFF_BASE_MS = 1000;
 
@@ -119,22 +139,30 @@ export async function generateCardImage(
         initImageStrength: overrides?.initImageStrength,
       };
       const imageBuffer = await generateStabilityImage(stabilityOpts);
+      const webBuffer = await toWebImage(imageBuffer);
 
-      // Upload to Vercel Blob + generate blur placeholder in parallel
-      const [blob, imageBlurData] = await Promise.all([
+      // Upload both renditions + generate blur placeholder in parallel
+      const [printBlob, webBlob, imageBlurData] = await Promise.all([
         put(`cards/${deckId}/${cardId}.png`, imageBuffer, {
           access: "public",
           contentType: "image/png",
           allowOverwrite: true,
         }),
+        put(`cards/${deckId}/${cardId}.webp`, webBuffer, {
+          access: "public",
+          contentType: "image/webp",
+          allowOverwrite: true,
+        }),
         generateBlurDataUrl(imageBuffer),
       ]);
 
-      // Update card with image URL + blur data
+      // imageUrl is the web rendition — every UI surface reads it. The master
+      // lives on imagePrintUrl for print packs and the Pro download.
       await db
         .update(cards)
         .set({
-          imageUrl: blob.url,
+          imageUrl: webBlob.url,
+          imagePrintUrl: printBlob.url,
           imageBlurData,
           imageStatus: "completed",
           updatedAt: new Date(),
@@ -145,11 +173,11 @@ export async function generateCardImage(
       if (deck.deckType === "chronicle") {
         await db
           .update(decks)
-          .set({ coverImageUrl: blob.url, updatedAt: new Date() })
+          .set({ coverImageUrl: webBlob.url, updatedAt: new Date() })
           .where(eq(decks.id, deckId));
       }
 
-      return { success: true, imageUrl: blob.url };
+      return { success: true, imageUrl: webBlob.url };
     } catch (error) {
       if (attempt < MAX_RETRIES - 1) {
         const delay = BACKOFF_BASE_MS * Math.pow(2, attempt);

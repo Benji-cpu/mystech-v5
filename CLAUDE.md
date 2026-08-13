@@ -132,6 +132,20 @@ Standardised cross-project feedback collection. Schema: `feedback` table in `src
 - All queries MUST be scoped by `userId` — never expose cross-user data
 - Use Drizzle ORM for all operations; run `npm run db:push` after schema changes
 
+### Card Art — two renditions, never one
+Stability returns a ~3.5MB PNG per card. Serving that raw broke things: Next's image optimiser aborts external fetches at **7 seconds** (not configurable) and a single card took 5–9s to pull from Blob, so card art 500'd, and three concurrent uploads during deck generation saturated the uplink and took the reading stream down with it.
+
+`generateCardImage` therefore writes both, and they have different jobs:
+
+| Column | Rendition | Used by |
+|--------|-----------|---------|
+| `imageUrl` | WebP, 1024px wide, q82 (~150–250KB) | every browser surface, via `next/image` |
+| `imagePrintUrl` | full-resolution PNG master | print packs (`forge-pack.ts`), the Pro card download |
+
+- **UI code reads `imageUrl` and needs no special handling** — that is why the split went this way round rather than adding a new field to 258 call sites.
+- **Renderers that cannot decode WebP must call `printImageUrl()` (`src/lib/images.ts`)**: Satori (`next/og` share images) and email (Outlook has no WebP support). It falls back to `imageUrl` for cards forged before the split.
+- Backfill for legacy cards: `npx tsx scripts/backfill-web-images.ts [--dry-run] [--deck=<id>]` — idempotent, skips rows that already have `imagePrintUrl`.
+
 ### AI Integration
 - **Tone**: "Wise mystic guide" ("Let us explore the threads of your story...")
 - **Tiers**: Free = Gemini 2.0 Flash-Lite, Pro = Gemini 2.5 Flash
