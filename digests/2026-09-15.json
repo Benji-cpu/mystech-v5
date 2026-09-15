@@ -1,0 +1,28 @@
+{
+  "project": "mystech-v5",
+  "startedAt": "2026-09-15T20:11:18.364Z",
+  "finishedAt": "2026-09-15T20:11:19.515Z",
+  "feedback": {
+    "byStatus": {
+      "actioned": 6,
+      "reviewed": 22,
+      "dismissed": 9
+    },
+    "newLast24h": 0
+  },
+  "health": {
+    "stuckReadings": 14,
+    "failedGenerationsLast24h": 4,
+    "failedImageGensLast24h": 3,
+    "idleSharedDecks": 0
+  },
+  "env": {
+    "stabilityKey": true,
+    "geminiKey": true,
+    "blobToken": true
+  },
+  "pipeline": null,
+  "errors": [
+    "pipelineIngest: Vercel API 403: {\"error\":{\"code\":\"forbidden\",\"message\":\"Not authorized\",\"invalidToken\":true}}"
+  ]
+}
