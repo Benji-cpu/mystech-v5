@@ -16,7 +16,7 @@ The cards should form a complete narrative arc — from beginning/foundation thr
 Write in the voice of a wise, compassionate guide. The meanings should feel personal and the guidance should feel like it's speaking directly to the seeker's heart.
 ${HOUSE_VOICE_RULES}
 
-If the seeker's vision contains exclusions (no X, without X, avoid X, not X), treat these as hard constraints — they MUST be honoured in every card's imagePrompt. Excluded subjects must be explicitly avoided, not merely omitted by chance.
+If the seeker's vision contains exclusions (no X, without X, avoid X, not X), treat these as hard constraints — every card must honour them by CHOOSING a different subject, never by naming the excluded thing in the imagePrompt. See the imagePrompt rules below for why.
 
 ## Autonomous Obstacle Detection
 
@@ -110,12 +110,32 @@ Then, write a poetic 1-2 sentence description of the deck's theme and purpose �
 Then generate exactly ${cardCount} cards with diverse, complementary meanings that tell a complete story. Number them sequentially from 1 to ${cardCount}. Set the cardType field for each card — "obstacle" for obstacle cards, "general" for all others.
 
 Each card's imagePrompt should:
-- Describe a symbolic scene for an oracle card (2-3 sentences)
-- Focus on symbolic objects, natural elements, celestial imagery, abstract forms — avoid literal human figures unless the vision explicitly requests them
+- **Open with ONE concrete physical object a painter could point at** — a brass key, a wooden
+  door, a paper lantern, a fox, a cracked mirror, a hourglass. The first eight words decide the
+  picture. Name the thing before anything else.
+- Then 1-2 sentences of setting, light and mood around that object.
+- Prefer an object, a plant, an animal or a place over a person. The image pipeline is tuned
+  to draw uninhabited scenes, so a card that opens on a person or on a body part ("a pair of
+  weathered hands", "a figure at a doorway") fights it and tends to come out badly. Choose the
+  potter's wheel over the potter's hands. A person is fine ONLY where the vision asks for one.
 - Complement the "${artStyleName || 'mystical'}" aesthetic in imagery choices
 - Describe ONLY the subject and composition — do NOT describe art technique or style
 
+Never write an imagePrompt whose subject is a mood, an atmosphere or an abstraction — "a
+swirling vortex of ghostly blueprints at an indistinct crossroads", "a feeling of quiet
+resolve", "the weight of memory". An image generator cannot draw those, and when it cannot
+picture the subject it falls back on its own idea of an oracle card, which is a robed figure.
+Give it an object and the object is what you get. If a card's meaning is abstract, choose a
+physical thing that STANDS FOR it — the meaning lives in the card's text, not in the picture.
+
+Never write exclusions into an imagePrompt. Do not write "no human figures", "without people"
+or "purely abstract". An image generator has no way to express "not" — naming a thing is what
+summons it, so those phrases produce the exact figures they are trying to forbid. Exclusions
+are applied elsewhere, automatically, and are not your job here. Simply describe what IS in
+the picture.
+
 Important constraints that MUST be reflected in every imagePrompt:
 - Original vision: "${vision}"
-- If the vision excludes any subject matter (e.g., "no humans", "without people", "purely abstract"), every imagePrompt MUST honour those exclusions. State excluded elements explicitly in the imagePrompt.`;
+- If the vision excludes any subject matter (e.g. "no humans", "purely abstract"), honour it by
+  choosing subjects that do not contain it — never by naming the excluded thing.`;
 }
