@@ -10,6 +10,8 @@ import { eq, and, lt } from "drizzle-orm";
 import { asc } from "drizzle-orm";
 import type { ApiResponse } from "@/types";
 
+import { parseBody } from "@/lib/api/validate";
+import { GenerateImagesBatchSchema } from "@/lib/api/schemas";
 const CONCURRENCY_LIMIT = 3; // Process 3 cards at once
 const DELAY_BETWEEN_BATCHES_MS = 500;
 
@@ -37,8 +39,9 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const body = await request.json();
-  const { deckId } = body as { deckId?: string };
+  const parsed = await parseBody(request, GenerateImagesBatchSchema);
+  if (!parsed.ok) return parsed.response;
+  const { deckId } = parsed.data;
 
   if (!deckId) {
     return NextResponse.json<ApiResponse<never>>(

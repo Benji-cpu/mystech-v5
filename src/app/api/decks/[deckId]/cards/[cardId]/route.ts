@@ -6,9 +6,9 @@ import { getDeckByIdForUser } from "@/lib/db/queries";
 import { eq, and } from "drizzle-orm";
 import { del } from "@vercel/blob";
 import type { ApiResponse, Card } from "@/types";
+
 import { parseBody } from "@/lib/api/validate";
 import { UpdateCardSchema } from "@/lib/api/schemas";
-
 type Params = { params: Promise<{ deckId: string; cardId: string }> };
 
 export async function PATCH(request: NextRequest, { params }: Params) {

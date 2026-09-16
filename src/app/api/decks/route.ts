@@ -4,9 +4,9 @@ import { decks } from "@/lib/db/schema";
 import { getCurrentUser } from "@/lib/auth/helpers";
 import { eq, desc } from "drizzle-orm";
 import type { ApiResponse, Deck } from "@/types";
+
 import { parseBody } from "@/lib/api/validate";
 import { CreateDeckSchema } from "@/lib/api/schemas";
-
 export async function GET() {
   const user = await getCurrentUser();
   if (!user?.id) {

@@ -9,6 +9,8 @@ import { ART_STYLE_PRESETS } from "@/lib/constants";
 import { eq } from "drizzle-orm";
 import type { ApiResponse } from "@/types";
 
+import { parseBody } from "@/lib/api/validate";
+import { GenerateImageSchema } from "@/lib/api/schemas";
 export async function POST(request: NextRequest) {
   const user = await getCurrentUser();
   if (!user?.id) {
@@ -26,8 +28,9 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const body = await request.json();
-  const { cardId } = body as { cardId?: string };
+  const parsed = await parseBody(request, GenerateImageSchema);
+  if (!parsed.ok) return parsed.response;
+  const { cardId } = parsed.data;
 
   if (!cardId) {
     return NextResponse.json<ApiResponse<never>>(

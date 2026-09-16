@@ -20,6 +20,8 @@ import {
 } from "@/lib/ai/prompts/reading-interpretation";
 import type { SpreadType } from "@/types";
 
+import { firstIssueMessage } from "@/lib/api/validate";
+import { ReadingRequestSchema } from "@/lib/api/schemas";
 export const maxDuration = 60;
 
 export async function POST(request: NextRequest) {
@@ -35,15 +37,16 @@ export async function POST(request: NextRequest) {
   }
   mark("auth");
 
-  const body = await request.json();
-  const { readingId } = body as { readingId?: string };
-
-  if (!readingId) {
+  // This route streams, so it answers with a bare {error} rather than the
+  // ApiResponse envelope parseBody builds. Validate, shape the 400 by hand.
+  const parsedBody = ReadingRequestSchema.safeParse(await request.json().catch(() => null));
+  if (!parsedBody.success) {
     return new Response(
-      JSON.stringify({ error: "readingId is required" }),
+      JSON.stringify({ error: firstIssueMessage(parsedBody.error) }),
       { status: 400 }
     );
   }
+  const { readingId } = parsedBody.data;
 
   // Fetch all data in parallel instead of sequentially. The seeker-context
   // builder receives the card-id promise so its journey lookup stays parallel.

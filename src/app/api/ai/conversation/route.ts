@@ -17,6 +17,8 @@ import { extractedAnchorsSchema } from "@/lib/ai/schemas";
 import { journeyTools } from "@/lib/ai/tools/journey-tools";
 import type { ConversationMessage, Anchor, DraftCard } from "@/types";
 
+import { firstIssueMessage } from "@/lib/api/validate";
+import { ConversationSchema } from "@/lib/api/schemas";
 /** Extract plain text from a ModelMessage content field (string or parts array). */
 function getTextContent(content: unknown): string {
   if (typeof content === "string") return content;
@@ -50,18 +52,15 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const body = await request.json();
-  const { deckId, messages } = body as {
-    deckId: string;
-    messages: unknown[];
-  };
-
-  if (!deckId || !messages || !Array.isArray(messages)) {
+  // Streaming route — bare {error} rather than the ApiResponse envelope.
+  const parsedBody = ConversationSchema.safeParse(await request.json().catch(() => null));
+  if (!parsedBody.success) {
     return new Response(
-      JSON.stringify({ error: "deckId and messages are required" }),
+      JSON.stringify({ error: firstIssueMessage(parsedBody.error) }),
       { status: 400 }
     );
   }
+  const { deckId, messages } = parsedBody.data;
 
   // Convert UIMessages (from useChat) to ModelMessages (for streamText)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

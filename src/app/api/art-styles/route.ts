@@ -4,9 +4,9 @@ import { artStyles, artStyleShares } from "@/lib/db/schema";
 import { getCurrentUser } from "@/lib/auth/helpers";
 import { eq, or, and } from "drizzle-orm";
 import type { ApiResponse, ArtStyle, StyleCategory } from "@/types";
+
 import { parseBody } from "@/lib/api/validate";
 import { CreateArtStyleSchema } from "@/lib/api/schemas";
-
 export async function GET() {
   const user = await getCurrentUser();
   if (!user?.id) {

@@ -4,9 +4,9 @@ import { cards } from "@/lib/db/schema";
 import { getCurrentUser } from "@/lib/auth/helpers";
 import { getDeckByIdForUser, getCardsForDeck } from "@/lib/db/queries";
 import type { ApiResponse, Card } from "@/types";
+
 import { parseBody } from "@/lib/api/validate";
 import { CreateCardSchema } from "@/lib/api/schemas";
-
 type Params = { params: Promise<{ deckId: string }> };
 
 export async function GET(request: NextRequest, { params }: Params) {

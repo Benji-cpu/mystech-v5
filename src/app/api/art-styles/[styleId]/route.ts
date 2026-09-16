@@ -4,9 +4,9 @@ import { artStyles, artStyleShares } from "@/lib/db/schema";
 import { getCurrentUser } from "@/lib/auth/helpers";
 import { eq, and } from "drizzle-orm";
 import type { ApiResponse, ArtStyle, StyleCategory } from "@/types";
+
 import { parseBody } from "@/lib/api/validate";
 import { UpdateArtStyleSchema } from "@/lib/api/schemas";
-
 function toArtStyle(s: typeof artStyles.$inferSelect): ArtStyle {
   return {
     id: s.id,

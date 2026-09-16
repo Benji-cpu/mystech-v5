@@ -5,9 +5,9 @@ import { getCurrentUser } from "@/lib/auth/helpers";
 import { getDeckByIdForUser, getDeckMetadata } from "@/lib/db/queries";
 import { eq } from "drizzle-orm";
 import type { ApiResponse, DraftCard } from "@/types";
+
 import { parseBody } from "@/lib/api/validate";
 import { UpdateDraftsSchema } from "@/lib/api/schemas";
-
 type Params = { params: Promise<{ deckId: string }> };
 
 export async function PATCH(request: NextRequest, { params }: Params) {

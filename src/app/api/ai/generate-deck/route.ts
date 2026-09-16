@@ -20,6 +20,8 @@ import { getUserPlanFromRole, checkCredits, incrementCredits } from "@/lib/usage
 import { eq } from "drizzle-orm";
 import { ORIGIN_SOURCE, type ApiResponse, type Anchor, type DraftCard } from "@/types";
 
+import { parseBody } from "@/lib/api/validate";
+import { GenerateDeckSchema } from "@/lib/api/schemas";
 const MAX_RETRIES = 2;
 
 export async function POST(request: NextRequest) {
@@ -48,16 +50,9 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const body = await request.json();
-  const { title, description, vision, cardCount, artStyleId, mode, deckId } = body as {
-    title?: string;
-    description?: string;
-    vision?: string;
-    cardCount?: number;
-    artStyleId?: string;
-    mode?: "simple" | "journey";
-    deckId?: string;
-  };
+  const parsed = await parseBody(request, GenerateDeckSchema);
+  if (!parsed.ok) return parsed.response;
+  const { title, description, vision, cardCount, artStyleId, mode, deckId } = parsed.data;
 
   // Support both new `vision` field and legacy `title`+`description`
   const resolvedVision = vision || description || "";
