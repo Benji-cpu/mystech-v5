@@ -83,7 +83,7 @@ export default function AppSectionError({ error, reset }: ErrorProps) {
             </button>
 
             <Link
-              href="/dashboard"
+              href="/today"
               className={cn(
                 'inline-flex items-center gap-2 px-5 py-2.5 rounded-xl',
                 'bg-white/5 border border-white/10',

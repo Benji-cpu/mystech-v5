@@ -65,3 +65,6 @@ next-env.d.ts
 .impeccable.md
 skills-lock.json
 .audit/
+
+# seeded card-art harness output (scripts/art-harness.ts)
+.art-harness/

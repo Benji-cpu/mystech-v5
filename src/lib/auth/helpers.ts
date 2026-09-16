@@ -33,7 +33,7 @@ export async function requireAdminPanel() {
     redirect("/login");
   }
   if (!isTesterOrAdmin(user)) {
-    redirect("/dashboard");
+    redirect("/today");
   }
   return user;
 }
@@ -45,7 +45,7 @@ export async function requireAdmin() {
     redirect("/login");
   }
   if (!isAdmin(user)) {
-    redirect("/dashboard");
+    redirect("/today");
   }
   return user;
 }

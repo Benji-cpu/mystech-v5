@@ -42,7 +42,7 @@ export function MarketingNavbar({ user }: MarketingNavbarProps) {
       }
       rightContent={
         <Button asChild>
-          <Link href={isLoggedIn ? "/dashboard" : "/login"}>
+          <Link href={isLoggedIn ? "/today" : "/login"}>
             {isLoggedIn ? "Dashboard" : "Sign In"}
           </Link>
         </Button>

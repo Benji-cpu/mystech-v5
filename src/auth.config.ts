@@ -32,12 +32,10 @@ export default {
       const isLoggedIn = !!auth?.user;
       const isOnApp = nextUrl.pathname.startsWith("/today") ||
         nextUrl.pathname.startsWith("/story") ||
-        nextUrl.pathname.startsWith("/home") ||
-        nextUrl.pathname.startsWith("/dashboard") ||
         nextUrl.pathname.startsWith("/profile") ||
         nextUrl.pathname.startsWith("/decks") ||
         nextUrl.pathname.startsWith("/readings") ||
-        nextUrl.pathname.startsWith("/art-styles") ||
+        nextUrl.pathname.startsWith("/studio") ||
         nextUrl.pathname.startsWith("/chronicle") ||
         nextUrl.pathname.startsWith("/paths") ||
         nextUrl.pathname.startsWith("/settings") ||

@@ -26,14 +26,14 @@ export const navTabs: NavTab[] = [
     href: "/today",
     label: "Today",
     icon: Sun,
-    activePrefixes: ["/today", "/home", "/dashboard", "/chronicle", "/daily"],
+    activePrefixes: ["/today", "/chronicle", "/daily"],
     minStage: 0,
   },
   {
     href: "/decks",
     label: "Deck",
     icon: Layers,
-    activePrefixes: ["/decks", "/studio", "/art-styles"],
+    activePrefixes: ["/decks", "/studio"],
     minStage: 0,
   },
   {

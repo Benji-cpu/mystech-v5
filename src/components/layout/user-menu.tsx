@@ -74,9 +74,9 @@ export function UserMenu({ user }: UserMenuProps) {
           </DropdownMenuItem>
         )}
         <DropdownMenuItem asChild>
-          <Link href="/dashboard" className="cursor-pointer">
+          <Link href="/today" className="cursor-pointer">
             <User className="mr-2 h-4 w-4" />
-            Dashboard
+            Today
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>

@@ -1,7 +1,6 @@
 "use client";
 
-import { useRef, useEffect } from "react";
-import gsap from "gsap";
+import { motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 interface HeroTextRevealProps {
@@ -10,70 +9,61 @@ interface HeroTextRevealProps {
   as?: "h1" | "h2" | "h3";
 }
 
+const GOLD = "rgba(201,169,78,1)";
+const GLOW_SETTLED = "0 0 4px rgba(201,169,78,0.3)";
+
+/**
+ * Staggered word reveal for the landing hero. Was the only gsap call site in
+ * the app; framer-motion was already on this page, so gsap came down the wire
+ * for eighty lines of animation nobody else used.
+ */
 export function HeroTextReveal({
   children,
   className,
   as: Tag = "h1",
 }: HeroTextRevealProps) {
-  const containerRef = useRef<HTMLHeadingElement>(null);
-
-  useEffect(() => {
-    if (!containerRef.current) return;
-
-    const prefersReducedMotion = window.matchMedia(
-      "(prefers-reduced-motion: reduce)"
-    ).matches;
-
-    const words = containerRef.current.querySelectorAll(".word");
-
-    if (prefersReducedMotion) {
-      gsap.set(words, {
-        opacity: 1,
-        y: 0,
-        color: "rgba(201,169,78,1)",
-        textShadow: "0 0 4px rgba(201,169,78,0.3)",
-      });
-      return;
-    }
-
-    gsap.set(words, {
-      opacity: 0,
-      y: 16,
-      color: "rgba(201,169,78,0)",
-      textShadow: "0 0 0px rgba(201,169,78,0)",
-    });
-
-    gsap.to(words, {
-      opacity: 1,
-      y: 0,
-      color: "rgba(201,169,78,1)",
-      textShadow: "0 0 20px rgba(201,169,78,0.8)",
-      duration: 0.3,
-      stagger: 0.08,
-      ease: "power2.out",
-    });
-
-    gsap.to(words, {
-      textShadow: "0 0 4px rgba(201,169,78,0.3)",
-      duration: 0.6,
-      stagger: 0.08,
-      delay: 0.8,
-      ease: "power2.inOut",
-    });
-  }, []);
-
-  const wordList = children.split(" ");
+  const reduceMotion = useReducedMotion();
+  const words = children.split(" ");
 
   return (
-    <Tag ref={containerRef} className={cn(className)}>
-      {wordList.map((word, i) => (
-        <span
+    <Tag className={cn(className)}>
+      {words.map((word, i) => (
+        <motion.span
           key={i}
-          className="word inline-block"
-          style={{ marginRight: i < wordList.length - 1 ? "0.3em" : undefined }}
+          className="inline-block"
+          style={{ marginRight: i < words.length - 1 ? "0.3em" : undefined }}
+          initial={
+            reduceMotion
+              ? false
+              : {
+                  opacity: 0,
+                  y: 16,
+                  color: "rgba(201,169,78,0)",
+                  textShadow: "0 0 0px rgba(201,169,78,0)",
+                }
+          }
+          animate={{
+            opacity: 1,
+            y: 0,
+            color: GOLD,
+            // Flares to a bright glow on arrival, then settles.
+            textShadow: reduceMotion
+              ? GLOW_SETTLED
+              : ["0 0 20px rgba(201,169,78,0.8)", GLOW_SETTLED],
+          }}
+          transition={
+            reduceMotion
+              ? { duration: 0 }
+              : {
+                  duration: 0.3,
+                  delay: i * 0.08,
+                  ease: "easeOut",
+                  textShadow: { duration: 0.6, delay: 0.8 + i * 0.08, times: [0, 1] },
+                }
+          }
         >
           {word}
-        </span>
+        </motion.span>
       ))}
     </Tag>
   );

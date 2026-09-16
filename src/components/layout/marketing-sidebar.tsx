@@ -39,7 +39,7 @@ export function MarketingSidebar({ isLoggedIn, onNavigate }: MarketingSidebarPro
       {/* Bottom CTA */}
       <div className="border-t border-sidebar-border p-3">
         <Link
-          href={isLoggedIn ? "/dashboard" : "/login"}
+          href={isLoggedIn ? "/today" : "/login"}
           onClick={onNavigate}
           className="flex w-full items-center justify-center rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground"
         >

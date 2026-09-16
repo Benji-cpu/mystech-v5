@@ -62,7 +62,7 @@ const ALL_NUDGES: NudgeConfig[] = [
     variant: "discovery",
     message:
       "The Studio is where you shape the visual language of your deck — browse styles, refine card artwork, and make every image truly yours.",
-    cta: { label: "Explore Studio", href: "/studio" },
+    cta: { label: "Explore your decks", href: "/decks" },
     priority: 9,
   },
   {
@@ -72,7 +72,7 @@ const ALL_NUDGES: NudgeConfig[] = [
     variant: "discovery",
     message:
       "Your deck has a visual language. There are others to explore — each changes how the cards feel.",
-    cta: { label: "Explore Styles", href: "/studio/styles" },
+    cta: { label: "Explore Styles", href: "/decks/styles" },
     priority: 10,
   },
 
@@ -127,7 +127,7 @@ const ALL_NUDGES: NudgeConfig[] = [
     variant: "discovery",
     message:
       "You can create your own art style — describe the visual language you imagine and I'll bring it to life.",
-    cta: { label: "Create a Style", href: "/studio/styles" },
+    cta: { label: "Create a Style", href: "/decks/styles" },
     priority: 41,
   },
 ];

@@ -113,7 +113,7 @@ export function getActivityHref(item: ActivityItemWithTemporal): string | null {
     case "deck_created": return `/decks/${item.deckId}/edit`;
     case "deck_completed": return `/decks/${item.deckId}`;
     case "reading_performed": return `/readings/${item.readingId}`;
-    case "astrology_setup": return "/dashboard";
+    case "astrology_setup": return "/today";
     case "deck_adopted": return `/decks/${item.deckId}`;
     default: return null;
   }
