@@ -43,7 +43,10 @@ const routeRules: RouteRule[] = [
   { pattern: /^\/decks\/styles$/, backTarget: "/decks", backLabel: "Decks" },
 
   // Card refinement (focus mode — lives under its deck)
-  { pattern: /^\/decks\/[^/]+\/cards\/[^/]+$/, backTarget: "PARENT2", backLabel: "Deck", focusMode: true, focusTitle: "Card Refinement", focusSubtitle: "Refine the artwork" },
+  // No focusTitle/focusSubtitle: CardRefinement draws its own header with the
+  // CARD's title, which is the useful one, and a static "Card Refinement"
+  // stacked on top of it overlapped at 390px.
+  { pattern: /^\/decks\/[^/]+\/cards\/[^/]+$/, backTarget: "PARENT2", backLabel: "Deck", focusMode: true },
 
   // Deck detail + edit (NOT focus mode — simple forms)
   { pattern: /^\/decks\/[^/]+\/edit$/, backTarget: "PARENT", backLabel: "Back" },
