@@ -43,6 +43,28 @@ export function DeckViewClient({ deck, initialCards, initialFeedbackMap }: DeckV
     needsPolling
   );
 
+  // Self-heal a deck whose art never started. Image generation is kicked off
+  // by a fire-and-forget fetch from the client that created the deck; if that
+  // tab closed, crashed or lost its connection, every card sits at "pending"
+  // and the page reads "Painting your cards… 0/N" forever (seen on the
+  // first-time walk, 2026-09-16). One request per page load, and the batch
+  // route only ever touches pending/failed/stale cards, so this never bills.
+  const healKickedRef = useRef(false);
+  useEffect(() => {
+    if (healKickedRef.current) return;
+    const untouched = cards.filter((c) => c.imageStatus === "pending");
+    const inFlight = cards.some((c) => c.imageStatus === "generating");
+    if (untouched.length === 0 || inFlight) return;
+    healKickedRef.current = true;
+    fetch("/api/ai/generate-images-batch", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ deckId: deck.id }),
+    }).catch(() => {
+      // Polling will surface the outcome; nothing to do here.
+    });
+  }, [cards, deck.id]);
+
   // Refresh cards when new images complete (comparing against ref, NOT cards state)
   useEffect(() => {
     if (!status || !needsPolling) return;

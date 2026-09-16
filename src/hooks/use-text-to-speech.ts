@@ -32,6 +32,8 @@ export function useTextToSpeech(options: UseTextToSpeechOptions = {}) {
   const audioQueueRef = useRef<AudioQueue | null>(null);
   const sentenceBufferRef = useRef<SentenceBuffer | null>(null);
   const activeAbortsRef = useRef<Set<AbortController>>(new Set());
+  /** Set once the TTS route has answered 5xx; no further synthesis is attempted this session. */
+  const ttsDeadRef = useRef(false);
   const synthesisChainRef = useRef<Promise<void>>(Promise.resolve());
 
   // Initialize audio queue
@@ -48,7 +50,7 @@ export function useTextToSpeech(options: UseTextToSpeechOptions = {}) {
   // Fetch TTS for a single sentence and enqueue
   const synthesizeAndEnqueue = useCallback(
     async (text: string, signal?: AbortSignal) => {
-      if (!enabled) return;
+      if (!enabled || ttsDeadRef.current) return;
 
       const cleanText = stripMarkdownForSpeech(text);
       if (!cleanText) return;
@@ -61,7 +63,13 @@ export function useTextToSpeech(options: UseTextToSpeechOptions = {}) {
           signal,
         });
 
-        if (!res.ok) return;
+        if (!res.ok) {
+          // A server-side failure (the TTS API refusing the key, billing off)
+          // is not going to clear on the next sentence. Stop asking, so a
+          // voice-enabled session does not fire a 500 on every screen.
+          if (res.status >= 500) ttsDeadRef.current = true;
+          return;
+        }
 
         const audioBuffer = await res.arrayBuffer();
         // Check signal after await — fetch may have completed before abort

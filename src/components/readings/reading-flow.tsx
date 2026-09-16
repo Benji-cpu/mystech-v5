@@ -177,7 +177,6 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
   const guidedAutoStarted = useRef(false);
   useEffect(() => {
     if (!guided || guidedAutoStarted.current) return;
-    guidedAutoStarted.current = true;
 
     const deckToUse = guidedDeckId
       ? decks.find((d) => d.id === guidedDeckId)
@@ -188,8 +187,12 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
     dispatch({ type: "SELECT_DECK", deckId: deckToUse.id });
     dispatch({ type: "SELECT_SPREAD", spread: "three_card" });
 
-    // Brief Lyra "attentive" moment before beginning
+    // Brief Lyra "attentive" moment before beginning. The "started" flag is
+    // set INSIDE the timer: setting it up front meant that when the effect's
+    // cleanup cleared the timer (StrictMode's double-invoke, a re-render before
+    // 1.5s), the re-run bailed out and the page sat on "Let us begin…" forever.
     const timer = setTimeout(() => {
+      guidedAutoStarted.current = true;
       dispatch({ type: "BEGIN_READING" });
     }, 1500);
     return () => clearTimeout(timer);
