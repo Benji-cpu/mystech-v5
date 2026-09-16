@@ -11,13 +11,14 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { feedback, readings, generationLogs, decks } from "@/lib/db/schema";
-import { and, eq, gte, isNull, lt, sql } from "drizzle-orm";
+import { and, desc, eq, gte, isNull, lt, sql } from "drizzle-orm";
 import { getResend, EMAIL_FROM } from "@/lib/email/client";
 import { ingestAndSummarise, type PipelineHealth } from "@/lib/deployment-events";
 
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  // With CRON_SECRET unset the old check accepted "Bearer undefined".
+  if (!process.env.CRON_SECRET || authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -56,12 +57,55 @@ export async function GET(request: Request) {
     return Number(row.count);
   });
 
+  // Last 7 days only. An interpretation that never arrived in May is an
+  // abandoned session, not an incident, and carrying it forever meant the
+  // digest reported the same 12-13 every night and nobody looked.
   const stuckReadings = await safeCount("stuckReadings", async () => {
     const [row] = await db
       .select({ count: sql<number>`count(*)` })
       .from(readings)
-      .where(and(isNull(readings.interpretation), lt(readings.createdAt, fiveMinAgo)));
+      .where(
+        and(
+          isNull(readings.interpretation),
+          lt(readings.createdAt, fiveMinAgo),
+          gte(readings.createdAt, sevenDaysAgo)
+        )
+      );
     return Number(row.count);
+  });
+
+  // The rows behind the two counts a human has to act on. Without them the
+  // synthesis agent can only repeat the same two numbers every night. No user
+  // identifiers — this JSON is committed to the repo. Capped to keep it small.
+  const feedbackRows = await safeCount("feedbackRows", async () => {
+    const rows = await db
+      .select({ id: feedback.id, message: feedback.message, pageUrl: feedback.pageUrl, createdAt: feedback.createdAt })
+      .from(feedback)
+      .where(eq(feedback.status, "new"))
+      .orderBy(desc(feedback.createdAt))
+      .limit(50);
+    return rows.map((r) => ({
+      id: r.id,
+      message: r.message.slice(0, 400),
+      pageUrl: r.pageUrl,
+      createdAt: r.createdAt?.toISOString() ?? null,
+    }));
+  });
+
+  const stuckReadingRows = await safeCount("stuckReadingRows", async () => {
+    const rows = await db
+      .select({ id: readings.id, spreadType: readings.spreadType, createdAt: readings.createdAt })
+      .from(readings)
+      .where(
+        and(
+          isNull(readings.interpretation),
+          lt(readings.createdAt, fiveMinAgo),
+          gte(readings.createdAt, sevenDaysAgo)
+        )
+      )
+      .orderBy(desc(readings.createdAt))
+      .limit(50);
+    return rows.map((r) => ({ ...r, createdAt: r.createdAt?.toISOString() ?? null }));
   });
 
   const failedGenerationsLast24h = await safeCount("failedGenerationsLast24h", async () => {
@@ -112,9 +156,11 @@ export async function GET(request: Request) {
     feedback: {
       byStatus: feedbackByStatus ?? {},
       newLast24h: newFeedbackLast24h ?? 0,
+      rows: feedbackRows ?? [],
     },
     health: {
       stuckReadings: stuckReadings ?? 0,
+      stuckReadingRows: stuckReadingRows ?? [],
       failedGenerationsLast24h: failedGenerationsLast24h ?? 0,
       failedImageGensLast24h: failedImageGensLast24h ?? 0,
       idleSharedDecks: idleSharedDecks ?? 0,

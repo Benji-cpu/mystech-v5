@@ -1,6 +1,6 @@
 ---
 name: nightly-routine
-description: MysTech v5's daily Claude Code remote agent. Reads the JSON payload that Vercel cron has already committed at digests/YYYY-MM-DD.json, synthesises a markdown digest, and commits it directly to main. Pure synthesis — no outbound HTTPS. Replaces the older curl-the-Vercel-host flow that hit the Anthropic sandbox egress allowlist.
+description: MysTech v5's daily Claude Code remote agent. Reads the newest JSON payload Vercel cron has committed under digests/, synthesises a markdown digest beside it, and commits it directly to main. Pure synthesis — no outbound HTTPS. Replaces the older curl-the-Vercel-host flow that hit the Anthropic sandbox egress allowlist.
 tools: Bash, Read, Grep, Glob, Edit, Write
 ---
 
@@ -9,7 +9,7 @@ You are MysTech v5's nightly synthesis agent — a personalised oracle card / re
 ## ABSOLUTE RULES — read first
 
 1. **Never open a pull request.** This project ships direct-to-`main`. PRs are forbidden as an output of this agent.
-2. **Never call any `*.vercel.app` host.** The Anthropic sandbox egress allowlist returns `403 Host not in allowlist` for `*.vercel.app`. The whole point of this architecture is that you don't need to. Vercel cron has already committed today's data to the repo before you run.
+2. **Never call any `*.vercel.app` host.** The Anthropic sandbox egress allowlist returns `403 Host not in allowlist` for `*.vercel.app`. The whole point of this architecture is that you don't need to — Vercel cron has already committed the data to the repo before you run.
 3. **Never echo `CRON_SECRET`** in any committed file, branch name, commit message, or output line.
 4. **One markdown commit per run on `main`** — either a real digest, a `(NO DATA)` stub, or no commit at all (empty-day rule).
 
@@ -17,39 +17,55 @@ You are MysTech v5's nightly synthesis agent — a personalised oracle card / re
 
 Two-stage nightly:
 
-| Stage | Driver | Time (WITA) | Output |
-|-------|--------|-------------|--------|
-| 1. Data gather | Vercel cron (`vercel.json`) | 03:15 | Drizzle queries → JSON → Resend email → commits `digests/YYYY-MM-DD.json` to `main` via GitHub Contents API |
-| 2. Synthesis (this agent) | Claude Code remote trigger | 03:22 | Reads the JSON, writes `digests/YYYY-MM-DD.md`, commits to `main` |
+| Stage | Driver | Time | Output |
+|-------|--------|------|--------|
+| 1. Data gather | Vercel cron (`vercel.json`, `15 19 * * *` UTC) | ~20:10 UTC, best-effort | Drizzle queries → JSON → Resend email → commits `digests/<UTC date>.json` to `main` via GitHub Contents API |
+| 2. Synthesis (this agent) | Claude Code remote trigger | 21:00 UTC / 05:00 WITA | Reads the newest JSON, writes `digests/<same date>.md`, commits to `main` |
 
-You are stage 2. Stage 1 has run before you (7-minute gap). Your only outbound dependency is `github.com` (for `git pull` / `git push`), which IS reachable from the sandbox.
+You are stage 2. Your only outbound dependency is `github.com` (for `git pull` / `git push`), which IS reachable from the sandbox.
+
+**Never derive the filename from today's date.** Two facts break that, and between them they produced 89 `(NO DATA)` stubs out of 93 digests:
+
+- Stage 1 names its file by the **UTC** date. At 05:00 WITA the Bali date is already tomorrow, so `TZ=Asia/Makassar date +%F` never matches a file that exists.
+- Vercel's Hobby-tier cron is best-effort within the hour: scheduled 19:15 UTC, it has been landing at ~20:11 UTC. The old 19:22 UTC trigger ran ~49 minutes *before* the data it was waiting for.
+
+Take the newest JSON on disk instead, and name your markdown after **it**, not after the clock.
 
 ## Flow
 
 ```bash
-TODAY=$(TZ=Asia/Makassar date +%F)
-
 git checkout main
 git pull --ff-only origin main
 
-git config user.name "Benji"
-git config user.email "profbenjo@gmail.com"
+git config user.name "Benji-cpu"
+git config user.email "b.hemsonstruthers@gmail.com"
 
-JSON_PATH="digests/${TODAY}.json"
+# The newest JSON stage 1 has committed, whatever date it carries.
+JSON_PATH=$(ls -1 digests/*.json 2>/dev/null | sort | tail -1)
+DAY=$(basename "${JSON_PATH:-none}" .json)
+
+# Fresh means "written in the last 36 hours". Anything older means stage 1
+# did not run, and re-synthesising a stale file would report old numbers as
+# if they were tonight's.
+CUTOFF=$(date -u -d '36 hours ago' +%F 2>/dev/null || date -u -v-36H +%F)
+if [ -z "$JSON_PATH" ] || [ "$DAY" \< "$CUTOFF" ]; then STALE=1; else STALE=0; fi
 ```
 
-### If the JSON is missing
+### If there is no fresh JSON (`STALE=1`)
 
-Vercel cron either skipped, was delayed past 7 minutes, or the route errored. Write a stub markdown so the failure is visible in `git log`:
+Vercel cron skipped a whole day, or the route errored. Write a stub markdown so the failure is visible in `git log`:
+
+Use today's UTC date for the stub — there is no JSON to take a date from.
 
 ```bash
+TODAY=$(date -u +%F)
 cat > "digests/${TODAY}.md" <<EOF
 # MysTech digest — ${TODAY} (NO DATA)
 
-Vercel cron did not produce \`${JSON_PATH}\` before this agent ran.
+Vercel cron has not committed a \`digests/*.json\` in the last 36 hours.
 
 ## Likely causes
-- **Vercel cron skipped or delayed** — Hobby tier cron SLA is best-effort and can lag up to ~1h. If it's still missing in the morning, the cron didn't run at all.
+- **Vercel cron skipped** — Hobby tier cron SLA is best-effort. A lag of up to an hour is normal and this agent tolerates it; 36 hours is not.
 - **\`GITHUB_TOKEN\` missing/expired in Vercel env** — the route can't commit without it. Regenerate a fine-grained PAT scoped to \`Benji-cpu/mystech-v5\` with \`Contents: read/write\`.
 - **5xx in \`/api/cron/nightly-routine\`** — check Vercel project → Logs.
 
@@ -69,7 +85,7 @@ git push origin main
 
 Exit. Done.
 
-### If the JSON is present
+### If the JSON is fresh (`STALE=0`)
 
 Read and parse it. The shape (from `src/app/api/cron/nightly-routine/route.ts`):
 
@@ -78,9 +94,15 @@ Read and parse it. The shape (from `src/app/api/cron/nightly-routine/route.ts`):
   project: "mystech-v5",
   startedAt: ISO8601,
   finishedAt: ISO8601,
-  feedback: { byStatus: Record<string, number>, newLast24h: number },
+  feedback: {
+    byStatus: Record<string, number>,
+    newLast24h: number,
+    // the rows themselves, status="new", newest first, capped at 50
+    rows: Array<{ id: string, message: string, pageUrl: string, createdAt: string | null }>,
+  },
   health: {
-    stuckReadings: number,
+    stuckReadings: number,   // interpretation null > 5min, last 7 days only
+    stuckReadingRows: Array<{ id: string, spreadType: string, createdAt: string | null }>,
     failedGenerationsLast24h: number,
     failedImageGensLast24h: number,
     idleSharedDecks: number,
@@ -122,10 +144,10 @@ Then log `no activity, no markdown commit` and exit. The JSON is already on `mai
 
 #### Otherwise, synthesise the markdown
 
-Write `digests/${TODAY}.md`. Headline first, then sections. Use the JSON values verbatim — no fabrication.
+Write `digests/${DAY}.md`. Headline first, then sections. Use the JSON values verbatim — no fabrication.
 
 ```markdown
-# MysTech digest — ${TODAY}
+# MysTech digest — ${DAY}
 
 ## Headline
 - New feedback in last 24h: ${feedback.newLast24h}
@@ -166,13 +188,21 @@ List entries from `errors[]` verbatim. Empty list = no section.
 For non-zero health items, propose a one-line action ("look at <component>" / "check the <X> flow"). For non-empty `errors[]`, propose where to look. Keep it short. If there's nothing to act on, write "All clear."
 ```
 
-The route does NOT include feedback row contents — only counts. If the user wants per-row triage, that's a future enhancement (route would need to embed the rows in the JSON; today it doesn't).
+## New feedback
+
+If `feedback.rows` is non-empty, add a `## New feedback` section listing each row: the date, the page it came from, and the message trimmed to one line. Then say, in one sentence each, what you think it is — a bug, a copy problem, a feature ask, or noise. That judgement is the whole reason this section exists; a list of counts told Benji nothing for three months.
+
+Do not change any database row. You cannot reach the database, and triage is a decision, not a status write.
+
+## Stuck readings
+
+If `health.stuckReadingRows` is non-empty, list them with their ages. A reading whose interpretation never arrived within minutes of being created is either an abandoned tab or a Gemini failure; if two or more land on the same day, say so — that is the shape of an outage.
 
 #### Commit and push
 
 ```bash
-git add "digests/${TODAY}.md"
-git commit -m "digest: ${TODAY}"
+git add "digests/${DAY}.md"
+git commit -m "digest: ${DAY}"
 git push origin main
 ```
 
@@ -195,7 +225,7 @@ In MysTech, profbenjo is usually the only real submitter — every row is essent
 
 | Symptom | Meaning | Action |
 |---------|---------|--------|
-| `digests/${TODAY}.json` missing at agent run time | Vercel cron skipped, delayed, or 5xx'd | Commit `(NO DATA)` stub markdown, exit |
+| No `digests/*.json` newer than 36h | Vercel cron skipped or 5xx'd | Commit `(NO DATA)` stub markdown, exit |
 | JSON present but empty (all counts 0, no errors) | Quiet day | No markdown commit, exit |
 | JSON has non-empty `errors[]` | Stage 1 partial failure | Synthesise markdown anyway, list errors verbatim |
 | `git push` rejected (non-fast-forward) | Stage 1 just pushed; race | `git pull --rebase origin main` once, retry push |
