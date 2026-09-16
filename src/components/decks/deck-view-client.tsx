@@ -7,6 +7,7 @@ import { GenerationProgress } from "./generation-progress";
 import { useImageGenerationProgress } from "@/hooks/use-image-generation-progress";
 import { toast } from "sonner";
 import type { Deck, Card, CardFeedbackType } from "@/types";
+import { setDomainSnapshot } from "@/lib/feedback/domain-snapshot";
 
 interface DeckViewClientProps {
   deck: Deck;
@@ -63,6 +64,21 @@ export function DeckViewClient({ deck, initialCards, initialFeedbackMap }: DeckV
     }).catch(() => {
       // Polling will surface the outcome; nothing to do here.
     });
+  }, [cards, deck.id]);
+
+  // What a report from this page needs to be answerable: which deck, and how
+  // far the art actually got. "The cards never painted" is unactionable
+  // without it.
+  useEffect(() => {
+    setDomainSnapshot("deck", {
+      deckId: deck.id,
+      cardCount: cards.length,
+      imageStatus: cards.reduce<Record<string, number>>((acc, c) => {
+        acc[c.imageStatus ?? "unknown"] = (acc[c.imageStatus ?? "unknown"] ?? 0) + 1;
+        return acc;
+      }, {}),
+    });
+    return () => setDomainSnapshot("deck", null);
   }, [cards, deck.id]);
 
   // Refresh cards when new images complete (comparing against ref, NOT cards state)

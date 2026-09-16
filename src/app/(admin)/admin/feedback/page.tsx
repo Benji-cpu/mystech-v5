@@ -46,6 +46,8 @@ type FeedbackRow = {
   viewportWidth: number | null;
   viewportHeight: number | null;
   userAgent: string | null;
+  activityTrail: Array<{ t: number; kind: string; detail: string }> | null;
+  domainSnapshot: Record<string, unknown> | null;
   status: string;
   adminNotes: string | null;
   createdAt: string;
@@ -278,6 +280,33 @@ export default function AdminFeedbackPage() {
                   {new Date(selectedItem.createdAt).toLocaleString()}
                 </div>
               </div>
+
+              {/* What the app was doing. Captured since 2026-09; older rows
+                  have neither, which is itself worth seeing. */}
+              {selectedItem.domainSnapshot && (
+                <div>
+                  <p className="text-xs text-white/40 mb-1.5">Page state</p>
+                  <pre className="rounded-lg bg-white/[0.03] border border-white/[0.06] p-3 text-[11px] leading-relaxed text-white/70 overflow-x-auto">
+                    {JSON.stringify(selectedItem.domainSnapshot, null, 2)}
+                  </pre>
+                </div>
+              )}
+
+              {selectedItem.activityTrail && selectedItem.activityTrail.length > 0 && (
+                <details>
+                  <summary className="text-xs text-white/40 cursor-pointer hover:text-white/60">
+                    Activity trail ({selectedItem.activityTrail.length} events)
+                  </summary>
+                  <ol className="mt-2 space-y-0.5 rounded-lg bg-white/[0.03] border border-white/[0.06] p-3 text-[11px] font-mono text-white/60 max-h-56 overflow-y-auto">
+                    {selectedItem.activityTrail.map((e, i) => (
+                      <li key={i}>
+                        <span className="text-white/30">{e.t.toFixed(1)}s</span>{" "}
+                        <span className="text-white/50">{e.kind}</span> {e.detail}
+                      </li>
+                    ))}
+                  </ol>
+                </details>
+              )}
 
               {/* Status actions */}
               <div className="flex flex-wrap gap-2">

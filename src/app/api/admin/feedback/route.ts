@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const page = parseInt(searchParams.get("page") ?? "1");
   const pageSize = parseInt(searchParams.get("pageSize") ?? "20");
-  const status = searchParams.get("status"); // "new" | "reviewed" | "archived"
+  const status = searchParams.get("status"); // "new" | "reviewed" | "actioned" | "dismissed"
 
   const where = status ? eq(feedback.status, status) : undefined;
 
@@ -33,6 +33,8 @@ export async function GET(request: NextRequest) {
       viewportWidth: feedback.viewportWidth,
       viewportHeight: feedback.viewportHeight,
       userAgent: feedback.userAgent,
+      activityTrail: feedback.activityTrail,
+      domainSnapshot: feedback.domainSnapshot,
       status: feedback.status,
       adminNotes: feedback.adminNotes,
       createdAt: feedback.createdAt,

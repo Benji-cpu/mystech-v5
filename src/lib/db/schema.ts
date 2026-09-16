@@ -965,6 +965,8 @@ export const feedback = pgTable(
     activityTrail: jsonb("activity_trail").$type<
       Array<{ t: number; kind: string; detail: string }>
     >(),
+    /** Page-specific state at submit time — which deck, which reading phase. */
+    domainSnapshot: jsonb("domain_snapshot").$type<Record<string, unknown>>(),
     status: text("status").notNull().default("new"), // "new" | "reviewed" | "actioned" | "dismissed"
     adminNotes: text("admin_notes"),
     createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),

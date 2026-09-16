@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { BookOpen, Wand2, X } from "lucide-react";
 import { toast } from "sonner";
+import { setDomainSnapshot } from "@/lib/feedback/domain-snapshot";
 
 import { useImmersive } from "@/components/immersive/immersive-provider";
 import { useSequentialReveal } from "@/hooks/use-sequential-reveal";
@@ -128,6 +129,29 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
     initialReadingFlowState
   );
   const { setMoodPreset } = useImmersive();
+
+  // A report sent from inside a reading is almost always about the reading —
+  // which phase it hung in, which spread, how many cards had been revealed.
+  useEffect(() => {
+    setDomainSnapshot("reading", {
+      phase: state.phase,
+      spread: state.selectedSpread,
+      deckIds: state.selectedDeckIds,
+      readingId: state.readingId,
+      drawnCards: state.drawnCards.length,
+      presentingCardIndex: state.presentingCardIndex,
+      hasError: Boolean(state.error),
+    });
+    return () => setDomainSnapshot("reading", null);
+  }, [
+    state.phase,
+    state.selectedSpread,
+    state.selectedDeckIds,
+    state.readingId,
+    state.drawnCards.length,
+    state.presentingCardIndex,
+    state.error,
+  ]);
 
   // Default guided completion handler — marks initiation complete + navigates to dashboard
   const handleInitiationComplete = useCallback(async () => {

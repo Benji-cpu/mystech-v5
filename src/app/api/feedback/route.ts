@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { feedback } from "@/lib/db/schema";
-import { getCurrentUser, isAdmin } from "@/lib/auth/helpers";
+import { getCurrentUser, isTesterOrAdmin } from "@/lib/auth/helpers";
 import { put } from "@vercel/blob";
 import { createId } from "@paralleldrive/cuid2";
 import { eq, and, gte, sql } from "drizzle-orm";
@@ -24,6 +24,9 @@ const feedbackSchema = z.object({
   viewportHeight: z.number().int().positive().optional(),
   userAgent: z.string().max(1000).optional(),
   activityTrail: z.array(activityEventSchema).max(120).optional(),
+  domainSnapshot: z.record(z.string(), z.unknown()).optional(),
+  /** Honeypot. A real user never sees the field, so any value means a bot. */
+  website: z.string().max(200).optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -53,16 +56,27 @@ export async function POST(request: NextRequest) {
     viewportHeight,
     userAgent: clientUserAgent,
     activityTrail,
+    domainSnapshot,
+    website,
   } = parsed.data;
 
-  // Light abuse guard: 50/hour for signed-in users. Admins bypass entirely.
-  if (user?.id && !isAdmin(user)) {
+  // Honeypot: answer 200 and store nothing. Telling a bot it was caught only
+  // teaches whoever wrote it to stop filling the field.
+  if (website && website.trim().length > 0) {
+    return NextResponse.json({ success: true, data: { id: createId() } });
+  }
+
+  // 5/hour for ordinary users — the cross-project standard. Power users
+  // (admin or tester role; MysTech keeps roles in the database rather than in
+  // an ADMIN_EMAILS env var) bypass entirely, because dogfooding a session
+  // legitimately produces a dozen notes in an hour.
+  if (user?.id && !isTesterOrAdmin(user)) {
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
     const [countResult] = await db
       .select({ count: sql<number>`count(*)` })
       .from(feedback)
       .where(and(eq(feedback.userId, user.id), gte(feedback.createdAt, oneHourAgo)));
-    if (Number(countResult.count) >= 50) {
+    if (Number(countResult.count) >= 5) {
       return NextResponse.json({ error: "Too many submissions. Try again later." }, { status: 429 });
     }
   }
@@ -105,6 +119,7 @@ export async function POST(request: NextRequest) {
     viewportHeight: viewportHeight ?? null,
     userAgent: userAgent ?? null,
     activityTrail: activityTrail ?? null,
+    domainSnapshot: domainSnapshot ?? null,
   });
 
   return NextResponse.json({ success: true, data: { id } });

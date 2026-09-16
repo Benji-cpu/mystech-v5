@@ -12,6 +12,7 @@ import { GoldButton } from "@/components/ui/gold-button";
 import { Textarea } from "@/components/ui/textarea";
 import { useFeedback } from "./feedback-provider";
 import { getActivityTrail } from "@/lib/feedback/activity-trail";
+import { getDomainSnapshot } from "@/lib/feedback/domain-snapshot";
 import { Camera } from "lucide-react";
 import { toast } from "sonner";
 
@@ -19,11 +20,14 @@ export function FeedbackSheet() {
   const { phase, screenshotDataUrl, context, close } = useFeedback();
   const [message, setMessage] = useState("");
   const [showScreenshot, setShowScreenshot] = useState(false);
+  /** Honeypot. A person never sees this field; a form-filling bot always does. */
+  const [website, setWebsite] = useState("");
 
   useEffect(() => {
     if (phase !== "open") {
       setMessage("");
       setShowScreenshot(false);
+      setWebsite("");
     }
   }, [phase]);
 
@@ -42,6 +46,8 @@ export function FeedbackSheet() {
       viewportHeight: context?.viewportHeight ?? window.innerHeight,
       userAgent: context?.userAgent,
       activityTrail: getActivityTrail(),
+      domainSnapshot: getDomainSnapshot(),
+      website,
     };
     close();
     toast.success("Sent", { duration: 1400 });
@@ -111,6 +117,19 @@ export function FeedbackSheet() {
               />
             </div>
           )}
+
+          {/* Honeypot — off-screen, unfocusable, hidden from assistive tech.
+              A non-empty value is dropped server-side without a row. */}
+          <input
+            type="text"
+            name="website"
+            tabIndex={-1}
+            autoComplete="off"
+            aria-hidden="true"
+            value={website}
+            onChange={(e) => setWebsite(e.target.value)}
+            className="absolute left-[-9999px] h-px w-px opacity-0"
+          />
 
           <Textarea
             autoFocus
