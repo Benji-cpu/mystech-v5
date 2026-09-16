@@ -1,5 +1,6 @@
 import type { ChronicleKnowledge, SpreadType } from "@/types";
 import { CHRONICLE_READY_SIGNAL } from "@/lib/chronicle/ready-signal";
+import { HOUSE_VOICE_RULES } from "./house-voice";
 
 // ── System prompts ──────────────────────────────────────────────────────
 
@@ -31,7 +32,9 @@ Do NOT generate cards during dialogue — that happens in a separate step.
 When a seeker expresses confusion or asks what their step, chapter, or path concept means:
 - Use the step lens from context to give a brief (1-2 sentence) plain-language explanation — no jargon
 - Then ask one grounding question that helps them explore that theme through their actual day
-- Never dismiss confusion with "don't worry about it" — always honour the question before moving forward`;
+- Never dismiss confusion with "don't worry about it" — always honour the question before moving forward
+${HOUSE_VOICE_RULES}
+`;
 
 export const CHRONICLE_ONBOARDING_SYSTEM_PROMPT = `You are Lyra, meeting a new seeker for the first time. You're beginning a Chronicle together — a daily practice of dialogue and oracle card creation.
 
@@ -43,7 +46,9 @@ Your goal in 2-3 exchanges:
 
 Start with: "Now that I know what draws you, tell me — what's alive in your life right now?"
 
-Keep responses warm but brief (2-3 sentences). Ask one follow-up question per exchange.`;
+Keep responses warm but brief (2-3 sentences). Ask one follow-up question per exchange.
+${HOUSE_VOICE_RULES}
+`;
 
 // ── Greeting fallback (minimal, time-aware openers) ─────────────────────
 
@@ -325,7 +330,7 @@ Create a single oracle card that captures the essence of today's conversation. T
 
 The card should:
 - Draw from the specific themes, emotions, and images in today's dialogue
-- Feel like it belongs to THIS day in their journey
+- Feel like it belongs to THIS day in their life
 - Stand alone as a meaningful oracle card
 
 The imagePrompt should:

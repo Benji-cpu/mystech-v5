@@ -12,9 +12,8 @@ Personalized oracle card decks, AI-powered readings, and sharing. Freemium on Ve
 | Auth | NextAuth.js v5 beta (Google OAuth) |
 | Database | PostgreSQL (Neon serverless) via Drizzle ORM |
 | AI Text | Google Gemini 2.5 Flash (via Vercel AI SDK) |
-| AI Images | Google Imagen 4 Fast |
-| Animation | Framer Motion + GSAP + React Spring |
-| 3D/Shaders | React Three Fiber + Three.js |
+| AI Images | Stability AI Core (`src/lib/ai/stability.ts`) — **not** Imagen; that was the plan, never the build |
+| Animation | Framer Motion (the only one — GSAP and React Spring were removed 2026-09-16 with the mock playground) |
 | Payments | Stripe |
 | File Storage | Vercel Blob |
 
@@ -48,16 +47,36 @@ npx tsx scripts/seed-art-styles.ts --only=celtic --force
 - **Git Remote**: https://github.com/Benji-cpu/mystech-v5.git
 - **Shipping mode**: direct-to-production for everything — interactive sessions AND scheduled routines. Commit on `main`, push, Vercel auto-deploys. No PRs. See master `Code/CLAUDE.md` "Shipping Standard."
 
+## Legacy URLs
+
+Twelve routes from before the 2026-06 IA overhaul are **config redirects** in
+`next.config.ts`, not pages — `/home`, `/dashboard`, `/chronicle/today`, `/readings`,
+`/decks/living`, `/studio`, `/studio/styles[/:id]`, `/art-styles[...]`. Add a new one
+there, never as a `page.tsx` whose body is `redirect()`. Routes that must look
+something up before they know where to send you (`/daily?d=`, `/studio/cards/[cardId]`,
+`/chronicle`) stay as pages. Internal links point at the real route — never take a
+redirect hop from inside the app.
+
 ## Cron Jobs — GitHub-as-bus architecture
 
 The nightly routine runs in **two stages** with `git` as the message bus. This is a deliberate workaround for Anthropic's sandbox egress allowlist (issues #50146, #52982, #30112, #19087), which blocks `*.vercel.app` from inside Claude Code remote agents and is not user-configurable. By splitting data-gathering (Vercel, full network) from synthesis (Claude, github.com only), the allowlist becomes irrelevant.
 
-| Stage | Driver | Schedule (UTC) | Local (WITA) | Effect |
+| Stage | Driver | Schedule (UTC) | Actual (UTC) | Effect |
 |-------|--------|----------------|--------------|--------|
-| 1. Data gather | Vercel cron (`vercel.json`) | `15 19 * * *` | 03:15 | Drizzle queries → JSON → Resend email → commits `digests/YYYY-MM-DD.json` to `main` via GitHub Contents API |
-| 2. Synthesis | Claude Code remote trigger `trig_01TKZ5AcWYUjmXPffoRd1qaz` | `22 19 * * *` | 03:22 | Reads the JSON, writes `digests/YYYY-MM-DD.md`, commits to `main` |
+| 1. Data gather | Vercel cron (`vercel.json`) | `15 19 * * *` | ~20:10 | Drizzle queries → JSON → Resend email → commits `digests/<UTC date>.json` to `main` via GitHub Contents API |
+| 2. Synthesis | Claude Code remote trigger `trig_01TKZ5AcWYUjmXPffoRd1qaz` | `0 21 * * *` | 21:00 (05:00 WITA) | Reads the **newest** JSON on disk, writes `digests/<that date>.md`, commits to `main` |
 
-The 7-minute gap absorbs Vercel cron jitter (Hobby SLA is best-effort). Both stages are direct-to-main — no PRs anywhere. Route + agent file: `src/app/api/cron/nightly-routine/route.ts` + `.claude/agents/nightly-routine.md`.
+**Stage 2 must never build the filename from today's date.** Stage 1 stamps the UTC
+date; at 05:00 WITA the Bali date is already tomorrow, so the two names can never
+match. Hobby-tier cron is also best-effort *within the hour* — scheduled 19:15, it
+lands around 20:11 — which is why the gap is an hour and not seven minutes. Those two
+facts together produced 89 `(NO DATA)` stubs out of 93 digests before 2026-09-16.
+
+The JSON carries the feedback rows and the stuck-reading rows, not only counts, so the
+agent can say what each one is. Stuck readings are windowed to the last 7 days.
+
+Both stages are direct-to-main — no PRs anywhere. Route + agent file:
+`src/app/api/cron/nightly-routine/route.ts` + `.claude/agents/nightly-routine.md`.
 
 The route still gates on `Authorization: Bearer ${CRON_SECRET}`. Vercel cron sets that header automatically; manual invocations need `-H "Authorization: Bearer $CRON_SECRET"`. The `?commit=true` query enables the GitHub commit step (gated additionally on `GITHUB_TOKEN` env being set — the route gracefully no-ops without it).
 
@@ -67,7 +86,7 @@ The remote trigger is editable from this CLI — `claude.ai/code/scheduled` is *
 
 - **Owner**: `b.hemsonstruthers@gmail.com` (account `22cd2bd1-ef82-4a04-b0c1-5c5eaa1123ba`)
 - **Trigger ID**: `trig_01TKZ5AcWYUjmXPffoRd1qaz` ("MysTech — daily nightly-routine")
-- **Cron**: `22 19 * * *` UTC = 03:22 WITA
+- **Cron**: `0 21 * * *` UTC = 05:00 WITA
 - **Environment**: `env_013bqn65fNb8N1mWyLSMV78w` (anthropic_cloud default)
 
 Inspect / edit / fire from any session via the `schedule` skill + `RemoteTrigger` tool:
@@ -92,15 +111,17 @@ Trigger prompt body should stay a thin shim: "read `.claude/agents/nightly-routi
 
 Standardised cross-project feedback collection. Schema: `feedback` table in `src/lib/db/schema.ts`.
 
-- **Status enum**: `new | reviewed | resolved | dismissed` (aligned with Ubudian template)
+- **Status enum**: `new | reviewed | actioned | dismissed`. Legacy rows may still carry `resolved`; the admin renders it with the same colour.
 - **User-facing**: `FeedbackFab` (marketing/shared layouts, Dialog) and `FeedbackProvider` + `FeedbackSheet` (immersive shell, Sheet with html-to-image screenshot capture)
 - **API**:
-  - `POST /api/feedback` — public, rate-limited 50/h per signed-in user, screenshots → Vercel Blob
+  - `POST /api/feedback` — public, rate-limited **5/h** per signed-in user (admin/tester bypass — MysTech keeps power users in the `user.role` column, not an `ADMIN_EMAILS` env var), screenshots → Vercel Blob. A hidden `website` honeypot field is answered 200 and stored nowhere.
   - `GET /api/admin/feedback` — tester+admin gated, paginated, filterable by status
   - `PATCH /api/admin/feedback/[id]` — admin only, updates status + adminNotes
   - `DELETE /api/admin/feedback/[id]` — admin only
 - **Admin UI**: `/admin/feedback` (table + filter + detail dialog with screenshot, status actions, admin notes)
-- **Digest**: included in nightly-routine cron (counts by status + new-in-24h)
+- **Auto-captured, no opt-in**: page URL, title, route params, viewport, user agent, a screenshot of the page, the last ~80 activity events, and a **domain snapshot** — page-specific state contributed by `setDomainSnapshot()` (`src/lib/feedback/domain-snapshot.ts`). The deck page contributes deck id + per-status card counts; the reading flow contributes phase, spread, deck ids and cards revealed. Add a call anywhere a report would otherwise be unanswerable.
+- **Digest**: included in nightly-routine cron (counts by status, new-in-24h, and the `new` rows themselves)
+- **Divergences from the cross-project standard, deliberate**: the table is `feedback`, not `app_feedback`, and the admin lives at `/admin/feedback`, not `/admin/app-feedback`. Renaming either buys nothing and breaks a bookmark.
 
 ---
 
@@ -119,7 +140,7 @@ Standardised cross-project feedback collection. Schema: `feedback` table in `src
 - `AnimatePresence mode="wait"` between phases is an anti-pattern — refactor to zones
 - `AnimatePresence` is only for elements that truly enter/exit (modals, toasts, overlays)
 - See `.claude/rules/flow-patterns.md` for full details and code patterns
-- Reference implementation: `src/app/mock/approved/ceremony/page.tsx`
+- Reference implementation: `src/components/readings/reading-flow.tsx` (the mock playground it used to point at was deleted 2026-09-16)
 
 ### Immersive UI
 - Next.js routing is the backbone — real URLs, deep links, SSR all work normally
@@ -225,12 +246,12 @@ This is non-negotiable — never claim a UI change is done without visual verifi
 
 **Required (Database):** `DATABASE_URL`
 **Required (Auth):** `AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`
-**Required (AI):** `GOOGLE_GENERATIVE_AI_API_KEY`
+**Required (AI):** `GOOGLE_GENERATIVE_AI_API_KEY` (Gemini, all text), `STABILITY_AI_API_KEY` (Stability AI Core, all card art — a zero balance returns `402 payment_required` and every card fails)
 **Required (Stripe):** `STRIPE_SECRET_KEY`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `STRIPE_PRO_PRICE_ID`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PORTAL_CONFIG_ID`
 **Required (Storage):** `BLOB_READ_WRITE_TOKEN`
 **Required (Cron):** `CRON_SECRET` (also set the same value as a GitHub repo secret), `GITHUB_TOKEN` (fine-grained PAT scoped to `Benji-cpu/mystech-v5` with `Contents: read/write` — used by `/api/cron/nightly-routine?commit=true` to write `digests/YYYY-MM-DD.json` via the GitHub Contents API)
 **Required (Email):** `RESEND_API_KEY`, `ADMIN_EMAIL` (digest destination)
-**Optional:** `NEXT_PUBLIC_APP_URL`, `EMAIL_FROM`
+**Optional:** `NEXT_PUBLIC_APP_URL`, `EMAIL_FROM`, `GOOGLE_CLOUD_TTS_API_KEY` (reading read-aloud; billing is off on that Cloud project, so the route 403s and the client stops asking after the first failure), `ELEVENLABS_API_KEY`, `VERCEL_TOKEN` (deployment-event ingest in the nightly route)
 
 ---
 
@@ -251,9 +272,9 @@ This is non-negotiable — never claim a UI change is done without visual verifi
 - `/component-patterns` — Component structure, glass morphism, design system
 
 ### Rules (auto-loaded by file path)
-- `.claude/rules/animation.md` — Animation rules (transitions/, readings/, lab/)
+- `.claude/rules/animation.md` — Animation rules (readings/, chronicle/)
 - `.claude/rules/components.md` — Component conventions (all components)
-- `.claude/rules/flow-patterns.md` — Persistent shell pattern details (readings/, chronicle/, guide/, mock/)
+- `.claude/rules/flow-patterns.md` — Persistent shell pattern details (readings/, chronicle/, guide/)
 
 ### MCP Servers
 
@@ -266,4 +287,3 @@ This is non-negotiable — never claim a UI change is done without visual verifi
 ### Agents (parallel work delegation)
 - `animation-specialist` — Framer Motion animations, card reveals, visual effects
 - `ui-builder` — React components, pages, layouts
-- `full-app-mocker` — Full-app UI mock prototypes under `/app/mock/full/`

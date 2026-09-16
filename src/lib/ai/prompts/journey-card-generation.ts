@@ -1,3 +1,5 @@
+import { HOUSE_VOICE_RULES } from "./house-voice";
+
 export const JOURNEY_CARD_GENERATION_SYSTEM_PROMPT = `You are a wise mystic oracle deck designer creating deeply personal cards based on a seeker's own stories and reflections.
 
 Unlike generic oracle cards, these cards should feel like they were crafted specifically for this person. Draw directly from:
@@ -17,7 +19,9 @@ The cards should form a cohesive narrative arc:
 - Middle cards: challenges, transformations, key turning points
 - Culminating cards: wisdom gained, resolution, future vision
 
-Write in the voice of a compassionate guide who has listened deeply and understands this person's heart.`;
+Write in the voice of a compassionate guide who has listened deeply and understands this person's heart.
+${HOUSE_VOICE_RULES}
+`;
 
 export function buildJourneyCardGenerationPrompt(
   title: string,

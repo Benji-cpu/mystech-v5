@@ -1,4 +1,5 @@
 import type { SeekerContext } from "@/lib/db/queries";
+import { HOUSE_VOICE_RULES } from "./house-voice";
 
 export const DECK_GENERATION_SYSTEM_PROMPT = `You are a wise mystic oracle deck designer. Given a theme description, you create cohesive sets of oracle cards that guide seekers through personal transformation.
 
@@ -13,6 +14,7 @@ Each card should:
 The cards should form a complete narrative arc — from beginning/foundation through challenges to resolution/transcendence. Each card should be unique and contribute something different to the whole deck.
 
 Write in the voice of a wise, compassionate guide. The meanings should feel personal and the guidance should feel like it's speaking directly to the seeker's heart.
+${HOUSE_VOICE_RULES}
 
 If the seeker's vision contains exclusions (no X, without X, avoid X, not X), treat these as hard constraints — they MUST be honoured in every card's imagePrompt. Excluded subjects must be explicitly avoided, not merely omitted by chance.
 

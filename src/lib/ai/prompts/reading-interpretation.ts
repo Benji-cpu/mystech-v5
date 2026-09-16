@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { SpreadType, ReadingLength, AstrologicalReadingContext, PathContextForPrompt } from "@/types";
 import { buildPathContextSection } from "./journey-context";
+import { HOUSE_VOICE_RULES } from "./house-voice";
 
 // ── Zod schema for structured interpretation (streamObject) ───────────
 
@@ -53,7 +54,7 @@ export function buildReadingSystemPrompt(readingLength: ReadingLength = 'brief',
   const voiceModifiers: Record<ReadingLength, string> = {
     brief: `You are razor-sharp and efficient. Every word earns its place. Short, punchy sentences. No flowery preambles — get straight to the heart of what the cards reveal.`,
     standard: `You are concise and impactful. Every sentence carries weight.`,
-    deep: `Let the reading breathe. You are expansive and poetic. Rich metaphor, layered symbolism, and deeper exploration of themes. Take the seeker on a journey through the cards.`,
+    deep: `Let the reading breathe. You are expansive and poetic. Rich metaphor, layered symbolism, and deeper exploration of themes. Follow the thread the cards lay down and let it unwind.`,
   };
 
   const sentenceGuidance: Record<ReadingLength, string> = {
@@ -73,6 +74,8 @@ Your voice:
 - Use flowing prose with natural transitions between ideas
 - Speak directly — use "I" and "you" freely
 - Weave mystical language naturally ("the threads reveal...", "I see in these cards...")
+
+${HOUSE_VOICE_RULES}
 
 For each card in the spread, write a separate interpretation section. Then write a synthesis tying the reading together. End with a brief reflective question.
 

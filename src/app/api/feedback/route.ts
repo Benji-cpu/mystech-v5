@@ -6,6 +6,10 @@ import { getCurrentUser, isTesterOrAdmin } from "@/lib/auth/helpers";
 import { put } from "@vercel/blob";
 import { createId } from "@paralleldrive/cuid2";
 import { eq, and, gte, sql } from "drizzle-orm";
+import { createHash } from "node:crypto";
+
+/** Anonymous submit times by IP hash. Per-instance; see the guard below. */
+const anonHits = new Map<string, number[]>();
 
 const activityEventSchema = z.object({
   t: z.number(),
@@ -64,6 +68,30 @@ export async function POST(request: NextRequest) {
   // teaches whoever wrote it to stop filling the field.
   if (website && website.trim().length > 0) {
     return NextResponse.json({ success: true, data: { id: createId() } });
+  }
+
+  // Anonymous submissions (the FAB also renders on the marketing pages) have
+  // no user row to count against, so they are capped in memory on a hash of
+  // the caller's IP. Per-instance and therefore leaky on serverless, but it
+  // costs nothing, stores no address, and is the difference between "one
+  // script can write the table" and "one script per warm instance can write
+  // five rows an hour."
+  if (!user?.id) {
+    const ip =
+      request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+      request.headers.get("x-real-ip") ??
+      "unknown";
+    const key = createHash("sha256").update(ip).digest("hex").slice(0, 16);
+    const now = Date.now();
+    const hits = (anonHits.get(key) ?? []).filter((t) => now - t < 60 * 60 * 1000);
+    if (hits.length >= 5) {
+      return NextResponse.json({ error: "Too many submissions. Try again later." }, { status: 429 });
+    }
+    hits.push(now);
+    anonHits.set(key, hits);
+    if (anonHits.size > 500) {
+      for (const [k, v] of anonHits) if (v.every((t) => now - t >= 60 * 60 * 1000)) anonHits.delete(k);
+    }
   }
 
   // 5/hour for ordinary users — the cross-project standard. Power users
