@@ -12,7 +12,7 @@ import { eq } from "drizzle-orm";
 import { put } from "@vercel/blob";
 import { generateStabilityImage } from "@/lib/ai/stability";
 import {
-  ORACLE_CARD_BASE_PROMPT,
+  buildCardImagePrompt,
   ORACLE_CARD_NEGATIVE_PROMPT,
 } from "@/lib/ai/prompts/image-base-prompt";
 
@@ -45,14 +45,16 @@ export async function generateCardBackForDeck(
   }
 
   const themeBit = deck.theme ? `themed around ${deck.theme}` : "";
-  const prompt = [
-    ORACLE_CARD_BASE_PROMPT,
-    "card-back design, fully symmetrical mandala or knotwork pattern with central emblem, no human figures, no text, no card-face composition — meant to be printed on the reverse of a deck",
-    themeBit,
+  const prompt = buildCardImagePrompt(
+    [
+      "Card-back design, fully symmetrical mandala or knotwork pattern with central emblem, no human figures, no text, no card-face composition — meant to be printed on the reverse of a deck",
+      themeBit,
+    ]
+      .filter(Boolean)
+      .join(", "),
     stylePrompt,
-  ]
-    .filter(Boolean)
-    .join(", ");
+    "Uninhabited, no people, flat symmetrical pattern, vertical 2:3 format"
+  );
 
   const negativePrompt = [
     ORACLE_CARD_NEGATIVE_PROMPT,

@@ -37,7 +37,7 @@ import { artStyles } from "../src/lib/db/schema";
 import { ART_STYLE_PRESETS } from "../src/lib/constants";
 import { generateStabilityImage } from "../src/lib/ai/stability";
 import {
-  ORACLE_CARD_BASE_PROMPT,
+  buildCardImagePrompt,
   ORACLE_CARD_NEGATIVE_PROMPT,
 } from "../src/lib/ai/prompts/image-base-prompt";
 
@@ -83,11 +83,9 @@ function chunk<T>(arr: T[], size: number): T[][] {
 type Preset = (typeof ART_STYLE_PRESETS)[number];
 
 async function generateSwatch(style: Preset, index: number): Promise<string> {
-  const prompt = [
-    ORACLE_CARD_BASE_PROMPT,
-    SWATCH_SUBJECTS[index],
-    style.stylePrompt,
-  ].join(", ");
+  // Same assembly as a real card — a swatch that is built differently from the
+  // thing it advertises stops predicting what the user will get.
+  const prompt = buildCardImagePrompt(SWATCH_SUBJECTS[index], style.stylePrompt);
 
   const png = await generateStabilityImage({
     prompt,

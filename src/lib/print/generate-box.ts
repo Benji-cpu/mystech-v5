@@ -10,7 +10,7 @@ import { eq } from "drizzle-orm";
 import { put } from "@vercel/blob";
 import { generateStabilityImage } from "@/lib/ai/stability";
 import {
-  ORACLE_CARD_BASE_PROMPT,
+  buildCardImagePrompt,
   ORACLE_CARD_NEGATIVE_PROMPT,
 } from "@/lib/ai/prompts/image-base-prompt";
 
@@ -43,14 +43,16 @@ export async function generateBoxArtForDeck(
   }
 
   const themeBit = deck.theme ? `themed around ${deck.theme}` : "";
-  const prompt = [
-    ORACLE_CARD_BASE_PROMPT,
-    `tuck-box cover art for the printed oracle deck "${deck.title}", iconic single-image composition that reads as a book cover, ornamental frame with small space at top reserved for the deck title text added in post`,
-    themeBit,
+  const prompt = buildCardImagePrompt(
+    [
+      `Tuck-box cover art for the printed oracle deck "${deck.title}", iconic single-image composition that reads as a book cover, ornamental frame with small space at top reserved for the deck title text added in post`,
+      themeBit,
+    ]
+      .filter(Boolean)
+      .join(", "),
     stylePrompt,
-  ]
-    .filter(Boolean)
-    .join(", ");
+    "Uninhabited scene with no people in it, symbolic still life"
+  );
 
   const negativePrompt = [
     ORACLE_CARD_NEGATIVE_PROMPT,

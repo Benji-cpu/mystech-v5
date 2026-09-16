@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm";
 import { put } from "@vercel/blob";
 import sharp from "sharp";
 import { generateStabilityImage, type StabilityOptions } from "./stability";
-import { ORACLE_CARD_BASE_PROMPT, ORACLE_CARD_NEGATIVE_PROMPT } from "./prompts/image-base-prompt";
+import { buildCardImagePrompt, ORACLE_CARD_NEGATIVE_PROMPT } from "./prompts/image-base-prompt";
 import { logGeneration } from "./logging";
 
 async function generateBlurDataUrl(imageBuffer: Buffer): Promise<string | null> {
@@ -110,9 +110,7 @@ export async function generateCardImage(
     .set({ imageStatus: "generating", updatedAt: new Date() })
     .where(eq(cards.id, cardId));
 
-  const finalPrompt = [ORACLE_CARD_BASE_PROMPT, imagePrompt, artStylePrompt]
-    .filter(s => s.length > 0)
-    .join(', ');
+  const finalPrompt = buildCardImagePrompt(imagePrompt, artStylePrompt);
 
   // Build negative prompt — inject vision exclusions as a safety net
   const visionNegatives = visionTheme ? extractNegativeTerms(visionTheme) : "";

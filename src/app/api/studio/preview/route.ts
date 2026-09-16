@@ -7,7 +7,7 @@ import { eq } from "drizzle-orm";
 import { put } from "@vercel/blob";
 import { getCurrentUser } from "@/lib/auth/helpers";
 import { generateStabilityImage } from "@/lib/ai/stability";
-import { ORACLE_CARD_BASE_PROMPT, ORACLE_CARD_NEGATIVE_PROMPT } from "@/lib/ai/prompts/image-base-prompt";
+import { buildCardImagePrompt, ORACLE_CARD_NEGATIVE_PROMPT } from "@/lib/ai/prompts/image-base-prompt";
 import type { ApiResponse } from "@/types";
 
 const previewBodySchema = z.object({
@@ -73,9 +73,8 @@ export async function POST(request: Request) {
     }
 
     // Generate a low-res preview image
-    const prompt = [ORACLE_CARD_BASE_PROMPT, PREVIEW_SUBJECT, stylePrompt]
-      .filter((s) => s.length > 0)
-      .join(", ");
+    // Same assembly as a real card, or the swatch stops predicting the deck.
+    const prompt = buildCardImagePrompt(PREVIEW_SUBJECT, stylePrompt);
 
     const negativePrompt = [ORACLE_CARD_NEGATIVE_PROMPT, parameters?.negativePrompt]
       .filter(Boolean)

@@ -32,9 +32,15 @@ import sharp from "sharp";
 import { generateStabilityImage } from "../src/lib/ai/stability";
 import { ART_STYLE_PRESETS } from "../src/lib/constants";
 import {
-  ORACLE_CARD_BASE_PROMPT,
+  buildCardImagePrompt,
+  ORACLE_CARD_FRAMING,
   ORACLE_CARD_NEGATIVE_PROMPT,
+  stripStyleAttractors,
 } from "../src/lib/ai/prompts/image-base-prompt";
+
+/** What the base prompt said before v2 shipped, kept so `baseline` still means baseline. */
+const LEGACY_BASE_PROMPT =
+  "Symbolic illustration for an oracle card, vertical 2:3 format, one centered subject, uninhabited scene";
 
 // ── Fixed inputs ─────────────────────────────────────────────────────────────
 
@@ -61,9 +67,9 @@ const SUBJECTS: Array<{ slug: string; imagePrompt: string; styleId: string }> = 
 type Variant = (subject: string, stylePrompt: string) => { prompt: string; negativePrompt: string };
 
 const VARIANTS: Record<string, Variant> = {
-  /** Exactly what generateCardImage() builds today. */
+  /** What generateCardImage() built BEFORE v2 shipped. The number to beat. */
   baseline: (subject, stylePrompt) => ({
-    prompt: [ORACLE_CARD_BASE_PROMPT, subject, stylePrompt].join(", "),
+    prompt: [LEGACY_BASE_PROMPT, subject, stylePrompt].join(", "),
     negativePrompt: ORACLE_CARD_NEGATIVE_PROMPT,
   }),
   /**
@@ -72,26 +78,19 @@ const VARIANTS: Record<string, Variant> = {
    * long style prompt, so the style (and its figurative canon) wins.
    */
   v1: (subject, stylePrompt) => ({
-    prompt: [`${subject}.`, stylePrompt, "Uninhabited scene with no people in it, symbolic still life, vertical 2:3 format, one centered subject"].join(" "),
+    prompt: [`${subject}.`, stylePrompt, ORACLE_CARD_FRAMING].join(" "),
     negativePrompt: ORACLE_CARD_NEGATIVE_PROMPT,
   }),
-  /** v2 — v1 plus the style prompt with its "oracle card"/artist-name attractors stripped. */
+  /**
+   * v2 — v1 plus the style prompt with its "oracle card"/artist-name attractors
+   * stripped. 2 of 36, and SHIPPED: this calls the exact function production
+   * calls, so `--variant=v2` now measures the live assembly, not a copy of it.
+   */
   v2: (subject, stylePrompt) => ({
-    prompt: [`${subject}.`, stripAttractors(stylePrompt), "Uninhabited scene with no people in it, symbolic still life, vertical 2:3 format, one centered subject"].join(" "),
+    prompt: buildCardImagePrompt(subject, stylePrompt),
     negativePrompt: ORACLE_CARD_NEGATIVE_PROMPT,
   }),
 };
-
-/** Remove the phrases that pull the model toward its "mystical woman on a card" prior. */
-export function stripAttractors(stylePrompt: string): string {
-  return stylePrompt
-    .replace(/\b(oracle|tarot|divination) card\b/gi, "illustration")
-    .replace(/\bin the (style|tradition) of [A-Z][\w.'-]*(?: [A-Z][\w.'-]*)*/g, "")
-    .replace(/\bclassical Rider-Waite inspired composition,?/gi, "")
-    .replace(/\s{2,}/g, " ")
-    .replace(/\s,/g, ",")
-    .trim();
-}
 
 // ── Run ──────────────────────────────────────────────────────────────────────
 
