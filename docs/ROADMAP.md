@@ -1,90 +1,60 @@
-# MysTech v5 - Feature Roadmap
+# MysTech v5 — what is built
 
-## Status Key
-- ⬜ Not started
-- 📋 Spec complete
-- 🔨 Building
-- ✔️ Complete
+This file said every feature from 06 onward was unbuilt while all of them were live in
+production. It was last touched in February 2026 and had become actively misleading — a new
+session reading it would have started building things that already shipped. Rewritten
+2026-09-16 against the running app.
 
----
+The per-feature specs in `docs/features/` are the original plans. They are history: several
+were superseded during the build and the code is the authority now.
 
-## Phase 0: Foundation
+## Shipped and live
 
-| # | Feature | Status | Spec | Dependencies |
-|---|---------|--------|------|--------------|
-| 00 | Project scaffolding (layout, navigation, empty pages) | ✔️ | [`00-scaffolding.md`](features/00-scaffolding.md) | None |
-| 01 | Authentication (Google OAuth) | ✔️ | [`01-auth.md`](features/01-auth.md) | 00 |
-| 02 | Database foundation (Drizzle + Neon setup) | ✔️ | [`02-database-foundation.md`](features/02-database-foundation.md) | None |
-| 03 | TypeScript types & shared utilities | ✔️ | [`03-types-utilities.md`](features/03-types-utilities.md) | 02 |
-| 04 | App layout & navigation | ✔️ | [`04-app-layout.md`](features/04-app-layout.md) | 00 |
-| 05 | Landing page & auth pages | ✔️ | [`05-landing-auth-pages.md`](features/05-landing-auth-pages.md) | 04, 01 |
+| # | Feature | Where it lives |
+|---|---|---|
+| 00–05 | Scaffolding, Google OAuth, Drizzle + Neon, types, app layout, landing | `src/app/(marketing)`, `src/auth.config.ts` |
+| 06 | Art styles — 45 presets, custom styles, sharing | `/decks/styles`, `ART_STYLE_PRESETS` in `src/lib/constants.ts` |
+| 07+08+10 | Deck creation, AI card text, AI card art | `/decks/new/simple`, `src/lib/ai/prompts/deck-generation.ts`, `src/lib/ai/stability.ts` |
+| 09 | Deck creation, conversation mode | `/decks/new/journey` |
+| 11 | Card management — edit, refine, reorder, per-card art retry | `/decks/[deckId]/cards/[cardId]` |
+| 13 | Reading flow — single, three-card, five-card, Celtic cross | `src/components/readings/reading-flow.tsx` |
+| 14 | Streaming AI interpretation | `src/lib/ai/prompts/reading-interpretation.ts` |
+| 15 | Reading history and public sharing | `/story`, `/shared/reading/[token]` |
+| 17 | Stripe subscriptions and portal | `/settings/billing`, `src/app/api/webhooks/stripe` |
+| 18 | Usage tracking and limit enforcement | `src/lib/usage/` |
+| 19 | Settings and profile | `/settings`, `/profile` |
+| 20 | Polish, transitions, mobile | throughout |
 
----
+## Shipped, and not in the original plan
 
-## Phase 1a: Core Deck Features
+| Feature | Where |
+|---|---|
+| **Chronicle** — the daily practice with Lyra; a conversation becomes a card | `/today`, `src/components/chronicle/` |
+| **Paths** — guided multi-step practice sequences | `/paths` |
+| **Astrology context** — natal chart woven into readings | `src/lib/astrology/` |
+| **Voice** — speech-to-text input and read-aloud interpretation | `src/lib/voice/`, `src/hooks/use-text-to-speech.ts` |
+| **Print orders** — a physical deck, fulfilled by hand from a manifest | `/orders`, `/decks/[deckId]/print` |
+| **Daily card delivery** — an emailed card on a schedule you set | `/settings/daily-card`, `api/cron/daily-card` |
+| **Admin** — feedback queue, prompt overrides, users, deployment events | `/admin` |
+| **Nightly digest** — health data committed to `digests/` and synthesised by an agent | `api/cron/nightly-routine`, `.claude/agents/nightly-routine.md` |
 
-| # | Feature | Status | Spec | Dependencies |
-|---|---------|--------|------|--------------|
-| 06 | Art styles system (presets + custom + sharing) | ✔️ | [`06-art-styles.md`](features/06-art-styles.md) | 02, 01 |
-| 07+08+10 | Simple deck creation (CRUD + AI text gen + AI image gen) | 🔨 | [`07-08-10-simple-deck-creation-plan.md`](features/07-08-10-simple-deck-creation-plan.md) | 06, 02, 01 |
+## Planned, never built
 
-> **Note:** Features 07, 08, and 10 are combined into a single build. Image generation uses Stability AI (not Google Imagen). See the combined plan spec for details.
+| # | Feature | Status |
+|---|---|---|
+| 12 | Person cards with photo upload | Not built. No upload path, no schema for it. |
+| 16 | Deck collaboration — invite, roles, activity log | Not built as specified. What exists is one-way: a public deck can be **adopted** by another user (`deck_adoption`), and art styles can be shared by token. No roles, no invitations, no activity log. |
 
----
+## What is actually open
 
-## Phase 1b: Advanced Deck Features
+Not features — these are the things standing between the app and being good. See
+`docs/audit-2026-09.md` for the evidence behind each.
 
-| # | Feature | Status | Spec | Dependencies |
-|---|---------|--------|------|--------------|
-| 09 | Deck creation — Journey mode (conversation) | ⬜ | [`09-deck-creation-journey.md`](features/09-deck-creation-journey.md) | 07+08+10 |
-| 11 | Ad-hoc card management (add/edit/delete/reorder) | ⬜ | [`11-card-management.md`](features/11-card-management.md) | 07+08+10 |
-| 12 | Person cards with photo upload | ⬜ | [`12-person-cards.md`](features/12-person-cards.md) | 02, 01 |
-
----
-
-## Phase 2: Readings
-
-| # | Feature | Status | Spec | Dependencies |
-|---|---------|--------|------|--------------|
-| 13 | Reading flow (spreads, card draw, animation) | ⬜ | [`13-reading-flow.md`](features/13-reading-flow.md) | 07+08+10, 12 |
-| 14 | AI reading interpretation (streaming) | ⬜ | [`14-reading-ai.md`](features/14-reading-ai.md) | 13 |
-| 15 | Reading history & sharing | ⬜ | [`15-reading-history-sharing.md`](features/15-reading-history-sharing.md) | 14 |
-
----
-
-## Phase 3: Social & Collaboration
-
-| # | Feature | Status | Spec | Dependencies |
-|---|---------|--------|------|--------------|
-| 16 | Deck collaboration (invite, roles, activity log) | ⬜ | [`16-deck-collaboration.md`](features/16-deck-collaboration.md) | 07+08+10, 01 |
-
----
-
-## Phase 4: Billing & Limits
-
-| # | Feature | Status | Spec | Dependencies |
-|---|---------|--------|------|--------------|
-| 17 | Stripe billing (subscriptions, portal) | ⬜ | [`17-stripe-billing.md`](features/17-stripe-billing.md) | 01, 02 |
-| 18 | Usage tracking & limit enforcement | ⬜ | [`18-usage-limits.md`](features/18-usage-limits.md) | 17 |
-| 19 | Settings page (profile, account) | ⬜ | [`19-settings.md`](features/19-settings.md) | 01 |
-
----
-
-## Phase 5: Polish
-
-| # | Feature | Status | Spec | Dependencies |
-|---|---------|--------|------|--------------|
-| 20 | Polish & animations (flip, draw, mobile, loading) | ⬜ | [`20-polish-animations.md`](features/20-polish-animations.md) | All |
-
----
-
-## Notes
-
-- Features should be built in dependency order
-- Each feature gets spec'd before building
-- Database schema grows incrementally — each feature adds only its own tables
-- Commit after each complete feature
-- Update status in this file as you progress
-- See `MASTER_PLAN.md` for full architectural decisions
-- **Image generation uses Stability AI** (changed from Google Imagen during planning)
-- **Vercel Blob** used for image storage
+1. **Card art draws a robed human figure for abstract subjects**, whatever the card is
+   about. 14 of 36 baseline samples. The single biggest quality gap, because the deck is
+   the product.
+2. **The Stability balance is zero**, so no new deck gets any art at all.
+3. **No starter deck**, so a new user's first day depends on them finishing a conversation
+   with Lyra before anything exists to draw from.
+4. **Print fulfilment is manual** — fine at this volume, but the buyer-facing state has to
+   stay honest about it.

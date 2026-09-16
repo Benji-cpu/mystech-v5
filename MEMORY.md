@@ -2,15 +2,13 @@
 
 Learned-experience notes that don't belong in CLAUDE.md. Keep entries concise (1–2 lines each); consolidate when this file approaches 200 lines.
 
-## Pending one-off migrations
-
-- After deploying the feedback status enum alignment, run once on prod DB: `UPDATE feedback SET status = 'dismissed' WHERE status = 'archived';` — there's no DB-level enum constraint, so existing `archived` rows will display as fallback styling until converted.
-
 ## Feedback module
 
+- The `archived` → `dismissed` one-off migration is DONE; prod has no `archived` rows (checked 2026-09-16).
 - Two intentional entry points: `FeedbackFab` (marketing/shared, no screenshot) vs `FeedbackProvider` + `FeedbackSheet` (immersive shell, html-to-image screenshot). Don't consolidate — the surfaces have different UX needs.
 - `feedback.type` field (bug/suggestion/general) is on the standardisation roadmap but not yet implemented; admin UI currently has no type column. Add when ready by extending schema, both input forms, the Zod schema in `POST /api/feedback`, and the admin table.
 - Screenshot capture uses `html-to-image` and excludes `nav`, `[role=dialog]`, and Vaul overlays — see `feedback-provider.tsx`.
+- Anonymous submissions are capped in memory per IP hash, not in the DB — per-instance and leaky on serverless. Signed-in users are capped 5/h in SQL.
 
 ## Daily Card (Phase 1) + Print-on-Demand (Phase 2)
 
@@ -23,28 +21,41 @@ Learned-experience notes that don't belong in CLAUDE.md. Keep entries concise (1
 
 ## Cron / scheduled work
 
-- Nightly digest runs via GitHub Actions, not Vercel Cron. Hobby plan caps Vercel Cron at 2/day and doesn't honour timezones. GH Actions is free, supports manual `workflow_dispatch` for testing.
-- Repo secret `CRON_SECRET` must match the Vercel project env var of the same name. Both must be set or the workflow fails fast.
-- Cron schedules are staggered ±5min across projects (Ubudian 03:17, MysTech 03:22) so digest emails arrive separately.
+- The nightly digest is **Vercel Cron + a Claude remote agent**, not GitHub Actions — see CLAUDE.md. GitHub Actions is only the hourly Daily Card tick, which Vercel Hobby cannot schedule.
+- Hobby-tier Vercel cron is best-effort **within the hour**: `15 19 * * *` has been firing at ~20:11 UTC every night. Never design a two-stage job around a gap smaller than an hour.
+- Repo secret `CRON_SECRET` must match the Vercel project env var of the same name.
+- The digest JSON is stamped with the **UTC** date. Anything reading it from Asia/Makassar after 08:00 WITA is a day out. Read the newest file; do not build the name from a clock.
 
 ## Testing
 
-- Playwright test-login: `GET /api/auth/test-login` (production-guarded). Use this for Playwright MCP verification — Google OAuth callbacks are only registered for `localhost:3000`.
+- Playwright test-login is **POST** `/api/auth/test-login` (production-guarded). An optional `{email, role}` body, `@example.com` only, mints a genuinely fresh user — the default id `test-user-e2e` owns decks and a Pro subscription, so it cannot show you a stranger's first screen.
+- `npm run build` followed by `npm run dev` in the same checkout wedges Turbopack: `/api/feedback` sat at "Compiling …" forever and every POST hung with no error. `rm -rf .next` fixed it. Never leave a production build behind before a dev walk.
+- The deck page and the Chronicle poll on a timer, so Playwright's `networkidle` never settles on them. Use `domcontentloaded` plus an explicit wait.
 
 ## Known gaps to revisit
 
 - No automatic spam dedup on feedback. Identical message from same user can be submitted repeatedly.
 - `vercel.json` exists and may ONLY contain daily-or-slower crons on the Hobby plan; sub-daily jobs go in GitHub Actions. If Pro is adopted later they can move back.
-- 12 pre-existing Vitest failures (4 files: ai/reading, ai/generate-deck, readings route, reading-flow-state) + matching tsc errors in test files — mock/type drift on main, predates the 2026-06 IA overhaul. `npm run build` unaffected.
+- The 12 pre-existing Vitest failures are FIXED (2026-09-16); 40 files / 391 tests green, `tsc --noEmit` clean. `npm run lint` still reports 28 errors, all React Compiler rules ("setState synchronously within an effect"), untouched.
 - **Vercel Blob store RESOLVED** — was suspended 2026-06-12; verified 2026-08-03 serving reads AND accepting writes (45 style swatches uploaded). Re-check with an actual `put` before ever claiming otherwise.
 - Visual/red-team audit harness: `scripts/audit-walk.mts` (npx tsx, needs dev server on :3000) — records screenshots/video/trace to `.audit/<date>/`. Report pattern: `docs/audit/`. Test user `test-user-e2e` has an ACTIVE PRO subscription in the prod DB — don't use it to test free-plan gating.
+- **Stability AI balance is ZERO** (402 `payment_required`, 2026-09-16). Every card in every new deck fails; there is no fallback image. Check the balance before believing anything about art quality.
+- **Google Cloud TTS billing is off** on project 473497770902 — read-aloud 403s. The client stops asking after the first 5xx, so it degrades quietly rather than firing on every sentence.
 
-## Card image generation (UNRESOLVED)
+## Card image generation (UNRESOLVED, now measured)
 
-- **Cards still frequently render a robed human figure regardless of the card's own imagePrompt.** Prompts that read "a star seed in a nebula" / "a veiled galaxy" come back as the same woman. Fixed contributors so far: base prompt no longer says "portrait composition" / "divination card"; negative prompt now excludes humans; 8 style prompts had accidental figure language stripped; tarot-classic / byzantine / ukiyo-e carry a "Still life composition." prefix. None of it reliably solves the problem.
-- **Do not tune this with single images.** Generations are unseeded, so one sample proves nothing — several confident conclusions in the 2026-08-03 session (base prompt alone fixes it; "oracle card" inside style prompts is the attractor; `fantasy-art` preset is the cause; "No human figures are present" in the imagePrompt back-summons them) were each contradicted by the next draw. Build a seeded, N-sample-per-variant harness before the next attempt.
-- Styles anchored to figurative canons (Mucha, Hokusai) resist every prompt-side fix — the artist reference itself is the pull. Removing artist names is the untested lever.
+- The harness exists: `scripts/art-harness.ts`, 12 fixed subjects × 3 fixed seeds, contact sheet at `.art-harness/<variant>/SHEET.jpg`. **It is the only sanctioned way to judge a prompt change.** Numbers below are from it; full working in `docs/audit-2026-09.md`.
+- **Baseline: 14 of 36 images contain a human figure**, concentrated in 5 of the 12 subjects. The failure tracks how *concrete* the subject is, not the style: a door, a lantern, a compass, a fox, a bridge and a mirror all render correctly in the same styles that turn "a glowing seed in a nebula" and "a crown on a plinth" into a robed woman. Abstract subject → the model falls back to its own "oracle card" prior.
+- **v1 (subject first, framing last) is a real but partial improvement**: on the four worst subjects, 9 of 10 images had a figure at baseline, 6 of 10 under v1. Celestial went 0/3 → 3/3 correct. Mucha art-nouveau and Rider-Waite tarot did not move at all.
+- **v2 is written and unrun** — it strips "oracle card", "tarot card" and "in the style of <artist>" from the style prompt, which is the lever the remaining failures point at. It needs Stability credits.
+- The negative prompt already lists person/human/face/woman/silhouette and does not work. On Stability Core a strong positive prior beats the negative list; the lever is the positive prompt.
 - `deck-generation.ts` tells the LLM to "state excluded elements explicitly in the imagePrompt", which writes negations like "No human figures are present" into a positive diffusion prompt. Suspicious, unproven, worth testing properly.
+
+## Repo shape (2026-09-16 cleanup)
+
+- `src/app/mock` and `src/components/{lab,mock,transitions}` are GONE, and with them eleven dependencies including the whole three.js stack. Framer Motion is the only animation library left — do not reach for GSAP or React Spring, they are not installed.
+- Legacy URLs are config redirects in `next.config.ts`, never `page.tsx` files whose body is `redirect()`. Internal links point at the real route.
+- Root-level `*.png` is gitignored, so verification screenshots do not show as untracked — they also do not get committed, and 199 of them had accumulated on disk.
 
 ## Database (CRITICAL)
 
