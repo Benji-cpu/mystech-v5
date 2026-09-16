@@ -12,7 +12,7 @@
  */
 import { db } from "@/lib/db";
 import { dailyCardDeliveries, userProfiles, users } from "@/lib/db/schema";
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import {
   getUserChronicleDeck,
   getChronicleSettings,
@@ -27,6 +27,9 @@ export type SendResult =
   | { ok: true; status: "delivered"; cardId: string | null; deckId: string | null }
   | { ok: false; status: "skipped_already_sent" }
   | { ok: false; status: "skipped_no_deck" }
+  /** No deck, and the one-off invitation has already gone out. Stay quiet. */
+  | { ok: false; status: "skipped_no_deck_already_invited" }
+  | { ok: true; status: "invited"; cardId: null; deckId: null }
   | { ok: false; status: "skipped_no_card" }
   | { ok: false; status: "skipped_no_email" }
   | { ok: false; status: "error"; error: string };
@@ -85,7 +88,21 @@ export async function sendDailyCardForUser(args: {
     }
   } else {
     const deck = await pickDailyDeckForUser(args.userId, args.preferredDeckId);
-    if (!deck) return { ok: false, status: "skipped_no_deck" };
+    if (!deck) {
+      // The user switched the daily card ON and has nothing to draw from, which
+      // is every user until they finish a conversation with Lyra. Sending
+      // nothing meant the setting produced silence forever and looked broken.
+      // Send the invitation ONCE — a daily nag for a thing they have not done
+      // is worse than the silence was — then go quiet until a deck exists.
+      const alreadyInvited = await hasBeenInvitedToMakeADeck(args.userId);
+      if (alreadyInvited) return { ok: false, status: "skipped_no_deck_already_invited" };
+      return sendDeckInvitation({
+        userId: args.userId,
+        email: userRow.email,
+        name: userRow.displayName ?? userRow.name ?? null,
+        deliveryDate,
+      });
+    }
     featuredDeckId = deck.id;
     const card = await pickDailyCard(args.userId, deck.id, { random: args.random });
     if (card) {
@@ -137,5 +154,68 @@ export async function sendDailyCardForUser(args: {
       status: "error",
       error: err instanceof Error ? err.message : String(err),
     };
+  }
+}
+
+/**
+ * Has the "you have no deck" invitation already gone to this user? The delivery
+ * rows are the record: an invitation is the only delivery with no deck and no
+ * card against it.
+ */
+async function hasBeenInvitedToMakeADeck(userId: string): Promise<boolean> {
+  const [row] = await db
+    .select({ id: dailyCardDeliveries.id })
+    .from(dailyCardDeliveries)
+    .where(
+      and(
+        eq(dailyCardDeliveries.userId, userId),
+        isNull(dailyCardDeliveries.deckId),
+        isNull(dailyCardDeliveries.cardId)
+      )
+    )
+    .limit(1);
+  return Boolean(row);
+}
+
+/** One-off "make your first deck" email, recorded like any other delivery. */
+async function sendDeckInvitation(args: {
+  userId: string;
+  email: string;
+  name: string | null;
+  deliveryDate: string;
+}): Promise<SendResult> {
+  try {
+    let messageId: string | null = null;
+    try {
+      const result = await sendDailyCardEmail({
+        to: args.email,
+        name: args.name,
+        streakCount: 0,
+        hasChronicle: false,
+        card: null,
+        noDeck: true,
+        deepLinkPath: "/decks/new",
+      });
+      messageId = result?.id ?? null;
+    } catch (err) {
+      console.error("[daily-card] deck invitation failed:", err);
+    }
+
+    await db
+      .insert(dailyCardDeliveries)
+      .values({
+        userId: args.userId,
+        deliveryDate: args.deliveryDate,
+        cardId: null,
+        deckId: null,
+        readingId: null,
+        channel: "email",
+        emailMessageId: messageId,
+      })
+      .onConflictDoNothing();
+
+    return { ok: true, status: "invited", cardId: null, deckId: null };
+  } catch (err) {
+    return { ok: false, status: "error", error: err instanceof Error ? err.message : String(err) };
   }
 }

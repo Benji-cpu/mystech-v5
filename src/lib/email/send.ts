@@ -151,13 +151,16 @@ export async function sendDailyCardEmail(opts: BaseOptions & {
   streakCount: number;
   hasChronicle: boolean;
   card: { title: string; imageUrl: string | null } | null;
+  /** No deck to draw from — send the one-off invitation instead of nothing. */
+  noDeck?: boolean;
   deepLinkPath: string; // e.g. "/today"
 }): Promise<{ id: string } | null> {
   const resend = getResend();
   if (!resend) return null;
   const ctaUrl = `${APP_URL}${opts.deepLinkPath}`;
-  const subject =
-    opts.streakCount > 0
+  const subject = opts.noDeck
+    ? "Your daily card is on — you just need a deck"
+    : opts.streakCount > 0
       ? `Day ${opts.streakCount} and counting — your card awaits`
       : "Your card awaits";
   try {
@@ -167,6 +170,7 @@ export async function sendDailyCardEmail(opts: BaseOptions & {
         streakCount: opts.streakCount,
         hasChronicle: opts.hasChronicle,
         card: opts.card,
+        noDeck: opts.noDeck,
         ctaUrl,
         appUrl: APP_URL,
       }),

@@ -18,6 +18,13 @@ type Props = {
   hasChronicle: boolean;
   /** Yesterday's forged card (chronicle users) or a card from the user's decks. */
   card: { title: string; imageUrl: string | null } | null;
+  /**
+   * The user switched the daily card on but has no deck to draw from, so there
+   * is nothing to send. This is the one-off invitation that goes instead —
+   * without it the setting simply produces silence forever, which is how it
+   * behaved until 2026-09-16.
+   */
+  noDeck?: boolean;
   ctaUrl: string;
   appUrl: string;
 };
@@ -27,11 +34,14 @@ export function DailyCardEmail({
   streakCount,
   hasChronicle,
   card,
+  noDeck = false,
   ctaUrl,
   appUrl,
 }: Props) {
   const greeting = name ? `Good morning, ${name}` : "Good morning";
-  const invitation = hasChronicle
+  const invitation = noDeck
+    ? "You asked for a card each morning — but there is no deck to draw one from yet. Making your first one takes a few minutes: you tell Lyra what is going on, and the cards come out of that. Once it exists, the daily card starts on its own."
+    : hasChronicle
     ? streakCount > 0
       ? `You're on a ${streakCount}-day streak. Today's card is waiting to be forged.`
       : "Today's card is waiting to be forged from whatever the day holds."
@@ -41,7 +51,9 @@ export function DailyCardEmail({
     <Html>
       <Head />
       <Preview>
-        {streakCount > 0
+        {noDeck
+          ? "Your daily card is on — you just need a deck to draw from."
+          : streakCount > 0
           ? `Day ${streakCount} and counting — your card awaits.`
           : "Your card awaits."}
       </Preview>
@@ -50,7 +62,7 @@ export function DailyCardEmail({
           <Section style={brand}>
             <Text style={brandMark}>✦ MysTech</Text>
             <Text style={dateline}>
-              {streakCount > 0 ? `${streakCount}-day streak` : "Daily practice"}
+              {noDeck ? "One step to go" : streakCount > 0 ? `${streakCount}-day streak` : "Daily practice"}
             </Text>
           </Section>
 
@@ -76,7 +88,7 @@ export function DailyCardEmail({
 
           <Section style={ctaWrap}>
             <Link href={ctaUrl} style={cta}>
-              Begin today&rsquo;s ritual
+              {noDeck ? "Make your first deck" : "Begin today\u2019s ritual"}
             </Link>
           </Section>
 

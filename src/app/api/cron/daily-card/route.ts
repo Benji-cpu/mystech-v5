@@ -98,8 +98,10 @@ export async function GET(request: Request) {
 
   const counts: Record<SendResult["status"], number> = {
     delivered: 0,
+    invited: 0,
     skipped_already_sent: 0,
     skipped_no_deck: 0,
+    skipped_no_deck_already_invited: 0,
     skipped_no_card: 0,
     skipped_no_email: 0,
     error: 0,

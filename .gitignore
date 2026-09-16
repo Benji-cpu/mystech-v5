@@ -71,3 +71,6 @@ skills-lock.json
 
 # seeded card-art harness output (scripts/art-harness.ts)
 .art-harness/
+
+# ad-hoc scratch scripts
+.scratch-*
