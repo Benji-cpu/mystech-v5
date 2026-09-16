@@ -34,6 +34,7 @@ import { ART_STYLE_PRESETS } from "../src/lib/constants";
 import {
   buildCardImagePrompt,
   ORACLE_CARD_FRAMING,
+  stripSubjectNegations,
   ORACLE_CARD_NEGATIVE_PROMPT,
   stripStyleAttractors,
 } from "../src/lib/ai/prompts/image-base-prompt";
@@ -60,6 +61,31 @@ const SUBJECTS: Array<{ slug: string; imagePrompt: string; styleId: string }> = 
   { slug: "bridge-of-light", styleId: "watercolor-dream", imagePrompt: "A narrow bridge made of woven light spanning a chasm between two cliff edges, mist rising from below" },
   { slug: "fox-at-threshold", styleId: "woodcut-linocut", imagePrompt: "A fox sitting at the threshold of a dark forest path, looking back over its shoulder, moonlight on its fur" },
   { slug: "cracked-mirror-garden", styleId: "woodcut-linocut", imagePrompt: "A tall cracked mirror standing alone in an overgrown garden, the reflection showing the same garden in full bloom" },
+];
+
+/**
+ * REAL card prompts, copied verbatim from production cards, with their real
+ * styles. The synthetic set above was written by hand and is therefore clean;
+ * these are what the deck-generation LLM actually emits, and 17 of the 91 cards
+ * in production carry a trailing NEGATION like "No human figures are present."
+ * A diffusion model has no negation operator, so that clause reads as a request
+ * for the thing it forbids — and v2 moved the subject to the FRONT of the
+ * prompt, where the weight is highest. Measured with `--set=real`.
+ */
+const REAL_SUBJECTS: Array<{ slug: string; imagePrompt: string; styleId: string }> = [
+  { slug: "unfurling-seed", styleId: "tarot-classic", imagePrompt: "A single, vibrant green seed pushing through dark, fertile earth, reaching towards a soft, dawn light. Delicate roots are visible beneath the soil, grounding the seed. Golden sunlight gently illuminates the scene from above, without any human figures." },
+  { slug: "luminous-mirror", styleId: "tarot-classic", imagePrompt: "A polished, ornate hand mirror reflecting a shimmering full moon surrounded by a halo of stars. The mirror is framed by delicate, unfurling silver and gold filigree against a deep indigo cosmic backdrop. No human figures are present." },
+  { slug: "nectar-bloom", styleId: "botanical", imagePrompt: "A large, open, and vibrant tropical flower, perhaps a hibiscus or a plumeria, brimming with glistening nectar droplets at its heart. A single, luminous dewdrop falls gracefully from its petal into a calm, reflective pool below, creating gentle, expanding ripples. The atmosphere is warm, golden, and serene. NO LITERAL HUMAN FIGURES are present in the image." },
+  { slug: "inner-sanctuary", styleId: "tarot-classic", imagePrompt: "A serene, ancient temple structure, half-hidden by lush, protective foliage, bathed in soft, golden light filtering through dense leaves. Inside, a single glowing crystal pulses with gentle, calm energy at the center of the temple floor. No human figures." },
+  { slug: "shadow-of-anticipation", styleId: "tarot-classic", imagePrompt: "A lone, gnarled tree casts a long, distorted shadow across a path illuminated only by a sliver of moon in a twilight sky. In the foreground, a highly reflective, ornate mirror lies face down, its surface reflecting only the dark, unyielding earth beneath. The mood is heavy, with cool blues, deep purples, and dark amber tones. No human figures." },
+  // The control: a card that LEGITIMATELY wants figures. Stripping negations
+  // must not touch it — if this one loses its figures, the stripper is wrong.
+  { slug: "infinite-embrace", styleId: "tarot-classic", imagePrompt: "A vast, luminous cosmic embrace where two figures merge into a single form of radiant light and energy. They are surrounded by golden rays and swirling galaxies, forming a halo of divine light. This imagery evokes ultimate unity and the boundless nature of universal love." },
+  // The hard case, added after a real regeneration failed on it: a subject with
+  // no picturable object in it at all — a "vortex of ghostly blueprints" at an
+  // "indistinct crossroads". This is the residual failure mode from the
+  // baseline finding, and no prompt surgery has touched it yet.
+  { slug: "echoing-crossroads", styleId: "tarot-classic", imagePrompt: "A swirling vortex of faded parchment and ghostly blueprints, converging at a misty, indistinct crossroads. The air is thick with the scent of old paper and faint, repetitive symbols of a labyrinth. The overall mood is somber, illuminated by a dim, amber light, without any human figures." },
 ];
 
 // ── Variants: the ONLY thing that changes between runs ───────────────────────
@@ -90,6 +116,16 @@ const VARIANTS: Record<string, Variant> = {
     prompt: buildCardImagePrompt(subject, stylePrompt),
     negativePrompt: ORACLE_CARD_NEGATIVE_PROMPT,
   }),
+  /**
+   * v3 — v2 with the LLM's trailing "no human figures" clause removed from the
+   * card's own prompt. Diffusion has no negation operator; the clause names the
+   * thing it means to forbid, at the front of the prompt where v2 put the
+   * subject. The exclusion still lives in the negative prompt, where it belongs.
+   */
+  v3: (subject, stylePrompt) => ({
+    prompt: buildCardImagePrompt(stripSubjectNegations(subject), stylePrompt),
+    negativePrompt: ORACLE_CARD_NEGATIVE_PROMPT,
+  }),
 };
 
 // ── Run ──────────────────────────────────────────────────────────────────────
@@ -106,17 +142,19 @@ if (!variant) {
   console.error(`Unknown variant "${variantName}". Known: ${Object.keys(VARIANTS).join(", ")}`);
   process.exit(1);
 }
-const only = args.only ? Number(args.only) : SUBJECTS.length;
+/** --set=real swaps the hand-written subjects for verbatim production prompts. */
+const SUBJECT_SET = args.set === "real" ? REAL_SUBJECTS : SUBJECTS;
+const only = args.only ? Number(args.only) : SUBJECT_SET.length;
 /** --subjects=slug,slug limits the run to named subjects (a cheap screen before a full 36). */
 const subjectFilter = args.subjects ? new Set(args.subjects.split(",")) : null;
-const SELECTED = SUBJECTS.slice(0, only).filter((s) => !subjectFilter || subjectFilter.has(s.slug));
-const outDir = path.join(".art-harness", variantName);
+const SELECTED = SUBJECT_SET.slice(0, only).filter((s) => !subjectFilter || subjectFilter.has(s.slug));
+const outDir = path.join(".art-harness", args.set === "real" ? `${variantName}-real` : variantName);
 fs.mkdirSync(outDir, { recursive: true });
 
 async function generateAll() {
   let n = 0;
   for (const s of SELECTED) {
-    const i = SUBJECTS.indexOf(s);
+    const i = SUBJECT_SET.indexOf(s);
     const style = ART_STYLE_PRESETS.find((p) => p.id === s.styleId);
     if (!style) throw new Error(`No preset ${s.styleId}`);
     const { prompt, negativePrompt } = variant(s.imagePrompt, style.stylePrompt);

@@ -154,13 +154,21 @@ export async function generateCardImage(
         generateBlurDataUrl(imageBuffer),
       ]);
 
+      // A regenerated card overwrites the SAME blob path (allowOverwrite), so
+      // its URL never changes and every browser and CDN edge keeps serving the
+      // picture it already had. Retry and refine both looked like no-ops:
+      // the bytes in storage were new, the screen was the old image. Stamping
+      // the write time onto the stored URL is what makes the change visible.
+      const v = Date.now().toString(36);
+      const bust = (url: string) => `${url}${url.includes("?") ? "&" : "?"}v=${v}`;
+
       // imageUrl is the web rendition — every UI surface reads it. The master
       // lives on imagePrintUrl for print packs and the Pro download.
       await db
         .update(cards)
         .set({
-          imageUrl: webBlob.url,
-          imagePrintUrl: printBlob.url,
+          imageUrl: bust(webBlob.url),
+          imagePrintUrl: bust(printBlob.url),
           imageBlurData,
           imageStatus: "completed",
           updatedAt: new Date(),
@@ -171,11 +179,11 @@ export async function generateCardImage(
       if (deck.deckType === "chronicle") {
         await db
           .update(decks)
-          .set({ coverImageUrl: webBlob.url, updatedAt: new Date() })
+          .set({ coverImageUrl: bust(webBlob.url), updatedAt: new Date() })
           .where(eq(decks.id, deckId));
       }
 
-      return { success: true, imageUrl: webBlob.url };
+      return { success: true, imageUrl: bust(webBlob.url) };
     } catch (error) {
       if (attempt < MAX_RETRIES - 1) {
         const delay = BACKOFF_BASE_MS * Math.pow(2, attempt);
