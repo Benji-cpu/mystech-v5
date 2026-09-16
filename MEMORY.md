@@ -47,7 +47,8 @@ Learned-experience notes that don't belong in CLAUDE.md. Keep entries concise (1
 - **Vercel Blob store RESOLVED** — was suspended 2026-06-12; verified 2026-08-03 serving reads AND accepting writes (45 style swatches uploaded). Re-check with an actual `put` before ever claiming otherwise.
 - Visual/red-team audit harness: `scripts/audit-walk.mts` (npx tsx, needs dev server on :3000) — records screenshots/video/trace to `.audit/<date>/`. Report pattern: `docs/audit/`. Test user `test-user-e2e` has an ACTIVE PRO subscription in the prod DB — don't use it to test free-plan gating.
 - **Check the Stability balance before believing anything about art quality** — it hit zero on 2026-09-16 and every card in every new deck failed with 402 `payment_required`, with no fallback image. Topped up the same day. `GET https://api.stability.ai/v1/user/balance` with the key reads it in one call.
-- **Google Cloud TTS billing is off** on project 473497770902 — read-aloud 403s. The client stops asking after the first 5xx, so it degrades quietly rather than firing on every sentence.
+- **Google Cloud TTS billing is off** on project 473497770902 — the SAME project as WordZoo's (verified 2026-09-16 by calling the API with each app's own key). Not b.hemsonstruthers' Google account; it is mystechcards@gmail.com or profbenjo@gmail.com, and the billing account found on mystechcards is CLOSED, so the fix is reopen-then-link, not "enable".
+- **Read-aloud is NOT broken** — `FallbackTTSProvider` (`src/lib/voice/index.ts`) tries Cloud TTS, then Gemini TTS, which needs no billing and runs on the Gemini key. Ported from WordZoo. Cloud TTS stays first so the better voice returns with no code change. Gemini costs ~9s a sentence and this route has no blob cache; WordZoo's does.
 
 ## Card image generation (UNRESOLVED, now measured)
 
