@@ -27,6 +27,12 @@ Learned-experience notes that don't belong in CLAUDE.md. Keep entries concise (1
 - `VERCEL_TOKEN` was one dead credential shared by mystech-v5, programme-v1, wordzoo and cc-mastery — four blind spots, one fault. Rotated 2026-09-16; a serverless function reads env from its deployment snapshot, so each project needed a redeploy afterwards.
 - The digest JSON is stamped with the **UTC** date. Anything reading it from Asia/Makassar after 08:00 WITA is a day out. Read the newest file; do not build the name from a clock.
 
+## API input validation
+
+- `lib/api/validate.ts` (`parseBody`) + `lib/api/schemas.ts` are the house pattern; 53 of 71 mutating routes use them. A new mutating route adds its schema there rather than casting the body.
+- **Do not add `.strict()`.** It was tried on all of them 2026-09-16: it caught one real gap at compile time and would have 400'd the Chronicle conversation in production, because the client has always sent `deckId` to `chronicle/today/message` and the route has always ignored it. Zod's default strips unknown keys, which is what the old casts did.
+- `auth/test-login` is deliberately left without a schema — dev-only, and already gated on an `@example.com` regex plus a role allowlist.
+
 ## Testing
 
 - Playwright test-login is **POST** `/api/auth/test-login` (production-guarded). An optional `{email, role}` body, `@example.com` only, mints a genuinely fresh user — the default id `test-user-e2e` owns decks and a Pro subscription, so it cannot show you a stranger's first screen.
@@ -49,7 +55,7 @@ Learned-experience notes that don't belong in CLAUDE.md. Keep entries concise (1
 - **Baseline: 14 of 36 images contain a human figure**, concentrated in 5 of the 12 subjects. The failure tracks how *concrete* the subject is, not the style: a door, a lantern, a compass, a fox, a bridge and a mirror all render correctly in the same styles that turn "a glowing seed in a nebula" and "a crown on a plinth" into a robed woman. Abstract subject → the model falls back to its own "oracle card" prior.
 - **v1 (subject first, framing last) is a real but partial improvement**: on the four worst subjects, 9 of 10 images had a figure at baseline, 6 of 10 under v1. Celestial went 0/3 → 3/3 correct. Mucha art-nouveau and Rider-Waite tarot did not move at all.
 - **v2 shipped** (subject first + style attractors stripped): 2 of 36 on the hand-written set, both figurative canons broken. **v3 shipped** on top of it: 17 of 91 production cards end with "No human figures are present.", a diffusion model has no negation operator, and v2 had just moved that clause to the front. On six verbatim production prompts: v2 = 5/15, v3 = 0/15, with a control card that legitimately wants figures untouched.
-- **Residual, CRM #354**: a prompt naming no picturable object still fails 2 of 3. Fixed upstream in what deck generation asks for, not by more prompt ordering.
+- **The residual is fixed too**: a prompt naming no picturable object still drew a figure 2 of 3, and no image-prompt change reaches that. `DECK_GENERATION_SYSTEM_PROMPT` now requires every imagePrompt to OPEN on a concrete object, prefers objects over people, and is forbidden from writing exclusions. `scripts/prompt-harness.ts` measures it by READING the prompts, not counting images: 20 prompts, 0 abstractions, 0 exclusions.
 - The negative prompt already lists person/human/face/woman/silhouette and does not work. On Stability Core a strong positive prior beats the negative list; the lever is the positive prompt.
 - **A regenerated card overwrites the same blob path**, so the URL never changed and browsers/CDN kept serving the old picture — Retry and refine looked like no-ops with correct bytes in storage. The stored URL now carries the write time; don't remove it.
 - `deck-generation.ts` tells the LLM to "state excluded elements explicitly in the imagePrompt", which writes negations like "No human figures are present" into a positive diffusion prompt. Suspicious, unproven, worth testing properly.
