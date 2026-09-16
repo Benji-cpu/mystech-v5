@@ -56,15 +56,17 @@ export async function POST(request: NextRequest) {
 
   try {
     const provider = getProvider();
-    const audioBuffer = await provider.synthesize(segment.text, {
+    const clip = await provider.synthesize(segment.text, {
       voiceId: DEFAULT_VOICE_ID,
       speed: 1.0,
     });
 
-    return new Response(audioBuffer, {
+    return new Response(clip.buffer, {
       headers: {
-        "Content-Type": "audio/mpeg",
-        "Content-Length": audioBuffer.byteLength.toString(),
+        // The container follows whichever provider answered — WAV must never be
+        // served as audio/mpeg.
+        "Content-Type": clip.contentType,
+        "Content-Length": clip.buffer.byteLength.toString(),
         "Cache-Control": "private, max-age=3600",
       },
     });

@@ -71,8 +71,8 @@ export async function POST(request: NextRequest) {
     await incrementVoiceCharacters(user.id, plan, totalChars);
 
     // Convert to base64 array
-    const audioBase64 = results.map((buffer) => {
-      const bytes = new Uint8Array(buffer);
+    const audioBase64 = results.map((clip) => {
+      const bytes = new Uint8Array(clip.buffer);
       let binary = '';
       for (let i = 0; i < bytes.byteLength; i++) {
         binary += String.fromCharCode(bytes[i]);

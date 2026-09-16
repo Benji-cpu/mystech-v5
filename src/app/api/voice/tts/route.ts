@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const provider = getTTSProvider(plan);
-    const audioBuffer = await provider.synthesize(text, {
+    const clip = await provider.synthesize(text, {
       voiceId: voiceId || DEFAULT_VOICE_ID,
       speed: VOICE_SPEED_VALUES[speed || "1.0"] ?? 1.0,
     });
@@ -52,10 +52,12 @@ export async function POST(request: NextRequest) {
     // Increment usage after successful synthesis
     await incrementVoiceCharacters(user.id, plan, text.length);
 
-    return new Response(audioBuffer, {
+    return new Response(clip.buffer, {
       headers: {
-        "Content-Type": "audio/mpeg",
-        "Content-Length": audioBuffer.byteLength.toString(),
+        // The container follows whichever provider answered — WAV must never be
+        // served as audio/mpeg.
+        "Content-Type": clip.contentType,
+        "Content-Length": clip.buffer.byteLength.toString(),
         "Cache-Control": "private, max-age=3600",
       },
     });

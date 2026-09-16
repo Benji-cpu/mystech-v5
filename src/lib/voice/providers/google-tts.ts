@@ -1,4 +1,4 @@
-import type { TTSProvider, TTSOptions } from '../provider';
+import type { TTSProvider, TTSOptions, TTSClip } from '../provider';
 
 export class GoogleTTSProvider implements TTSProvider {
   private apiKey: string;
@@ -11,7 +11,7 @@ export class GoogleTTSProvider implements TTSProvider {
     this.apiKey = key;
   }
 
-  async synthesize(text: string, options: TTSOptions): Promise<ArrayBuffer> {
+  async synthesize(text: string, options: TTSOptions): Promise<TTSClip> {
     const response = await fetch(
       `https://texttospeech.googleapis.com/v1/text:synthesize?key=${this.apiKey}`,
       {
@@ -45,6 +45,6 @@ export class GoogleTTSProvider implements TTSProvider {
     for (let i = 0; i < binaryString.length; i++) {
       bytes[i] = binaryString.charCodeAt(i);
     }
-    return bytes.buffer;
+    return { buffer: bytes.buffer, contentType: 'audio/mpeg' };
   }
 }
