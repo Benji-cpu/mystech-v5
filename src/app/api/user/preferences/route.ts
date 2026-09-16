@@ -6,6 +6,8 @@ import { userProfiles } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import type { ReadingLength, VoiceSpeed } from "@/types";
 
+import { parseBody } from "@/lib/api/validate";
+import { UpdatePreferencesSchema } from "@/lib/api/schemas";
 const VALID_LENGTHS: ReadingLength[] = ["brief", "standard", "deep"];
 const VALID_VOICE_SPEEDS: VoiceSpeed[] = ["0.75", "1.0", "1.25", "1.5"];
 
@@ -29,7 +31,9 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const body = await request.json();
+  const parsed = await parseBody(request, UpdatePreferencesSchema);
+  if (!parsed.ok) return parsed.response;
+  const body = parsed.data;
 
   // Handle reading length update
   if (body.readingLength !== undefined) {

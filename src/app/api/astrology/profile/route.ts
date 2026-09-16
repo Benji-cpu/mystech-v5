@@ -6,6 +6,8 @@ import { eq } from "drizzle-orm";
 import { calculateBirthChart } from "@/lib/astrology/birth-chart";
 import type { ApiResponse, AstrologyProfile } from "@/types";
 
+import { parseBody } from "@/lib/api/validate";
+import { AstrologyProfileSchema } from "@/lib/api/schemas";
 export async function GET() {
   const user = await getCurrentUser();
   if (!user?.id) {
@@ -40,7 +42,8 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const body = await request.json();
+  const parsed = await parseBody(request, AstrologyProfileSchema);
+  if (!parsed.ok) return parsed.response;
   const {
     birthDate,
     birthHour,
@@ -49,22 +52,7 @@ export async function POST(request: NextRequest) {
     birthLongitude,
     birthLocationName,
     spiritualInterests,
-  } = body as {
-    birthDate: string; // ISO date string
-    birthHour?: number | null;
-    birthMinute?: number | null;
-    birthLatitude?: string | null;
-    birthLongitude?: string | null;
-    birthLocationName?: string | null;
-    spiritualInterests?: string[] | null;
-  };
-
-  if (!birthDate) {
-    return NextResponse.json<ApiResponse<never>>(
-      { success: false, error: "birthDate is required" },
-      { status: 400 }
-    );
-  }
+  } = parsed.data;
 
   const date = new Date(birthDate);
   if (isNaN(date.getTime())) {

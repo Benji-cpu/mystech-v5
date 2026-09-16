@@ -8,6 +8,8 @@ import { db } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import type { ApiResponse, OnboardingMilestone, OnboardingStage } from "@/types";
 
+import { parseBody } from "@/lib/api/validate";
+import { CompleteMilestoneSchema } from "@/lib/api/schemas";
 // Valid milestone names (runtime check)
 const VALID_MILESTONES: Set<string> = new Set([
   "initiation_complete",
@@ -38,19 +40,13 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json<ApiResponse<never>>(
-      { success: false, error: "Invalid request body" },
-      { status: 400 }
-    );
-  }
+  const parsed = await parseBody(request, CompleteMilestoneSchema);
+  if (!parsed.ok) return parsed.response;
+  const { milestone } = parsed.data;
 
-  const { milestone } = body as { milestone?: string };
-
-  if (!milestone || !VALID_MILESTONES.has(milestone)) {
+  // VALID_MILESTONES is the canonical list and stays here rather than being
+  // copied into the schema.
+  if (!VALID_MILESTONES.has(milestone)) {
     return NextResponse.json<ApiResponse<never>>(
       { success: false, error: "Invalid milestone" },
       { status: 400 }

@@ -26,6 +26,8 @@ import { createId } from "@paralleldrive/cuid2";
 import { getPathPosition } from "@/lib/db/queries-paths";
 import type { ChronicleConversationMessage } from "@/types";
 
+import { firstIssueMessage } from "@/lib/api/validate";
+import { ChronicleMessageSchema } from "@/lib/api/schemas";
 export const maxDuration = 60;
 
 export async function POST(request: NextRequest) {
@@ -36,8 +38,11 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  const body = await request.json();
-  const { message, emergenceEventId } = body as {
+  const parsedBody = ChronicleMessageSchema.safeParse(await request.json().catch(() => null));
+  if (!parsedBody.success) {
+    return new Response(JSON.stringify({ error: firstIssueMessage(parsedBody.error) }), { status: 400 });
+  }
+  const { message, emergenceEventId } = parsedBody.data as {
     message?: string;
     emergenceEventId?: string;
   };

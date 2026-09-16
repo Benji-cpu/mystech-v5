@@ -6,6 +6,8 @@ import { getReadingByIdForUser } from "@/lib/db/queries";
 import { eq } from "drizzle-orm";
 import type { ApiResponse } from "@/types";
 
+import { parseBody } from "@/lib/api/validate";
+import { ReadingFeedbackSchema } from "@/lib/api/schemas";
 const VALID_FEEDBACK = ["positive", "negative"] as const;
 
 export async function POST(
@@ -29,8 +31,9 @@ export async function POST(
     );
   }
 
-  const body = await request.json();
-  const { feedback } = body as { feedback?: string };
+  const parsed = await parseBody(request, ReadingFeedbackSchema);
+  if (!parsed.ok) return parsed.response;
+  const { feedback } = parsed.data;
 
   if (!feedback || !VALID_FEEDBACK.includes(feedback as typeof VALID_FEEDBACK[number])) {
     return NextResponse.json<ApiResponse<never>>(

@@ -16,6 +16,8 @@ import { getCurrentUser } from "@/lib/auth/helpers";
 import { generateCardBackForDeck } from "@/lib/print/generate-back";
 import { generateBoxArtForDeck } from "@/lib/print/generate-box";
 
+import { firstIssueMessage } from "@/lib/api/validate";
+import { ForgePrintAssetsSchema } from "@/lib/api/schemas";
 export const maxDuration = 120;
 
 export async function POST(
@@ -26,7 +28,11 @@ export async function POST(
   if (!user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { deckId } = await ctx.params;
-  const body = (await request.json().catch(() => ({}))) as {
+  const parsed = ForgePrintAssetsSchema.safeParse(await request.json().catch(() => ({})));
+  if (!parsed.success) {
+    return NextResponse.json({ success: false, error: firstIssueMessage(parsed.error) }, { status: 400 });
+  }
+  const body = parsed.data as {
     regenerate?: { back?: boolean; box?: boolean };
   };
 

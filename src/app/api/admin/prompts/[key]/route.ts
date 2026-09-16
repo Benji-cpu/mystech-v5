@@ -5,6 +5,8 @@ import { requireAdminApi } from "@/lib/auth/helpers";
 import { MASTER_EMAIL } from "@/lib/constants";
 import { eq } from "drizzle-orm";
 
+import { parseBody } from "@/lib/api/validate";
+import { UpdatePromptFlagsSchema } from "@/lib/api/schemas";
 type Params = { params: Promise<{ key: string }> };
 
 export async function PATCH(request: NextRequest, { params }: Params) {
@@ -12,8 +14,9 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   if (error) return error;
 
   const { key } = await params;
-  const body = await request.json();
-  const { isActive, isPublished } = body as { isActive?: boolean; isPublished?: boolean };
+  const parsed = await parseBody(request, UpdatePromptFlagsSchema);
+  if (!parsed.ok) return parsed.response;
+  const { isActive, isPublished } = parsed.data;
 
   if (typeof isActive !== "boolean" && typeof isPublished !== "boolean") {
     return NextResponse.json({ error: "isActive or isPublished boolean required" }, { status: 400 });

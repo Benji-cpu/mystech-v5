@@ -3,6 +3,8 @@ import { getCurrentUser } from "@/lib/auth/helpers";
 import { getUserProfile, updateUserProfile } from "@/lib/db/queries";
 import type { ApiResponse, UserProfile } from "@/types";
 
+import { parseBody } from "@/lib/api/validate";
+import { UpdateUserProfileSchema } from "@/lib/api/schemas";
 export async function GET() {
   const user = await getCurrentUser();
   if (!user?.id) {
@@ -35,8 +37,9 @@ export async function PATCH(request: NextRequest) {
     );
   }
 
-  const body = await request.json();
-  const { displayName, bio } = body as {
+  const parsed = await parseBody(request, UpdateUserProfileSchema);
+  if (!parsed.ok) return parsed.response;
+  const { displayName, bio } = parsed.data as {
     displayName?: string;
     bio?: string;
   };

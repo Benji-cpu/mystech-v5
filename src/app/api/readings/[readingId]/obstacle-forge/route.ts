@@ -6,6 +6,8 @@ import { getPathById } from "@/lib/db/queries-paths";
 import { eq, and } from "drizzle-orm";
 import { ORIGIN_SOURCE, type ApiResponse, type RetreatCard } from "@/types";
 
+import { parseBody } from "@/lib/api/validate";
+import { ObstacleForgeSchema } from "@/lib/api/schemas";
 type Params = { params: Promise<{ readingId: string }> };
 
 export async function POST(request: NextRequest, { params }: Params) {
@@ -18,8 +20,9 @@ export async function POST(request: NextRequest, { params }: Params) {
   }
 
   const { readingId } = await params;
-  const body = await request.json();
-  const { title, meaning, guidance, imagePrompt, pattern, retreatId } = body as {
+  const parsed = await parseBody(request, ObstacleForgeSchema);
+  if (!parsed.ok) return parsed.response;
+  const { title, meaning, guidance, imagePrompt, pattern, retreatId } = parsed.data as {
     title: string;
     meaning: string;
     guidance: string;

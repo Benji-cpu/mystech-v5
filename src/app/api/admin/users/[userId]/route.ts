@@ -4,6 +4,8 @@ import { users } from "@/lib/db/schema";
 import { requireAdminApi } from "@/lib/auth/helpers";
 import { eq } from "drizzle-orm";
 
+import { parseBody } from "@/lib/api/validate";
+import { UpdateUserRoleSchema } from "@/lib/api/schemas";
 const VALID_ROLES = ["user", "tester", "admin"];
 
 type Params = { params: Promise<{ userId: string }> };
@@ -13,8 +15,9 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   if (error) return error;
 
   const { userId } = await params;
-  const body = await request.json();
-  const { role } = body as { role?: string };
+  const parsed = await parseBody(request, UpdateUserRoleSchema);
+  if (!parsed.ok) return parsed.response;
+  const { role } = parsed.data;
 
   if (!role || !VALID_ROLES.includes(role)) {
     return NextResponse.json(

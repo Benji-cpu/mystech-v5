@@ -13,6 +13,8 @@ import {
 } from "@/lib/ai/prompts/onboarding";
 import type { ApiResponse } from "@/types";
 
+import { parseBody } from "@/lib/api/validate";
+import { SelectArtStyleSchema } from "@/lib/api/schemas";
 const FALLBACK_STYLE: PresetArtStyleName = "Watercolor Dream";
 
 export async function POST(request: NextRequest) {
@@ -24,8 +26,9 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const body = await request.json();
-  const { userInput } = body as { userInput?: string };
+  const parsed = await parseBody(request, SelectArtStyleSchema);
+  if (!parsed.ok) return parsed.response;
+  const { userInput } = parsed.data;
 
   if (!userInput?.trim()) {
     return NextResponse.json<ApiResponse<never>>(

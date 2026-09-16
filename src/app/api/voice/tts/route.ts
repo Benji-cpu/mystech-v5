@@ -4,14 +4,17 @@ import { getUserPlan } from "@/lib/db/queries";
 import { checkVoiceCharacters, incrementVoiceCharacters } from "@/lib/usage/usage";
 import { getTTSProvider, MAX_TTS_TEXT_LENGTH, DEFAULT_VOICE_ID, VOICE_SPEED_VALUES } from "@/lib/voice";
 
+import { parseBody } from "@/lib/api/validate";
+import { TtsSchema } from "@/lib/api/schemas";
 export async function POST(request: NextRequest) {
   const user = await getCurrentUser();
   if (!user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const body = await request.json();
-  const { text, voiceId, speed } = body as {
+  const parsed = await parseBody(request, TtsSchema);
+  if (!parsed.ok) return parsed.response;
+  const { text, voiceId, speed } = parsed.data as {
     text?: string;
     voiceId?: string;
     speed?: string;

@@ -5,6 +5,8 @@ import { cardFeedback, cards, decks } from "@/lib/db/schema";
 import { and, eq } from "drizzle-orm";
 import type { CardFeedbackType } from "@/types";
 
+import { parseBody } from "@/lib/api/validate";
+import { CardFeedbackSchema } from "@/lib/api/schemas";
 const VALID_FEEDBACK: CardFeedbackType[] = ["loved", "dismissed"];
 
 export async function POST(
@@ -17,8 +19,9 @@ export async function POST(
   }
 
   const { cardId } = await params;
-  const body = await request.json();
-  const { feedback } = body as { feedback?: string };
+  const parsed = await parseBody(request, CardFeedbackSchema);
+  if (!parsed.ok) return parsed.response;
+  const { feedback } = parsed.data;
 
   if (!feedback || !VALID_FEEDBACK.includes(feedback as CardFeedbackType)) {
     return NextResponse.json(

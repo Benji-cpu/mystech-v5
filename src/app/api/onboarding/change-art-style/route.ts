@@ -6,6 +6,8 @@ import { eq, and } from "drizzle-orm";
 import { PRESET_ART_STYLE_NAMES, type PresetArtStyleName } from "@/lib/ai/prompts/onboarding";
 import type { ApiResponse } from "@/types";
 
+import { parseBody } from "@/lib/api/validate";
+import { ChangeArtStyleSchema } from "@/lib/api/schemas";
 export async function POST(request: NextRequest) {
   const user = await getCurrentUser();
   if (!user?.id) {
@@ -15,8 +17,9 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const body = await request.json();
-  const { deckId, artStyleName } = body as { deckId?: string; artStyleName?: string };
+  const parsed = await parseBody(request, ChangeArtStyleSchema);
+  if (!parsed.ok) return parsed.response;
+  const { deckId, artStyleName } = parsed.data;
 
   if (!deckId) {
     return NextResponse.json<ApiResponse<never>>(

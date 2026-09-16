@@ -3,6 +3,8 @@ import { getCurrentUser } from "@/lib/auth/helpers";
 import { getEmergenceEventForUser, updateEmergenceEvent } from "@/lib/db/queries";
 import type { ApiResponse } from "@/types";
 
+import { parseBody } from "@/lib/api/validate";
+import { DeliverEmergenceSchema } from "@/lib/api/schemas";
 export async function POST(request: Request) {
   const user = await getCurrentUser();
   if (!user?.id) {
@@ -12,7 +14,9 @@ export async function POST(request: Request) {
     );
   }
 
-  const { eventId } = await request.json();
+  const parsed = await parseBody(request, DeliverEmergenceSchema);
+  if (!parsed.ok) return parsed.response;
+  const { eventId } = parsed.data;
   if (!eventId) {
     return NextResponse.json<ApiResponse<never>>(
       { success: false, error: "Missing eventId" },

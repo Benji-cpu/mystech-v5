@@ -10,6 +10,8 @@ import {
 } from "@/lib/db/queries";
 import type { ApiResponse, ChronicleInterests } from "@/types";
 
+import { parseBody } from "@/lib/api/validate";
+import { CreateChronicleSchema } from "@/lib/api/schemas";
 export async function GET() {
   const user = await getCurrentUser();
   if (!user?.id) {
@@ -79,8 +81,9 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const body = await request.json();
-  const { artStyleId, interests } = body as {
+  const parsed = await parseBody(request, CreateChronicleSchema);
+  if (!parsed.ok) return parsed.response;
+  const { artStyleId, interests } = parsed.data as {
     artStyleId?: string;
     interests?: ChronicleInterests;
   };

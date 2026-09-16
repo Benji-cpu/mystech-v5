@@ -5,6 +5,8 @@ import { requireTesterApi, requireAdminApi } from "@/lib/auth/helpers";
 import { PROMPT_REGISTRY } from "@/lib/ai/prompts/registry";
 import { eq } from "drizzle-orm";
 
+import { parseBody } from "@/lib/api/validate";
+import { CreatePromptOverrideSchema } from "@/lib/api/schemas";
 export async function GET() {
   const { error } = await requireTesterApi();
   if (error) return error;
@@ -37,8 +39,9 @@ export async function POST(request: NextRequest) {
   const { user, error } = await requireAdminApi();
   if (error) return error;
 
-  const body = await request.json();
-  const { key, content, isPublished } = body as { key?: string; content?: string; isPublished?: boolean };
+  const parsed = await parseBody(request, CreatePromptOverrideSchema);
+  if (!parsed.ok) return parsed.response;
+  const { key, content, isPublished } = parsed.data;
 
   if (!key || !content) {
     return NextResponse.json({ error: "key and content are required" }, { status: 400 });

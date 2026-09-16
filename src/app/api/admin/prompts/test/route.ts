@@ -3,19 +3,15 @@ import { generateText } from "ai";
 import { requireAdminApi } from "@/lib/auth/helpers";
 import { geminiProModel } from "@/lib/ai/gemini";
 
+import { parseBody } from "@/lib/api/validate";
+import { TestPromptSchema } from "@/lib/api/schemas";
 export async function POST(request: NextRequest) {
   const { error } = await requireAdminApi();
   if (error) return error;
 
-  const body = await request.json();
-  const { systemPrompt, userPrompt } = body as {
-    systemPrompt?: string;
-    userPrompt?: string;
-  };
-
-  if (!userPrompt) {
-    return NextResponse.json({ error: "userPrompt is required" }, { status: 400 });
-  }
+  const parsed = await parseBody(request, TestPromptSchema);
+  if (!parsed.ok) return parsed.response;
+  const { systemPrompt, userPrompt } = parsed.data;
 
   try {
     const startTime = Date.now();

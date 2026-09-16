@@ -9,6 +9,8 @@ import {
 import { eq } from "drizzle-orm";
 import type { ApiResponse, ChronicleInterests } from "@/types";
 
+import { parseBody } from "@/lib/api/validate";
+import { UpdateChronicleSettingsSchema } from "@/lib/api/schemas";
 export async function PATCH(request: NextRequest) {
   const user = await getCurrentUser();
   if (!user?.id) {
@@ -26,8 +28,9 @@ export async function PATCH(request: NextRequest) {
     );
   }
 
-  const body = await request.json();
-  const { artStyleId, interests, chronicleEnabled } = body as {
+  const parsed = await parseBody(request, UpdateChronicleSettingsSchema);
+  if (!parsed.ok) return parsed.response;
+  const { artStyleId, interests, chronicleEnabled } = parsed.data as {
     artStyleId?: string | null;
     interests?: ChronicleInterests;
     chronicleEnabled?: boolean;

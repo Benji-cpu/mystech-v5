@@ -4,6 +4,8 @@ import { activatePath } from "@/lib/db/queries-paths";
 import { completeMilestone } from "@/lib/onboarding/milestones";
 import type { ApiResponse, UserPathProgress } from "@/types";
 
+import { parseBody } from "@/lib/api/validate";
+import { ActivatePathSchema } from "@/lib/api/schemas";
 export async function POST(request: NextRequest) {
   const user = await getCurrentUser();
   if (!user?.id) {
@@ -13,24 +15,9 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json<ApiResponse<never>>(
-      { success: false, error: "Invalid request body" },
-      { status: 400 }
-    );
-  }
-
-  const { pathId } = body as { pathId?: string };
-
-  if (!pathId || typeof pathId !== "string" || pathId.trim().length === 0) {
-    return NextResponse.json<ApiResponse<never>>(
-      { success: false, error: "pathId is required" },
-      { status: 400 }
-    );
-  }
+  const parsed = await parseBody(request, ActivatePathSchema);
+  if (!parsed.ok) return parsed.response;
+  const { pathId } = parsed.data;
 
   try {
     const progress = await activatePath(user.id, pathId);
