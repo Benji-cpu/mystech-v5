@@ -8,6 +8,7 @@ vi.mock("@/lib/auth/helpers", () => ({
 vi.mock("@/lib/db/queries", () => ({
   getReadingByIdForUser: vi.fn(),
   getReadingCardsWithData: vi.fn(),
+  getUserDisplayName: vi.fn(() => Promise.resolve("Test User")),
   getUserReadingContext: vi.fn(() => ({
     contextSummary: null,
     readingLength: "brief",
@@ -58,6 +59,7 @@ vi.mock("@/lib/db/schema", () => ({
   paths: { id: "id", name: "name" },
   retreats: { id: "id", name: "name" },
   waypoints: { id: "id", name: "name" },
+  circles: { id: "id", name: "name", circleNumber: "circle_number" },
 }));
 
 vi.mock("@/lib/db/queries-paths", () => ({
@@ -66,6 +68,7 @@ vi.mock("@/lib/db/queries-paths", () => ({
 
 vi.mock("@/lib/ai/gemini", () => ({
   geminiFreeModel: "mock-model",
+  geminiProModel: "mock-pro-model",
 }));
 
 vi.mock("@/lib/ai/logging", () => ({
@@ -120,8 +123,10 @@ const mockCardsWithData = [
     position: 0,
     positionName: "Past",
     cardId: "c1",
+    retreatCardId: null,
     personCardId: null,
     createdAt: new Date(),
+    retreatCard: null,
     card: {
       id: "c1",
       deckId: "d1",
@@ -130,6 +135,8 @@ const mockCardsWithData = [
       meaning: "Change and flow",
       guidance: "Let go",
       imageUrl: null,
+      imagePrintUrl: null,
+      imageBlurData: null,
       imagePrompt: null,
       imageStatus: "completed",
       cardType: "general",
@@ -144,8 +151,10 @@ const mockCardsWithData = [
     position: 1,
     positionName: "Present",
     cardId: "c2",
+    retreatCardId: null,
     personCardId: null,
     createdAt: new Date(),
+    retreatCard: null,
     card: {
       id: "c2",
       deckId: "d1",
@@ -154,6 +163,8 @@ const mockCardsWithData = [
       meaning: "Warmth",
       guidance: "Find comfort",
       imageUrl: null,
+      imagePrintUrl: null,
+      imageBlurData: null,
       imagePrompt: null,
       imageStatus: "completed",
       cardType: "general",
@@ -168,8 +179,10 @@ const mockCardsWithData = [
     position: 2,
     positionName: "Future",
     cardId: "c3",
+    retreatCardId: null,
     personCardId: null,
     createdAt: new Date(),
+    retreatCard: null,
     card: {
       id: "c3",
       deckId: "d1",
@@ -178,6 +191,8 @@ const mockCardsWithData = [
       meaning: "Hope",
       guidance: "Trust the light",
       imageUrl: null,
+      imagePrintUrl: null,
+      imageBlurData: null,
       imagePrompt: null,
       imageStatus: "completed",
       cardType: "general",
@@ -190,6 +205,9 @@ const mockCardsWithData = [
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // The route kicks off the card fetch before it knows whether the reading
+  // exists, so the mock must always hand back a promise.
+  vi.mocked(getReadingCardsWithData).mockResolvedValue([]);
 });
 
 describe("POST /api/ai/reading", () => {
@@ -247,7 +265,13 @@ describe("POST /api/ai/reading", () => {
 
     await POST(makeRequest({ readingId: "r1" }));
 
-    const streamCall = vi.mocked(streamObject).mock.calls[0][0];
+    const streamCall = vi.mocked(streamObject).mock.calls[0][0] as {
+      system?: string;
+      prompt?: string;
+      schema?: unknown;
+      onFinish?: unknown;
+      onError?: unknown;
+    };
     expect(streamCall.system).toBeDefined();
     expect(streamCall.prompt).toContain("The River");
     expect(streamCall.prompt).toContain("What should I focus on?");

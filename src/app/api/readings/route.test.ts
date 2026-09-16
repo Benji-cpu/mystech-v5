@@ -10,6 +10,32 @@ vi.mock("@/lib/db/queries", () => ({
   getCardsForDeck: vi.fn(),
   getDeckByIdForUser: vi.fn(),
   getUserPlan: vi.fn().mockResolvedValue("free"),
+  getUserTotalReadingCount: vi.fn().mockResolvedValue(2),
+  getCardImageState: vi.fn().mockResolvedValue(null),
+}));
+
+vi.mock("@/lib/db/queries-paths", () => ({
+  getPathPosition: vi.fn().mockResolvedValue(null),
+  recordPathReading: vi.fn().mockResolvedValue(undefined),
+  canAdvanceWaypoint: vi.fn().mockResolvedValue({ allowed: true }),
+  getRetreatObstacleCards: vi.fn().mockResolvedValue([]),
+}));
+
+vi.mock("@/lib/analytics", () => ({
+  captureServer: vi.fn(),
+  ANALYTICS_EVENTS: {
+    PAYWALL_HIT: "paywall_hit",
+    FIRST_READING_COMPLETED: "first_reading_completed",
+    READING_COMPLETED: "reading_completed",
+  },
+}));
+
+vi.mock("@/lib/onboarding/milestones", () => ({
+  completeMilestone: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock("@/lib/email/send", () => ({
+  sendFirstReadingReflection: vi.fn().mockResolvedValue(undefined),
 }));
 
 const mockCheckDailyReadings = vi.fn();
@@ -31,6 +57,9 @@ vi.mock("@/lib/db", () => ({
 vi.mock("@/lib/db/schema", () => ({
   readings: {},
   readingCards: {},
+  cards: {},
+  decks: {},
+  users: {},
 }));
 
 import { GET, POST } from "./route";
@@ -272,8 +301,8 @@ describe("POST /api/readings", () => {
     let callCount = 0;
     vi.mocked(db.insert).mockImplementation(() => {
       callCount++;
-      if (callCount === 1) return { values: valuesMock1 } as any;
-      return { values: valuesMock2 } as any;
+      if (callCount === 1) return { values: valuesMock1 } as unknown as ReturnType<typeof db.insert>;
+      return { values: valuesMock2 } as unknown as ReturnType<typeof db.insert>;
     });
 
     const response = await POST(
@@ -367,13 +396,13 @@ describe("POST /api/readings", () => {
             values: vi.fn().mockReturnValue({
               returning: vi.fn().mockResolvedValue([mockReading]),
             }),
-          } as any;
+          } as unknown as ReturnType<typeof db.insert>;
         }
         return {
           values: vi.fn().mockReturnValue({
             returning: vi.fn().mockResolvedValue(mockReadingCards),
           }),
-        } as any;
+        } as unknown as ReturnType<typeof db.insert>;
       });
 
       const response = await POST(
@@ -428,13 +457,13 @@ describe("POST /api/readings", () => {
             values: vi.fn().mockReturnValue({
               returning: vi.fn().mockResolvedValue([mockReading]),
             }),
-          } as any;
+          } as unknown as ReturnType<typeof db.insert>;
         }
         return {
           values: vi.fn().mockReturnValue({
             returning: vi.fn().mockResolvedValue(mockReadingCards),
           }),
-        } as any;
+        } as unknown as ReturnType<typeof db.insert>;
       });
 
       const response = await POST(

@@ -163,7 +163,7 @@ describe("checkDailyReadings", () => {
           return Promise.resolve([{ count: 0 }]); // today's reading count
         }),
       }),
-    }) as ReturnType<typeof db.select>);
+    }) as unknown as ReturnType<typeof db.select>);
 
     const result = await checkDailyReadings("user-1", "free");
 
@@ -186,7 +186,7 @@ describe("checkDailyReadings", () => {
           return Promise.resolve([{ count: 1 }]); // performed 1 today (free limit = 1)
         }),
       }),
-    }) as ReturnType<typeof db.select>);
+    }) as unknown as ReturnType<typeof db.select>);
 
     const result = await checkDailyReadings("user-1", "free");
 
@@ -209,7 +209,7 @@ describe("checkDailyReadings", () => {
           return Promise.resolve([{ count: 2 }]); // today count for payload
         }),
       }),
-    }) as ReturnType<typeof db.select>);
+    }) as unknown as ReturnType<typeof db.select>);
 
     const result = await checkDailyReadings("user-1", "free");
 
@@ -232,7 +232,7 @@ describe("checkDailyReadings", () => {
           return Promise.resolve([{ count: 3 }]);
         }),
       }),
-    }) as ReturnType<typeof db.select>);
+    }) as unknown as ReturnType<typeof db.select>);
 
     const result = await checkDailyReadings("user-1", "free");
 
@@ -259,7 +259,7 @@ describe("checkDailyReadings", () => {
           return Promise.resolve([{ count: 0 }]);
         }),
       }),
-    }) as ReturnType<typeof db.select>);
+    }) as unknown as ReturnType<typeof db.select>);
 
     const result = await checkDailyReadings("user-1", "free");
 
@@ -281,7 +281,7 @@ describe("isFirstReadingEver", () => {
       from: vi.fn().mockReturnValue({
         where: vi.fn().mockImplementation(() => Promise.resolve(mockSelectResult)),
       }),
-    } as ReturnType<typeof db.select>);
+    } as unknown as ReturnType<typeof db.select>);
   });
 
   it("returns true when no readings exist", async () => {

@@ -9,10 +9,12 @@ vi.mock("@/lib/auth/helpers", () => ({
 }));
 
 const mockInsert = vi.fn();
+const mockUpdate = vi.fn();
 
 vi.mock("@/lib/db", () => ({
   db: {
     insert: (...args: unknown[]) => mockInsert(...args),
+    update: (...args: unknown[]) => mockUpdate(...args),
   },
 }));
 
@@ -28,6 +30,7 @@ vi.mock("@/lib/db/queries", () => ({
   getArtStyleById: (...args: unknown[]) => mockGetArtStyleById(...args),
   getUserPlan: () => mockGetUserPlan(),
   getUserCardPreferences: vi.fn(() => ({ lovedCards: [], dismissedCards: [] })),
+  getSeekerContextForGeneration: vi.fn().mockResolvedValue(null),
 }));
 
 const mockCheckCredits = vi.fn();
@@ -82,6 +85,12 @@ function setupInsertMock(deckId: string = "deck-1") {
   mockInsert.mockReturnValue({
     values: vi.fn().mockReturnValue({
       returning: vi.fn().mockResolvedValue([{ id: deckId }]),
+    }),
+  });
+  // Deck is flipped to "completed" after the text pass (images are fire-and-forget)
+  mockUpdate.mockReturnValue({
+    set: vi.fn().mockReturnValue({
+      where: vi.fn().mockResolvedValue(undefined),
     }),
   });
 }
@@ -189,7 +198,8 @@ describe("POST /api/ai/generate-deck", () => {
     expect(res.status).toBe(201);
     expect(json.success).toBe(true);
     expect(json.data.deckId).toBe("deck-1");
-    // Verify credit increment was called with 1 card
+    // One credit buys one whole card (text + image) and is claimed here, once
     expect(mockIncrementCredits).toHaveBeenCalledWith("user-1", "free", 1);
+    expect(mockIncrementCredits).toHaveBeenCalledTimes(1);
   });
 });

@@ -87,12 +87,12 @@ function makeParams(deckId: string) {
 }
 
 function makeRequest(method: string, body?: Record<string, unknown>) {
-  const init: RequestInit = { method };
-  if (body) {
-    init.body = JSON.stringify(body);
-    init.headers = { "Content-Type": "application/json" };
-  }
-  return new NextRequest(`http://localhost:3000/api/decks/deck-1`, init);
+  return new NextRequest(`http://localhost:3000/api/decks/deck-1`, {
+    method,
+    ...(body
+      ? { body: JSON.stringify(body), headers: { "Content-Type": "application/json" } }
+      : {}),
+  });
 }
 
 // --- Tests ---
@@ -163,6 +163,7 @@ describe("PATCH /api/decks/[deckId]", () => {
     const json = await res.json();
 
     expect(res.status).toBe(404);
+    expect(json.success).toBe(false);
   });
 
   it("returns updated deck on success", async () => {
@@ -204,6 +205,7 @@ describe("DELETE /api/decks/[deckId]", () => {
     const json = await res.json();
 
     expect(res.status).toBe(404);
+    expect(json.success).toBe(false);
   });
 
   it("deletes deck and cleans up blob images", async () => {

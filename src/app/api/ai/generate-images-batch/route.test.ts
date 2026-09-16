@@ -9,7 +9,6 @@ const {
   mockGetArtStyleById,
   mockGetUserPlan,
   mockGenerateCardImage,
-  mockCheckCredits,
   mockIncrementCredits,
   mockLogGeneration,
   selectCallCounter,
@@ -23,7 +22,6 @@ const {
   mockGetArtStyleById: vi.fn(),
   mockGetUserPlan: vi.fn().mockResolvedValue("free"),
   mockGenerateCardImage: vi.fn(),
-  mockCheckCredits: vi.fn(),
   mockIncrementCredits: vi.fn(),
   mockLogGeneration: vi.fn(),
   selectCallCounter: { count: 0 },
@@ -114,9 +112,12 @@ vi.mock("@/lib/ai/logging", () => ({
   logGeneration: (...args: unknown[]) => mockLogGeneration(...args),
 }));
 
+// The route must never bill (a credit buys the whole card and was claimed at
+// generate-deck / confirm). The mock stays so a regression that re-imports
+// incrementCredits is caught by the "never charges credits" test below.
 vi.mock("@/lib/usage", () => ({
   getUserPlanFromRole: (role: string) => (role === "admin" ? "admin" : "free"),
-  checkCredits: (...args: unknown[]) => mockCheckCredits(...args),
+  checkCredits: vi.fn().mockResolvedValue({ allowed: false, remaining: 0, limit: 0, current: 0 }),
   incrementCredits: (...args: unknown[]) => mockIncrementCredits(...args),
 }));
 
@@ -186,12 +187,6 @@ describe("POST /api/ai/generate-images-batch", () => {
     failedCards.length = 0;
     staleCards.length = 0;
     allCards.length = 0;
-    mockCheckCredits.mockResolvedValue({
-      allowed: true,
-      remaining: 50,
-      limit: 50,
-      current: 0,
-    });
     mockIncrementCredits.mockResolvedValue(undefined);
     mockLogGeneration.mockResolvedValue(undefined);
     mockGetArtStyleById.mockResolvedValue(null);
@@ -239,24 +234,6 @@ describe("POST /api/ai/generate-images-batch", () => {
 
     expect(res.status).toBe(404);
     expect(json.error).toBe("Deck not found");
-  });
-
-  it("returns 403 when insufficient credits", async () => {
-    mockGetCurrentUser.mockResolvedValue({ id: "user-1", role: "user" });
-    mockGetDeckByIdForUser.mockResolvedValue(TEST_DECK);
-    pendingCards.push(makeCard("c1", 1, "pending"));
-    mockCheckCredits.mockResolvedValue({
-      allowed: false,
-      remaining: 0,
-      limit: 5,
-      current: 5,
-    });
-
-    const res = await POST(makeRequest({ deckId: "deck-1" }));
-    const json = await res.json();
-
-    expect(res.status).toBe(403);
-    expect(json.error).toContain("credits");
   });
 
   // --- Core stale recovery ---
@@ -369,7 +346,7 @@ describe("POST /api/ai/generate-images-batch", () => {
     );
   });
 
-  it("increments credits only for successful images", async () => {
+  it("never charges credits — the card was paid for when it was created", async () => {
     mockGetCurrentUser.mockResolvedValue({ id: "user-1", role: "user" });
     mockGetDeckByIdForUser.mockResolvedValue(TEST_DECK);
     pendingCards.push(
@@ -389,10 +366,11 @@ describe("POST /api/ai/generate-images-batch", () => {
       .mockResolvedValueOnce({ success: false, error: "Failed" });
 
     const res = await POST(makeRequest({ deckId: "deck-1" }));
-    await res.json();
+    const json = await res.json();
 
-    // Only 2 succeeded
-    expect(mockIncrementCredits).toHaveBeenCalledWith("user-1", "free", 2);
+    expect(res.status).toBe(200);
+    expect(json.data.processed).toBe(2);
+    expect(mockIncrementCredits).not.toHaveBeenCalled();
   });
 
   it("logs generation with correct status and counts", async () => {
