@@ -5,6 +5,8 @@ import { getCurrentUser } from "@/lib/auth/helpers";
 import { getDeckByIdForUser, getDeckMetadata } from "@/lib/db/queries";
 import { eq } from "drizzle-orm";
 import type { ApiResponse, DraftCard } from "@/types";
+import { parseBody } from "@/lib/api/validate";
+import { UpdateDraftsSchema } from "@/lib/api/schemas";
 
 type Params = { params: Promise<{ deckId: string }> };
 
@@ -26,21 +28,9 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     );
   }
 
-  const body = await request.json();
-  const { updates } = body as {
-    updates: Array<{
-      cardNumber: number;
-      action: "keep" | "remove" | "edit";
-      edits?: { title?: string; meaning?: string; guidance?: string };
-    }>;
-  };
-
-  if (!updates || !Array.isArray(updates)) {
-    return NextResponse.json<ApiResponse<never>>(
-      { success: false, error: "updates array is required" },
-      { status: 400 }
-    );
-  }
+  const parsed = await parseBody(request, UpdateDraftsSchema);
+  if (!parsed.ok) return parsed.response;
+  const { updates } = parsed.data;
 
   const metadata = await getDeckMetadata(deckId);
   if (!metadata?.draftCards) {

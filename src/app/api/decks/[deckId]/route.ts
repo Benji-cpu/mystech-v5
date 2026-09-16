@@ -6,6 +6,8 @@ import { getDeckByIdForUser, getCardsForDeck } from "@/lib/db/queries";
 import { eq } from "drizzle-orm";
 import { del } from "@vercel/blob";
 import type { ApiResponse, Deck, Card } from "@/types";
+import { parseBody } from "@/lib/api/validate";
+import { UpdateDeckSchema } from "@/lib/api/schemas";
 
 type Params = { params: Promise<{ deckId: string }> };
 
@@ -85,32 +87,9 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     );
   }
 
-  const body = await request.json();
-  const { title, description, theme, status } = body as {
-    title?: string;
-    description?: string;
-    theme?: string;
-    status?: string;
-  };
-
-  if (title !== undefined && (typeof title !== "string" || title.trim().length === 0 || title.length > 100)) {
-    return NextResponse.json<ApiResponse<never>>(
-      { success: false, error: "Title must be between 1 and 100 characters" },
-      { status: 400 }
-    );
-  }
-  if (description !== undefined && typeof description === "string" && description.length > 1000) {
-    return NextResponse.json<ApiResponse<never>>(
-      { success: false, error: "Description must be 1000 characters or less" },
-      { status: 400 }
-    );
-  }
-  if (theme !== undefined && typeof theme === "string" && theme.length > 100) {
-    return NextResponse.json<ApiResponse<never>>(
-      { success: false, error: "Theme must be 100 characters or less" },
-      { status: 400 }
-    );
-  }
+  const parsed = await parseBody(request, UpdateDeckSchema);
+  if (!parsed.ok) return parsed.response;
+  const { title, description, theme, status } = parsed.data;
 
   const [updated] = await db
     .update(decks)

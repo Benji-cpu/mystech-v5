@@ -122,7 +122,11 @@ describe("POST /api/decks", () => {
     const json = await res.json();
 
     expect(res.status).toBe(400);
-    expect(json.error).toContain("Title is required");
+    // The message names the JSON field the client actually sent, not prose:
+    // "title: is required". Asserting the field name keeps this test honest
+    // if the wording changes again.
+    expect(json.error).toContain("title");
+    expect(json.error).toContain("is required");
   });
 
   it("allows deck creation without deck limit (credits constrain)", async () => {

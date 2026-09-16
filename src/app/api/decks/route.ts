@@ -4,6 +4,8 @@ import { decks } from "@/lib/db/schema";
 import { getCurrentUser } from "@/lib/auth/helpers";
 import { eq, desc } from "drizzle-orm";
 import type { ApiResponse, Deck } from "@/types";
+import { parseBody } from "@/lib/api/validate";
+import { CreateDeckSchema } from "@/lib/api/schemas";
 
 export async function GET() {
   const user = await getCurrentUser();
@@ -50,29 +52,11 @@ export async function POST(request: NextRequest) {
   }
 
   // No deck limit — credits constrain card creation, not deck count
-  const body = await request.json();
-  const { title, description, theme, artStyleId, cardCount } = body as {
-    title?: string;
-    description?: string;
-    theme?: string;
-    artStyleId?: string;
-    cardCount?: number;
-  };
+  const parsed = await parseBody(request, CreateDeckSchema);
+  if (!parsed.ok) return parsed.response;
+  const { title, description, theme, artStyleId, cardCount } = parsed.data;
 
-  if (!title || typeof title !== "string" || title.trim().length === 0) {
-    return NextResponse.json<ApiResponse<never>>(
-      { success: false, error: "Title is required" },
-      { status: 400 }
-    );
-  }
-  if (title.length > 100) {
-    return NextResponse.json<ApiResponse<never>>(
-      { success: false, error: "Title must be 100 characters or less" },
-      { status: 400 }
-    );
-  }
-
-  const validCardCount = cardCount && cardCount >= 1 && cardCount <= 30 ? cardCount : 0;
+  const validCardCount = cardCount ?? 0;
 
   const [created] = await db
     .insert(decks)

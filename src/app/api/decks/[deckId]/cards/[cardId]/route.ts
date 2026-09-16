@@ -6,6 +6,8 @@ import { getDeckByIdForUser } from "@/lib/db/queries";
 import { eq, and } from "drizzle-orm";
 import { del } from "@vercel/blob";
 import type { ApiResponse, Card } from "@/types";
+import { parseBody } from "@/lib/api/validate";
+import { UpdateCardSchema } from "@/lib/api/schemas";
 
 type Params = { params: Promise<{ deckId: string; cardId: string }> };
 
@@ -27,15 +29,12 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     );
   }
 
-  const body = await request.json();
-  const { title, meaning, guidance, imagePrompt, cardType, originContext } = body as {
-    title?: string;
-    meaning?: string;
-    guidance?: string;
-    imagePrompt?: string;
-    cardType?: string;
-    originContext?: typeof cards.$inferInsert.originContext;
-  };
+  const parsed = await parseBody(request, UpdateCardSchema);
+  if (!parsed.ok) return parsed.response;
+  const { title, meaning, guidance, imagePrompt, cardType, originContext } =
+    parsed.data as typeof parsed.data & {
+      originContext?: typeof cards.$inferInsert.originContext;
+    };
 
   const [updated] = await db
     .update(cards)

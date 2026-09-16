@@ -4,6 +4,8 @@ import { cards } from "@/lib/db/schema";
 import { getCurrentUser } from "@/lib/auth/helpers";
 import { getDeckByIdForUser, getCardsForDeck } from "@/lib/db/queries";
 import type { ApiResponse, Card } from "@/types";
+import { parseBody } from "@/lib/api/validate";
+import { CreateCardSchema } from "@/lib/api/schemas";
 
 type Params = { params: Promise<{ deckId: string }> };
 
@@ -63,21 +65,9 @@ export async function POST(request: NextRequest, { params }: Params) {
     );
   }
 
-  const body = await request.json();
-  const { cardNumber, title, meaning, guidance, imagePrompt } = body as {
-    cardNumber: number;
-    title: string;
-    meaning: string;
-    guidance: string;
-    imagePrompt?: string;
-  };
-
-  if (!title || !meaning || !guidance || cardNumber == null) {
-    return NextResponse.json<ApiResponse<never>>(
-      { success: false, error: "cardNumber, title, meaning, and guidance are required" },
-      { status: 400 }
-    );
-  }
+  const parsed = await parseBody(request, CreateCardSchema);
+  if (!parsed.ok) return parsed.response;
+  const { cardNumber, title, meaning, guidance, imagePrompt } = parsed.data;
 
   const [created] = await db
     .insert(cards)

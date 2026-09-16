@@ -4,6 +4,8 @@ import { artStyles, artStyleShares } from "@/lib/db/schema";
 import { getCurrentUser } from "@/lib/auth/helpers";
 import { eq, and } from "drizzle-orm";
 import type { ApiResponse, ArtStyle, StyleCategory } from "@/types";
+import { parseBody } from "@/lib/api/validate";
+import { UpdateArtStyleSchema } from "@/lib/api/schemas";
 
 function toArtStyle(s: typeof artStyles.$inferSelect): ArtStyle {
   return {
@@ -121,11 +123,9 @@ export async function PATCH(
     );
   }
 
-  const body = await request.json();
-  const { name, description } = body as {
-    name?: string;
-    description?: string;
-  };
+  const parsed = await parseBody(request, UpdateArtStyleSchema);
+  if (!parsed.ok) return parsed.response;
+  const { name, description } = parsed.data;
 
   const updates: Partial<typeof artStyles.$inferInsert> = {
     updatedAt: new Date(),
