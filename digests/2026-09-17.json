@@ -1,0 +1,75 @@
+{
+  "project": "mystech-v5",
+  "startedAt": "2026-09-17T20:11:18.310Z",
+  "finishedAt": "2026-09-17T20:11:19.525Z",
+  "feedback": {
+    "byStatus": {
+      "actioned": 6,
+      "reviewed": 22,
+      "dismissed": 9
+    },
+    "newLast24h": 0,
+    "rows": []
+  },
+  "health": {
+    "stuckReadings": 1,
+    "stuckReadingRows": [
+      {
+        "id": "gyvuuv02zejq8jigphfoutej",
+        "spreadType": "three_card",
+        "createdAt": "2026-09-15T19:15:34.673Z"
+      }
+    ],
+    "failedGenerationsLast24h": 0,
+    "failedImageGensLast24h": 0,
+    "idleSharedDecks": 0
+  },
+  "env": {
+    "stabilityKey": true,
+    "geminiKey": true,
+    "blobToken": true
+  },
+  "pipeline": {
+    "fetched": 4,
+    "inserted": 0,
+    "skipped": 4,
+    "wrongAuthorCount": 0,
+    "wrongAuthors": [],
+    "buildErrorCount": 0,
+    "recent": [
+      {
+        "vercelDeploymentId": "dpl_5pom7tTCNH7SwHU7ZLu2Lfxscj5Q",
+        "state": "CANCELED",
+        "errorCode": null,
+        "commitAuthorEmail": "profbenjo@gmail.com",
+        "commitMessage": "docs: close out the audit — nothing filed on the day is still open\n\nThe \"Still open\" table was written when four of its rows were mine to do. They\nare done, so it now says so, and the two that remain are genuinely Ben's: the\nGoogle Cloud TTS billing switch he shares with WordZoo, and the six needs_review\nrows that only a person with a real phone can answer.\n\nThe 28 React Compiler lint errors are deliberately NOT a CRM row. They are all\none rule, none is a live bug, and fixing them is a refactor of most of the\ninteractive components — a row for them would sit on the board being true and\nnever actionable, which is the thing this audit was written to stop.\n\nCo-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>",
+        "createdAt": "2026-09-16T09:45:17.027Z"
+      },
+      {
+        "vercelDeploymentId": "dpl_AYHRiBhy4MHtC3H7soPGaQ4Scm5W",
+        "state": "CANCELED",
+        "errorCode": null,
+        "commitAuthorEmail": "profbenjo@gmail.com",
+        "commitMessage": "fix(daily-card): the email went silent instead of saying anything\n\nA user switched the daily card on and then nothing ever arrived, with no\nexplanation. The cron filters out anyone with no deck to draw from — which is\nevery user until they finish a conversation with Lyra — and returned\nskipped_no_deck, which nobody was reading.\n\nIt now sends the invitation instead: \"you asked for a card each morning, but\nthere is no deck to draw one from yet\", with the CTA pointing at /decks/new\nrather than /today.\n\nONCE. A daily nag about a thing someone has not got round to is worse than the\nsilence was, so after the first one it goes quiet until a deck exists. The\nrecord is the delivery row itself — an invitation is the only delivery with\nneither a deck nor a card against it, and none of the 62 existing rows in\nproduction matches that shape, so nobody is wrongly counted as already invited.\n\nA starter deck was the other option and I did not take it: it costs image\ncredits on every signup and would hand every new user the sa",
+        "createdAt": "2026-09-16T09:13:11.162Z"
+      },
+      {
+        "vercelDeploymentId": "dpl_6DnPFs5mVyvnfbzCqsZ9QHw76PeY",
+        "state": "CANCELED",
+        "errorCode": null,
+        "commitAuthorEmail": "profbenjo@gmail.com",
+        "commitMessage": "fix(prompts): ask the deck writer for an object, not a mood\n\nThe last card-art failure, and the one no amount of image-prompt surgery could\nreach: when a card's imagePrompt names nothing a painter could point at — \"a\nswirling vortex of faded parchment and ghostly blueprints, converging at a\nmisty, indistinct crossroads\" — the image model falls back on its own idea of\nan oracle card, which is a robed figure. That card failed 2 of 3 even after v3.\n\nThree changes to DECK_GENERATION_SYSTEM_PROMPT:\n\n- Every imagePrompt must OPEN on one concrete physical object. The first eight\n  words decide the picture. Mood, light and setting come after it. If a card's\n  meaning is abstract, pick a thing that stands for it — the meaning lives in\n  the card's text, not in the picture.\n- Prefer an object, a plant, an animal or a place over a person or a body part.\n  The image pipeline is tuned for uninhabited scenes, so \"a pair of weathered\n  hands\" fights it. Choose the potter's wheel over the potter's hands.\n- Stop telling the m",
+        "createdAt": "2026-09-16T09:08:00.773Z"
+      },
+      {
+        "vercelDeploymentId": "dpl_7N8xoAMpSNJe7BNXekgnvLPUTsgf",
+        "state": "CANCELED",
+        "errorCode": null,
+        "commitAuthorEmail": "profbenjo@gmail.com",
+        "commitMessage": "fix(prompts): the app was writing the one word it is not allowed to write\n\n\"Journey\" is a house rule and no prompt had ever been told about it. On\nproduction: 2 of 15 deck descriptions and 5 of 91 card texts contain it,\nincluding the description on the very first deck a new user is shown —\n\"Embrace your unfolding journey with wisdom and self-compassion.\"\n\nHOUSE_VOICE_RULES is appended to every system prompt whose output reaches a\nreader: deck generation, the Chronicle conversation and onboarding, journey\ncard generation, and the reading interpretation. Two prompts were also\ninstructing the model to use it (\"take the seeker on a journey through the\ncards\"); both rewritten.\n\nAlso caps anonymous feedback at 5/hour on a hash of the caller's IP. The\nsigned-in limit shipped this morning could not see them, and the FAB renders\non the marketing pages, so an unauthenticated script had the table to itself.\nPer-instance and leaky on serverless — which is still the difference between\n\"one script can write the table\" and ",
+        "createdAt": "2026-09-16T02:16:31.822Z"
+      }
+    ]
+  },
+  "errors": []
+}
