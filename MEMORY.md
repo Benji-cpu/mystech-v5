@@ -47,8 +47,8 @@ Learned-experience notes that don't belong in CLAUDE.md. Keep entries concise (1
 - **Vercel Blob store RESOLVED** — was suspended 2026-06-12; verified 2026-08-03 serving reads AND accepting writes (45 style swatches uploaded). Re-check with an actual `put` before ever claiming otherwise.
 - Visual/red-team audit harness: `scripts/audit-walk.mts` (npx tsx, needs dev server on :3000) — records screenshots/video/trace to `.audit/<date>/`. Report pattern: `docs/audit/`. Test user `test-user-e2e` has an ACTIVE PRO subscription in the prod DB — don't use it to test free-plan gating.
 - **Check the Stability balance before believing anything about art quality** — it hit zero on 2026-09-16 and every card in every new deck failed with 402 `payment_required`, with no fallback image. Topped up the same day. `GET https://api.stability.ai/v1/user/balance` with the key reads it in one call.
-- **Google Cloud TTS billing is off** on project 473497770902 — the SAME project as WordZoo's (verified 2026-09-16 by calling the API with each app's own key). Not b.hemsonstruthers' Google account; it is mystechcards@gmail.com or profbenjo@gmail.com, and the billing account found on mystechcards is CLOSED, so the fix is reopen-then-link, not "enable".
-- **Read-aloud is NOT broken** — `FallbackTTSProvider` (`src/lib/voice/index.ts`) tries Cloud TTS, then Gemini TTS, which needs no billing and runs on the Gemini key. Ported from WordZoo. Cloud TTS stays first so the better voice returns with no code change. Gemini costs ~9s a sentence and this route has no blob cache; WordZoo's does.
+- **Google Cloud TTS billing was reopened 2026-09-17** and the good voice is live in MysTech and WordZoo — same project, 473497770902, billing account `01940B-45D0DE-C9E34D` on **mystechcards@gmail.com** (not b.hemsonstruthers, which 403s on that project).
+- `FallbackTTSProvider` (`src/lib/voice/index.ts`) tries Cloud TTS, then Gemini TTS, which needs no billing and runs on the Gemini key — that is what kept read-aloud alive while billing was off. A Cloud failure now cools down for 10 minutes rather than latching for the life of the instance. This route has no blob cache; WordZoo's does, and Gemini costs ~9s a sentence, so add one if the fallback ever becomes the norm again.
 
 ## Card image generation (UNRESOLVED, now measured)
 
@@ -60,6 +60,10 @@ Learned-experience notes that don't belong in CLAUDE.md. Keep entries concise (1
 - The negative prompt already lists person/human/face/woman/silhouette and does not work. On Stability Core a strong positive prior beats the negative list; the lever is the positive prompt.
 - **A regenerated card overwrites the same blob path**, so the URL never changed and browsers/CDN kept serving the old picture — Retry and refine looked like no-ops with correct bytes in storage. The stored URL now carries the write time; don't remove it.
 - `deck-generation.ts` tells the LLM to "state excluded elements explicitly in the imagePrompt", which writes negations like "No human figures are present" into a positive diffusion prompt. Suspicious, unproven, worth testing properly.
+
+## Local environment
+
+- **`~/Documents/Code` is inside iCloud Drive.** It restores deleted files as unreadable placeholders: `tsc` ran 26 minutes at 0% CPU on files deleted the day before, then errored TS6053 on them. `git status` showing untracked files you know you deleted is the tell — `rm -rf` them and re-run. Also delete `tsconfig.tsbuildinfo` when tsc behaves oddly. One restored file was a ROUTE, so a local build can disagree with production in both directions; trust `origin/main`.
 
 ## Repo shape (2026-09-16 cleanup)
 
