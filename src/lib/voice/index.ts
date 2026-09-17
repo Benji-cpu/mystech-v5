@@ -6,16 +6,23 @@ import { GeminiTTSProvider } from './providers/gemini-tts';
 /**
  * Cloud TTS first, Gemini when it cannot be reached.
  *
- * Billing on the Cloud TTS project has never been enabled, so in practice every
- * call falls through to Gemini today. Cloud TTS stays first deliberately: it is
- * the better voice, and the day the billing account is reopened it comes back
- * with no code change and no redeploy.
+ * Cloud TTS is the better voice and far quicker — sub-second against Gemini's
+ * ~9s a sentence — so it is always tried first. Gemini needs no billing and runs
+ * on the Gemini key the app already has, which is what kept read-aloud alive
+ * through the months when billing on the Cloud TTS project was switched off.
+ * Billing was reopened 2026-09-17 and Cloud TTS answers again.
  */
 class FallbackTTSProvider implements TTSProvider {
   private cloud: TTSProvider | null;
   private gemini = new GeminiTTSProvider();
-  /** Once Cloud TTS has failed, stop paying the round trip on every sentence. */
-  private cloudDown = false;
+  /**
+   * When Cloud TTS last failed. A failure stops us paying the round trip on
+   * every subsequent sentence, but it EXPIRES — the original version latched
+   * for the life of the instance, which was right while billing was off and
+   * wrong the moment it came back: one transient blip would have pinned a warm
+   * instance to the slow voice until it recycled.
+   */
+  private cloudFailedAt = 0;
 
   constructor() {
     // The constructor throws when the key is absent; that is a missing voice,
@@ -28,17 +35,23 @@ class FallbackTTSProvider implements TTSProvider {
   }
 
   async synthesize(text: string, options: TTSOptions): Promise<TTSClip> {
-    if (this.cloud && !this.cloudDown) {
+    const cooling = Date.now() - this.cloudFailedAt < CLOUD_RETRY_AFTER_MS;
+    if (this.cloud && !cooling) {
       try {
-        return await this.cloud.synthesize(text, options);
+        const clip = await this.cloud.synthesize(text, options);
+        this.cloudFailedAt = 0;
+        return clip;
       } catch (err) {
-        this.cloudDown = true;
+        this.cloudFailedAt = Date.now();
         console.warn(`[tts] Cloud TTS unavailable, falling back to Gemini — ${err}`);
       }
     }
     return this.gemini.synthesize(text, options);
   }
 }
+
+/** How long to stay on the fallback before giving Cloud TTS another chance. */
+const CLOUD_RETRY_AFTER_MS = 10 * 60 * 1000;
 
 let provider: TTSProvider | null = null;
 
