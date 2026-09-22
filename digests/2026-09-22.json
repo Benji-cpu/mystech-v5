@@ -1,0 +1,36 @@
+{
+  "project": "mystech-v5",
+  "startedAt": "2026-09-22T20:11:18.237Z",
+  "finishedAt": "2026-09-22T20:11:19.933Z",
+  "feedback": {
+    "byStatus": {
+      "actioned": 6,
+      "reviewed": 22,
+      "dismissed": 9
+    },
+    "newLast24h": 0,
+    "rows": []
+  },
+  "health": {
+    "stuckReadings": 0,
+    "stuckReadingRows": [],
+    "failedGenerationsLast24h": 0,
+    "failedImageGensLast24h": 0,
+    "idleSharedDecks": 0
+  },
+  "env": {
+    "stabilityKey": true,
+    "geminiKey": true,
+    "blobToken": true
+  },
+  "pipeline": {
+    "fetched": 0,
+    "inserted": 0,
+    "skipped": 0,
+    "wrongAuthorCount": 0,
+    "wrongAuthors": [],
+    "buildErrorCount": 0,
+    "recent": []
+  },
+  "errors": []
+}
