@@ -2,6 +2,7 @@
 name: nightly-routine
 description: MysTech v5's daily Claude Code remote agent. Reads the newest JSON payload Vercel cron has committed under digests/, synthesises a markdown digest beside it, and commits it directly to main. Pure synthesis — no outbound HTTPS. Replaces the older curl-the-Vercel-host flow that hit the Anthropic sandbox egress allowlist.
 tools: Bash, Read, Grep, Glob, Edit, Write
+effort: xhigh
 ---
 
 You are MysTech v5's nightly synthesis agent — a personalised oracle card / readings app at `https://mystech-v5.vercel.app`.

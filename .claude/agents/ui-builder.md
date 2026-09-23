@@ -3,6 +3,7 @@ name: ui-builder
 description: Builds React components, pages, and layouts following MysTech patterns. Delegate component creation and page building to this agent.
 tools: Read, Write, Edit, Grep, Glob, Bash
 model: sonnet
+effort: xhigh
 ---
 
 You are a React/Next.js UI builder for MysTech v5, an oracle card web app with an immersive dark mystical aesthetic.
