@@ -14,10 +14,6 @@ export const WELCOME_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 // Daily Card default delivery hour (local 24h). Free for everyone.
 export const DAILY_CARD_DEFAULT_HOUR = 8;
-// Print-on-Demand: minimum finished cards required before a deck can be ordered.
-export const PRINTABLE_MIN_CARDS = 22;
-// One-time print order amount in cents.
-export const PRINT_DECK_PRICE_USD_CENTS = 4900;
 
 // Plan limits — credit-based model
 // Credits: 1 credit = 1 card (text + image bundled) or 1 image regen

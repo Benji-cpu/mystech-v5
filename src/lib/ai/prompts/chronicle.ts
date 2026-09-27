@@ -62,7 +62,6 @@ export function buildChronicleGreeting({
   knowledge?: ChronicleKnowledge | null;
   milestoneBadge?: { name: string; lyraMessage: string } | null;
   userName?: string;
-  journeyContext?: { waypointName: string; waypointLens: string } | null;
   emergenceContext?: { cardTitle: string; cardType: string; detectedPattern: string } | null;
 }): string {
   const openers: Record<string, string> = {
@@ -82,7 +81,6 @@ export function buildChronicleGreetingPrompt({
   recentEntries,
   knowledge,
   userName,
-  journeyContext,
   emergenceContext,
 }: {
   timeOfDay: "morning" | "afternoon" | "evening" | "night";
@@ -90,7 +88,6 @@ export function buildChronicleGreetingPrompt({
   recentEntries?: { mood: string | null; themes: string[]; cardTitle?: string; cardMeaning?: string }[];
   knowledge?: ChronicleKnowledge | null;
   userName?: string;
-  journeyContext?: { waypointName: string; waypointLens: string } | null;
   emergenceContext?: { cardTitle: string; cardType: string; detectedPattern: string } | null;
 }): string {
   const contextLines: string[] = [];
@@ -146,11 +143,6 @@ export function buildChronicleGreetingPrompt({
     }
   }
 
-  // Waypoint — pass only the lens (what it means), not the name
-  if (journeyContext) {
-    contextLines.push(`Current practice focus: ${journeyContext.waypointLens}`);
-  }
-
   if (emergenceContext) {
     contextLines.push(`An emergence pattern has surfaced: ${emergenceContext.detectedPattern}. The seeker just acknowledged this.`);
   }
@@ -166,7 +158,7 @@ ${contextBlock}
 
 Write a greeting of exactly 2-3 sentences that opens today's Chronicle session. Weave the available signals into a cohesive invitation — do not list them as separate facts. End with a specific, evocative question that invites the seeker to respond.
 
-${emergenceContext ? "Anchor the greeting on the emergence pattern — connect it to today's opening question." : ""}${journeyContext ? "Let the practice focus color your opening question — help the seeker explore that theme through their actual day, using plain language." : ""}
+${emergenceContext ? "Anchor the greeting on the emergence pattern — connect it to today's opening question." : ""}
 
 Rules:
 - Flowing prose only — no markdown, no headers, no asterisks, no bullet points
@@ -183,21 +175,12 @@ export function buildChronicleConversationContext({
   knowledge,
   recentEntries,
   interests,
-  journeyContext,
   userName,
   emergenceContext,
 }: {
   knowledge?: ChronicleKnowledge | null;
   recentEntries?: { mood: string | null; themes: string[]; entryDate: string }[];
   interests?: { spiritual: string[]; lifeDomains: string[] } | null;
-  journeyContext?: {
-    pathName: string;
-    retreatName: string;
-    waypointName: string;
-    pathLens: string;
-    retreatLens: string;
-    waypointLens: string;
-  } | null;
   userName?: string;
   emergenceContext?: {
     cardTitle: string;
@@ -248,21 +231,6 @@ export function buildChronicleConversationContext({
     );
   }
 
-  if (journeyContext) {
-    parts.push(
-      `Path context — actively weave these themes into the conversation:\n` +
-      `The seeker is walking the ${journeyContext.pathName} path. ` +
-      `They are in the "${journeyContext.retreatName}" chapter, at step: "${journeyContext.waypointName}".\n` +
-      `Path lens: ${journeyContext.pathLens}\n` +
-      `Chapter focus: ${journeyContext.retreatLens}\n` +
-      `Step intention: ${journeyContext.waypointLens}\n` +
-      `Today's Chronicle IS their daily practice on this path. ` +
-      `Frame your questions through the step's lens when natural. ` +
-      `For example, if the step is about "What You Reject," ask what they've been pushing away today. ` +
-      `The card forged today should feel connected to this step's theme.`
-    );
-  }
-
   if (parts.length === 0) return "";
   return `\n--- Seeker Context ---\n${parts.join("\n")}\n--- End Context ---\n`;
 }
@@ -275,7 +243,6 @@ export function buildChronicleCardPrompt({
   knowledge,
   preferences,
   artStyleName,
-  journeyContext,
 }: {
   conversation: { role: string; content: string }[];
   existingCards: { title: string; meaning: string }[];
@@ -285,7 +252,6 @@ export function buildChronicleCardPrompt({
     dismissedCards: { title: string; meaning: string }[];
   };
   artStyleName?: string;
-  journeyContext?: { waypointName: string; waypointLens: string } | null;
 }): string {
   const conversationText = conversation
     .map((m) => `${m.role === "user" ? "Seeker" : "Lyra"}: ${m.content}`)
@@ -339,7 +305,6 @@ The imagePrompt should:
 - Focus on concrete visual subjects
 ${artStyleName ? `- Complement the "${artStyleName}" aesthetic` : ""}
 - Describe ONLY the subject and composition — do NOT describe art technique or style
-${journeyContext ? `\nPath step (if conversation touched on this theme, the card may echo it — but only if organic): "${journeyContext.waypointName}" — ${journeyContext.waypointLens}` : ""}
 Return one card with: title, meaning, guidance, and imagePrompt.`;
 }
 
@@ -351,7 +316,6 @@ export function buildChronicleMiniReadingPrompt({
   knowledge,
   streakCount,
   isPro,
-  journeyContext,
   userName,
 }: {
   card: { title: string; meaning: string; guidance: string };
@@ -359,7 +323,6 @@ export function buildChronicleMiniReadingPrompt({
   knowledge?: ChronicleKnowledge | null;
   streakCount: number;
   isPro: boolean;
-  journeyContext?: { waypointName: string; retreatName: string; waypointLens: string } | null;
   userName?: string;
 }): string {
   const conversationText = conversation
@@ -371,11 +334,6 @@ export function buildChronicleMiniReadingPrompt({
   let knowledgeContext = "";
   if (knowledge?.summary) {
     knowledgeContext = `\nBroader journey context:\n${knowledge.summary}\n`;
-  }
-
-  let pathContext = "";
-  if (journeyContext) {
-    pathContext = `\nPath step: "${journeyContext.waypointName}" in ${journeyContext.retreatName}. ${journeyContext.waypointLens}\n`;
   }
 
   let nameContext = "";
@@ -390,7 +348,7 @@ Guidance: ${card.guidance}
 
 Today's conversation:
 ${conversationText}
-${knowledgeContext}${pathContext}${nameContext}
+${knowledgeContext}${nameContext}
 Write a mini-reading (${depth}) connecting today's card to the seeker's journey. Reference specific moments from today's conversation. ${isPro && streakCount > 7 ? "You may reference patterns you've noticed across their Chronicle." : ""}
 
 Speak as Lyra — warm, direct, insightful. No headers or formatting.`;

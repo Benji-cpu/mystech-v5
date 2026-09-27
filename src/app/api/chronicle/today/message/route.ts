@@ -23,7 +23,6 @@ import {
 import { stripReadySignal } from "@/lib/chronicle/ready-signal";
 import { eq } from "drizzle-orm";
 import { createId } from "@paralleldrive/cuid2";
-import { getPathPosition } from "@/lib/db/queries-paths";
 import type { ChronicleConversationMessage } from "@/types";
 
 import { firstIssueMessage } from "@/lib/api/validate";
@@ -129,12 +128,11 @@ export async function POST(request: NextRequest) {
     .where(eq(chronicleEntries.id, entry.id));
 
   // Build context for Lyra
-  const [knowledge, recentEntries, settings, pathPosition, userName] = await withRetry(() =>
+  const [knowledge, recentEntries, settings, userName] = await withRetry(() =>
     Promise.all([
       getChronicleKnowledge(user.id),
       getRecentChronicleEntries(user.id, 5),
       getChronicleSettings(deck.id),
-      getPathPosition(user.id),
       getUserDisplayName(user.id),
     ])
   );
@@ -168,16 +166,6 @@ export async function POST(request: NextRequest) {
     })),
     interests: settings?.interests ?? null,
     userName,
-    journeyContext: pathPosition
-      ? {
-          pathName: pathPosition.path.name,
-          retreatName: pathPosition.retreat.name,
-          waypointName: pathPosition.waypoint.name,
-          pathLens: pathPosition.path.interpretiveLens,
-          retreatLens: pathPosition.retreat.retreatLens,
-          waypointLens: pathPosition.waypoint.waypointLens,
-        }
-      : null,
     emergenceContext,
   });
 

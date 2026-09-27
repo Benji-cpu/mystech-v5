@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 /**
- * Legacy URLs from before the 2026-06 IA overhaul. These were twelve one-line
+ * Legacy URLs from before the 2026-06 IA overhaul. These were one-line
  * `page.tsx` files whose entire body was `redirect(...)` — each one a route,
  * a server render and a file to keep in your head. Config redirects do the
  * same job at the edge, and query strings carry over on their own.
@@ -12,17 +12,32 @@ import type { NextConfig } from "next";
 const legacyRedirects = [
   { source: "/home", destination: "/today" },
   { source: "/dashboard", destination: "/today" },
-  { source: "/chronicle/today", destination: "/today" },
+  { source: "/chronicle/today", destination: "/chronicle" },
   { source: "/readings", destination: "/story" },
   { source: "/decks/living", destination: "/chronicle" },
   { source: "/studio", destination: "/decks" },
-  { source: "/studio/styles", destination: "/decks/styles" },
-  { source: "/studio/styles/:styleId", destination: "/decks/styles/:styleId/edit" },
-  // `/art-styles/new` must precede `/art-styles/:styleId` or "new" is read as an id.
-  { source: "/art-styles", destination: "/decks/styles" },
-  { source: "/art-styles/new", destination: "/decks/styles/new" },
-  { source: "/art-styles/:styleId/edit", destination: "/decks/styles/:styleId/edit" },
-  { source: "/art-styles/:styleId", destination: "/decks/styles/:styleId" },
+  { source: "/studio/styles/:path*", destination: "/decks" },
+  { source: "/art-styles/:path*", destination: "/decks" },
+];
+
+/**
+ * Features removed on 2026-09-27 (Ben's call: all had ~zero use). Their pages
+ * are gone; the URLs land somewhere live instead of a 404. The DB tables
+ * behind them are still there — dropping them is a separate decision.
+ */
+const removedFeatureRedirects = [
+  // Paths, circles, practices
+  { source: "/paths/:path*", destination: "/today" },
+  // Style studio (custom art styles)
+  { source: "/decks/styles/:path*", destination: "/decks" },
+  { source: "/shared/art-styles/:path*", destination: "/" },
+  // Print
+  { source: "/decks/:deckId/print", destination: "/decks/:deckId" },
+  { source: "/orders/:path*", destination: "/decks" },
+  { source: "/admin/print-orders", destination: "/admin" },
+  // Journey mode — deck creation is the one form at /decks/new now
+  { source: "/decks/new/journey/:path*", destination: "/decks/new" },
+  { source: "/decks/new/simple", destination: "/decks/new" },
 ];
 
 const nextConfig: NextConfig = {
@@ -40,7 +55,10 @@ const nextConfig: NextConfig = {
     ],
   },
   async redirects() {
-    return legacyRedirects.map((r) => ({ ...r, permanent: true }));
+    return [...legacyRedirects, ...removedFeatureRedirects].map((r) => ({
+      ...r,
+      permanent: true,
+    }));
   },
 };
 

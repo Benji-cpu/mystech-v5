@@ -1,10 +1,10 @@
 /**
- * Daily card orchestrator: gather context → email → delivery row.
+ * Daily card orchestrator: pick → email → delivery row.
  *
- * Chronicle users get a nudge toward the /today ritual, carrying their streak
- * and yesterday's forged card. Everyone else gets a card from their own deck,
- * and the email's one tap opens it as a reading (`/daily?on=<date>`, which
- * turns the delivery into a reading on first open — see ./open.ts).
+ * Every deck owner gets a card from their own deck, and the email's one tap
+ * opens it as a reading (`/daily?on=<date>`, which turns the delivery into a
+ * reading on first open — see ./open.ts). Chronicle users included: the daily
+ * card is the ritual, Chronicle an optional practice beside it.
  *
  * A delivery row is written only once Resend has accepted the message and
  * handed back its id. Writing it regardless recorded 67 "deliveries" that
@@ -15,11 +15,6 @@
 import { db } from "@/lib/db";
 import { dailyCardDeliveries, userProfiles, users } from "@/lib/db/schema";
 import { and, eq, isNull } from "drizzle-orm";
-import {
-  getUserChronicleDeck,
-  getChronicleSettings,
-  getRecentChronicleCards,
-} from "@/lib/db/queries";
 import { pickDailyCard, pickDailyDeckForUser } from "./pick-card";
 import { localDateFor } from "./timezone";
 import { sendDailyCardEmail } from "@/lib/email/send";
@@ -46,15 +41,15 @@ export async function sendDailyCardForUser(args: {
   const now = args.now ?? new Date();
   const deliveryDate = localDateFor(args.timezone, now);
 
-  // Idempotency check: did we already deliver today (any channel)?
+  // Idempotency check: is today's card already out, by email or drawn on
+  // /today? Either way there is nothing left to send.
   const [existing] = await db
     .select({ id: dailyCardDeliveries.id })
     .from(dailyCardDeliveries)
     .where(
       and(
         eq(dailyCardDeliveries.userId, args.userId),
-        eq(dailyCardDeliveries.deliveryDate, deliveryDate),
-        eq(dailyCardDeliveries.channel, "email")
+        eq(dailyCardDeliveries.deliveryDate, deliveryDate)
       )
     )
     .limit(1);
@@ -67,65 +62,35 @@ export async function sendDailyCardForUser(args: {
     .limit(1);
   if (!userRow?.email) return { ok: false, status: "skipped_no_email" };
 
-  // Gather ritual context. Chronicle users: streak + yesterday's forged card.
-  // Others: feature a card from their decks as the invitation art.
-  let streakCount = 0;
-  let featured: { title: string; imageUrl: string | null } | null = null;
-  let featuredCardId: string | null = null;
-  let featuredDeckId: string | null = null;
-
-  const chronicleDeck = await getUserChronicleDeck(args.userId);
-  if (chronicleDeck) {
-    const [settings, recentCards] = await Promise.all([
-      getChronicleSettings(chronicleDeck.id),
-      getRecentChronicleCards(chronicleDeck.id, 1),
-    ]);
-    streakCount = settings?.streakCount ?? 0;
-    featuredDeckId = chronicleDeck.id;
-    const lastCard = recentCards[0];
-    if (lastCard) {
-      // The email carries the PNG master — Outlook cannot render WebP.
-      featured = { title: lastCard.title, imageUrl: printImageUrl(lastCard) };
-      featuredCardId = lastCard.id;
-    }
-  } else {
-    const deck = await pickDailyDeckForUser(args.userId, args.preferredDeckId);
-    if (!deck) {
-      // The user switched the daily card ON and has nothing to draw from, which
-      // is every user until they finish a conversation with Lyra. Sending
-      // nothing meant the setting produced silence forever and looked broken.
-      // Send the invitation ONCE — a daily nag for a thing they have not done
-      // is worse than the silence was — then go quiet until a deck exists.
-      const alreadyInvited = await hasBeenInvitedToMakeADeck(args.userId);
-      if (alreadyInvited) return { ok: false, status: "skipped_no_deck_already_invited" };
-      return sendDeckInvitation({
-        userId: args.userId,
-        email: userRow.email,
-        name: userRow.displayName ?? userRow.name ?? null,
-        deliveryDate,
-      });
-    }
-    featuredDeckId = deck.id;
-    const card = await pickDailyCard(args.userId, deck.id, { random: args.random });
-    if (card) {
-      featured = { title: card.title, imageUrl: printImageUrl(card) };
-      featuredCardId = card.id;
-    }
+  const deck = await pickDailyDeckForUser(args.userId, args.preferredDeckId);
+  if (!deck) {
+    // The user switched the daily card ON and has nothing to draw from, which
+    // is every user until they finish a conversation with Lyra. Sending
+    // nothing meant the setting produced silence forever and looked broken.
+    // Send the invitation ONCE — a daily nag for a thing they have not done
+    // is worse than the silence was — then go quiet until a deck exists.
+    const alreadyInvited = await hasBeenInvitedToMakeADeck(args.userId);
+    if (alreadyInvited) return { ok: false, status: "skipped_no_deck_already_invited" };
+    return sendDeckInvitation({
+      userId: args.userId,
+      email: userRow.email,
+      name: userRow.displayName ?? userRow.name ?? null,
+      deliveryDate,
+    });
   }
+  const card = await pickDailyCard(args.userId, deck.id, { random: args.random });
 
   return deliver({
     userId: args.userId,
     email: userRow.email,
     name: userRow.displayName ?? userRow.name ?? null,
     deliveryDate,
-    streakCount,
-    hasChronicle: !!chronicleDeck,
-    card: featured,
-    cardId: featuredCardId,
-    deckId: featuredDeckId,
-    // A card from their own deck opens as a reading; the chronicle ritual
-    // lives on /today.
-    deepLinkPath: !chronicleDeck && featuredCardId ? `/daily?on=${deliveryDate}` : "/today",
+    // The email carries the PNG master — Outlook cannot render WebP.
+    card: card ? { title: card.title, imageUrl: printImageUrl(card) } : null,
+    cardId: card?.id ?? null,
+    deckId: deck.id,
+    // The one tap opens today's card as a reading.
+    deepLinkPath: card ? `/daily?on=${deliveryDate}` : "/today",
   });
 }
 
@@ -135,8 +100,6 @@ async function deliver(args: {
   email: string;
   name: string | null;
   deliveryDate: string;
-  streakCount: number;
-  hasChronicle: boolean;
   card: { title: string; imageUrl: string | null } | null;
   cardId: string | null;
   deckId: string | null;
@@ -147,8 +110,6 @@ async function deliver(args: {
     const sent = await sendDailyCardEmail({
       to: args.email,
       name: args.name,
-      streakCount: args.streakCount,
-      hasChronicle: args.hasChronicle,
       card: args.card,
       noDeck: args.noDeck,
       deepLinkPath: args.deepLinkPath,
@@ -222,8 +183,6 @@ function sendDeckInvitation(args: {
 }): Promise<SendResult> {
   return deliver({
     ...args,
-    streakCount: 0,
-    hasChronicle: false,
     card: null,
     cardId: null,
     deckId: null,

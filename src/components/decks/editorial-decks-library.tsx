@@ -2,14 +2,12 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Plus, ScrollText, Search } from "lucide-react";
 import type { Deck } from "@/types";
 
 interface EditorialDecksLibraryProps {
   userDecks: Deck[];
-  adoptedDecks: Deck[];
   hasChronicle: boolean;
 }
 
@@ -17,21 +15,9 @@ const spring = { type: "spring" as const, stiffness: 180, damping: 22 };
 
 export function EditorialDecksLibrary({
   userDecks,
-  adoptedDecks,
   hasChronicle,
 }: EditorialDecksLibraryProps) {
-  const tabs = useMemo(() => {
-    const t: { key: "mine" | "community"; label: string; count: number }[] = [
-      { key: "mine", label: "My decks", count: userDecks.length },
-    ];
-    if (adoptedDecks.length > 0) {
-      t.push({ key: "community", label: "Community", count: adoptedDecks.length });
-    }
-    return t;
-  }, [userDecks.length, adoptedDecks.length]);
-
-  const [tab, setTab] = useState<"mine" | "community">("mine");
-  const active = tab === "mine" ? userDecks : adoptedDecks;
+  const active = userDecks;
 
   return (
     <div
@@ -85,13 +71,13 @@ export function EditorialDecksLibrary({
               </div>
               <div className="flex-1">
                 <p className="eyebrow" style={{ color: "var(--accent-gold)" }}>
-                  Begin a chronicle
+                  Chronicle
                 </p>
                 <p
                   className="display mt-1 text-lg leading-tight"
                   style={{ color: "var(--ink)" }}
                 >
-                  Start a daily practice
+                  A deeper practice, if you want one
                 </p>
               </div>
               <span
@@ -104,37 +90,8 @@ export function EditorialDecksLibrary({
           </motion.div>
         )}
 
-        {/* Tabs */}
-        {tabs.length > 1 && (
-          <div className="mt-10 flex gap-6 border-b hair">
-            {tabs.map((t) => (
-              <button
-                key={t.key}
-                onClick={() => setTab(t.key)}
-                className="relative -mb-px flex items-baseline gap-2 pb-3 text-sm transition-colors"
-                style={{
-                  color: tab === t.key ? "var(--ink)" : "var(--ink-mute)",
-                  fontWeight: tab === t.key ? 500 : 400,
-                }}
-              >
-                {t.label}
-                <span className="text-xs" style={{ color: "var(--ink-faint)" }}>
-                  {t.count}
-                </span>
-                {tab === t.key && (
-                  <motion.span
-                    layoutId="decks-tab"
-                    className="absolute inset-x-0 -bottom-px h-px"
-                    style={{ background: "var(--ink)" }}
-                  />
-                )}
-              </button>
-            ))}
-          </div>
-        )}
-
         {/* Empty */}
-        {active.length === 0 && tab === "mine" && (
+        {active.length === 0 && (
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
@@ -175,46 +132,44 @@ export function EditorialDecksLibrary({
               </motion.div>
             ))}
 
-            {tab === "mine" && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ ...spring, delay: Math.min(active.length * 0.04, 0.4) }}
-              >
-                <Link href="/decks/new" className="group block">
-                  <div
-                    className="flex aspect-[3/4] items-center justify-center rounded-md border-2 border-dashed transition-colors group-hover:border-[var(--ink)]"
-                    style={{ borderColor: "var(--line)", background: "var(--paper-warm)" }}
-                  >
-                    <div className="text-center">
-                      <Plus
-                        size={28}
-                        strokeWidth={1.5}
-                        className="mx-auto transition-colors group-hover:text-[var(--ink)]"
-                        style={{ color: "var(--ink-mute)" }}
-                      />
-                      <p
-                        className="mt-3 text-xs"
-                        style={{ color: "var(--ink-mute)" }}
-                      >
-                        Create a deck
-                      </p>
-                    </div>
-                  </div>
-                  <div className="mt-3">
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ ...spring, delay: Math.min(active.length * 0.04, 0.4) }}
+            >
+              <Link href="/decks/new" className="group block">
+                <div
+                  className="flex aspect-[3/4] items-center justify-center rounded-md border-2 border-dashed transition-colors group-hover:border-[var(--ink)]"
+                  style={{ borderColor: "var(--line)", background: "var(--paper-warm)" }}
+                >
+                  <div className="text-center">
+                    <Plus
+                      size={28}
+                      strokeWidth={1.5}
+                      className="mx-auto transition-colors group-hover:text-[var(--ink)]"
+                      style={{ color: "var(--ink-mute)" }}
+                    />
                     <p
-                      className="display text-base leading-tight"
-                      style={{ color: "var(--ink)" }}
+                      className="mt-3 text-xs"
+                      style={{ color: "var(--ink-mute)" }}
                     >
-                      New deck
-                    </p>
-                    <p className="mt-0.5 text-xs" style={{ color: "var(--ink-mute)" }}>
-                      Guided or quick
+                      Create a deck
                     </p>
                   </div>
-                </Link>
-              </motion.div>
-            )}
+                </div>
+                <div className="mt-3">
+                  <p
+                    className="display text-base leading-tight"
+                    style={{ color: "var(--ink)" }}
+                  >
+                    New deck
+                  </p>
+                  <p className="mt-0.5 text-xs" style={{ color: "var(--ink-mute)" }}>
+                    Shaped from your words
+                  </p>
+                </div>
+              </Link>
+            </motion.div>
           </section>
         )}
       </div>
@@ -224,7 +179,6 @@ export function EditorialDecksLibrary({
 
 function EditorialDeckTile({ deck }: { deck: Deck }) {
   const isChronicle = deck.deckType === "chronicle";
-  const isDraft = deck.status === "draft";
 
   return (
     <Link href={`/decks/${deck.id}`} className="group block">
@@ -255,15 +209,15 @@ function EditorialDeckTile({ deck }: { deck: Deck }) {
         )}
 
         {/* Tag */}
-        {(isChronicle || isDraft) && (
+        {isChronicle && (
           <span
             className="absolute left-3 top-3 rounded-full px-2.5 py-0.5 text-[10px] font-medium backdrop-blur-sm"
             style={{
               background: "rgba(251, 247, 238, 0.9)",
-              color: isChronicle ? "var(--accent-gold)" : "var(--ink-mute)",
+              color: "var(--accent-gold)",
             }}
           >
-            {isChronicle ? "Chronicle" : "Draft"}
+            Chronicle
           </span>
         )}
       </div>
@@ -276,9 +230,7 @@ function EditorialDeckTile({ deck }: { deck: Deck }) {
           {deck.title}
         </h3>
         <p className="mt-0.5 text-xs" style={{ color: "var(--ink-mute)" }}>
-          {isDraft
-            ? "In progress"
-            : isChronicle
+          {isChronicle
             ? `${deck.cardCount} card${deck.cardCount !== 1 ? "s" : ""} and growing`
             : `${deck.cardCount} card${deck.cardCount !== 1 ? "s" : ""}`}
         </p>

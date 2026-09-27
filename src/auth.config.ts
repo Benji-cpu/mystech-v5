@@ -37,7 +37,6 @@ export default {
         nextUrl.pathname.startsWith("/readings") ||
         nextUrl.pathname.startsWith("/studio") ||
         nextUrl.pathname.startsWith("/chronicle") ||
-        nextUrl.pathname.startsWith("/paths") ||
         nextUrl.pathname.startsWith("/settings") ||
         nextUrl.pathname.startsWith("/onboarding");
       const isOnAdmin = nextUrl.pathname.startsWith("/admin");

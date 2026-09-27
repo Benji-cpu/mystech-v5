@@ -2,7 +2,6 @@ import { getSharedDeckByToken } from "@/lib/db/queries";
 import { getCurrentUser } from "@/lib/auth/helpers";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { AdoptDeckButton } from "@/components/shared/adopt-deck-button";
 import { SharedDeckCardGrid } from "@/components/shared/shared-deck-card-grid";
 import { StudioStyleBadge } from "@/components/studio/studio-style-badge";
 import type { Metadata } from "next";
@@ -89,14 +88,11 @@ export default async function SharedDeckPage({
                 <span style={{ color: "var(--ink-faint)" }}>·</span>
                 <StudioStyleBadge
                   styleName={deck.artStyleName}
-                  styleId={deck.artStyleId}
-                  linkToStudio={false}
                 />
               </>
             )}
           </div>
         </div>
-        <AdoptDeckButton deckId={deck.id} isLoggedIn={isLoggedIn} />
       </header>
 
       <SharedDeckCardGrid cards={cards} />

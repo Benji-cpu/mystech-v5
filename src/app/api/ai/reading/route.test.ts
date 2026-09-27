@@ -26,14 +26,6 @@ vi.mock("@/lib/ai/context-compression", () => ({
   maybeCompressUserContext: vi.fn(() => Promise.resolve()),
 }));
 
-vi.mock("@/lib/astrology/birth-chart", () => ({
-  getCurrentCelestialContext: vi.fn(() => ({
-    moonPhase: "Waxing Crescent",
-    moonPhaseFraction: 0.15,
-    moonSign: "Gemini",
-  })),
-}));
-
 vi.mock("@/lib/db", () => ({
   db: {
     update: vi.fn(() => ({
@@ -58,17 +50,6 @@ vi.mock("@/lib/db", () => ({
 
 vi.mock("@/lib/db/schema", () => ({
   readings: {},
-  astrologyProfiles: {},
-  readingAstrology: { readingId: "reading_id" },
-  readingPathContext: { readingId: "reading_id" },
-  paths: { id: "id", name: "name" },
-  retreats: { id: "id", name: "name" },
-  waypoints: { id: "id", name: "name" },
-  circles: { id: "id", name: "name", circleNumber: "circle_number" },
-}));
-
-vi.mock("@/lib/db/queries-paths", () => ({
-  getCardPathHistory: vi.fn(() => []),
 }));
 
 vi.mock("@/lib/ai/gemini", () => ({

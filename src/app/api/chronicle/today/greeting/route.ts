@@ -17,7 +17,6 @@ import {
 } from "@/lib/db/queries";
 import { getUserPlanFromRole } from "@/lib/usage";
 import { buildChronicleGreetingPrompt } from "@/lib/ai/prompts/chronicle";
-import { getPathPosition } from "@/lib/db/queries-paths";
 import { eq } from "drizzle-orm";
 
 export const maxDuration = 30;
@@ -54,13 +53,12 @@ export async function GET(request: NextRequest) {
     "morning" | "afternoon" | "evening" | "night";
 
   // Parallel fetch all context signals
-  const [settings, knowledge, recentEntries, pathPosition, userName, pendingEmergence] =
+  const [settings, knowledge, recentEntries, userName, pendingEmergence] =
     await withRetry(() =>
       Promise.all([
         getChronicleSettings(deck.id),
         getChronicleKnowledge(user.id),
         getRecentChronicleEntries(user.id, 3),
-        getPathPosition(user.id),
         getUserDisplayName(user.id),
         getPendingEmergenceEvent(user.id),
       ])
@@ -114,12 +112,6 @@ export async function GET(request: NextRequest) {
     recentEntries: entriesWithCardContext,
     knowledge,
     userName,
-    journeyContext: pathPosition
-      ? {
-          waypointName: pathPosition.waypoint.name,
-          waypointLens: pathPosition.waypoint.waypointLens,
-        }
-      : null,
     emergenceContext,
   });
 

@@ -11,18 +11,10 @@ import {
   getEmergenceEventHistory,
   getUserPlan,
 } from "@/lib/db/queries";
-import {
-  getPathPosition,
-  getPathWithRetreatsAndWaypoints,
-  getRetreatProgressForPath,
-  getWaypointProgressForRetreat,
-  getAllRetreatCardsForPath,
-} from "@/lib/db/queries-paths";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EditorialShell, EditorialHeader } from "@/components/editorial";
 import { StoryView } from "@/components/story/story-view";
 import type { StoryItem } from "@/components/story/story-timeline";
-import type { FocusTrailData } from "@/components/story/focus-trail";
 
 const READING_HISTORY_LIMITS = {
   free: 10,
@@ -50,53 +42,16 @@ async function StoryContent() {
   const plan = await getUserPlan(userId);
   const historyLimit = READING_HISTORY_LIMITS[plan] ?? 10;
 
-  const [readings, entries, knowledge, chronicleDeck, emergenceEvents, pathPosition] =
+  const [readings, entries, knowledge, chronicleDeck, emergenceEvents] =
     await Promise.all([
       getUserReadingsWithDeck(userId, historyLimit === Infinity ? undefined : historyLimit),
       getChronicleEntries(userId, CHRONICLE_ENTRY_LIMIT),
       getChronicleKnowledge(userId),
       getUserChronicleDeck(userId),
       getEmergenceEventHistory(userId),
-      getPathPosition(userId),
     ]);
 
   const settings = chronicleDeck ? await getChronicleSettings(chronicleDeck.id) : null;
-
-  // Build the focus trail for the active path: total/completed steps + earned artifacts.
-  let focusTrail: FocusTrailData | null = null;
-  if (pathPosition) {
-    const [pathStructure, retreatProgressList, retreatCards] = await Promise.all([
-      getPathWithRetreatsAndWaypoints(pathPosition.path.id),
-      getRetreatProgressForPath(userId, pathPosition.pathProgress.id),
-      getAllRetreatCardsForPath(pathPosition.path.id, userId),
-    ]);
-
-    const totalSteps =
-      pathStructure?.retreats.reduce((sum, r) => sum + r.waypoints.length, 0) ?? 0;
-
-    const waypointProgressLists = await Promise.all(
-      retreatProgressList.map((rp) => getWaypointProgressForRetreat(userId, rp.id))
-    );
-    const completedSteps = waypointProgressLists
-      .flat()
-      .filter((wp) => wp.status === "completed").length;
-
-    focusTrail = {
-      pathId: pathPosition.path.id,
-      pathName: pathPosition.path.name,
-      waypointName: pathPosition.waypoint.name,
-      totalSteps,
-      completedSteps,
-      artifacts: retreatCards
-        .filter((c) => c.userId === userId)
-        .map((c) => ({
-          id: c.id,
-          title: c.title,
-          imageUrl: c.imageUrl,
-          cardType: c.cardType,
-        })),
-    };
-  }
 
   const items: StoryItem[] = [
     ...readings.map((r) => ({
@@ -145,7 +100,6 @@ async function StoryContent() {
       totalEntries={settings?.totalEntries ?? 0}
       readingCount={readings.length}
       badges={settings?.badgesEarned ?? []}
-      focusTrail={focusTrail}
       isFree={plan === "free"}
     />
   );

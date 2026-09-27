@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth/helpers";
 import { completeMilestone, getUserMilestones, computeOnboardingStage } from "@/lib/onboarding/milestones";
-import { getUserTotalReadingCount, getUserChronicleDeck, getAstrologyProfile } from "@/lib/db/queries";
-import { getPathPosition } from "@/lib/db/queries-paths";
+import { getUserTotalReadingCount, getUserChronicleDeck } from "@/lib/db/queries";
 import { users } from "@/lib/db/schema";
 import { db } from "@/lib/db";
 import { eq } from "drizzle-orm";
@@ -18,17 +17,11 @@ const VALID_MILESTONES: Set<string> = new Set([
   "first_deck_explored",
   "second_reading_complete",
   "spread_types_introduced",
-  "art_styles_introduced",
   "chronicle_introduced",
   "first_chronicle_entry",
   "streak_concept_seen",
-  "paths_introduced",
-  "astrology_introduced",
-  "first_path_activated",
-  "astrology_setup_complete",
   "sharing_introduced",
   "pro_features_introduced",
-  "custom_art_style_introduced",
 ]);
 
 export async function POST(request: NextRequest) {
@@ -57,12 +50,10 @@ export async function POST(request: NextRequest) {
 
   // Compute updated stage
   const milestones = await getUserMilestones(user.id);
-  const [readingCount, chronicleDeck, pathPosition, astroProfile, [userData]] =
+  const [readingCount, chronicleDeck, [userData]] =
     await Promise.all([
       getUserTotalReadingCount(user.id),
       getUserChronicleDeck(user.id),
-      getPathPosition(user.id),
-      getAstrologyProfile(user.id),
       db
         .select({ initiationCompletedAt: users.initiationCompletedAt, createdAt: users.createdAt })
         .from(users)
@@ -77,8 +68,6 @@ export async function POST(request: NextRequest) {
     hasInitiation: userData?.initiationCompletedAt != null,
     readingCount,
     hasChronicle: !!chronicleDeck,
-    hasActivePath: !!pathPosition,
-    hasAstroProfile: !!astroProfile,
     daysSinceSignup,
   });
 

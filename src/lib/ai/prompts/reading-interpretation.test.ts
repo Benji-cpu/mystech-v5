@@ -41,60 +41,16 @@ describe("ReadingInterpretationSchema", () => {
     expect(result.success).toBe(false);
   });
 
-  it("validates with optional astroResonance per card", () => {
+  it("ignores astrology fields stored on older readings", () => {
     const result = ReadingInterpretationSchema.safeParse({
       cardSections: [
-        {
-          positionName: "Past",
-          text: "The River flows...",
-          astroResonance: {
-            relevantPlacement: "sun",
-            rulingSign: "Scorpio",
-            rulingPlanet: "Pluto",
-            elementHarmony: "aligned",
-          },
-        },
-        { positionName: "Present", text: "The Hearth warms..." },
-      ],
-      synthesis: "Together...",
-      reflectiveQuestion: "What stirs?",
-      astroContext: {
-        dominantInfluence: "sun",
-        celestialNote: "Waxing Crescent in Gemini",
-      },
-    });
-    expect(result.success).toBe(true);
-  });
-
-  it("validates without astrology fields (backward compatible)", () => {
-    const result = ReadingInterpretationSchema.safeParse({
-      cardSections: [
-        { positionName: "Past", text: "Text..." },
+        { positionName: "Past", text: "Text...", astroResonance: { relevantPlacement: "sun" } },
       ],
       synthesis: "Synthesis...",
       reflectiveQuestion: "Question?",
+      astroContext: { dominantInfluence: "sun", celestialNote: "Full Moon" },
     });
     expect(result.success).toBe(true);
-  });
-
-  it("rejects invalid astroResonance values", () => {
-    const result = ReadingInterpretationSchema.safeParse({
-      cardSections: [
-        {
-          positionName: "Past",
-          text: "Text...",
-          astroResonance: {
-            relevantPlacement: "invalid",
-            rulingSign: "Scorpio",
-            rulingPlanet: "Pluto",
-            elementHarmony: "aligned",
-          },
-        },
-      ],
-      synthesis: "Synthesis...",
-      reflectiveQuestion: "Question?",
-    });
-    expect(result.success).toBe(false);
   });
 });
 
@@ -254,31 +210,7 @@ describe("buildReadingInterpretationPrompt", () => {
     expect(result).toContain("reflective question");
   });
 
-  it("includes astrology context when provided", () => {
-    const result = buildReadingInterpretationPrompt({
-      spreadType: "three_card",
-      question: "Career advice?",
-      cards: mockCards,
-      astroContext: {
-        sunSign: "Scorpio",
-        moonSign: "Pisces",
-        risingSign: "Leo",
-        elementBalance: { fire: 2, earth: 1, air: 3, water: 4 },
-        currentMoonPhase: "Waxing Crescent",
-        currentMoonSign: "Gemini",
-      },
-    });
-
-    expect(result).toContain("Sun in Scorpio");
-    expect(result).toContain("Moon in Pisces");
-    expect(result).toContain("Leo Rising");
-    expect(result).toContain("Fire 2, Earth 1, Air 3, Water 4");
-    expect(result).toContain("Waxing Crescent in Gemini");
-    expect(result).toContain("astroResonance");
-    expect(result).toContain("astroContext");
-  });
-
-  it("omits astrology section when no astroContext provided", () => {
+  it("never asks for astrology", () => {
     const result = buildReadingInterpretationPrompt({
       spreadType: "three_card",
       question: "Test?",
@@ -288,30 +220,6 @@ describe("buildReadingInterpretationPrompt", () => {
     expect(result).not.toContain("Astrological context");
     expect(result).not.toContain("Sun in");
     expect(result).not.toContain("astroResonance");
-  });
-
-  it("handles partial astrology context (sun only)", () => {
-    const result = buildReadingInterpretationPrompt({
-      spreadType: "three_card",
-      question: null,
-      cards: mockCards,
-      astroContext: {
-        sunSign: "Aries",
-        moonSign: null,
-        risingSign: null,
-        elementBalance: null,
-        currentMoonPhase: "Full Moon",
-        currentMoonSign: "Libra",
-      },
-    });
-
-    expect(result).toContain("Sun in Aries");
-    // Birth chart line should not include "Moon in" placement (null moonSign)
-    const birthChartLine = result.split("\n").find((l: string) => l.includes("Birth chart:"));
-    expect(birthChartLine).not.toContain("Moon in");
-    expect(birthChartLine).not.toContain("Rising");
-    expect(result).not.toContain("Element balance");
-    expect(result).toContain("Full Moon in Libra");
   });
 });
 

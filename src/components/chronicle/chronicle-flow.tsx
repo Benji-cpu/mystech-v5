@@ -8,7 +8,6 @@ import {
   useState,
   useMemo,
 } from 'react';
-import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Textarea } from '@/components/ui/textarea';
@@ -40,7 +39,7 @@ import { OracleCard } from '@/components/cards/oracle-card';
 import { buildChronicleGreeting } from '@/lib/ai/prompts/chronicle';
 import { hasReadySignal, stripReadySignal } from '@/lib/chronicle/ready-signal';
 
-import type { Card, CardImageStatus, CardType, ChronicleEntry, ChronicleKnowledge, ChronicleSettings, EmergenceEvent, PathPosition } from '@/types';
+import type { Card, CardImageStatus, CardType, ChronicleEntry, ChronicleKnowledge, ChronicleSettings, EmergenceEvent } from '@/types';
 
 // ── Springs ──────────────────────────────────────────────────────────────
 
@@ -74,7 +73,6 @@ interface ChronicleFlowProps {
   } | null;
   initialPhase: string;
   isFirstEntry?: boolean;
-  journeyPosition: PathPosition | null;
   userName?: string;
   knowledge?: ChronicleKnowledge | null;
   recentEntries?: { mood: string | null; themes: string[]; cardTitle?: string }[];
@@ -360,7 +358,6 @@ export function ChronicleFlow({
   todayCard,
   initialPhase,
   isFirstEntry = false,
-  journeyPosition,
   userName,
   knowledge,
   recentEntries,
@@ -399,7 +396,6 @@ export function ChronicleFlow({
     streakCount: settings?.streakCount ?? 0,
   });
 
-  const router = useRouter();
   const [inputValue, setInputValue] = useState('');
   const [showBadge, setShowBadge] = useState(true);
   const [emergenceCardRevealed, setEmergenceCardRevealed] = useState(false);
@@ -421,7 +417,7 @@ export function ChronicleFlow({
   const readingFired = useRef(false);
   const completeFired = useRef(false);
 
-  const { phase, messages, isStreaming, lyraSignaledReady, card, miniReading, streakCount, newBadge, journeyRecorded, error, emergenceCard, emergenceMessage, emergenceAcknowledged } = state;
+  const { phase, messages, isStreaming, lyraSignaledReady, card, miniReading, streakCount, newBadge, error, emergenceCard, emergenceMessage, emergenceAcknowledged } = state;
 
   const canForge = useMemo(
     () => lyraSignaledReady && !isStreaming,
@@ -593,9 +589,6 @@ export function ChronicleFlow({
           recentEntries,
           knowledge,
           userName,
-          journeyContext: journeyPosition
-            ? { waypointName: journeyPosition.waypoint.name, waypointLens: journeyPosition.waypoint.waypointLens }
-            : null,
           emergenceContext: emergenceAcknowledged && emergenceCard
             ? { cardTitle: emergenceCard.title, cardType: emergenceCard.cardType, detectedPattern: emergenceCard.detectedPattern }
             : null,
@@ -729,7 +722,6 @@ export function ChronicleFlow({
           type: 'COMPLETE',
           streakCount: data.data.streak?.streakCount ?? streakCount,
           newBadge: data.data.newBadge ?? null,
-          journeyRecorded: data.data.journeyRecorded ?? false,
         });
       })
       .catch(() => {
@@ -878,20 +870,8 @@ export function ChronicleFlow({
 
   const transitionToReading = useCallback(() => {
     if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
-    if (journeyPosition && card) {
-      try {
-        sessionStorage.setItem('mystech_reading_handoff', JSON.stringify({
-          source: 'chronicle',
-          chronicleCardId: card.id,
-          question: journeyPosition.waypoint.suggestedIntention,
-          deckId,
-        }));
-      } catch { /* sessionStorage unavailable */ }
-      router.push('/readings/new?source=chronicle');
-    } else {
-      dispatch({ type: 'CARD_REVEALED' });
-    }
-  }, [journeyPosition, card, deckId, router]);
+    dispatch({ type: 'CARD_REVEALED' });
+  }, []);
 
   // 7-second pausable auto-timer during card_reveal — but only once the
   // image has finished generating. While the background image task is
@@ -1246,18 +1226,6 @@ export function ChronicleFlow({
 
                   {/* Onward — the ritual is done for today */}
                   <div className="flex flex-col gap-2 pt-2">
-                    {journeyPosition && (
-                      <Link
-                        href={`/paths/${journeyPosition.path.id}`}
-                        className="flex items-center justify-between rounded-2xl border border-gold/25 bg-gold/[0.06] px-4 py-3 text-sm text-white/85 transition-colors hover:border-gold/45"
-                      >
-                        <span>
-                          <span className="text-gold/80 text-xs uppercase tracking-wider block">Today&rsquo;s focus</span>
-                          {journeyPosition.waypoint.name}
-                        </span>
-                        <span className="text-gold/60">→</span>
-                      </Link>
-                    )}
                     <Link
                       href="/readings/new"
                       className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white/80 transition-colors hover:border-white/25"

@@ -14,12 +14,10 @@ import type { PromptEntry } from "@/types";
 
 const CATEGORY_LABELS: Record<string, string> = {
   deck: "Deck Generation",
-  conversation: "Conversation",
-  journey: "Journey Cards",
   reading: "Reading Interpretation",
 };
 
-const CATEGORY_ORDER = ["deck", "conversation", "journey", "reading"];
+const CATEGORY_ORDER = ["deck", "reading"];
 
 export default function AdminPromptsPage() {
   const { data: session } = useSession();

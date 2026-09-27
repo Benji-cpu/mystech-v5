@@ -1,7 +1,7 @@
 import { db } from "@/lib/db";
-import { decks, cards, artStyles, readings, readingCards, retreatCards, conversations, deckMetadata, subscriptions, users, userProfiles, deckAdoptions, cardFeedback, chronicleSettings, chronicleEntries, chronicleKnowledge, astrologyProfiles, emergenceEvents, cardOverrides } from "@/lib/db/schema";
-import { eq, and, asc, count, ne, desc, gte, gt, sql, isNotNull } from "drizzle-orm";
-import type { Deck, DeckWithOwner, DraftDeckWithPhase, JourneyPhase, DraftCard, PlanType, UserProfile, UserContextProfile, ReadingLength, CardFeedbackType, VoicePreferences, VoiceSpeed, ChronicleEntry, ChronicleSettings, ChronicleKnowledge, ChronicleInterests, ChronicleBadge, AstrologyProfile, ActivityItem, EmergenceEvent } from "@/types";
+import { decks, cards, artStyles, readings, readingCards, retreatCards, subscriptions, users, userProfiles, cardFeedback, chronicleSettings, chronicleEntries, chronicleKnowledge, emergenceEvents, cardOverrides } from "@/lib/db/schema";
+import { eq, and, asc, count, ne, desc, gte, sql, isNotNull } from "drizzle-orm";
+import type { PlanType, UserProfile, UserContextProfile, ReadingLength, CardFeedbackType, VoicePreferences, VoiceSpeed, ChronicleEntry, ChronicleSettings, ChronicleKnowledge, ChronicleInterests, ChronicleBadge, ActivityItem, EmergenceEvent } from "@/types";
 import { getBadgeById } from "@/lib/chronicle/badges";
 
 export async function getUserDisplayName(userId: string): Promise<string> {
@@ -72,70 +72,6 @@ export async function getArtStyleById(artStyleId: string) {
 }
 
 // --- Journey mode queries ---
-
-export async function getConversationForDeck(deckId: string) {
-  return db
-    .select()
-    .from(conversations)
-    .where(eq(conversations.deckId, deckId))
-    .orderBy(asc(conversations.createdAt));
-}
-
-export async function getDeckMetadata(deckId: string) {
-  const [metadata] = await db
-    .select()
-    .from(deckMetadata)
-    .where(eq(deckMetadata.deckId, deckId));
-  return metadata ?? null;
-}
-
-export async function getUserDraftDecks(userId: string): Promise<DraftDeckWithPhase[]> {
-  const rows = await db
-    .select({
-      id: decks.id,
-      userId: decks.userId,
-      title: decks.title,
-      description: decks.description,
-      theme: decks.theme,
-      status: decks.status,
-      deckType: decks.deckType,
-      cardCount: decks.cardCount,
-      isPublic: decks.isPublic,
-      shareToken: decks.shareToken,
-      coverImageUrl: decks.coverImageUrl,
-      artStyleId: decks.artStyleId,
-      createdAt: decks.createdAt,
-      updatedAt: decks.updatedAt,
-      draftCards: deckMetadata.draftCards,
-    })
-    .from(decks)
-    .leftJoin(deckMetadata, eq(decks.id, deckMetadata.deckId))
-    .where(and(eq(decks.userId, userId), eq(decks.status, "draft")))
-    .orderBy(desc(decks.updatedAt));
-
-  return rows.map((row) => {
-    const hasDraftCards = Array.isArray(row.draftCards) && row.draftCards.length > 0;
-    const phase: JourneyPhase = hasDraftCards ? "review" : "chat";
-    return {
-      id: row.id,
-      userId: row.userId,
-      title: row.title,
-      description: row.description,
-      theme: row.theme,
-      status: row.status as Deck["status"],
-      deckType: (row.deckType ?? "standard") as Deck["deckType"],
-      cardCount: row.cardCount,
-      isPublic: row.isPublic,
-      shareToken: row.shareToken ?? null,
-      coverImageUrl: row.coverImageUrl,
-      artStyleId: row.artStyleId,
-      createdAt: row.createdAt,
-      updatedAt: row.updatedAt,
-      journeyPhase: phase,
-      resumeHref: `/decks/new/journey/${row.id}/${phase}`,
-    };
-  });
-}
 
 // --- Reading queries ---
 
@@ -513,14 +449,6 @@ export async function getSharedDeckByToken(token: string) {
   return { ...deck, cards: deckCards, artStyleName };
 }
 
-export async function getSharedArtStyleByToken(token: string) {
-  const [style] = await db
-    .select()
-    .from(artStyles)
-    .where(eq(artStyles.shareToken, token));
-  return style ?? null;
-}
-
 // --- User context for AI readings ---
 
 export async function getUserReadingContext(userId: string) {
@@ -638,139 +566,6 @@ export async function getRecentReadingsForCompression(userId: string, skipCount:
     .offset(5); // Skip the 5 most recent (they're in the rolling window)
 }
 
-// --- Deck adoption queries ---
-
-export async function getPublicDecks(userId: string): Promise<DeckWithOwner[]> {
-  const rows = await db
-    .select({
-      id: decks.id,
-      userId: decks.userId,
-      title: decks.title,
-      description: decks.description,
-      theme: decks.theme,
-      status: decks.status,
-      deckType: decks.deckType,
-      cardCount: decks.cardCount,
-      isPublic: decks.isPublic,
-      shareToken: decks.shareToken,
-      coverImageUrl: decks.coverImageUrl,
-      artStyleId: decks.artStyleId,
-      createdAt: decks.createdAt,
-      updatedAt: decks.updatedAt,
-      ownerName: users.name,
-      ownerImage: users.image,
-      adoptedAt: deckAdoptions.adoptedAt,
-    })
-    .from(decks)
-    .innerJoin(users, eq(decks.userId, users.id))
-    .leftJoin(
-      deckAdoptions,
-      and(eq(deckAdoptions.deckId, decks.id), eq(deckAdoptions.userId, userId))
-    )
-    .where(
-      and(
-        eq(decks.status, "completed"),
-        isNotNull(decks.shareToken),
-        ne(decks.userId, userId)
-      )
-    )
-    .orderBy(desc(decks.updatedAt));
-
-  return rows.map((r) => ({
-    id: r.id,
-    userId: r.userId,
-    title: r.title,
-    description: r.description,
-    theme: r.theme,
-    status: r.status as Deck["status"],
-    deckType: (r.deckType ?? "standard") as Deck["deckType"],
-    cardCount: r.cardCount,
-    isPublic: r.isPublic,
-    shareToken: r.shareToken ?? null,
-    coverImageUrl: r.coverImageUrl,
-    artStyleId: r.artStyleId,
-    createdAt: r.createdAt,
-    updatedAt: r.updatedAt,
-    ownerName: r.ownerName,
-    ownerImage: r.ownerImage,
-    isAdopted: r.adoptedAt !== null,
-  }));
-}
-
-export async function getAdoptedDecks(userId: string): Promise<DeckWithOwner[]> {
-  try {
-    const rows = await db
-      .select({
-        id: decks.id,
-        userId: decks.userId,
-        title: decks.title,
-        description: decks.description,
-        theme: decks.theme,
-        status: decks.status,
-        deckType: decks.deckType,
-        cardCount: decks.cardCount,
-        isPublic: decks.isPublic,
-        shareToken: decks.shareToken,
-        coverImageUrl: decks.coverImageUrl,
-        artStyleId: decks.artStyleId,
-        createdAt: decks.createdAt,
-        updatedAt: decks.updatedAt,
-        ownerName: users.name,
-        ownerImage: users.image,
-      })
-      .from(deckAdoptions)
-      .innerJoin(decks, eq(deckAdoptions.deckId, decks.id))
-      .innerJoin(users, eq(decks.userId, users.id))
-      .where(eq(deckAdoptions.userId, userId))
-      .orderBy(desc(deckAdoptions.adoptedAt));
-
-    return rows.map((r) => ({
-      id: r.id,
-      userId: r.userId,
-      title: r.title,
-      description: r.description,
-      theme: r.theme,
-      status: r.status as Deck["status"],
-      deckType: (r.deckType ?? "standard") as Deck["deckType"],
-      cardCount: r.cardCount,
-      isPublic: r.isPublic,
-      shareToken: r.shareToken ?? null,
-      coverImageUrl: r.coverImageUrl,
-      artStyleId: r.artStyleId,
-      createdAt: r.createdAt,
-      updatedAt: r.updatedAt,
-      ownerName: r.ownerName,
-      ownerImage: r.ownerImage,
-      isAdopted: true,
-    }));
-  } catch (error: unknown) {
-    // Table may not exist yet if schema hasn't been pushed
-    if (error instanceof Error && error.message.includes("does not exist")) {
-      return [];
-    }
-    throw error;
-  }
-}
-
-export async function adoptDeck(userId: string, deckId: string) {
-  await db.insert(deckAdoptions).values({ userId, deckId }).onConflictDoNothing();
-}
-
-export async function unadoptDeck(userId: string, deckId: string) {
-  await db
-    .delete(deckAdoptions)
-    .where(and(eq(deckAdoptions.userId, userId), eq(deckAdoptions.deckId, deckId)));
-}
-
-export async function hasAdoptedDeck(userId: string, deckId: string): Promise<boolean> {
-  const [row] = await db
-    .select({ userId: deckAdoptions.userId })
-    .from(deckAdoptions)
-    .where(and(eq(deckAdoptions.userId, userId), eq(deckAdoptions.deckId, deckId)))
-    .limit(1);
-  return !!row;
-}
-
 // --- Reading length preferences ---
 
 export async function getUserReadingLength(userId: string): Promise<ReadingLength> {
@@ -867,15 +662,6 @@ export async function getVoicePreferences(userId: string): Promise<VoicePreferen
     speed: (profile.voiceSpeed as VoiceSpeed) ?? '1.0',
     voiceId: profile.voiceId,
   };
-}
-
-export async function getGuidanceEnabled(userId: string): Promise<boolean> {
-  const [profile] = await db
-    .select({ guidanceEnabled: userProfiles.guidanceEnabled })
-    .from(userProfiles)
-    .where(eq(userProfiles.userId, userId))
-    .limit(1);
-  return profile?.guidanceEnabled ?? true;
 }
 
 export async function upsertVoicePreferences(
@@ -1193,18 +979,10 @@ export async function getLastChronicleCardTitle(userId: string): Promise<string 
 
 // --- Astrology profile queries ---
 
-export async function getAstrologyProfile(userId: string): Promise<AstrologyProfile | null> {
-  const [profile] = await db
-    .select()
-    .from(astrologyProfiles)
-    .where(eq(astrologyProfiles.userId, userId));
-  return (profile as AstrologyProfile) ?? null;
-}
-
 // --- Activity feed ---
 
 export async function getUserActivityFeed(userId: string, limit = 15): Promise<ActivityItem[]> {
-  const [deckRows, readingRows, chronicleRows, chronicleSettingsRows, astroRow, adoptionRows] = await Promise.all([
+  const [deckRows, readingRows, chronicleRows, chronicleSettingsRows] = await Promise.all([
     // 1. Decks (non-draft)
     db
       .select({
@@ -1264,31 +1042,6 @@ export async function getUserActivityFeed(userId: string, limit = 15): Promise<A
       .from(chronicleSettings)
       .innerJoin(decks, eq(chronicleSettings.deckId, decks.id))
       .where(eq(decks.userId, userId)),
-
-    // 5. Astrology profile
-    db
-      .select({
-        sunSign: astrologyProfiles.sunSign,
-        createdAt: astrologyProfiles.createdAt,
-      })
-      .from(astrologyProfiles)
-      .where(eq(astrologyProfiles.userId, userId))
-      .limit(1),
-
-    // 6. Deck adoptions
-    db
-      .select({
-        deckId: deckAdoptions.deckId,
-        adoptedAt: deckAdoptions.adoptedAt,
-        deckTitle: decks.title,
-        ownerName: users.name,
-      })
-      .from(deckAdoptions)
-      .innerJoin(decks, eq(deckAdoptions.deckId, decks.id))
-      .innerJoin(users, eq(decks.userId, users.id))
-      .where(eq(deckAdoptions.userId, userId))
-      .orderBy(desc(deckAdoptions.adoptedAt))
-      .limit(limit),
   ]);
 
   const items: ActivityItem[] = [];
@@ -1356,28 +1109,6 @@ export async function getUserActivityFeed(userId: string, limit = 15): Promise<A
         });
       }
     }
-  }
-
-  // Process astrology
-  if (astroRow.length > 0) {
-    items.push({
-      id: `astrology-${userId}`,
-      timestamp: astroRow[0].createdAt,
-      type: "astrology_setup",
-      sunSign: astroRow[0].sunSign,
-    });
-  }
-
-  // Process adoptions
-  for (const row of adoptionRows) {
-    items.push({
-      id: `adoption-${row.deckId}`,
-      timestamp: row.adoptedAt,
-      type: "deck_adopted",
-      deckId: row.deckId,
-      deckTitle: row.deckTitle,
-      ownerName: row.ownerName,
-    });
   }
 
   // Sort by timestamp DESC and limit

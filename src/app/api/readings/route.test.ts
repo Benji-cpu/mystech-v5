@@ -14,13 +14,6 @@ vi.mock("@/lib/db/queries", () => ({
   getCardImageState: vi.fn().mockResolvedValue(null),
 }));
 
-vi.mock("@/lib/db/queries-paths", () => ({
-  getPathPosition: vi.fn().mockResolvedValue(null),
-  recordPathReading: vi.fn().mockResolvedValue(undefined),
-  canAdvanceWaypoint: vi.fn().mockResolvedValue({ allowed: true }),
-  getRetreatObstacleCards: vi.fn().mockResolvedValue([]),
-}));
-
 vi.mock("@/lib/analytics", () => ({
   captureServer: vi.fn(),
   ANALYTICS_EVENTS: {

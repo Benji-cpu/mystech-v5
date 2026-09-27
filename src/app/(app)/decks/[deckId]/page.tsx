@@ -1,16 +1,16 @@
 import { Suspense } from "react";
 import { notFound, redirect } from "next/navigation";
 import { db } from "@/lib/db";
-import { decks, cards, artStyles, users } from "@/lib/db/schema";
+import { decks, cards, artStyles } from "@/lib/db/schema";
 import { requireAuth } from "@/lib/auth/helpers";
-import { getDeckMetadata, hasAdoptedDeck, getUserCardFeedback, getChronicleSettings, getTodayChronicleCard, getChronicleEntries } from "@/lib/db/queries";
+import { getUserCardFeedback, getChronicleSettings, getTodayChronicleCard, getChronicleEntries } from "@/lib/db/queries";
 import { eq, and, asc } from "drizzle-orm";
 import { EditorialDeckHeader } from "@/components/decks/editorial-deck-header";
 import { DeckViewClient } from "@/components/decks/deck-view-client";
 import { ChronicleDeckDetail } from "@/components/chronicle/chronicle-deck-detail";
 import { FirstDeckHint } from "@/components/guide/first-deck-hint";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { Deck, Card, DraftCard } from "@/types";
+import type { Deck, Card } from "@/types";
 
 // Skeleton for the card grid while card data + feedback loads
 function DeckCardGridSkeleton() {
@@ -157,48 +157,15 @@ export default async function DeckViewPage({ params }: DeckViewPageProps) {
   const user = await requireAuth();
   const { deckId } = await params;
 
-  // Try owned deck first
-  const [ownedDeck] = await db
+  const [deck] = await db
     .select()
     .from(decks)
     .where(and(eq(decks.id, deckId), eq(decks.userId, user.id!)));
+  if (!deck) notFound();
 
-  let deck = ownedDeck;
-  let isAdopter = false;
-  let ownerName: string | null = null;
-
-  if (!deck) {
-    // Check if the user has adopted this deck
-    const adopted = await hasAdoptedDeck(user.id!, deckId);
-    if (!adopted) notFound();
-
-    const [adoptedDeck] = await db
-      .select()
-      .from(decks)
-      .where(eq(decks.id, deckId));
-
-    if (!adoptedDeck) notFound();
-
-    deck = adoptedDeck;
-    isAdopter = true;
-
-    // Get owner name
-    const [owner] = await db
-      .select({ name: users.name })
-      .from(users)
-      .where(eq(users.id, deck.userId))
-      .limit(1);
-    ownerName = owner?.name ?? null;
-  }
-
-  // Redirect draft decks to the correct journey phase
-  if (deck.status === "draft") {
-    const metadata = await getDeckMetadata(deckId);
-    const draftCards = metadata?.draftCards as DraftCard[] | null;
-    const hasDraftCards = Array.isArray(draftCards) && draftCards.length > 0;
-    const phase = hasDraftCards ? "review" : "chat";
-    redirect(`/decks/new/journey/${deckId}/${phase}`);
-  }
+  // A draft deck was a guided-journey deck left unfinished. That mode is gone,
+  // so there is nothing to finish it with.
+  if (deck.status === "draft") redirect("/decks");
 
   // Chronicle deck — editorial via ChronicleDeckDetail
   if ((deck.deckType ?? "standard") === "chronicle") {
@@ -258,10 +225,7 @@ export default async function DeckViewPage({ params }: DeckViewPageProps) {
         <EditorialDeckHeader
           deck={deckData}
           artStyleName={artStyleName}
-          artStyleId={deck.artStyleId}
           shareToken={deck.shareToken}
-          isAdopter={isAdopter}
-          ownerName={ownerName}
         />
         <FirstDeckHint />
         <Suspense fallback={<DeckCardGridSkeleton />}>

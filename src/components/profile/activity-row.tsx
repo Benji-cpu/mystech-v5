@@ -1,19 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import {
-  Layers,
-  CheckCircle,
-  BookOpen,
-  Scroll,
-  Award,
-  Sparkles,
-  Heart,
-  Moon,
-  Sun,
-  Eclipse,
-  Star,
-} from "lucide-react";
+import { Layers, CheckCircle, BookOpen, Scroll, Award } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ActivityItemWithTemporal, SpreadType } from "@/types";
 import type { LucideIcon } from "lucide-react";
@@ -58,12 +46,6 @@ export function formatRelativeTime(date: Date, isFuture: boolean): string {
 
 // ── Icon mapping ─────────────────────────────────────────────────────────
 
-const SEASONAL_TYPES = new Set([
-  "spring_equinox", "summer_solstice", "autumn_equinox", "winter_solstice",
-]);
-
-const ECLIPSE_TYPES = new Set(["lunar_eclipse", "solar_eclipse"]);
-
 export function getActivityIcon(item: ActivityItemWithTemporal): LucideIcon {
   switch (item.type) {
     case "deck_created": return Layers;
@@ -71,13 +53,6 @@ export function getActivityIcon(item: ActivityItemWithTemporal): LucideIcon {
     case "reading_performed": return BookOpen;
     case "chronicle_entry": return Scroll;
     case "badge_earned": return Award;
-    case "astrology_setup": return Sparkles;
-    case "deck_adopted": return Heart;
-    case "celestial_event":
-      if (ECLIPSE_TYPES.has(item.eventType)) return Eclipse;
-      if (SEASONAL_TYPES.has(item.eventType)) return Sun;
-      return Moon;
-    case "personal_transit": return Star;
   }
 }
 
@@ -95,14 +70,6 @@ export function getActivityText(item: ActivityItemWithTemporal): React.ReactNode
       return <>Chronicle entry{item.mood ? ` \u2014 ${item.mood}` : ""}</>;
     case "badge_earned":
       return <>Earned <strong className="text-white/80">{item.badgeName}</strong> {item.badgeEmoji}</>;
-    case "astrology_setup":
-      return <>Mapped celestial profile \u2014 {item.sunSign} Sun</>;
-    case "deck_adopted":
-      return <>Adopted <strong className="text-white/80">{item.deckTitle}</strong></>;
-    case "celestial_event":
-      return <>{item.title}</>;
-    case "personal_transit":
-      return <>{item.title}</>;
   }
 }
 
@@ -113,42 +80,18 @@ export function getActivityHref(item: ActivityItemWithTemporal): string | null {
     case "deck_created": return `/decks/${item.deckId}/edit`;
     case "deck_completed": return `/decks/${item.deckId}`;
     case "reading_performed": return `/readings/${item.readingId}`;
-    case "astrology_setup": return "/today";
-    case "deck_adopted": return `/decks/${item.deckId}`;
     default: return null;
   }
 }
 
 // ── Row styling per type ─────────────────────────────────────────────────
 
-export function getRowStyle(item: ActivityItemWithTemporal) {
-  if (item.type === "celestial_event") {
-    return {
-      row: "bg-indigo-500/[0.03] border-indigo-500/10",
-      iconBg: "bg-indigo-500/10",
-      iconColor: "text-indigo-400",
-    };
-  }
-  if (item.type === "personal_transit") {
-    return {
-      row: "bg-teal-500/[0.03] border-teal-500/10",
-      iconBg: "bg-teal-500/10",
-      iconColor: "text-teal-400",
-    };
-  }
+export function getRowStyle() {
   return {
     row: "bg-white/[0.03] border-white/5",
     iconBg: "bg-gold/10",
     iconColor: "text-gold",
   };
-}
-
-// ── Description line (for celestial/transit) ─────────────────────────────
-
-export function getDescription(item: ActivityItemWithTemporal): string | null {
-  if (item.type === "celestial_event") return item.description;
-  if (item.type === "personal_transit") return item.description;
-  return null;
 }
 
 // ── Section label ────────────────────────────────────────────────────────
@@ -168,8 +111,7 @@ export function ActivityRow({ item }: { item: ActivityItemWithTemporal }) {
   const text = getActivityText(item);
   const href = getActivityHref(item);
   const timeStr = formatRelativeTime(item.timestamp, item.isFuture);
-  const style = getRowStyle(item);
-  const description = getDescription(item);
+  const style = getRowStyle();
 
   const content = (
     <div
@@ -188,11 +130,6 @@ export function ActivityRow({ item }: { item: ActivityItemWithTemporal }) {
         <p className="text-sm text-white/60 truncate">
           {text}
         </p>
-        {description && (
-          <p className="text-xs text-white/30 mt-0.5 truncate">
-            {description}
-          </p>
-        )}
       </div>
       <span className="text-xs text-white/30 shrink-0 mt-0.5">{timeStr}</span>
     </div>

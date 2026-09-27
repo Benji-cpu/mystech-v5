@@ -119,18 +119,9 @@ export const LYRA_READING_DETAIL = {
   newReading: "Draw Again",
 } as const;
 
-// DECK CREATION
-export const LYRA_DECK_CREATION = {
-  pageSubtitle: "How would you like to begin?",
-  quickCreate:
-    "Describe your vision and I'll shape the cards. Fast and focused.",
-  guidedJourney:
-    "We'll talk first. I'll ask questions, and the deck will emerge from the conversation.",
-} as const;
-
 // SIMPLE CREATE FORM
 export const LYRA_SIMPLE_CREATE = {
-  pageTitle: "Quick Create",
+  pageTitle: "Describe your deck",
   pageSubtitle: "Shape a deck from your imagination.",
   visionHelper: "This shapes your deck's theme, card meanings, and imagery.",
   submitButton: "Bring It to Life",
@@ -177,20 +168,12 @@ export const LYRA_GENERATION = {
   retryButton: "Try Again",
 } as const;
 
-// DRAFT REVIEW
-export const LYRA_DRAFT_REVIEW = {
-  title: "Review Your Cards",
-  finalizeButton: (count: number) => `Finalize (${count} cards)`,
-  replaceButton: (count: number) => `Replace Removed (${count})`,
-} as const;
-
 // LOADING STATES
 export const LYRA_LOADING = {
   readings: "Gathering your readings...",
   newReading: "Preparing the space...",
   decks: "Finding your decks...",
   deckDetail: "Opening the deck...",
-  paths: "Tracing the journey ahead...",
 } as const;
 
 // DASHBOARD
@@ -219,49 +202,20 @@ export const LYRA_INVITATION_MESSAGES = {
     "The deck is alive now. Let's draw and see what surfaces.",
     "Your first reading is a conversation with yourself. Let's begin.",
   ],
-  chronicle: {
-    withStreak: (days: number) =>
-      `${days} days and counting. Your Chronicle awaits today's thread.`,
-    noStreak: "Your Chronicle is open. Let's add today's thread.",
-  },
-  continuePath: (waypointName: string) =>
-    `${waypointName} is still unfolding. Pick up where you left off.`,
-  reflective: [
-    "All caught up. The cards are here whenever you need them.",
-    "A quiet moment. Sometimes the best insights arrive uninvited.",
-    "Nothing pressing — just the cards, waiting if you want them.",
+  dailyCard: [
+    "One card from your own deck, chosen for today. See what it has to say.",
+    "Today's card is face down, waiting for you.",
+    "A single card for the day. Let it keep you company.",
+  ],
+  dailyCardDrawn: [
+    "Today's card is drawn. Return to it whenever you like.",
+    "You've met today's card. The rest of the day is yours.",
   ],
   postInitiation: [
     "Welcome. Your sanctuary is ready.",
     "You've arrived. This is your space now.",
     "The cards know you. Let's see where they lead.",
   ],
-} as const;
-
-// PATHS
-export const LYRA_PATHS = {
-  subtitle:
-    "Each path is a journey of deepening. Choose the one that calls to you.",
-} as const;
-
-// CELESTIAL PROFILE SETUP
-export const LYRA_CELESTIAL = {
-  intro:
-    "Your birth sky is as unique as you are. Let me help you map it \u2014 each detail you share unlocks a deeper layer of your readings.",
-  sunExplain:
-    "When were you born? Your birth date reveals your Sun sign \u2014 the core of who you are, your identity and life purpose.",
-  moonExplain:
-    "Do you know your birth time? It reveals your Moon sign \u2014 your emotional inner world and deepest instincts. Check a birth certificate if you\u2019re unsure.",
-  moonSkip:
-    "That\u2019s perfectly fine. Your Sun sign alone will enrich your readings.",
-  risingExplain:
-    "Where were you born? Your Rising sign shapes how you present to the world \u2014 it needs both your time and place to calculate.",
-  reveal:
-    "Your birth sky is mapped. I\u2019ll weave these celestial threads into your readings from now on.",
-  partialNudge: {
-    noTime: "Add your birth time to discover your Moon sign",
-    noLocation: "Add your birth location to reveal your Rising sign",
-  },
 } as const;
 
 export const LYRA_ONBOARDING_MESSAGES = [
@@ -377,42 +331,4 @@ export function pickGreeting(context: {
     hour < 12 ? "morning" : hour < 17 ? "afternoon" : "evening";
   const arr = LYRA_GREETINGS.returningUser[timeOfDay];
   return arr[hash % arr.length];
-}
-
-const CELESTIAL_GREETING_TEMPLATES = [
-  "The {moonPhase} drifts through {moonSign} today\u2026",
-  "Under tonight's {moonPhase} in {moonSign}\u2026",
-  "{moonPhase} light filters through {moonSign}\u2026",
-  "The moon wears {moonSign}'s colors tonight\u2026",
-] as const;
-
-/**
- * Pick a Lyra-voiced intro line that acknowledges today's celestial context.
- * Falls back to pickGreeting when no celestial data is available.
- */
-export function pickCelestialGreeting(context: {
-  deckCount: number;
-  readingCount: number;
-  moonPhase?: string;
-  moonSign?: string;
-}): string {
-  if (!context.moonPhase || !context.moonSign) {
-    return pickGreeting(context);
-  }
-
-  // First-visit and no-reading users still get their specific greetings
-  if (context.deckCount === 0 || context.readingCount === 0) {
-    return pickGreeting(context);
-  }
-
-  const seed = new Date().toDateString();
-  const hash = Array.from(seed).reduce(
-    (acc, char) => acc + char.charCodeAt(0),
-    0
-  );
-
-  const template = CELESTIAL_GREETING_TEMPLATES[hash % CELESTIAL_GREETING_TEMPLATES.length];
-  return template
-    .replace("{moonPhase}", context.moonPhase)
-    .replace("{moonSign}", context.moonSign);
 }

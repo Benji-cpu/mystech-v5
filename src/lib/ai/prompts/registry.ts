@@ -3,18 +3,6 @@ import {
   buildDeckGenerationUserPrompt,
 } from "./deck-generation";
 import {
-  JOURNEY_CONVERSATION_SYSTEM_PROMPT,
-  JOURNEY_OPENING_MESSAGE,
-  buildCardAwareSystemPrompt,
-  buildAnchorExtractionPrompt,
-} from "./conversation";
-import {
-  JOURNEY_CARD_GENERATION_SYSTEM_PROMPT,
-  buildJourneyCardGenerationPrompt,
-  buildCardEditPrompt,
-  buildCardRegenerationPrompt,
-} from "./journey-card-generation";
-import {
   READING_INTERPRETATION_SYSTEM_PROMPT,
   buildReadingInterpretationPrompt,
 } from "./reading-interpretation";
@@ -24,7 +12,7 @@ import {
   CHRONICLE_KNOWLEDGE_EXTRACTION_SYSTEM_PROMPT,
 } from "./chronicle";
 
-export type PromptCategory = "deck" | "conversation" | "journey" | "reading" | "chronicle";
+export type PromptCategory = "deck" | "reading" | "chronicle";
 
 export type PromptRegistryEntry = {
   key: string;
@@ -53,78 +41,6 @@ export const PROMPT_REGISTRY: Record<string, PromptRegistryEntry> = {
     defaultValue: buildDeckGenerationUserPrompt("{vision}", 10, "{artStyleName}", "{artStyleDescription}"),
     isTemplate: true,
     templateParams: ["vision", "cardCount", "artStyleName", "artStyleDescription"],
-  },
-  JOURNEY_CONVERSATION_SYSTEM_PROMPT: {
-    key: "JOURNEY_CONVERSATION_SYSTEM_PROMPT",
-    name: "Journey Conversation System Prompt",
-    description: "System prompt for the journey mode AI conversation",
-    category: "conversation",
-    defaultValue: JOURNEY_CONVERSATION_SYSTEM_PROMPT,
-    isTemplate: false,
-  },
-  JOURNEY_OPENING_MESSAGE: {
-    key: "JOURNEY_OPENING_MESSAGE",
-    name: "Journey Opening Message",
-    description: "The first message the AI sends when starting a journey",
-    category: "conversation",
-    defaultValue: JOURNEY_OPENING_MESSAGE,
-    isTemplate: false,
-  },
-  ANCHOR_EXTRACTION_PROMPT: {
-    key: "ANCHOR_EXTRACTION_PROMPT",
-    name: "Anchor Extraction Prompt",
-    description: "Prompt to extract themes/emotions/symbols from conversation. Variable: {conversationHistory}",
-    category: "conversation",
-    defaultValue: buildAnchorExtractionPrompt("{conversationHistory}"),
-    isTemplate: true,
-    templateParams: ["conversationHistory"],
-  },
-  CARD_AWARE_SYSTEM_PROMPT: {
-    key: "CARD_AWARE_SYSTEM_PROMPT",
-    name: "Card-Aware System Prompt Addon",
-    description: "Appended to journey system prompt when draft cards exist. Variable: {draftCards}",
-    category: "conversation",
-    defaultValue: "The seeker has already generated draft cards. They may return to discuss broader edits.\nCurrent cards:\n{draftCards}\n\nYou can suggest changes to specific cards by referencing their number and title.",
-    isTemplate: true,
-    templateParams: ["draftCards"],
-  },
-  JOURNEY_CARD_GENERATION_SYSTEM_PROMPT: {
-    key: "JOURNEY_CARD_GENERATION_SYSTEM_PROMPT",
-    name: "Journey Card Generation System Prompt",
-    description: "System prompt for generating cards from journey conversation",
-    category: "journey",
-    defaultValue: JOURNEY_CARD_GENERATION_SYSTEM_PROMPT,
-    isTemplate: false,
-  },
-  JOURNEY_CARD_GENERATION_USER_PROMPT: {
-    key: "JOURNEY_CARD_GENERATION_USER_PROMPT",
-    name: "Journey Card Generation User Prompt",
-    description: "User prompt template for journey card generation. Variables: {title}, {theme}, {cardCount}, {anchors}, {conversationSummary}, {artStyleName}, {artStyleDescription}",
-    category: "journey",
-    defaultValue: buildJourneyCardGenerationPrompt("{title}", "{theme}", 10, [], "{conversationSummary}", "{artStyleName}", "{artStyleDescription}"),
-    isTemplate: true,
-    templateParams: ["title", "theme", "cardCount", "anchors", "conversationSummary", "artStyleName", "artStyleDescription"],
-  },
-  CARD_EDIT_PROMPT: {
-    key: "CARD_EDIT_PROMPT",
-    name: "Card Edit Prompt",
-    description: "Prompt for AI-assisted card editing. Variables: {currentCard}, {instruction}",
-    category: "journey",
-    defaultValue: buildCardEditPrompt(
-      { title: "{title}", meaning: "{meaning}", guidance: "{guidance}", imagePrompt: "{imagePrompt}" },
-      "{instruction}"
-    ),
-    isTemplate: true,
-    templateParams: ["currentCard", "instruction", "conversationContext"],
-  },
-  CARD_REGENERATION_PROMPT: {
-    key: "CARD_REGENERATION_PROMPT",
-    name: "Card Regeneration Prompt",
-    description: "Prompt for regenerating a removed card. Variables: {cardNumber}, {title}, {theme}, {anchors}, {existingCards}",
-    category: "journey",
-    defaultValue: buildCardRegenerationPrompt(1, "{title}", "{theme}", [], []),
-    isTemplate: true,
-    templateParams: ["cardNumber", "title", "theme", "anchors", "existingCards"],
   },
   READING_INTERPRETATION_SYSTEM_PROMPT: {
     key: "READING_INTERPRETATION_SYSTEM_PROMPT",

@@ -1,99 +1,51 @@
-import Link from "next/link";
+import { db } from "@/lib/db";
+import { artStyles } from "@/lib/db/schema";
 import { requireAuth } from "@/lib/auth/helpers";
-import { Zap, MessageCircle } from "lucide-react";
-import { LYRA_DECK_CREATION } from "@/components/guide/lyra-constants";
-import { AstroNudgeBanner } from "@/components/shared/astro-nudge-banner";
-import { EditorialShell, EditorialHeader } from "@/components/editorial";
+import { eq } from "drizzle-orm";
+import { SimpleCreateForm } from "@/components/decks/simple-create-form";
+import { LYRA_SIMPLE_CREATE } from "@/components/guide/lyra-constants";
+import { EditorialShell, EditorialHeader, EditorialCard } from "@/components/editorial";
+import type { ArtStyle, StyleCategory } from "@/types";
 
 export default async function NewDeckPage() {
   await requireAuth();
+
+  // No deck limit — credits constrain card creation
+  const atLimit = false;
+
+  const rows = await db.select().from(artStyles).where(eq(artStyles.isPreset, true));
+
+  const presets: ArtStyle[] = rows.map((s) => ({
+    id: s.id,
+    name: s.name,
+    description: s.description,
+    stylePrompt: s.stylePrompt,
+    previewImages: (s.previewImages as string[]) ?? [],
+    isPreset: s.isPreset,
+    createdBy: s.createdBy,
+    isPublic: s.isPublic,
+    shareToken: s.shareToken,
+    createdAt: s.createdAt,
+    updatedAt: s.updatedAt,
+    parameters: s.parameters ?? null,
+    referenceImageUrls: s.referenceImageUrls ?? null,
+    extractedDescription: s.extractedDescription ?? null,
+    category: (s.category as StyleCategory) ?? null,
+  }));
 
   return (
     <EditorialShell>
       <div className="mx-auto max-w-2xl px-6 pb-28 pt-24 sm:px-10 sm:pt-28">
         <EditorialHeader
           eyebrow="New deck"
-          title="How shall we begin?"
-          whisper="Two doors to the same room. Pick the one that fits your mood."
+          title={LYRA_SIMPLE_CREATE.pageTitle}
+          whisper={LYRA_SIMPLE_CREATE.pageSubtitle}
+          size="md"
         />
 
-        <div className="mt-8">
-          <AstroNudgeBanner />
-        </div>
-
-        <div className="mt-8 grid gap-4 sm:grid-cols-2">
-          <Link
-            href="/decks/new/journey"
-            className="group block rounded-3xl border p-6 transition-colors hair hover:border-[var(--ink-soft)]"
-            style={{ background: "var(--paper-card)" }}
-          >
-            <div
-              className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl"
-              style={{
-                background: "var(--paper-warm)",
-                color: "var(--accent-gold)",
-              }}
-            >
-              <MessageCircle size={22} strokeWidth={1.5} />
-            </div>
-            <p className="eyebrow" style={{ color: "var(--accent-gold)" }}>
-              Recommended
-            </p>
-            <h3
-              className="display mt-2 text-xl leading-tight"
-              style={{ color: "var(--ink)" }}
-            >
-              Guided Journey
-            </h3>
-            <p
-              className="mt-2 text-sm leading-relaxed"
-              style={{ color: "var(--ink-mute)" }}
-            >
-              {LYRA_DECK_CREATION.guidedJourney}
-            </p>
-            <span
-              className="mt-4 inline-flex items-center gap-1 text-sm transition-transform group-hover:translate-x-1"
-              style={{ color: "var(--ink)" }}
-            >
-              Begin →
-            </span>
-          </Link>
-
-          <Link
-            href="/decks/new/simple"
-            className="group block rounded-3xl border p-6 transition-colors hair hover:border-[var(--ink-soft)]"
-            style={{ background: "var(--paper-card)" }}
-          >
-            <div
-              className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl"
-              style={{
-                background: "var(--paper-warm)",
-                color: "var(--ink-soft)",
-              }}
-            >
-              <Zap size={22} strokeWidth={1.5} />
-            </div>
-            <p className="eyebrow">Quick</p>
-            <h3
-              className="display mt-2 text-xl leading-tight"
-              style={{ color: "var(--ink)" }}
-            >
-              Quick Create
-            </h3>
-            <p
-              className="mt-2 text-sm leading-relaxed"
-              style={{ color: "var(--ink-mute)" }}
-            >
-              {LYRA_DECK_CREATION.quickCreate}
-            </p>
-            <span
-              className="mt-4 inline-flex items-center gap-1 text-sm transition-transform group-hover:translate-x-1"
-              style={{ color: "var(--ink-soft)" }}
-            >
-              Begin →
-            </span>
-          </Link>
-        </div>
+        <EditorialCard className="mt-8">
+          <SimpleCreateForm presets={presets} atLimit={atLimit} />
+        </EditorialCard>
       </div>
     </EditorialShell>
   );

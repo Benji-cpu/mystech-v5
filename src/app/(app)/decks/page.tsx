@@ -2,8 +2,7 @@ import { Suspense } from "react";
 import { db } from "@/lib/db";
 import { decks, cards } from "@/lib/db/schema";
 import { requireAuth } from "@/lib/auth/helpers";
-import { getAdoptedDecks } from "@/lib/db/queries";
-import { eq, desc, and, isNotNull } from "drizzle-orm";
+import { eq, desc, and, isNotNull, ne } from "drizzle-orm";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EditorialDecksLibrary } from "@/components/decks/editorial-decks-library";
 import type { Deck } from "@/types";
@@ -30,14 +29,12 @@ function DecksSkeleton() {
 async function DecksContent() {
   const user = await requireAuth();
 
-  const [rows, adoptedDecks] = await Promise.all([
-    db
-      .select()
-      .from(decks)
-      .where(eq(decks.userId, user.id!))
-      .orderBy(desc(decks.updatedAt)),
-    getAdoptedDecks(user.id!),
-  ]);
+  // Drafts were unfinished guided-journey decks; that mode is gone.
+  const rows = await db
+    .select()
+    .from(decks)
+    .where(and(eq(decks.userId, user.id!), ne(decks.status, "draft")))
+    .orderBy(desc(decks.updatedAt));
 
   const allDecks: Deck[] = rows.map((d) => ({
     id: d.id,
@@ -82,7 +79,6 @@ async function DecksContent() {
   return (
     <EditorialDecksLibrary
       userDecks={userDecks}
-      adoptedDecks={adoptedDecks as Deck[]}
       hasChronicle={hasChronicle}
     />
   );

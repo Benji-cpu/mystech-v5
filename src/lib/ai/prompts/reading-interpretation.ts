@@ -1,6 +1,5 @@
 import { z } from "zod";
-import type { SpreadType, ReadingLength, AstrologicalReadingContext, PathContextForPrompt } from "@/types";
-import { buildPathContextSection } from "./journey-context";
+import type { SpreadType, ReadingLength } from "@/types";
 import { HOUSE_VOICE_RULES } from "./house-voice";
 
 // ── Zod schema for structured interpretation (streamObject) ───────────
@@ -14,19 +13,6 @@ export const ReadingInterpretationSchema = z.object({
       text: z
         .string()
         .describe("The interpretation prose for this card in its position"),
-      astroResonance: z
-        .object({
-          relevantPlacement: z
-            .enum(["sun", "moon", "rising", "general"])
-            .describe("Which of the seeker's placements resonates most with this card"),
-          rulingSign: z.string().describe("The zodiac sign most associated with this card's energy"),
-          rulingPlanet: z.string().describe("The planet that rules this card's energy"),
-          elementHarmony: z
-            .enum(["aligned", "complementary", "challenging"])
-            .describe("How this card's element relates to the seeker's chart"),
-        })
-        .optional()
-        .describe("Astrological resonance for this card — only fill when astroContext is provided in the prompt"),
     })
   ),
   synthesis: z
@@ -35,17 +21,6 @@ export const ReadingInterpretationSchema = z.object({
   reflectiveQuestion: z
     .string()
     .describe("A brief closing question inviting the seeker to reflect"),
-  astroContext: z
-    .object({
-      dominantInfluence: z
-        .enum(["sun", "moon", "rising"])
-        .describe("The dominant astrological influence across this reading"),
-      celestialNote: z
-        .string()
-        .describe("Brief note on current moon phase or notable transit relevant to this reading"),
-    })
-    .optional()
-    .describe("Overall astrological context — only fill when astroContext is provided in the prompt"),
 });
 
 export type ReadingInterpretation = z.infer<typeof ReadingInterpretationSchema>;
@@ -151,9 +126,7 @@ export function buildReadingInterpretationPrompt({
   cards,
   userContext,
   readingLength = 'brief',
-  astroContext,
   chronicleContext,
-  journeyContext,
   userName,
 }: {
   spreadType: SpreadType;
@@ -161,14 +134,12 @@ export function buildReadingInterpretationPrompt({
   cards: ReadingCard[];
   userContext?: UserReadingContext;
   readingLength?: ReadingLength;
-  astroContext?: AstrologicalReadingContext;
   chronicleContext?: {
     cardTitle: string;
     entryThemes: string[];
     entryDate: string;
     knowledgeSummary: string | null;
   };
-  journeyContext?: PathContextForPrompt;
   userName?: string;
 }): string {
   const questionSection = question
@@ -235,30 +206,6 @@ export function buildReadingInterpretationPrompt({
     deep: '3-5 sentences',
   };
 
-  let astroSection = "";
-  if (astroContext) {
-    const placements: string[] = [`Sun in ${astroContext.sunSign}`];
-    if (astroContext.moonSign) placements.push(`Moon in ${astroContext.moonSign}`);
-    if (astroContext.risingSign) placements.push(`${astroContext.risingSign} Rising`);
-
-    const elementParts: string[] = [];
-    if (astroContext.elementBalance) {
-      const eb = astroContext.elementBalance;
-      elementParts.push(`Fire ${eb.fire}, Earth ${eb.earth}, Air ${eb.air}, Water ${eb.water}`);
-    }
-
-    astroSection = `
-
-Astrological context for this seeker:
-- Birth chart: ${placements.join(", ")}${elementParts.length > 0 ? `\n- Element balance: ${elementParts.join(", ")}` : ""}
-- Current moon: ${astroContext.currentMoonPhase} in ${astroContext.currentMoonSign}
-
-Weave astrological insights naturally into the interpretation. Reference placements where they illuminate card meanings — keep astrology as seasoning, not the main course. The cards remain the focus.
-
-For each card section, fill the astroResonance field indicating which of the seeker's placements (sun, moon, rising) resonates most with that card.
-Also fill astroContext with the dominant astrological influence across the full reading.`;
-  }
-
   let chronicleSection = "";
   if (chronicleContext) {
     const themes =
@@ -272,10 +219,6 @@ It emerged from their reflection about: ${themes}.
 When interpreting this card, honor its personal origin — reference the fact that it came from their own daily practice.${chronicleContext.knowledgeSummary ? `\nBroader Chronicle journey context:\n${chronicleContext.knowledgeSummary}` : ""}`;
   }
 
-  const journeySection = journeyContext
-    ? buildPathContextSection(journeyContext)
-    : "";
-
   // Quick draw: ultra-concise 1-2 sentence insight, no synthesis/question
   if (spreadType === 'quick') {
     return `This is a Quick Draw — a single-card pull for an instant insight. Be razor-sharp: deliver a 1-2 sentence interpretation that captures the essence of this card right now.
@@ -288,7 +231,7 @@ ${cardsSection}
 Write exactly ONE card section with 1-2 sentences. Make every word count — poetic but punchy.
 Skip the synthesis paragraph. Skip the reflective question. Just the card insight.
 
-Remember these are personal oracle cards created from the seeker's own experiences — honor the personal symbolism.${astroSection}${chronicleSection}`;
+Remember these are personal oracle cards created from the seeker's own experiences — honor the personal symbolism.${chronicleSection}`;
   }
 
   return `Interpret this ${spreadType.replace("_", " ")} reading.
@@ -304,5 +247,5 @@ After all cards, write a synthesis paragraph tying the reading together.
 
 End with a brief reflective question that invites the seeker to sit with what the cards have shown — something like "What does this stir in you?" or "How does this land?" Keep it to one sentence.
 
-Remember these are personal oracle cards created from the seeker's own experiences — honor the personal symbolism in each card.${astroSection}${chronicleSection}${journeySection}`;
+Remember these are personal oracle cards created from the seeker's own experiences — honor the personal symbolism in each card.${chronicleSection}`;
 }

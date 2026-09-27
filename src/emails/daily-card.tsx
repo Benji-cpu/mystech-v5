@@ -14,9 +14,7 @@ import {
 
 type Props = {
   name?: string | null;
-  streakCount: number;
-  hasChronicle: boolean;
-  /** Yesterday's forged card (chronicle users) or a card from the user's decks. */
+  /** Today's card, from the user's own deck. */
   card: { title: string; imageUrl: string | null } | null;
   /**
    * The user switched the daily card on but has no deck to draw from, so there
@@ -31,8 +29,6 @@ type Props = {
 
 export function DailyCardEmail({
   name,
-  streakCount,
-  hasChronicle,
   card,
   noDeck = false,
   ctaUrl,
@@ -41,10 +37,6 @@ export function DailyCardEmail({
   const greeting = name ? `Good morning, ${name}` : "Good morning";
   const invitation = noDeck
     ? "You asked for a card each morning — but there is no deck to draw one from yet. Making your first one takes a few minutes: you tell Lyra what is going on, and the cards come out of that. Once it exists, the daily card starts on its own."
-    : hasChronicle
-    ? streakCount > 0
-      ? `You're on a ${streakCount}-day streak. Today's card is waiting to be forged.`
-      : "Today's card is waiting to be forged from whatever the day holds."
     : card
     ? `Today's card from your deck is \u201c${card.title}\u201d. Open it to see what it says about where you are.`
     : "A few quiet minutes with the cards to begin the day.";
@@ -55,8 +47,6 @@ export function DailyCardEmail({
       <Preview>
         {noDeck
           ? "Your daily card is on — you just need a deck to draw from."
-          : streakCount > 0
-          ? `Day ${streakCount} and counting — your card awaits.`
           : "Your card awaits."}
       </Preview>
       <Body style={body}>
@@ -64,7 +54,7 @@ export function DailyCardEmail({
           <Section style={brand}>
             <Text style={brandMark}>✦ MysTech</Text>
             <Text style={dateline}>
-              {noDeck ? "One step to go" : streakCount > 0 ? `${streakCount}-day streak` : "Daily practice"}
+              {noDeck ? "One step to go" : "Today\u2019s card"}
             </Text>
           </Section>
 
@@ -80,11 +70,6 @@ export function DailyCardEmail({
                 height="420"
                 style={cardImage}
               />
-              {hasChronicle && (
-                <Text style={cardCaption}>
-                  Yesterday you forged &ldquo;{card.title}&rdquo;
-                </Text>
-              )}
             </Section>
           ) : null}
 
@@ -92,7 +77,7 @@ export function DailyCardEmail({
             <Link href={ctaUrl} style={cta}>
               {noDeck
                 ? "Make your first deck"
-                : hasChronicle || !card
+                : !card
                 ? "Begin today\u2019s ritual"
                 : "Open today\u2019s card"}
             </Link>
@@ -180,14 +165,6 @@ const cardImage = {
   display: "block" as const,
   maxWidth: "280px",
   height: "auto",
-};
-
-const cardCaption = {
-  color: "rgba(230,225,217,0.55)",
-  fontSize: "13px",
-  fontStyle: "italic" as const,
-  textAlign: "center" as const,
-  margin: "12px 0 0",
 };
 
 const ctaWrap = { textAlign: "center" as const, margin: "30px 0 12px" };

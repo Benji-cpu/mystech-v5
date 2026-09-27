@@ -7,32 +7,10 @@ type RouteMapping = {
 
 const ROUTE_PROMPT_MAP: RouteMapping[] = [
   {
-    pattern: /^\/decks\/new\/simple$/,
+    pattern: /^\/decks\/new$/,
     keys: ["DECK_GENERATION_SYSTEM_PROMPT", "DECK_GENERATION_USER_PROMPT"],
     schemas: ["generatedCardSchema", "generatedDeckSchema"],
-    label: "Deck Generation — Simple Mode",
-  },
-  {
-    pattern: /^\/decks\/new\/journey\/[^/]+\/chat$/,
-    keys: [
-      "JOURNEY_CONVERSATION_SYSTEM_PROMPT",
-      "JOURNEY_OPENING_MESSAGE",
-      "ANCHOR_EXTRACTION_PROMPT",
-      "CARD_AWARE_SYSTEM_PROMPT",
-    ],
-    schemas: ["anchorSchema", "extractedAnchorsSchema"],
-    label: "Journey — Conversation",
-  },
-  {
-    pattern: /^\/decks\/new\/journey\/[^/]+\/review$/,
-    keys: [
-      "JOURNEY_CARD_GENERATION_SYSTEM_PROMPT",
-      "JOURNEY_CARD_GENERATION_USER_PROMPT",
-      "CARD_EDIT_PROMPT",
-      "CARD_REGENERATION_PROMPT",
-    ],
-    schemas: ["generatedCardSchema", "cardUpdateSchema"],
-    label: "Journey — Card Review",
+    label: "Deck Generation",
   },
   {
     pattern: /^\/readings\/new$/,

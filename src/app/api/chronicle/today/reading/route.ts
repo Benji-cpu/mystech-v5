@@ -14,7 +14,6 @@ import {
 } from "@/lib/db/queries";
 import { getUserPlanFromRole } from "@/lib/usage";
 import { buildChronicleMiniReadingPrompt } from "@/lib/ai/prompts/chronicle";
-import { getPathPosition } from "@/lib/db/queries-paths";
 import { eq } from "drizzle-orm";
 import type { ApiResponse } from "@/types";
 
@@ -79,10 +78,9 @@ export async function POST() {
   const isPro = plan !== "free";
   const model = plan === "free" ? geminiModel : geminiProModel;
 
-  const [knowledge, settings, pathPosition, userName] = await Promise.all([
+  const [knowledge, settings, userName] = await Promise.all([
     getChronicleKnowledge(user.id),
     getChronicleSettings(deck.id),
-    getPathPosition(user.id),
     getUserDisplayName(user.id),
   ]);
 
@@ -93,13 +91,6 @@ export async function POST() {
     streakCount: settings?.streakCount ?? 0,
     isPro,
     userName,
-    journeyContext: pathPosition
-      ? {
-          waypointName: pathPosition.waypoint.name,
-          retreatName: pathPosition.retreat.name,
-          waypointLens: pathPosition.waypoint.waypointLens,
-        }
-      : null,
   });
 
   const entryId = entry.id;

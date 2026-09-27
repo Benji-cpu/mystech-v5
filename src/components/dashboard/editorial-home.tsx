@@ -8,11 +8,7 @@ interface EditorialHomeData {
   userName: string;
   whisper: string;
   subtitle: string | null;
-  meta: {
-    weekday: string;
-    moonPhase: string | null;
-    moonSign: string | null;
-  };
+  weekday: string;
   primary: {
     eyebrow: string;
     title: string;
@@ -21,14 +17,7 @@ interface EditorialHomeData {
     cta: string;
     badge?: string;
   };
-  secondary: {
-    title: string;
-    durationMin: number;
-    pathId: string;
-    pathName: string;
-    waypointName: string;
-  } | null;
-  tertiary?: {
+  secondary?: {
     label: string;
     href: string;
   } | null;
@@ -48,19 +37,7 @@ export function EditorialHome({ data }: { data: EditorialHomeData }) {
         <motion.div {...fade} transition={spring} className="flex flex-wrap items-center gap-2">
           <span className="eyebrow" style={{ color: "var(--accent-gold)" }}>Today</span>
           <span style={{ color: "var(--line)" }}>·</span>
-          <span className="eyebrow">{data.meta.weekday}</span>
-          {data.meta.moonPhase && (
-            <>
-              <span style={{ color: "var(--line)" }}>·</span>
-              <span className="eyebrow">{data.meta.moonPhase}</span>
-            </>
-          )}
-          {data.meta.moonSign && (
-            <>
-              <span style={{ color: "var(--line)" }}>·</span>
-              <span className="eyebrow">{data.meta.moonSign}</span>
-            </>
-          )}
+          <span className="eyebrow">{data.weekday}</span>
         </motion.div>
 
         {/* Display greeting */}
@@ -142,41 +119,15 @@ export function EditorialHome({ data }: { data: EditorialHomeData }) {
           </Link>
         </motion.div>
 
-        {/* Secondary — next waypoint */}
+        {/* Secondary — quiet link */}
         {data.secondary && (
-          <motion.div {...fade} transition={{ ...spring, delay: 0.3 }} className="mt-5">
-            <Link
-              href={`/paths/${data.secondary.pathId}`}
-              className="group flex items-center justify-between rounded-2xl border p-5 hair transition-colors hover:border-[var(--ink-soft)]"
-            >
-              <div>
-                <p className="eyebrow">Next on {data.secondary.pathName}</p>
-                <p className="display mt-1.5 text-lg" style={{ color: "var(--ink)" }}>
-                  {data.secondary.waypointName}
-                </p>
-                <p className="mt-1 text-xs" style={{ color: "var(--ink-mute)" }}>
-                  {data.secondary.title} · {data.secondary.durationMin} min
-                </p>
-              </div>
-              <span
-                className="text-lg transition-transform group-hover:translate-x-1"
-                style={{ color: "var(--ink)" }}
-              >
-                →
-              </span>
-            </Link>
-          </motion.div>
-        )}
-
-        {/* Tertiary — quiet link */}
-        {data.tertiary && (
           <motion.div {...fade} transition={{ ...spring, delay: 0.35 }} className="mt-5">
             <Link
-              href={data.tertiary.href}
+              href={data.secondary.href}
               className="group flex items-center justify-between rounded-2xl border p-4 hair transition-colors hover:border-[var(--ink-soft)]"
             >
               <p className="text-sm" style={{ color: "var(--ink-soft)" }}>
-                {data.tertiary.label}
+                {data.secondary.label}
               </p>
               <span
                 className="text-base transition-transform group-hover:translate-x-1"

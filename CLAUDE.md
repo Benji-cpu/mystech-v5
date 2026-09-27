@@ -49,13 +49,28 @@ npx tsx scripts/seed-art-styles.ts --only=celtic --force
 
 ## Legacy URLs
 
-Twelve routes from before the 2026-06 IA overhaul are **config redirects** in
+Routes from before the 2026-06 IA overhaul are **config redirects** in
 `next.config.ts`, not pages — `/home`, `/dashboard`, `/chronicle/today`, `/readings`,
-`/decks/living`, `/studio`, `/studio/styles[/:id]`, `/art-styles[...]`. Add a new one
-there, never as a `page.tsx` whose body is `redirect()`. Routes that must look
+`/decks/living`, `/studio`, `/studio/styles/*`, `/art-styles/*` — and so are the URLs of
+the features removed on 2026-09-27 (below). Add a new one there, never as a `page.tsx`
+whose body is `redirect()`. Routes that must look
 something up before they know where to send you (`/daily?d=`, `/studio/cards/[cardId]`,
 `/chronicle`) stay as pages. Internal links point at the real route — never take a
 redirect hop from inside the app.
+
+## The daily ritual, and what was removed (2026-09-27)
+
+**Today's card is MysTech's daily ritual.** `/today`'s main action for anyone with a deck
+opens today's card (`/daily?on=<local date>`, the same link the morning email carries).
+Chronicle is optional: its daily entry lives at `/chronicle`, one quiet link from `/today`.
+
+**Removed, with Ben's yes, because nobody used them**: paths/circles/retreats/practices,
+guidance, the style studio (custom art styles, style sharing), print-on-demand, astrology,
+deck adoption, and journey mode (conversation-built decks; `/decks/new` is the one create
+form). Their pages redirect (`next.config.ts`), their APIs are gone, and **their DB tables
+are still in `schema.ts` and in Neon** — dropping them is a separate call for Ben. Specs
+under `docs/features/` for these are history, not a to-do list. Old readings that drew a
+retreat card still render it (`readingCards.retreatCardId` is read, never written).
 
 ## Cron Jobs — GitHub-as-bus architecture
 
@@ -82,7 +97,7 @@ The route still gates on `Authorization: Bearer ${CRON_SECRET}`. Vercel cron set
 
 ### Daily card (`/api/cron/daily-card`)
 
-Driven by `.github/workflows/daily-card-tick.yml` (hourly schedule; GitHub actually fires it 5–7 times a day). A user is **due from their chosen local hour until the end of their local day** (`dailyCardDue()`), never on an exact-hour match. Every account is a candidate, profile row or not (defaults on / 08:00 / UTC); `@example.com` is skipped. A `daily_card_delivery` row is written **only after Resend returns a message id**, so a refused send is retried by the next tick (a Resend idempotency key stops doubles). Deck users' email links `/daily?on=<date>`, which turns that delivery into a single-card `quick` reading on first open (`src/lib/daily-card/open.ts`); Chronicle users go to `/today`. The first deck adopts the caller's `x-vercel-ip-timezone`.
+Driven by `.github/workflows/daily-card-tick.yml` (hourly schedule; GitHub actually fires it 5–7 times a day). A user is **due from their chosen local hour until the end of their local day** (`dailyCardDue()`), never on an exact-hour match. Every account is a candidate, profile row or not (defaults on / 08:00 / UTC); `@example.com` is skipped. A `daily_card_delivery` row is written **only after Resend returns a message id**, so a refused send is retried by the next tick (a Resend idempotency key stops doubles). Every deck owner — Chronicle keepers included — gets a card from their own deck; the email links `/daily?on=<date>`, which turns that delivery into a single-card `quick` reading on first open (`src/lib/daily-card/open.ts`). The same link on `/today` draws today's card in the app when no email carried one, writing a `channel: "app"` row; the cron then skips that day, so the email and the app never show two different cards. The first deck adopts the caller's `x-vercel-ip-timezone`.
 
 ## Trigger Maintenance
 
@@ -165,7 +180,7 @@ Stability returns a ~3.5MB PNG per card. Serving that raw broke things: Next's i
 | Column | Rendition | Used by |
 |--------|-----------|---------|
 | `imageUrl` | WebP, 1024px wide, q82 (~150–250KB) | every browser surface, via `next/image` |
-| `imagePrintUrl` | full-resolution PNG master | print packs (`forge-pack.ts`), the Pro card download |
+| `imagePrintUrl` | full-resolution PNG master | the Pro card download, email, share images |
 
 - **UI code reads `imageUrl` and needs no special handling** — that is why the split went this way round rather than adding a new field to 258 call sites.
 - **Renderers that cannot decode WebP must call `printImageUrl()` (`src/lib/images.ts`)**: Satori (`next/og` share images) and email (Outlook has no WebP support). It falls back to `imageUrl` for cards forged before the split.
@@ -195,13 +210,9 @@ Stability returns a ~3.5MB PNG per card. Serving that raw broke things: Next's i
 - **Free**: 11 lifetime credits (never reset), 1 reading/day, spreads = `single` + `three_card`, `standard` AI model. First-day welcome grant of 3 readings within 24h of signup (see `WELCOME_READING_GRANT`).
 - **Pro ($4.99/mo)**: 50 credits/month (reset on calendar month boundary), 5 readings/day, all spreads (`single`, `three_card`, `five_card`, `celtic_cross`), `master_oracle` AI model.
 - **Admin** (role-based): unlimited everything, bypasses subscription check.
-- **One credit buys one whole card, artwork included, and is claimed once** — at `/api/ai/generate-deck` (simple) or `/api/decks/[deckId]/confirm` (guided). `/api/ai/generate-images-batch` must NEVER bill: it only ever touches cards that are pending, failed or stale, i.e. already paid for. `/api/ai/generate-image` bills only when re-rolling an image the user already has (`imageStatus === 'completed'`), never when retrying a failure. Billing the image pass separately meant a 7-card deck cost 14 of a free account's 11 lifetime credits — the text succeeded, took the credits, and the image pass then 403'd. Card refinement (`/api/studio/cards/[cardId]/refine`) and chronicle forging each claim their own credit; those are separate creations, not re-deliveries.
+- **One credit buys one whole card, artwork included, and is claimed once** — at `/api/ai/generate-deck`. `/api/ai/generate-images-batch` must NEVER bill: it only ever touches cards that are pending, failed or stale, i.e. already paid for. `/api/ai/generate-image` bills only when re-rolling an image the user already has (`imageStatus === 'completed'`), never when retrying a failure. Billing the image pass separately meant a 7-card deck cost 14 of a free account's 11 lifetime credits — the text succeeded, took the credits, and the image pass then 403'd. Card refinement (`/api/studio/cards/[cardId]/refine`) and chronicle forging each claim their own credit; those are separate creations, not re-deliveries.
 - Readings are gated separately by `checkDailyReadings`. Voice TTS has its own monthly character cap.
 - `past_due` status keeps Pro access (grace period); `canceled` keeps Pro until `currentPeriodEnd` then drops to free.
-
-### Terminology
-- For the Paths feature, code/data keep the vocabulary "path," "trail," "waypoint," "retreat" — but the **UX hides the hierarchy words**: users see "focus" (their active path), "trail" (progress), "step" / "Now:" (waypoint), and content names. Don't surface "circle," "retreat," or "waypoint" as labels in new UI.
-- Never use the word "journey" when referring to Paths
 
 ### Imports
 - Always use `@/` path alias — never relative imports outside the same directory

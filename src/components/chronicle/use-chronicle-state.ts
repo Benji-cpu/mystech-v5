@@ -53,7 +53,6 @@ export type ChronicleState = {
   miniReading: string | null;
   streakCount: number;
   newBadge: ChronicleBadgeNotice | null;
-  journeyRecorded: boolean;
   error: string | null;
   emergenceCard: EmergenceCardData | null;
   emergenceMessage: string | null;
@@ -77,7 +76,7 @@ export type ChronicleAction =
   | { type: 'START_READING' }
   | { type: 'READING_STREAM_TOKEN'; token: string }
   | { type: 'READING_COMPLETE'; miniReading: string }
-  | { type: 'COMPLETE'; streakCount: number; newBadge: ChronicleBadgeNotice | null; journeyRecorded?: boolean }
+  | { type: 'COMPLETE'; streakCount: number; newBadge: ChronicleBadgeNotice | null }
   | { type: 'SKIP_TO_COMPLETE'; streakCount: number }
   | { type: 'LYRA_READY' }
   | { type: 'SET_ERROR'; error: string }
@@ -98,7 +97,6 @@ export const initialChronicleState: ChronicleState = {
   miniReading: null,
   streakCount: 0,
   newBadge: null,
-  journeyRecorded: false,
   error: null,
   emergenceCard: null,
   emergenceMessage: null,
@@ -201,7 +199,6 @@ export function chronicleReducer(
         phase: 'complete',
         streakCount: action.streakCount,
         newBadge: action.newBadge,
-        journeyRecorded: action.journeyRecorded ?? false,
         isStreaming: false,
       };
 

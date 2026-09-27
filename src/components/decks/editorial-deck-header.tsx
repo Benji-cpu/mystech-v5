@@ -1,26 +1,19 @@
 import Link from "next/link";
-import { ArrowLeft, Pencil, Palette, Play, Printer } from "lucide-react";
+import { ArrowLeft, Pencil, Play } from "lucide-react";
 import { DeleteDeckButton } from "./delete-deck-button";
 import { ShareButton } from "@/components/shared/share-button";
-import { AdoptDeckButton } from "@/components/shared/adopt-deck-button";
 import type { Deck } from "@/types";
 
 interface EditorialDeckHeaderProps {
   deck: Deck;
   artStyleName?: string;
-  artStyleId?: string | null;
   shareToken?: string | null;
-  isAdopter?: boolean;
-  ownerName?: string | null;
 }
 
 export function EditorialDeckHeader({
   deck,
   artStyleName,
-  artStyleId,
   shareToken,
-  isAdopter,
-  ownerName,
 }: EditorialDeckHeaderProps) {
   const isChronicle = deck.deckType === "chronicle";
   const cardCountLabel = isChronicle
@@ -61,17 +54,11 @@ export function EditorialDeckHeader({
                 {artStyleName}
               </>
             )}
-            {isAdopter && ownerName && (
-              <>
-                <span className="mx-2" style={{ color: "var(--ink-faint)" }}>·</span>
-                by {ownerName}
-              </>
-            )}
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {deck.status === "completed" && !isAdopter && (
+          {deck.status === "completed" && (
             <Link
               href={`/readings/new?deckId=${deck.id}`}
               className="inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium transition-opacity hover:opacity-90"
@@ -82,11 +69,7 @@ export function EditorialDeckHeader({
             </Link>
           )}
 
-          {isAdopter && (
-            <AdoptDeckButton deckId={deck.id} isAdopted />
-          )}
-
-          {!isAdopter && deck.status === "completed" && (
+          {deck.status === "completed" && (
             <>
               <ShareButton
                 shareEndpoint={`/api/decks/${deck.id}/share`}
@@ -94,26 +77,6 @@ export function EditorialDeckHeader({
                 contentType="deck"
                 existingShareToken={shareToken}
               />
-              {artStyleId && (
-                <Link
-                  href={`/decks/styles/${artStyleId}`}
-                  className="inline-flex items-center gap-1.5 rounded-full border px-3 py-2 text-sm transition-colors hover:border-[var(--ink-soft)]"
-                  style={{ borderColor: "var(--line)", color: "var(--ink-soft)" }}
-                >
-                  <Palette size={14} />
-                  <span className="hidden sm:inline">Style</span>
-                </Link>
-              )}
-              {!isChronicle && (
-                <Link
-                  href={`/decks/${deck.id}/print`}
-                  className="inline-flex items-center gap-1.5 rounded-full border px-3 py-2 text-sm transition-colors hover:border-[var(--ink-soft)]"
-                  style={{ borderColor: "var(--line)", color: "var(--ink-soft)" }}
-                >
-                  <Printer size={14} />
-                  <span className="hidden sm:inline">Print</span>
-                </Link>
-              )}
               <Link
                 href={`/decks/${deck.id}/edit`}
                 className="inline-flex items-center gap-1.5 rounded-full border px-3 py-2 text-sm transition-colors hover:border-[var(--ink-soft)]"

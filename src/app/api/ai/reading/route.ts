@@ -48,18 +48,11 @@ export async function POST(request: NextRequest) {
   }
   const { readingId } = parsedBody.data;
 
-  // Fetch all data in parallel instead of sequentially. The seeker-context
-  // builder receives the card-id promise so its journey lookup stays parallel.
-  const cardsPromise = getReadingCardsWithData(readingId);
-  const cardIdsPromise = cardsPromise.then((rows) =>
-    rows.map((rc) => rc.cardId).filter((id): id is string => id !== null)
-  );
+  // Fetch all data in parallel instead of sequentially.
   const [reading, cardsWithData, seeker] = await Promise.all([
     getReadingByIdForUser(readingId, user.id),
-    cardsPromise,
-    buildSeekerContext(user.id, {
-      reading: { readingId, cardIds: cardIdsPromise },
-    }),
+    getReadingCardsWithData(readingId),
+    buildSeekerContext(user.id),
   ]);
   mark("parallel queries");
 
@@ -91,7 +84,7 @@ export async function POST(request: NextRequest) {
   }
 
   const spreadType = reading.spreadType as SpreadType;
-  const { userContext, readingLength, userName, astroContext, journeyContext } = seeker;
+  const { userContext, readingLength, userName } = seeker;
 
   const prompt = buildReadingInterpretationPrompt({
     spreadType,
@@ -99,8 +92,6 @@ export async function POST(request: NextRequest) {
     cards: cardsForPrompt,
     userContext,
     readingLength,
-    astroContext,
-    journeyContext,
     userName,
   });
   const { maxTokens } = STRUCTURE_TARGETS[readingLength][spreadType];

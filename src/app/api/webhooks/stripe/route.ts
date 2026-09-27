@@ -1,15 +1,10 @@
-import { NextRequest, NextResponse, after } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { printOrders, subscriptions, users } from "@/lib/db/schema";
+import { subscriptions } from "@/lib/db/schema";
 import { stripe } from "@/lib/stripe/client";
 import { eq } from "drizzle-orm";
 import type Stripe from "stripe";
 import { captureServer, ANALYTICS_EVENTS } from "@/lib/analytics";
-import {
-  sendPrintOrderConfirmation,
-  sendPrintOrderRefunded,
-} from "@/lib/email/send";
-import { forgePrintPack } from "@/lib/print/forge-pack";
 
 // Shared mapping from Stripe subscription status -> our internal (plan, status).
 function mapSubscriptionStatus(s: Stripe.Subscription): {
@@ -81,90 +76,6 @@ export async function POST(request: NextRequest) {
     switch (event.type) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
-
-        // Print-order branch (one-time payment) — gated on metadata so it
-        // never collides with the subscription path below (gated on
-        // session.subscription presence).
-        if (
-          session.mode === "payment" &&
-          session.metadata?.orderType === "print_order" &&
-          session.metadata?.orderId
-        ) {
-          const orderId = session.metadata.orderId;
-          const piId =
-            typeof session.payment_intent === "string"
-              ? session.payment_intent
-              : session.payment_intent?.id ?? null;
-          const shipping = session.collected_information?.shipping_details ?? null;
-          await db
-            .update(printOrders)
-            .set({
-              status: "paid",
-              stripePaymentIntentId: piId,
-              amountTotal: session.amount_total ?? undefined,
-              currency: session.currency ?? undefined,
-              shippingName: shipping?.name ?? null,
-              shippingAddress: shipping?.address
-                ? {
-                    line1: shipping.address.line1 ?? "",
-                    line2: shipping.address.line2 ?? undefined,
-                    city: shipping.address.city ?? "",
-                    state: shipping.address.state ?? undefined,
-                    postalCode: shipping.address.postal_code ?? "",
-                    country: shipping.address.country ?? "",
-                  }
-                : null,
-              paidAt: new Date(),
-            })
-            .where(eq(printOrders.id, orderId));
-
-          // Generate the pack manifest now so the admin queue shows "ready"
-          // without an extra click. A genuine failure is non-fatal — the admin
-          // can forge by hand — but it MUST go through after(). A bare dangling
-          // promise is not "best effort" on serverless, it is no effort: the
-          // function is frozen the instant this webhook answers 200 to Stripe,
-          // so the forge is killed every time and every paid $49 order would
-          // sit at 'paid' instead of 'pack_ready'.
-          after(
-            forgePrintPack(orderId).catch((err) =>
-              console.error("[webhook] forgePrintPack failed:", err)
-            )
-          );
-
-          // Best-effort confirmation email.
-          const userId = (session.metadata?.userId ?? null) as string | null;
-          if (userId) {
-            const [u] = await db
-              .select({ email: users.email, name: users.name, displayName: users.displayName })
-              .from(users)
-              .where(eq(users.id, userId))
-              .limit(1);
-            const [o] = await db
-              .select({ deckSnapshot: printOrders.deckSnapshot })
-              .from(printOrders)
-              .where(eq(printOrders.id, orderId))
-              .limit(1);
-            if (u?.email && o?.deckSnapshot) {
-              await sendPrintOrderConfirmation({
-                to: u.email,
-                name: u.displayName ?? u.name ?? null,
-                orderId,
-                deckTitle: o.deckSnapshot.title,
-                cardCount: o.deckSnapshot.cardCount,
-                amountTotal: session.amount_total ?? 0,
-                currency: session.currency ?? "usd",
-              });
-            }
-
-            captureServer(ANALYTICS_EVENTS.CHECKOUT_COMPLETED, userId, {
-              stripe_session_id: session.id,
-              order_type: "print_order",
-              amount_total: session.amount_total ?? null,
-              currency: session.currency ?? null,
-            });
-          }
-          break;
-        }
 
         if (session.customer && session.subscription) {
           const customerId =
@@ -274,46 +185,6 @@ export async function POST(request: NextRequest) {
               updatedAt: new Date(),
             })
             .where(eq(subscriptions.stripeCustomerId, customerId));
-        }
-        break;
-      }
-
-      case "charge.refunded": {
-        // Mark the matching print_order as refunded. Subscription invoice
-        // refunds don't run through this branch since they're tied to
-        // invoices, not Checkout payment_intents.
-        const charge = event.data.object as Stripe.Charge;
-        const piId =
-          typeof charge.payment_intent === "string"
-            ? charge.payment_intent
-            : charge.payment_intent?.id;
-        if (!piId) break;
-        const [order] = await db
-          .select({
-            id: printOrders.id,
-            userId: printOrders.userId,
-            deckSnapshot: printOrders.deckSnapshot,
-          })
-          .from(printOrders)
-          .where(eq(printOrders.stripePaymentIntentId, piId))
-          .limit(1);
-        if (!order) break;
-        await db
-          .update(printOrders)
-          .set({ status: "refunded" })
-          .where(eq(printOrders.id, order.id));
-        const [u] = await db
-          .select({ email: users.email, name: users.name, displayName: users.displayName })
-          .from(users)
-          .where(eq(users.id, order.userId))
-          .limit(1);
-        if (u?.email) {
-          await sendPrintOrderRefunded({
-            to: u.email,
-            name: u.displayName ?? u.name ?? null,
-            orderId: order.id,
-            deckTitle: order.deckSnapshot.title,
-          });
         }
         break;
       }

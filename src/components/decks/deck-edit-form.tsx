@@ -8,8 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { MicrophoneButton } from "@/components/voice/microphone-button";
 import { useVoiceInput } from "@/hooks/use-voice-input";
-import { Loader2, Palette } from "lucide-react";
-import Link from "next/link";
+import { Loader2 } from "lucide-react";
 import { StudioStyleBadge } from "@/components/studio/studio-style-badge";
 import type { Deck } from "@/types";
 
@@ -121,18 +120,8 @@ export function DeckEditForm({ deck, artStyleName, artStyleId }: DeckEditFormPro
         <div className="space-y-2">
           <Label>Art Style</Label>
           <div className="flex items-center gap-3">
-            <StudioStyleBadge styleName={artStyleName} styleId={artStyleId} />
-            <Link
-              href={`/decks/styles/${artStyleId}`}
-              className="text-xs text-muted-foreground hover:text-primary transition-colors flex items-center gap-1"
-            >
-              <Palette className="h-3 w-3" />
-              Customize style
-            </Link>
+            <StudioStyleBadge styleName={artStyleName} />
           </div>
-          <p className="text-xs text-muted-foreground/60">
-            Style changes apply to new cards only. Existing card images keep their current style.
-          </p>
         </div>
       )}
 

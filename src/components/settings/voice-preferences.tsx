@@ -16,13 +16,11 @@ const SPEED_OPTIONS: { value: VoiceSpeed; label: string }[] = [
 
 interface VoicePreferencesProps {
   initialPrefs: VoicePrefs;
-  initialGuidanceEnabled?: boolean;
   className?: string;
 }
 
-export function VoicePreferences({ initialPrefs, initialGuidanceEnabled = true, className }: VoicePreferencesProps) {
+export function VoicePreferences({ initialPrefs, className }: VoicePreferencesProps) {
   const [prefs, setPrefs] = useState<VoicePrefs>(initialPrefs);
-  const [guidanceEnabled, setGuidanceEnabled] = useState(initialGuidanceEnabled);
   const [saving, setSaving] = useState(false);
 
   async function patchVoice(body: Record<string, unknown>) {
@@ -59,12 +57,6 @@ export function VoicePreferences({ initialPrefs, initialGuidanceEnabled = true, 
     const newVal = !prefs.autoplay;
     setPrefs((p) => ({ ...p, autoplay: newVal }));
     patchVoice({ voiceAutoplay: newVal });
-  }
-
-  function handleToggleGuidance() {
-    const newVal = !guidanceEnabled;
-    setGuidanceEnabled(newVal);
-    patchVoice({ guidanceEnabled: newVal });
   }
 
   function handleSpeedChange(speed: VoiceSpeed) {
@@ -152,31 +144,6 @@ export function VoicePreferences({ initialPrefs, initialGuidanceEnabled = true, 
             ))}
           </div>
         </div>
-
-        {/* Guidance toggle */}
-        <button
-          onClick={handleToggleGuidance}
-          disabled={saving}
-          className={cn(
-            "flex w-full items-center justify-between rounded-xl border p-4 text-left transition-colors",
-            guidanceEnabled
-              ? "border-gold/50 bg-gold/5"
-              : "border-white/10 hover:border-gold/30 hover:bg-white/[0.02]"
-          )}
-        >
-          <div>
-            <span className="font-medium text-white/90">Lyra&apos;s Guidance</span>
-            <p className="text-sm text-white/40">
-              Voiced explanations at key progression milestones.
-            </p>
-          </div>
-          <span className={cn(
-            "text-xs font-medium px-2 py-1 rounded",
-            guidanceEnabled ? "bg-gold/20 text-gold" : "bg-white/5 text-white/40"
-          )}>
-            {guidanceEnabled ? "On" : "Off"}
-          </span>
-        </button>
       </div>
     </GlassPanel>
   );

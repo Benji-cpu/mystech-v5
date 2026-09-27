@@ -10,8 +10,7 @@ import {
   computeOnboardingStage,
   completeMilestone,
 } from "@/lib/onboarding/milestones";
-import { getUserTotalReadingCount, getUserChronicleDeck, getAstrologyProfile } from "@/lib/db/queries";
-import { getPathPosition } from "@/lib/db/queries-paths";
+import { getUserTotalReadingCount, getUserChronicleDeck } from "@/lib/db/queries";
 import type { OnboardingMilestone, OnboardingStage } from "@/types";
 
 // Paths that should never trigger the onboarding redirect
@@ -69,14 +68,11 @@ export default async function AppLayout({
       }
 
       // Fetch milestones + context for onboarding stage
-      const [milestones, readingCount, chronicleDeck, pathPosition, astroProfile] =
-        await Promise.all([
-          getUserMilestones(session.user.id),
-          getUserTotalReadingCount(session.user.id),
-          getUserChronicleDeck(session.user.id),
-          getPathPosition(session.user.id),
-          getAstrologyProfile(session.user.id),
-        ]);
+      const [milestones, readingCount, chronicleDeck] = await Promise.all([
+        getUserMilestones(session.user.id),
+        getUserTotalReadingCount(session.user.id),
+        getUserChronicleDeck(session.user.id),
+      ]);
 
       // Backfill initiation_complete milestone for users who completed initiation before this system
       if (initiationDone && !milestones.has("initiation_complete")) {
@@ -94,8 +90,6 @@ export default async function AppLayout({
         hasInitiation: initiationDone || hasDeck,
         readingCount,
         hasChronicle: !!chronicleDeck,
-        hasActivePath: !!pathPosition,
-        hasAstroProfile: !!astroProfile,
         daysSinceSignup,
       });
 

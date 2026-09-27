@@ -24,7 +24,6 @@ const routeMoods: Record<string, Mood> = {
   "/decks/new": { primaryHue: 30, sparkleColor: "#ff8c00" },
   "/readings": { primaryHue: 280, sparkleColor: "var(--gold)" },
   "/readings/new": { primaryHue: 260, sparkleColor: "#7c9aff" },
-  "/decks/styles": { primaryHue: 240, sparkleColor: "#4a6cf7" },
   "/settings": { primaryHue: 285, sparkleColor: "var(--gold)" },
   "/admin": { primaryHue: 285, sparkleColor: "var(--gold)" },
 };

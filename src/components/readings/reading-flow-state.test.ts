@@ -360,10 +360,6 @@ describe("readingFlowReducer", () => {
         presentingCardIndex: 2,
         showSynthesis: true,
         chronicleCardId: null,
-        journeyPathId: null,
-        journeyRetreatId: null,
-        journeyWaypointId: null,
-        journeySuggestedIntention: null,
       };
       const state = readingFlowReducer(prev, { type: "RESET" });
       expect(state).toEqual(initialReadingFlowState);

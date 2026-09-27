@@ -1,12 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { NextRequest } from "next/server";
 
 // --- Hoisted state (accessible inside vi.mock factories) ---
 
-const { mockGetCurrentUser, mockSelectResult, mockInsertResult } = vi.hoisted(() => ({
+const { mockGetCurrentUser, mockSelectResult } = vi.hoisted(() => ({
   mockGetCurrentUser: vi.fn(),
   mockSelectResult: [] as unknown[],
-  mockInsertResult: [] as unknown[],
 }));
 
 // --- Mocks ---
@@ -24,11 +22,6 @@ vi.mock("@/lib/db", () => ({
         }),
       }),
     }),
-    insert: vi.fn().mockReturnValue({
-      values: vi.fn().mockReturnValue({
-        returning: vi.fn().mockImplementation(() => Promise.resolve(mockInsertResult)),
-      }),
-    }),
   },
 }));
 
@@ -42,17 +35,7 @@ vi.mock("drizzle-orm", () => ({
 }));
 
 // Import route handlers after mocks
-import { GET, POST } from "./route";
-
-// --- Helpers ---
-
-function makePostRequest(body: Record<string, unknown>) {
-  return new NextRequest("http://localhost:3000/api/decks", {
-    method: "POST",
-    body: JSON.stringify(body),
-    headers: { "Content-Type": "application/json" },
-  });
-}
+import { GET } from "./route";
 
 // --- Tests ---
 
@@ -96,61 +79,5 @@ describe("GET /api/decks", () => {
     expect(json.success).toBe(true);
     expect(json.data).toHaveLength(1);
     expect(json.data[0].title).toBe("My Deck");
-  });
-});
-
-describe("POST /api/decks", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    mockInsertResult.length = 0;
-  });
-
-  it("returns 401 when not authenticated", async () => {
-    mockGetCurrentUser.mockResolvedValue(null);
-
-    const res = await POST(makePostRequest({ title: "Test" }));
-    const json = await res.json();
-
-    expect(res.status).toBe(401);
-    expect(json.success).toBe(false);
-  });
-
-  it("returns 400 when title is missing", async () => {
-    mockGetCurrentUser.mockResolvedValue({ id: "user-1", role: "user" });
-
-    const res = await POST(makePostRequest({}));
-    const json = await res.json();
-
-    expect(res.status).toBe(400);
-    // The message names the JSON field the client actually sent, not prose:
-    // "title: is required". Asserting the field name keeps this test honest
-    // if the wording changes again.
-    expect(json.error).toContain("title");
-    expect(json.error).toContain("is required");
-  });
-
-  it("allows deck creation without deck limit (credits constrain)", async () => {
-    mockGetCurrentUser.mockResolvedValue({ id: "user-1", role: "user" });
-    mockInsertResult.push({
-      id: "deck-new",
-      userId: "user-1",
-      title: "New Deck",
-      description: null,
-      theme: null,
-      status: "draft",
-      cardCount: 0,
-      isPublic: false,
-      coverImageUrl: null,
-      artStyleId: null,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
-
-    const res = await POST(makePostRequest({ title: "New Deck" }));
-    const json = await res.json();
-
-    expect(res.status).toBe(201);
-    expect(json.success).toBe(true);
-    expect(json.data.title).toBe("New Deck");
   });
 });

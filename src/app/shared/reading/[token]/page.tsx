@@ -96,8 +96,6 @@ export default async function SharedReadingPage({
               <span style={{ color: "var(--ink-faint)" }}>·</span>
               <StudioStyleBadge
                 styleName={reading.artStyleName}
-                styleId={reading.artStyleId}
-                linkToStudio={false}
               />
             </>
           )}

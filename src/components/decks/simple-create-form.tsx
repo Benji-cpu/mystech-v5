@@ -130,7 +130,6 @@ function reducer(state: WizardState, action: WizardAction): WizardState {
 
 interface SimpleCreateFormProps {
   presets: ArtStyle[];
-  customStyles: ArtStyle[];
   atLimit: boolean;
 }
 
@@ -253,12 +252,10 @@ function CardCountStep({
 
 function ArtStyleStep({
   presets,
-  customStyles,
   artStyleId,
   onSelect,
 }: {
   presets: ArtStyle[];
-  customStyles: ArtStyle[];
   artStyleId: string;
   onSelect: (id: string) => void;
 }) {
@@ -274,7 +271,6 @@ function ArtStyleStep({
       <SectionHeader>Choose an art style</SectionHeader>
       <StylePickerGrid
         presets={presets}
-        customStyles={customStyles}
         selectedStyleId={artStyleId}
         onSelect={onSelect}
       />
@@ -456,7 +452,6 @@ function RevealView({ title, obstacleCount, deckId }: { title: string; obstacleC
 
 export function SimpleCreateForm({
   presets,
-  customStyles,
   atLimit,
 }: SimpleCreateFormProps) {
   const router = useRouter();
@@ -551,8 +546,7 @@ export function SimpleCreateForm({
           {state.phase === "art_style" && (
             <ArtStyleStep
               presets={presets}
-              customStyles={customStyles}
-              artStyleId={state.artStyleId}
+                    artStyleId={state.artStyleId}
               onSelect={(id) => dispatch({ type: "SET_ART_STYLE", styleId: id })}
             />
           )}

@@ -1,7 +1,7 @@
 "use client";
 
 import { signOut } from "next-auth/react";
-import { User, Settings, CreditCard, LogOut, Shield, Palette } from "lucide-react";
+import { User, Settings, CreditCard, LogOut, Shield } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -89,12 +89,6 @@ export function UserMenu({ user }: UserMenuProps) {
           <Link href="/settings" className="cursor-pointer">
             <Settings className="mr-2 h-4 w-4" />
             Settings
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link href="/decks/styles" className="cursor-pointer">
-            <Palette className="mr-2 h-4 w-4" />
-            Art Styles
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>

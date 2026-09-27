@@ -3,9 +3,6 @@ import { getResend, EMAIL_FROM } from "./client";
 import { WelcomeEmail } from "@/emails/welcome";
 import { FirstReadingReflectionEmail } from "@/emails/first-reading-reflection";
 import { DailyCardEmail } from "@/emails/daily-card";
-import { PrintOrderConfirmationEmail } from "@/emails/print-order-confirmation";
-import { PrintOrderShippedEmail } from "@/emails/print-order-shipped";
-import { PrintOrderRefundedEmail } from "@/emails/print-order-refunded";
 import { APP_URL } from "@/lib/app-url";
 
 type ResendClient = NonNullable<ReturnType<typeof getResend>>;
@@ -78,100 +75,7 @@ export async function sendFirstReadingReflection(opts: BaseOptions & {
   }
 }
 
-export async function sendPrintOrderConfirmation(opts: BaseOptions & {
-  orderId: string;
-  deckTitle: string;
-  cardCount: number;
-  amountTotal: number;
-  currency: string;
-}): Promise<void> {
-  const resend = getResend();
-  if (!resend) return;
-  try {
-    const html = await render(
-      PrintOrderConfirmationEmail({
-        name: opts.name ?? undefined,
-        orderId: opts.orderId,
-        deckTitle: opts.deckTitle,
-        cardCount: opts.cardCount,
-        amountTotal: opts.amountTotal,
-        currency: opts.currency,
-        appUrl: APP_URL,
-      })
-    );
-    await sendOrLog(resend, {
-      from: EMAIL_FROM,
-      to: opts.to,
-      subject: `Your ${opts.deckTitle} deck is in production`,
-      html,
-      tags: [{ name: "kind", value: "print-confirmation" }],
-    });
-  } catch (err) {
-    console.error("[email] sendPrintOrderConfirmation failed:", err);
-  }
-}
-
-export async function sendPrintOrderShipped(opts: BaseOptions & {
-  orderId: string;
-  deckTitle: string;
-  carrier: string;
-  tracking: string;
-}): Promise<void> {
-  const resend = getResend();
-  if (!resend) return;
-  try {
-    const html = await render(
-      PrintOrderShippedEmail({
-        name: opts.name ?? undefined,
-        orderId: opts.orderId,
-        deckTitle: opts.deckTitle,
-        carrier: opts.carrier,
-        tracking: opts.tracking,
-        appUrl: APP_URL,
-      })
-    );
-    await sendOrLog(resend, {
-      from: EMAIL_FROM,
-      to: opts.to,
-      subject: `Your ${opts.deckTitle} deck has shipped`,
-      html,
-      tags: [{ name: "kind", value: "print-shipped" }],
-    });
-  } catch (err) {
-    console.error("[email] sendPrintOrderShipped failed:", err);
-  }
-}
-
-export async function sendPrintOrderRefunded(opts: BaseOptions & {
-  orderId: string;
-  deckTitle: string;
-}): Promise<void> {
-  const resend = getResend();
-  if (!resend) return;
-  try {
-    const html = await render(
-      PrintOrderRefundedEmail({
-        name: opts.name ?? undefined,
-        orderId: opts.orderId,
-        deckTitle: opts.deckTitle,
-        appUrl: APP_URL,
-      })
-    );
-    await sendOrLog(resend, {
-      from: EMAIL_FROM,
-      to: opts.to,
-      subject: `Refund processed — ${opts.deckTitle}`,
-      html,
-      tags: [{ name: "kind", value: "print-refunded" }],
-    });
-  } catch (err) {
-    console.error("[email] sendPrintOrderRefunded failed:", err);
-  }
-}
-
 export async function sendDailyCardEmail(opts: BaseOptions & {
-  streakCount: number;
-  hasChronicle: boolean;
   card: { title: string; imageUrl: string | null } | null;
   /** No deck to draw from — send the one-off invitation instead of nothing. */
   noDeck?: boolean;
@@ -184,15 +88,11 @@ export async function sendDailyCardEmail(opts: BaseOptions & {
   const ctaUrl = `${APP_URL}${opts.deepLinkPath}`;
   const subject = opts.noDeck
     ? "Your daily card is on — you just need a deck"
-    : opts.streakCount > 0
-      ? `Day ${opts.streakCount} and counting — your card awaits`
-      : "Your card awaits";
+    : "Your card awaits";
   try {
     const html = await render(
       DailyCardEmail({
         name: opts.name ?? undefined,
-        streakCount: opts.streakCount,
-        hasChronicle: opts.hasChronicle,
         card: opts.card,
         noDeck: opts.noDeck,
         ctaUrl,

@@ -40,7 +40,7 @@ export const navTabs: NavTab[] = [
     href: "/story",
     label: "Story",
     icon: BookOpen,
-    activePrefixes: ["/story", "/readings", "/paths"],
+    activePrefixes: ["/story", "/readings"],
     minStage: 0,
   },
   {

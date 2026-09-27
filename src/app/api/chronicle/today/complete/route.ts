@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { chronicleEntries, chronicleSettings, readings, readingCards } from "@/lib/db/schema";
+import { chronicleEntries, chronicleSettings } from "@/lib/db/schema";
 import { getCurrentUser } from "@/lib/auth/helpers";
 import {
   getUserChronicleDeck,
@@ -10,7 +10,6 @@ import {
   getUserPlan,
   getChronicleKnowledge,
 } from "@/lib/db/queries";
-import { getPathPosition, recordPathReading } from "@/lib/db/queries-paths";
 import { getUserPlanFromRole } from "@/lib/usage";
 import { extractAndMergeKnowledge } from "@/lib/ai/chronicle-knowledge";
 import { analyzeForEmergence } from "@/lib/ai/chronicle-emergence";
@@ -144,42 +143,6 @@ export async function POST() {
   // Auto-fire first chronicle milestone (non-blocking)
   completeMilestone(user.id, "first_chronicle_entry").catch(() => {});
 
-  // ── Path recording (non-fatal) ──────────────────────────
-  let pathRecorded = false;
-
-  if (entry.cardId) {
-    try {
-      const pathPosition = await getPathPosition(user.id);
-      if (pathPosition) {
-        // Create a 'daily' reading row as a vehicle for recordPathReading.
-        // Filtered out of /readings list by getUserReadingsWithDeck.
-        const [dailyReading] = await db
-          .insert(readings)
-          .values({
-            userId: user.id,
-            deckId: deck.id,
-            spreadType: 'daily',
-            question: pathPosition.waypoint.suggestedIntention,
-            interpretation: updatedEntry.miniReading,
-          })
-          .returning();
-
-        await db.insert(readingCards).values({
-          readingId: dailyReading.id,
-          position: 0,
-          positionName: 'Chronicle',
-          cardId: entry.cardId,
-        });
-
-        await recordPathReading(user.id, dailyReading.id, pathPosition);
-        pathRecorded = true;
-      }
-    } catch (err) {
-      console.error('[chronicle/today/complete] path recording error:', err);
-      // Non-fatal — chronicle completion still succeeds
-    }
-  }
-
   return NextResponse.json<
     ApiResponse<{
       entry: typeof updatedEntry;
@@ -189,7 +152,6 @@ export async function POST() {
         totalEntries: number;
       };
       newBadge: (ChronicleBadgeDefinition & { earnedAt: string }) | null;
-      pathRecorded: boolean;
     }>
   >({
     success: true,
@@ -203,7 +165,6 @@ export async function POST() {
       newBadge: newBadge
         ? { ...newBadge, earnedAt: new Date().toISOString() }
         : null,
-      pathRecorded,
     },
   });
 }

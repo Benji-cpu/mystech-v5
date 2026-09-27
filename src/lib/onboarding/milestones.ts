@@ -47,8 +47,6 @@ export function computeOnboardingStage(
     hasInitiation: boolean;
     readingCount: number;
     hasChronicle: boolean;
-    hasActivePath: boolean;
-    hasAstroProfile: boolean;
     daysSinceSignup: number;
   }
 ): OnboardingStage {
@@ -57,15 +55,8 @@ export function computeOnboardingStage(
     return 0;
   }
 
-  // Stage 5: Mastery — contextual, check if stage 4 features used
-  const stage4Complete =
-    (milestones.has("paths_introduced") || context.hasActivePath) &&
-    (milestones.has("astrology_introduced") || context.hasAstroProfile);
-
-  if (
-    stage4Complete &&
-    (context.readingCount >= 10 || context.daysSinceSignup >= 14)
-  ) {
+  // Stage 5: Mastery
+  if (context.readingCount >= 10 || context.daysSinceSignup >= 14) {
     return 5;
   }
 

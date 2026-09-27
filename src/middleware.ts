@@ -40,8 +40,6 @@ export const config = {
     "/studio/:path*",
     "/chronicle/:path*",
     "/chronicle",
-    "/paths/:path*",
-    "/paths",
     "/settings/:path*",
     "/admin/:path*",
     "/onboarding/:path*",

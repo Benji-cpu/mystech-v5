@@ -29,18 +29,8 @@ interface RouteRule {
  * Dynamic segments use [^/]+ to match any ID.
  */
 const routeRules: RouteRule[] = [
-  // Deck creation sub-flows (focus mode — multi-step ceremonies)
-  { pattern: /^\/decks\/new\/journey\/[^/]+\/review$/, backTarget: "/decks", backLabel: "Decks", focusMode: true, focusTitle: "Guided Journey", focusSubtitle: "Review your cards" },
-  { pattern: /^\/decks\/new\/journey\/[^/]+\/chat$/, backTarget: "/decks", backLabel: "Decks", focusMode: true, focusTitle: "Guided Journey", focusSubtitle: "Conversation with Lyra" },
-  { pattern: /^\/decks\/new\/journey$/, backTarget: "/decks/new", backLabel: "Create Deck", focusMode: true, focusTitle: "Guided Journey", focusSubtitle: "Setup your journey" },
-  { pattern: /^\/decks\/new\/simple$/, backTarget: "/decks/new", backLabel: "Create Deck", focusMode: true, focusTitle: "Quick Create", focusSubtitle: "Build a deck in minutes" },
-  { pattern: /^\/decks\/new$/, backTarget: "/decks", backLabel: "Decks", focusMode: true, focusTitle: "Create Deck", focusSubtitle: "Choose your path" },
-
-  // Art styles (folded under /decks — static segment wins over [deckId])
-  { pattern: /^\/decks\/styles\/new$/, backTarget: "/decks/styles", backLabel: "Art Styles" },
-  { pattern: /^\/decks\/styles\/[^/]+\/edit$/, backTarget: "PARENT", backLabel: "Style" },
-  { pattern: /^\/decks\/styles\/[^/]+$/, backTarget: "/decks/styles", backLabel: "Art Styles" },
-  { pattern: /^\/decks\/styles$/, backTarget: "/decks", backLabel: "Decks" },
+  // Deck creation (focus mode — a multi-step ceremony)
+  { pattern: /^\/decks\/new$/, backTarget: "/decks", backLabel: "Decks", focusMode: true, focusTitle: "Create Deck", focusSubtitle: "Build a deck in minutes" },
 
   // Card refinement (focus mode — lives under its deck)
   // No focusTitle/focusSubtitle: CardRefinement draws its own header with the
@@ -57,11 +47,7 @@ const routeRules: RouteRule[] = [
   { pattern: /^\/readings\/new$/, backTarget: "/story", backLabel: "Story", focusMode: true, ownHeader: true },
   { pattern: /^\/readings\/[^/]+$/, backTarget: "/story", backLabel: "Story" },
 
-  // Paths — the "focus" picker, reached from Story
-  { pattern: /^\/paths\/[^/]+$/, backTarget: "/paths", backLabel: "Focus" },
-  { pattern: /^\/paths$/, backTarget: "/story", backLabel: "Story" },
-
-  // Chronicle (focus mode — process flows). /chronicle/today now redirects to /today.
+  // Chronicle (focus mode — process flows). The daily entry itself lives at /chronicle.
   { pattern: /^\/chronicle\/setup$/, backTarget: "/today", backLabel: "Today", focusMode: true, focusTitle: "Chronicle Setup", focusSubtitle: "Begin your practice" },
 
   // Settings

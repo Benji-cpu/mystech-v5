@@ -2,25 +2,20 @@ import { Suspense } from "react";
 import { requireAuth } from "@/lib/auth/helpers";
 import {
   getUserDeckCount,
-  getUserDraftDecks,
   getUserPlan,
   getUserTotalReadingCount,
   getUserChronicleDeck,
   getChronicleSettings,
   getTodayChronicleCard,
-  getAstrologyProfile,
   getUserActivityFeed,
 } from "@/lib/db/queries";
 import { getUserPlanFromRole, getOrCreateUsageRecord, checkDailyReadings } from "@/lib/usage";
 import { resolveUserName } from "@/lib/auth/get-user-name";
 import { PLAN_LIMITS } from "@/lib/constants";
-import { getCurrentCelestialContext } from "@/lib/astrology/birth-chart";
-import { buildUnifiedFeed, splitFeedByCategory } from "@/lib/activity/build-unified-feed";
-import { InProgressDecks } from "@/components/dashboard/in-progress-decks";
+import { buildUnifiedFeed } from "@/lib/activity/build-unified-feed";
 import { OverviewCollapsible } from "@/components/dashboard/overview-collapsible";
 import { LyraGreeting } from "@/components/guide/lyra-greeting";
 import { ChronicleNudge } from "@/components/chronicle/chronicle-nudge";
-import { CelestialEventsSection } from "@/components/profile/celestial-events-section";
 import { ActivitySection } from "@/components/profile/activity-section";
 import { SettingsLinkCard } from "@/components/settings/settings-link-card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -54,15 +49,12 @@ async function ProfileContent({
   userRole?: string;
 }) {
   let plan: PlanType = getUserPlanFromRole(userRole);
-  const [deckCount, draftDecks, subPlan, readingCount, astroProfile, activityFeed] =
-    await Promise.all([
-      getUserDeckCount(userId),
-      getUserDraftDecks(userId),
-      plan === "free" ? getUserPlan(userId) : Promise.resolve(plan),
-      getUserTotalReadingCount(userId),
-      getAstrologyProfile(userId),
-      getUserActivityFeed(userId, 15),
-    ]);
+  const [deckCount, subPlan, readingCount, activityFeed] = await Promise.all([
+    getUserDeckCount(userId),
+    plan === "free" ? getUserPlan(userId) : Promise.resolve(plan),
+    getUserTotalReadingCount(userId),
+    getUserActivityFeed(userId, 15),
+  ]);
   if (plan === "free" && subPlan === "pro") plan = "pro";
 
   const [usageRecord, readingStatus, chronicleDeck] = await Promise.all([
@@ -79,14 +71,7 @@ async function ProfileContent({
     : [null, null];
 
   const limits = PLAN_LIMITS[plan];
-  const celestialContext = getCurrentCelestialContext();
-
-  const feedItems = buildUnifiedFeed(activityFeed, astroProfile, {
-    futureDays: 7,
-    pastDays: 14,
-    maxCelestialEvents: 6,
-  });
-  const { celestial, activities } = splitFeedByCategory(feedItems);
+  const activities = buildUnifiedFeed(activityFeed);
 
   return (
     <StaggeredList className="space-y-8">
@@ -94,9 +79,6 @@ async function ProfileContent({
         userName={userName}
         deckCount={deckCount}
         readingCount={readingCount}
-        moonPhase={celestialContext.moonPhase}
-        moonSign={celestialContext.moonSign}
-        sunSign={astroProfile?.sunSign}
       />
 
       <ChronicleNudge
@@ -106,11 +88,6 @@ async function ProfileContent({
         streakCount={chronicleSettings?.streakCount ?? 0}
       />
 
-      {draftDecks.length > 0 && (
-        <InProgressDecks drafts={draftDecks} />
-      )}
-
-      <CelestialEventsSection items={celestial} />
       <ActivitySection items={activities} />
 
       <OverviewCollapsible
@@ -121,8 +98,6 @@ async function ProfileContent({
         readingsToday={readingStatus?.performedToday ?? 0}
         readingsPerDay={limits.readingsPerDay}
         isLifetimeCredits={limits.creditsAreLifetime}
-        celestialProfile={astroProfile}
-        open={!astroProfile ? true : undefined}
       />
 
       <SettingsLinkCard />

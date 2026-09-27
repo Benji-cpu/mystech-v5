@@ -23,16 +23,11 @@ import { LyraSigil } from "@/components/guide/lyra-sigil";
 import { DeckSelector } from "./deck-selector";
 import { SpreadSelector } from "./spread-selector";
 import { IntentionInput } from "./intention-input";
-import { ChronicleContextPanel } from "./chronicle-context-panel";
-import { AstrologyBar } from "./astrology-bar";
-import { AstroNudgeBanner } from "@/components/shared/astro-nudge-banner";
-import { JourneyContextBanner } from "./journey-context-banner";
 import { useCardDetailModal } from "@/hooks/use-card-detail-modal";
 import { fetchWithUpgrade } from "@/lib/api/fetch-with-upgrade";
 import { ReadingCompleteShare } from "./reading-complete-share";
-import { ObstacleProposal } from "./obstacle-proposal";
 import { CardDetailModal } from "@/components/cards/card-detail-modal";
-import type { AstrologyProfile, CardImageStatus, CardType } from "@/types";
+import type { CardImageStatus, CardType } from "@/types";
 
 import { ReadingStage } from "./reading-stage";
 import { ReadingHeader } from "./reading-header";
@@ -120,10 +115,6 @@ interface ReadingFlowProps {
 
 export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, onInitiationComplete }: ReadingFlowProps) {
   const router = useRouter();
-  const [isChronicleHandoff] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    return new URLSearchParams(window.location.search).get('source') === 'chronicle';
-  });
   const [state, dispatch] = useReducer(
     readingFlowReducer,
     initialReadingFlowState
@@ -223,44 +214,12 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [guided, guidedDeckId, decks.length]);
 
-  // ── Restore defaults from localStorage (or Chronicle handoff) ────────
+  // ── Restore defaults from localStorage ───────────────────────────────
 
   useEffect(() => {
     if (guided) return; // Guided mode handles its own setup above
     if (defaultsRestored.current) return;
     defaultsRestored.current = true;
-
-    // Check for Chronicle handoff via sessionStorage
-    const searchParams = new URLSearchParams(window.location.search);
-    if (searchParams.get('source') === 'chronicle') {
-      try {
-        const raw = sessionStorage.getItem('mystech_reading_handoff');
-        if (raw) {
-          const handoff = JSON.parse(raw) as {
-            source: string;
-            chronicleCardId?: string;
-            question?: string;
-            deckId?: string;
-          };
-          sessionStorage.removeItem('mystech_reading_handoff');
-
-          if (handoff.deckId) dispatch({ type: "SELECT_DECK", deckId: handoff.deckId });
-          dispatch({ type: "SELECT_SPREAD", spread: "three_card" });
-          if (handoff.question) dispatch({ type: "SET_QUESTION", question: handoff.question });
-          if (handoff.chronicleCardId) dispatch({ type: "SET_CHRONICLE_CARD", chronicleCardId: handoff.chronicleCardId });
-
-          // Direct handoff: skip the setup zone entirely. The user already
-          // chose deck + intention in the chronicle — making them re-confirm
-          // here was the "two systems working together" friction Benji
-          // flagged. To switch deck they re-enter via the chronicle.
-          if (handoff.deckId && handoff.question) {
-            dispatch({ type: "BEGIN_READING" });
-          }
-
-          return; // Skip localStorage defaults
-        }
-      } catch { /* sessionStorage unavailable */ }
-    }
 
     const saved = loadDefaults();
     if (!saved) {
@@ -326,22 +285,6 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
 
   const presentation = useReadingPresentation();
 
-  // ── Astrology profile ────────────────────────────────────────────────
-
-  const [astroProfile, setAstroProfile] = useState<AstrologyProfile | null>(null);
-  const astroFetched = useRef(false);
-
-  useEffect(() => {
-    if (astroFetched.current) return;
-    astroFetched.current = true;
-    fetch("/api/astrology/profile")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success && data.data) setAstroProfile(data.data);
-      })
-      .catch(() => {});
-  }, []);
-
   // ── Chronicle card ────────────────────────────────────────────────────
 
   type ChronicleCardPreview = {
@@ -353,10 +296,7 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
     imageStatus: string;
     cardType: string;
   };
-  type ChronicleMessage = { role: "user" | "assistant"; content: string };
   const [todayChronicleCard, setTodayChronicleCard] = useState<ChronicleCardPreview | null>(null);
-  const [chronicleConversation, setChronicleConversation] = useState<ChronicleMessage[] | null>(null);
-  const [chronicleNotes, setChronicleNotes] = useState("");
   const chronicleFetched = useRef(false);
   const { openCard: openChronicleCard, modalProps: chronicleModalProps } = useCardDetailModal();
   const { openCard: openCeremonyCard, modalProps: ceremonyModalProps } = useCardDetailModal();
@@ -372,84 +312,9 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
           setTodayChronicleCard(card);
           dispatch({ type: "SET_CHRONICLE_CARD", chronicleCardId: card.id });
         }
-        if (data.success && data.data?.entry?.conversation?.length) {
-          setChronicleConversation(data.data.entry.conversation as ChronicleMessage[]);
-        }
       })
       .catch(() => {});
   }, []);
-
-  // ── Path position (Path + Retreat + Waypoint) ──────────────────────
-
-  type PathPositionPreview = {
-    pathId: string;
-    pathName: string;
-    retreatId: string;
-    retreatName: string;
-    waypointId: string;
-    waypointName: string;
-    suggestedIntention: string;
-    nextAvailableAt?: string | null;
-    circleName?: string | null;
-    circleNumber?: number | null;
-  };
-  const [pathPosition, setPathPosition] =
-    useState<PathPositionPreview | null>(null);
-  const [pathPacingBlocked, setPathPacingBlocked] = useState(false);
-  const pathFetched = useRef(false);
-
-  useEffect(() => {
-    if (pathFetched.current) return;
-
-    // Don't fetch path context for chronicle handoff readings — the chronicle
-    // already recorded today's waypoint reading, and setting journeyWaypointId
-    // would trigger canAdvanceWaypoint() to block same-day follow-on readings.
-    const searchParams = new URLSearchParams(window.location.search);
-    if (searchParams.get('source') === 'chronicle') {
-      pathFetched.current = true;
-      return;
-    }
-
-    pathFetched.current = true;
-    fetch("/api/paths/progress")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success && data.data?.position) {
-          const pos = data.data.position as PathPositionPreview;
-          setPathPosition(pos);
-
-          // Check if waypoint is pacing-blocked (nextAvailableAt in the future)
-          const nextAt = pos.nextAvailableAt ? new Date(pos.nextAvailableAt) : null;
-          const isPacingBlocked = !!nextAt && new Date() < nextAt;
-
-          if (isPacingBlocked) {
-            // Don't attach path context — let user do a casual reading
-            setPathPacingBlocked(true);
-          } else {
-            dispatch({
-              type: "SET_JOURNEY_CONTEXT",
-              pathId: pos.pathId,
-              retreatId: pos.retreatId,
-              waypointId: pos.waypointId,
-              suggestedIntention: pos.suggestedIntention,
-            });
-          }
-        }
-      })
-      .catch(() => {});
-  }, []);
-
-  // Derive active astro placement from streaming object
-  const activeAstroPlacement = useMemo(() => {
-    if (!astroProfile || !isPresenting) return null;
-    const sections = presentation.object?.cardSections;
-    if (!sections || presentingCardIndex < 0) return null;
-    const section = sections[presentingCardIndex];
-    return section?.astroResonance?.relevantPlacement ?? null;
-  }, [astroProfile, isPresenting, presentation.object, presentingCardIndex]);
-
-  // Get current celestial context from the streaming object
-  const currentMoonPhase = presentation.object?.astroContext?.celestialNote;
 
   // ── Voice narration ────────────────────────────────────────────────────
 
@@ -539,16 +404,8 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
       body: JSON.stringify({
         deckIds: selectedDeckIds,
         spreadType: selectedSpread,
-        question: (() => {
-          const base = question.trim();
-          const extra = chronicleNotes.trim();
-          if (!base) return undefined;
-          return extra ? `${base}\n\nAdditional context: ${extra}` : base;
-        })(),
+        question: question.trim() || undefined,
         chronicleCardId: chronicleCardId ?? undefined,
-        journeyPathId: state.journeyPathId ?? undefined,
-        journeyRetreatId: state.journeyRetreatId ?? undefined,
-        journeyWaypointId: state.journeyWaypointId ?? undefined,
       }),
     })
       .then((res) => res.json())
@@ -581,8 +438,7 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
         });
         toast.error("Something went wrong. Please try again.");
       });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, selectedDeckIds, selectedSpread, question, chronicleCardId, state.journeyPathId]);
+  }, [phase, selectedDeckIds, selectedSpread, question, chronicleCardId]);
 
   // ── Orchestration: drawing → presenting ────────────────────────────────
 
@@ -980,17 +836,6 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
             : null
         }
       />
-      {astroProfile && isPresenting && (
-        <div className="border-b" style={{ borderColor: "var(--line)" }}>
-          <AstrologyBar
-            sunSign={astroProfile.sunSign}
-            moonSign={astroProfile.moonSign}
-            risingSign={astroProfile.risingSign}
-            moonPhase={currentMoonPhase ?? undefined}
-            activePlacement={activeAstroPlacement}
-          />
-        </div>
-      )}
     </>
   );
 
@@ -998,8 +843,6 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
 
   const setupBanners = (
     <>
-      {!astroProfile && <AstroNudgeBanner />}
-
       <AnimatePresence>
         {todayChronicleCard && (
           <motion.div
@@ -1074,18 +917,6 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
         )}
       </AnimatePresence>
 
-      {pathPosition && (state.journeyPathId || pathPacingBlocked) && (
-        <JourneyContextBanner
-          circleName={pathPosition.circleName}
-          circleNumber={pathPosition.circleNumber}
-          pathName={pathPosition.pathName}
-          retreatName={pathPosition.retreatName}
-          waypointName={pathPosition.waypointName}
-          suggestedIntention={pathPosition.suggestedIntention}
-          pacingBlocked={pathPacingBlocked}
-          nextAvailableAt={pathPosition.nextAvailableAt ?? undefined}
-        />
-      )}
     </>
   );
 
@@ -1184,34 +1015,15 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
         intentionEnabled={selectedDeckIds.length > 0 && !!selectedSpread}
         intentionSummary={intentionSummary}
         intentionStep={
-          isChronicleHandoff && question ? (
-            <ChronicleContextPanel
-              conversation={chronicleConversation ?? []}
-              question={question}
-              onQuestionChange={(q) =>
-                dispatch({ type: "SET_QUESTION", question: q })
-              }
-              onSubmit={canBegin ? handleBeginReading : undefined}
-              notes={chronicleNotes}
-              onNotesChange={setChronicleNotes}
-            />
-          ) : pathPosition &&
-            state.journeyPathId &&
-            state.journeySuggestedIntention ? (
-            <p className="whisper text-sm" style={{ color: "var(--ink-mute)" }}>
-              Your path has already set this reading&apos;s intention.
-            </p>
-          ) : (
-            <IntentionInput
-              question={question}
-              onChange={(q) => dispatch({ type: "SET_QUESTION", question: q })}
-              onSubmit={handleBeginReading}
-              submitDisabledReason={
-                canBegin ? null : "Choose a deck and a spread first."
-              }
-              hideLabel
-            />
-          )
+          <IntentionInput
+            question={question}
+            onChange={(q) => dispatch({ type: "SET_QUESTION", question: q })}
+            onSubmit={handleBeginReading}
+            submitDisabledReason={
+              canBegin ? null : "Choose a deck and a spread first."
+            }
+            hideLabel
+          />
         }
         error={error}
       />
@@ -1234,21 +1046,6 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
             {statusText ?? "Let us begin…"}
           </motion.p>
         </AnimatePresence>
-
-        {/* Chronicle handoff bypasses setup — this is the way back out. */}
-        {chronicleCardId && (phase === "creating" || phase === "drawing") && (
-          <button
-            type="button"
-            onClick={() => {
-              sessionStorage.removeItem("mystech_reading_handoff");
-              window.location.assign("/readings/new");
-            }}
-            className="text-xs underline-offset-2 transition-opacity hover:underline hover:opacity-80"
-            style={{ color: "var(--ink-faint)" }}
-          >
-            From your chronicle · Switch deck
-          </button>
-        )}
       </div>
     );
   } else {
@@ -1277,9 +1074,6 @@ export function ReadingFlow({ decks, userPlan, userRole, guided, guidedDeckId, o
               ) : (
                 readingId && (
                   <>
-                    {state.journeyPathId && (
-                      <ObstacleProposal readingId={readingId} />
-                    )}
                     <ReadingCompleteShare
                       readingId={readingId}
                       spreadType={selectedSpread ?? undefined}

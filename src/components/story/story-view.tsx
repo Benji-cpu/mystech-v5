@@ -6,7 +6,6 @@ import { EditorialCard } from "@/components/editorial";
 import { StoryStreakHeader } from "./story-streak-header";
 import { StoryThemes } from "./story-themes";
 import { StoryTimeline, type StoryItem } from "./story-timeline";
-import { FocusTrail, type FocusTrailData } from "./focus-trail";
 import type { ChronicleBadge, ChronicleKnowledge } from "@/types";
 
 interface StoryViewProps {
@@ -16,7 +15,6 @@ interface StoryViewProps {
   totalEntries: number;
   readingCount: number;
   badges: ChronicleBadge[];
-  focusTrail: FocusTrailData | null;
   isFree: boolean;
   className?: string;
 }
@@ -28,7 +26,6 @@ export function StoryView({
   totalEntries,
   readingCount,
   badges,
-  focusTrail,
   isFree,
   className,
 }: StoryViewProps) {
@@ -43,7 +40,6 @@ export function StoryView({
 
       <StoryThemes knowledge={knowledge} />
 
-      {focusTrail && <FocusTrail trail={focusTrail} />}
 
       <section>
         <p className="eyebrow">Timeline</p>
