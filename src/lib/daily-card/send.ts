@@ -14,7 +14,7 @@
  */
 import { db } from "@/lib/db";
 import { dailyCardDeliveries, userProfiles, users } from "@/lib/db/schema";
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, isNotNull, isNull } from "drizzle-orm";
 import { pickDailyCard, pickDailyDeckForUser } from "./pick-card";
 import { localDateFor } from "./timezone";
 import { sendDailyCardEmail } from "@/lib/email/send";
@@ -157,7 +157,9 @@ async function deliver(args: {
 /**
  * Has the "you have no deck" invitation already gone to this user? The delivery
  * rows are the record: an invitation is the only delivery with no deck and no
- * card against it.
+ * card against it. Only a row Resend accepted counts — before 2026-09-27 rows
+ * were written for refused sends too, and one of those would have stood in for
+ * an invitation nobody ever received.
  */
 async function hasBeenInvitedToMakeADeck(userId: string): Promise<boolean> {
   const [row] = await db
@@ -167,7 +169,8 @@ async function hasBeenInvitedToMakeADeck(userId: string): Promise<boolean> {
       and(
         eq(dailyCardDeliveries.userId, userId),
         isNull(dailyCardDeliveries.deckId),
-        isNull(dailyCardDeliveries.cardId)
+        isNull(dailyCardDeliveries.cardId),
+        isNotNull(dailyCardDeliveries.emailMessageId)
       )
     )
     .limit(1);
