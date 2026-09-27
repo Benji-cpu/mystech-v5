@@ -45,6 +45,8 @@ export function DailyCardEmail({
     ? streakCount > 0
       ? `You're on a ${streakCount}-day streak. Today's card is waiting to be forged.`
       : "Today's card is waiting to be forged from whatever the day holds."
+    : card
+    ? `Today's card from your deck is \u201c${card.title}\u201d. Open it to see what it says about where you are.`
     : "A few quiet minutes with the cards to begin the day.";
 
   return (
@@ -88,7 +90,11 @@ export function DailyCardEmail({
 
           <Section style={ctaWrap}>
             <Link href={ctaUrl} style={cta}>
-              {noDeck ? "Make your first deck" : "Begin today\u2019s ritual"}
+              {noDeck
+                ? "Make your first deck"
+                : hasChronicle || !card
+                ? "Begin today\u2019s ritual"
+                : "Open today\u2019s card"}
             </Link>
           </Section>
 

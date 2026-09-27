@@ -22,6 +22,7 @@ import { ORIGIN_SOURCE, type ApiResponse, type Anchor, type DraftCard } from "@/
 
 import { parseBody } from "@/lib/api/validate";
 import { GenerateDeckSchema } from "@/lib/api/schemas";
+import { adoptRequestTimezone } from "@/lib/daily-card/profile";
 const MAX_RETRIES = 2;
 
 export async function POST(request: NextRequest) {
@@ -353,6 +354,11 @@ export async function POST(request: NextRequest) {
   await incrementCredits(user.id, plan, generatedCards.length);
 
   const obstacleCount = generatedCards.filter(c => c.cardType === "obstacle").length;
+
+  // Now there is a deck to draw from, the daily card needs to know their morning.
+  await adoptRequestTimezone(user.id, request.headers).catch((err) =>
+    console.error("[generate-deck] timezone adoption failed:", err)
+  );
 
   return NextResponse.json<ApiResponse<{ deckId: string; title: string; obstacleCount: number }>>(
     { success: true, data: { deckId: deck.id, title: deckTitle, obstacleCount } },

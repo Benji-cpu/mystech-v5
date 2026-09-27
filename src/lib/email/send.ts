@@ -6,8 +6,30 @@ import { DailyCardEmail } from "@/emails/daily-card";
 import { PrintOrderConfirmationEmail } from "@/emails/print-order-confirmation";
 import { PrintOrderShippedEmail } from "@/emails/print-order-shipped";
 import { PrintOrderRefundedEmail } from "@/emails/print-order-refunded";
+import { APP_URL } from "@/lib/app-url";
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://mystech.app";
+type ResendClient = NonNullable<ReturnType<typeof getResend>>;
+type EmailPayload = Parameters<ResendClient["emails"]["send"]>[0];
+
+/**
+ * Resend does not throw when it refuses a message (an unverified sending
+ * domain, a bad address): it resolves `{ data: null, error }`. Awaiting the
+ * call and moving on therefore read every rejection as a success, and nothing
+ * was ever logged. Log it, and hand the outcome back to callers that record it.
+ */
+async function sendOrLog(
+  resend: ResendClient,
+  payload: EmailPayload,
+  options?: { idempotencyKey?: string },
+): Promise<{ id: string } | { error: string }> {
+  const { data, error } = await resend.emails.send(payload, options);
+  if (error || !data?.id) {
+    const message = error?.message ?? "Resend returned no message id";
+    console.error(`[email] "${payload.subject}" to ${payload.to} rejected: ${message}`);
+    return { error: message };
+  }
+  return { id: data.id };
+}
 
 type BaseOptions = {
   to: string;
@@ -19,7 +41,7 @@ export async function sendWelcomeEmail(opts: BaseOptions): Promise<void> {
   if (!resend) return;
   try {
     const html = await render(WelcomeEmail({ name: opts.name ?? undefined, appUrl: APP_URL }));
-    await resend.emails.send({
+    await sendOrLog(resend, {
       from: EMAIL_FROM,
       to: opts.to,
       subject: "Your oracle awaits ✦",
@@ -45,7 +67,7 @@ export async function sendFirstReadingReflection(opts: BaseOptions & {
         appUrl: APP_URL,
       }),
     );
-    await resend.emails.send({
+    await sendOrLog(resend, {
       from: EMAIL_FROM,
       to: opts.to,
       subject: "How did that first reading land?",
@@ -77,7 +99,7 @@ export async function sendPrintOrderConfirmation(opts: BaseOptions & {
         appUrl: APP_URL,
       })
     );
-    await resend.emails.send({
+    await sendOrLog(resend, {
       from: EMAIL_FROM,
       to: opts.to,
       subject: `Your ${opts.deckTitle} deck is in production`,
@@ -108,7 +130,7 @@ export async function sendPrintOrderShipped(opts: BaseOptions & {
         appUrl: APP_URL,
       })
     );
-    await resend.emails.send({
+    await sendOrLog(resend, {
       from: EMAIL_FROM,
       to: opts.to,
       subject: `Your ${opts.deckTitle} deck has shipped`,
@@ -135,7 +157,7 @@ export async function sendPrintOrderRefunded(opts: BaseOptions & {
         appUrl: APP_URL,
       })
     );
-    await resend.emails.send({
+    await sendOrLog(resend, {
       from: EMAIL_FROM,
       to: opts.to,
       subject: `Refund processed — ${opts.deckTitle}`,
@@ -154,9 +176,11 @@ export async function sendDailyCardEmail(opts: BaseOptions & {
   /** No deck to draw from — send the one-off invitation instead of nothing. */
   noDeck?: boolean;
   deepLinkPath: string; // e.g. "/today"
-}): Promise<{ id: string } | null> {
+  /** Resend drops a repeat of the same key for 24h, so a retried tick cannot double-send. */
+  idempotencyKey?: string;
+}): Promise<{ id: string } | { error: string }> {
   const resend = getResend();
-  if (!resend) return null;
+  if (!resend) return { error: "RESEND_API_KEY is not set" };
   const ctaUrl = `${APP_URL}${opts.deepLinkPath}`;
   const subject = opts.noDeck
     ? "Your daily card is on — you just need a deck"
@@ -175,17 +199,19 @@ export async function sendDailyCardEmail(opts: BaseOptions & {
         appUrl: APP_URL,
       }),
     );
-    const result = await resend.emails.send({
-      from: EMAIL_FROM,
-      to: opts.to,
-      subject,
-      html,
-      tags: [{ name: "kind", value: "daily-card" }],
-    });
-    const id = result?.data?.id ?? null;
-    return id ? { id } : null;
+    return await sendOrLog(
+      resend,
+      {
+        from: EMAIL_FROM,
+        to: opts.to,
+        subject,
+        html,
+        tags: [{ name: "kind", value: "daily-card" }],
+      },
+      opts.idempotencyKey ? { idempotencyKey: opts.idempotencyKey } : undefined,
+    );
   } catch (err) {
     console.error("[email] sendDailyCardEmail failed:", err);
-    return null;
+    return { error: err instanceof Error ? err.message : String(err) };
   }
 }

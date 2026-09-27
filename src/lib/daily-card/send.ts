@@ -1,14 +1,16 @@
 /**
- * Daily reminder orchestrator: gather ritual context → delivery row → email.
+ * Daily card orchestrator: gather context → email → delivery row.
  *
- * The email is a nudge toward the /today ritual — it no longer pre-draws a
- * card (the only "today's card" is the one forged in the chronicle flow).
- * For chronicle users it carries the streak and yesterday's forged card art;
- * for others it features a card from their decks as a visual invitation.
+ * Chronicle users get a nudge toward the /today ritual, carrying their streak
+ * and yesterday's forged card. Everyone else gets a card from their own deck,
+ * and the email's one tap opens it as a reading (`/daily?on=<date>`, which
+ * turns the delivery into a reading on first open — see ./open.ts).
  *
- * Idempotency comes from `dailyCardDeliveries`'s unique
- * (userId, deliveryDate, channel) index — re-running the cron in the same
- * local day is a no-op for a user who already received their reminder.
+ * A delivery row is written only once Resend has accepted the message and
+ * handed back its id. Writing it regardless recorded 67 "deliveries" that
+ * never left, and the row's existence stopped every retry. Idempotency comes
+ * from the unique (userId, deliveryDate, channel) index plus a Resend
+ * idempotency key, so a retried tick cannot double-send.
  */
 import { db } from "@/lib/db";
 import { dailyCardDeliveries, userProfiles, users } from "@/lib/db/schema";
@@ -111,43 +113,77 @@ export async function sendDailyCardForUser(args: {
     }
   }
 
+  return deliver({
+    userId: args.userId,
+    email: userRow.email,
+    name: userRow.displayName ?? userRow.name ?? null,
+    deliveryDate,
+    streakCount,
+    hasChronicle: !!chronicleDeck,
+    card: featured,
+    cardId: featuredCardId,
+    deckId: featuredDeckId,
+    // A card from their own deck opens as a reading; the chronicle ritual
+    // lives on /today.
+    deepLinkPath: !chronicleDeck && featuredCardId ? `/daily?on=${deliveryDate}` : "/today",
+  });
+}
+
+/** Send, and record the delivery only if the message was actually accepted. */
+async function deliver(args: {
+  userId: string;
+  email: string;
+  name: string | null;
+  deliveryDate: string;
+  streakCount: number;
+  hasChronicle: boolean;
+  card: { title: string; imageUrl: string | null } | null;
+  cardId: string | null;
+  deckId: string | null;
+  noDeck?: boolean;
+  deepLinkPath: string;
+}): Promise<SendResult> {
   try {
-    // Insert delivery FIRST so a downstream send-failure doesn't double-send
-    // on a cron re-run. Email sender swallows its own errors.
-    let messageId: string | null = null;
-    try {
-      const result = await sendDailyCardEmail({
-        to: userRow.email,
-        name: userRow.displayName ?? userRow.name ?? null,
-        streakCount,
-        hasChronicle: !!chronicleDeck,
-        card: featured,
-        deepLinkPath: "/today",
-      });
-      messageId = result?.id ?? null;
-    } catch (err) {
-      console.error("[daily-card] sendDailyCardEmail failed:", err);
+    const sent = await sendDailyCardEmail({
+      to: args.email,
+      name: args.name,
+      streakCount: args.streakCount,
+      hasChronicle: args.hasChronicle,
+      card: args.card,
+      noDeck: args.noDeck,
+      deepLinkPath: args.deepLinkPath,
+      idempotencyKey: `daily-card/${args.userId}/${args.deliveryDate}`,
+    });
+    if ("error" in sent) {
+      // Nothing left the building. Record nothing, so the next tick retries.
+      return { ok: false, status: "error", error: `email not sent: ${sent.error}` };
     }
 
     await db
       .insert(dailyCardDeliveries)
       .values({
         userId: args.userId,
-        deliveryDate,
-        cardId: featuredCardId,
-        deckId: featuredDeckId,
+        deliveryDate: args.deliveryDate,
+        cardId: args.cardId,
+        deckId: args.deckId,
         readingId: null,
         channel: "email",
-        emailMessageId: messageId,
+        emailMessageId: sent.id,
       })
       .onConflictDoNothing();
 
+    // Upsert: an account that never opened a setting has no profile row.
     await db
-      .update(userProfiles)
-      .set({ dailyCardLastSentDate: deliveryDate, updatedAt: new Date() })
-      .where(eq(userProfiles.userId, args.userId));
+      .insert(userProfiles)
+      .values({ userId: args.userId, dailyCardLastSentDate: args.deliveryDate })
+      .onConflictDoUpdate({
+        target: userProfiles.userId,
+        set: { dailyCardLastSentDate: args.deliveryDate, updatedAt: new Date() },
+      });
 
-    return { ok: true, status: "delivered", cardId: featuredCardId, deckId: featuredDeckId };
+    return args.noDeck
+      ? { ok: true, status: "invited", cardId: null, deckId: null }
+      : { ok: true, status: "delivered", cardId: args.cardId, deckId: args.deckId };
   } catch (err) {
     return {
       ok: false,
@@ -178,44 +214,20 @@ async function hasBeenInvitedToMakeADeck(userId: string): Promise<boolean> {
 }
 
 /** One-off "make your first deck" email, recorded like any other delivery. */
-async function sendDeckInvitation(args: {
+function sendDeckInvitation(args: {
   userId: string;
   email: string;
   name: string | null;
   deliveryDate: string;
 }): Promise<SendResult> {
-  try {
-    let messageId: string | null = null;
-    try {
-      const result = await sendDailyCardEmail({
-        to: args.email,
-        name: args.name,
-        streakCount: 0,
-        hasChronicle: false,
-        card: null,
-        noDeck: true,
-        deepLinkPath: "/decks/new",
-      });
-      messageId = result?.id ?? null;
-    } catch (err) {
-      console.error("[daily-card] deck invitation failed:", err);
-    }
-
-    await db
-      .insert(dailyCardDeliveries)
-      .values({
-        userId: args.userId,
-        deliveryDate: args.deliveryDate,
-        cardId: null,
-        deckId: null,
-        readingId: null,
-        channel: "email",
-        emailMessageId: messageId,
-      })
-      .onConflictDoNothing();
-
-    return { ok: true, status: "invited", cardId: null, deckId: null };
-  } catch (err) {
-    return { ok: false, status: "error", error: err instanceof Error ? err.message : String(err) };
-  }
+  return deliver({
+    ...args,
+    streakCount: 0,
+    hasChronicle: false,
+    card: null,
+    cardId: null,
+    deckId: null,
+    noDeck: true,
+    deepLinkPath: "/decks/new",
+  });
 }

@@ -1,12 +1,17 @@
 /**
  * GET /api/cron/daily-card
  *
- * Hourly cron — picks users whose local time matches their daily-card
- * preference and who haven't received today's card yet, then sends.
+ * Hourly cron — picks users whose local time has reached their daily-card
+ * hour and who haven't received today's card yet, then sends.
+ *
+ * Every account is a candidate, profile row or not: the daily card is on by
+ * default, and an account that never touched a setting has no user_profile
+ * row. Inner-joining the profile left the one real user who made a deck
+ * invisible to this job.
  *
  * Auth: Authorization: Bearer ${CRON_SECRET}
  *
- * Vercel cron: { path: "/api/cron/daily-card", schedule: "5 * * * *" }
+ * Driven by .github/workflows/daily-card-tick.yml (Vercel Hobby allows daily crons only).
  *
  * Manual fire (dev): curl -H "Authorization: Bearer $CRON_SECRET" \
  *   "http://localhost:3000/api/cron/daily-card?dryRun=true"
@@ -16,8 +21,8 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { userProfiles, users } from "@/lib/db/schema";
-import { and, eq } from "drizzle-orm";
-import { localHourFor, localDateFor } from "@/lib/daily-card/timezone";
+import { eq } from "drizzle-orm";
+import { dailyCardDue } from "@/lib/daily-card/timezone";
 import { sendDailyCardForUser, type SendResult } from "@/lib/daily-card/send";
 
 export const dynamic = "force-dynamic";
@@ -27,7 +32,8 @@ const CHUNK_SIZE = 25;
 
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  // An unset secret must not turn "Bearer undefined" into a password.
+  if (!process.env.CRON_SECRET || authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -35,22 +41,22 @@ export async function GET(request: Request) {
   const dryRun = url.searchParams.get("dryRun") === "true";
   const now = new Date();
 
-  // Pull every opted-in user. At ~thousands of users this is fine; switch to
-  // hour-bucketed indexing if it ever becomes hot.
-  const candidates = await db
+  // Pull every account with its daily-card settings; a missing profile row
+  // means the defaults (on, 08:00, UTC). At ~thousands of users this is fine.
+  const rows = await db
     .select({
-      userId: userProfiles.userId,
+      userId: users.id,
+      email: users.email,
+      enabled: userProfiles.dailyCardEnabled,
       timezone: userProfiles.timezone,
       dailyCardTime: userProfiles.dailyCardTime,
       preferredDeckId: userProfiles.dailyCardDeckId,
       lastSent: userProfiles.dailyCardLastSentDate,
-      email: users.email,
     })
-    .from(userProfiles)
-    .innerJoin(users, eq(userProfiles.userId, users.id))
-    .where(eq(userProfiles.dailyCardEnabled, true));
+    .from(users)
+    .leftJoin(userProfiles, eq(userProfiles.userId, users.id));
+  const candidates = rows.filter((r) => r.enabled ?? true);
 
-  // Filter: matches local hour AND hasn't been sent yet today.
   type Eligible = {
     userId: string;
     timezone: string;
@@ -63,24 +69,24 @@ export async function GET(request: Request) {
   let skippedNoEmail = 0;
 
   for (const c of candidates) {
-    if (!c.email) {
+    // example.com is reserved and never delivers; it is how test accounts
+    // are marked, and bouncing mail at it costs the sending domain reputation.
+    if (!c.email || c.email.toLowerCase().endsWith("@example.com")) {
       skippedNoEmail++;
       continue;
     }
-    const localHour = localHourFor(c.timezone, now);
-    if (localHour !== c.dailyCardTime) {
-      skippedHour++;
-      continue;
-    }
-    const deliveryDate = localDateFor(c.timezone, now);
-    if (c.lastSent && c.lastSent >= deliveryDate) {
-      skippedAlreadySent++;
+    const timezone = c.timezone ?? "UTC";
+    const hour = c.dailyCardTime ?? 8;
+    const { due, deliveryDate } = dailyCardDue(timezone, hour, c.lastSent ?? null, now);
+    if (!due) {
+      if (c.lastSent && c.lastSent >= deliveryDate) skippedAlreadySent++;
+      else skippedHour++;
       continue;
     }
     eligible.push({
       userId: c.userId,
-      timezone: c.timezone,
-      preferredDeckId: c.preferredDeckId,
+      timezone,
+      preferredDeckId: c.preferredDeckId ?? null,
       deliveryDate,
     });
   }

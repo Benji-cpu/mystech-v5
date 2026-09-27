@@ -3,6 +3,7 @@ import {
   localHourFor,
   localDateFor,
   isKnownTimeZone,
+  dailyCardDue,
 } from "./timezone";
 
 describe("localHourFor", () => {
@@ -79,5 +80,37 @@ describe("isKnownTimeZone", () => {
     expect(isKnownTimeZone("Mars/Olympus_Mons")).toBe(false);
     expect(isKnownTimeZone("")).toBe(false);
     expect(isKnownTimeZone("definitely not a zone")).toBe(false);
+  });
+});
+
+describe("dailyCardDue", () => {
+  // 01:05 UTC = 09:05 in Bali (Asia/Makassar, UTC+8)
+  const at = new Date("2026-09-27T01:05:00Z");
+
+  it("is not due before the chosen local hour", () => {
+    expect(dailyCardDue("Asia/Makassar", 10, null, at).due).toBe(false);
+  });
+
+  it("is due at the chosen hour", () => {
+    expect(dailyCardDue("Asia/Makassar", 9, null, at)).toEqual({ due: true, deliveryDate: "2026-09-27" });
+  });
+
+  it("stays due for a tick that lands hours late", () => {
+    expect(dailyCardDue("Asia/Makassar", 8, null, at).due).toBe(true);
+    expect(dailyCardDue("Asia/Makassar", 3, null, at).due).toBe(true);
+  });
+
+  it("is not due twice on the same local day", () => {
+    expect(dailyCardDue("Asia/Makassar", 8, "2026-09-27", at).due).toBe(false);
+  });
+
+  it("is due again the next local day", () => {
+    expect(dailyCardDue("Asia/Makassar", 8, "2026-09-26", at).due).toBe(true);
+  });
+
+  it("uses the local date, not the UTC date", () => {
+    // 20:00 UTC on the 26th is already 04:00 on the 27th in Bali
+    const late = new Date("2026-09-26T20:00:00Z");
+    expect(dailyCardDue("Asia/Makassar", 3, "2026-09-26", late)).toEqual({ due: true, deliveryDate: "2026-09-27" });
   });
 });
