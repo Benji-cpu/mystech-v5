@@ -272,20 +272,9 @@ export const LYRA_ONBOARDING_MESSAGES = [
 
 // ── THE INITIATION (new onboarding arc) ────────────────────────────────
 
-export const INITIATION_WELCOME_STEPS = [
-  {
-    text: "I'm Lyra. I've watched a great many people try to understand themselves through borrowed symbols, other people's archetypes. What we're going to do is different.",
-    label: "",
-  },
-  {
-    text: "Your deck won't come from a tradition. It will come from your life — your specific experiences, your particular symbols, what has shaped you. Cards no one else has.",
-    label: "",
-  },
-  {
-    text: "But first I need to understand what brought you here. One question — the rest will follow from it.",
-    label: "",
-  },
-] as const;
+/** Shown above the one question, all at once — no narration to wait through. */
+export const INITIATION_INTRO =
+  "I'm Lyra. Your deck won't come from a tradition. It will come from your life, and the cards will be ones no one else has.";
 
 export const INITIATION_QUESTION_PROMPT =
   "What part of your life would you most like to understand better right now?";

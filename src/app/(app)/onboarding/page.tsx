@@ -1,10 +1,9 @@
 import { redirect } from "next/navigation";
 import { requireAuth, isAdmin } from "@/lib/auth/helpers";
 import { db } from "@/lib/db";
-import { users, decks, readings, artStyles } from "@/lib/db/schema";
+import { users, decks, readings } from "@/lib/db/schema";
 import { eq, and, ne, count } from "drizzle-orm";
 import { InitiationShell } from "@/components/guide/initiation-shell";
-import type { PresetArtStyleName } from "@/lib/ai/prompts/onboarding";
 
 export default async function OnboardingPage() {
   const user = await requireAuth();
@@ -34,7 +33,6 @@ export default async function OnboardingPage() {
       .select({
         id: decks.id,
         title: decks.title,
-        artStyleId: decks.artStyleId,
         status: decks.status,
       })
       .from(decks)
@@ -62,22 +60,12 @@ export default async function OnboardingPage() {
 
   // If user has a deck but no reading, skip to reveal phase
   if (existingDeck) {
-    let artStyleName: PresetArtStyleName | undefined;
-    if (existingDeck.artStyleId) {
-      const [style] = await db
-        .select({ name: artStyles.name })
-        .from(artStyles)
-        .where(eq(artStyles.id, existingDeck.artStyleId));
-      artStyleName = style?.name as PresetArtStyleName | undefined;
-    }
-
     return (
       <div className="daylight nav-inset-start fixed inset-0 overflow-y-auto" style={{ background: "var(--paper)", zIndex: 1 }}>
         <InitiationShell
           initialPhase="reveal"
           existingDeckId={existingDeck.id}
           existingDeckTitle={existingDeck.title}
-          existingArtStyleName={artStyleName}
         />
       </div>
     );

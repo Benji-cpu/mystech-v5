@@ -186,6 +186,11 @@ export async function generateCardImage(
       return { success: true, imageUrl: bust(webBlob.url) };
     } catch (error) {
       if (attempt < MAX_RETRIES - 1) {
+        // Say why: a retried card is what turns a 15s batch into a 100s one.
+        console.warn(
+          `[image-generation] card ${cardId} attempt ${attempt + 1} failed, retrying:`,
+          error instanceof Error ? error.message : error
+        );
         const delay = BACKOFF_BASE_MS * Math.pow(2, attempt);
         await new Promise((resolve) => setTimeout(resolve, delay));
         continue;

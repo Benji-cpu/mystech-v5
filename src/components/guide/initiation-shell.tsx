@@ -5,82 +5,41 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { LyraSigil, type SigilStateProp } from "./lyra-sigil";
-import { LyraNarration } from "./lyra-narration";
 import {
-  INITIATION_WELCOME_STEPS,
+  INITIATION_INTRO,
   INITIATION_QUESTION_PROMPT,
   INITIATION_GENERATING_MESSAGES,
   INITIATION_STAGE_MESSAGES,
-  buildArtStyleRevealMessage,
   GUIDED_READING_ENTER_CTA,
 } from "./lyra-constants";
 import { useInitiationGeneration, type GenerationStage } from "@/hooks/use-initiation-generation";
-import { PRESET_ART_STYLE_NAMES, type PresetArtStyleName } from "@/lib/ai/prompts/onboarding";
-import { useTextToSpeech } from "@/hooks/use-text-to-speech";
-import { useVoicePreferences } from "@/hooks/use-voice-preferences";
+import { useImageGenerationProgress } from "@/hooks/use-image-generation-progress";
 
 // ── Types ────────────────────────────────────────────────────────────────
 
-type Phase = "voice_consent" | "welcome" | "question" | "generating" | "reveal";
+// The one question comes first. A voice-consent prompt and three typed-out
+// welcome screens used to stand in front of it: four taps and ~17 seconds of
+// narration before a newcomer could say anything.
+type Phase = "question" | "generating" | "reveal";
 
 interface InitiationState {
   phase: Phase;
-  welcomeStep: number;
-  selectedArtStyleName: PresetArtStyleName | null;
-  selectedArtStyleId: string | null;
   deckId: string | null;
   deckTitle: string | null;
-  showStylePicker: boolean;
-  voiceEnabled: boolean;
 }
 
 type InitiationAction =
-  | { type: "ENABLE_VOICE" }
-  | { type: "SKIP_VOICE" }
-  | { type: "NEXT_WELCOME_STEP" }
-  | { type: "GO_TO_QUESTION" }
   | { type: "START_GENERATING" }
-  | { type: "REVEAL"; artStyleName: PresetArtStyleName; artStyleId: string; deckId: string; deckTitle: string }
-  | { type: "TOGGLE_STYLE_PICKER" }
-  | { type: "SELECT_STYLE"; styleName: PresetArtStyleName }
+  | { type: "REVEAL"; deckId: string; deckTitle: string }
   | { type: "RETRY_GENERATION" };
 
 function initiationReducer(state: InitiationState, action: InitiationAction): InitiationState {
   switch (action.type) {
-    case "ENABLE_VOICE":
-      return { ...state, phase: "welcome", voiceEnabled: true };
-    case "SKIP_VOICE":
-      return { ...state, phase: "welcome", voiceEnabled: false };
-    case "NEXT_WELCOME_STEP": {
-      const nextStep = state.welcomeStep + 1;
-      if (nextStep >= INITIATION_WELCOME_STEPS.length) {
-        return { ...state, phase: "question" };
-      }
-      return { ...state, welcomeStep: nextStep };
-    }
-    case "GO_TO_QUESTION":
-      return { ...state, phase: "question" };
     case "START_GENERATING":
       if (state.phase === "generating") return state; // guard against double-submit
       return { ...state, phase: "generating" };
     case "REVEAL":
-      return {
-        ...state,
-        phase: "reveal",
-        deckId: action.deckId,
-        deckTitle: action.deckTitle,
-        showStylePicker: false,
-        selectedArtStyleName: action.artStyleName,
-        selectedArtStyleId: action.artStyleId,
-      };
-    case "TOGGLE_STYLE_PICKER":
-      return { ...state, showStylePicker: !state.showStylePicker };
-    case "SELECT_STYLE":
-      return {
-        ...state,
-        selectedArtStyleName: action.styleName,
-        showStylePicker: false,
-      };
+      return { ...state, phase: "reveal", deckId: action.deckId, deckTitle: action.deckTitle };
     case "RETRY_GENERATION":
       return { ...state, phase: "question" };
     default:
@@ -89,127 +48,6 @@ function initiationReducer(state: InitiationState, action: InitiationAction): In
 }
 
 // ── Sub-components ────────────────────────────────────────────────────────
-
-function VoiceConsentPhase({
-  onAccept,
-  onDecline,
-}: {
-  onAccept: () => void;
-  onDecline: () => void;
-}) {
-  const [narrationDone, setNarrationDone] = useState(false);
-
-  return (
-    <div className="flex flex-col items-center gap-8 text-center max-w-sm mx-auto">
-      <LyraNarration
-        text="Before we begin — would you like me to guide you with my voice?"
-        speed={30}
-        onComplete={() => setNarrationDone(true)}
-      />
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: narrationDone ? 1 : 0 }}
-        transition={{ duration: 0.4 }}
-        className="flex gap-3"
-      >
-        <button
-          onClick={onAccept}
-          className="px-6 py-2.5 rounded-xl bg-gold/20 border border-gold/30 text-gold text-sm font-medium hover:bg-gold/30 transition-colors cursor-pointer"
-        >
-          Yes, please
-        </button>
-        <button
-          onClick={onDecline}
-          className="px-6 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white/50 text-sm hover:bg-white/10 transition-colors cursor-pointer"
-        >
-          Not now
-        </button>
-      </motion.div>
-    </div>
-  );
-}
-
-function WelcomePhase({
-  step,
-  onNext,
-  voiceEnabled = false,
-  voiceIdle = true,
-}: {
-  step: number;
-  onNext: () => void;
-  voiceEnabled?: boolean;
-  voiceIdle?: boolean;
-}) {
-  const [narrationDone, setNarrationDone] = useState(false);
-  const [timedOut, setTimedOut] = useState(false);
-  const isLastStep = step === INITIATION_WELCOME_STEPS.length - 1;
-
-  // Reset narrationDone when step changes
-  useEffect(() => {
-    setNarrationDone(false);
-    setTimedOut(false);
-  }, [step]);
-
-  // Safety timeout: force-show button if TTS stays busy >5s after narration completes
-  useEffect(() => {
-    if (!narrationDone || !voiceEnabled || voiceIdle) return;
-    const timer = setTimeout(() => setTimedOut(true), 5000);
-    return () => clearTimeout(timer);
-  }, [narrationDone, voiceEnabled, voiceIdle]);
-
-  const showButton = narrationDone && (!voiceEnabled || voiceIdle || timedOut);
-
-  return (
-    <div className="flex flex-col items-center gap-8 text-center max-w-sm mx-auto">
-      {/* Progress dots */}
-      <div className="flex gap-1.5">
-        {INITIATION_WELCOME_STEPS.map((_, i) => (
-          <div
-            key={i}
-            className={cn(
-              "h-1 rounded-full transition-all duration-500",
-              i === step ? "w-4 bg-gold" : i < step ? "w-2 bg-gold/40" : "w-2 bg-white/20"
-            )}
-          />
-        ))}
-      </div>
-
-      {/* Message */}
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={step}
-          initial={{ opacity: 0, scale: 0.96 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 1.04 }}
-          transition={{ type: "spring", stiffness: 200, damping: 28 }}
-        >
-          <LyraNarration
-            text={INITIATION_WELCOME_STEPS[step].text}
-            speed={30}
-            onComplete={() => setNarrationDone(true)}
-          />
-        </motion.div>
-      </AnimatePresence>
-
-      {/* CTA */}
-      <motion.button
-        initial={{ opacity: 0 }}
-        animate={{ opacity: showButton ? 1 : 0 }}
-        transition={{ duration: 0.4 }}
-        onClick={onNext}
-        disabled={!showButton}
-        className={cn(
-          "px-8 py-3 rounded-xl font-medium text-sm transition-all",
-          showButton
-            ? "bg-white/10 hover:bg-white/15 text-white/80 border border-white/10 cursor-pointer"
-            : "cursor-default"
-        )}
-      >
-        {isLastStep ? "I'm ready" : "Continue"}
-      </motion.button>
-    </div>
-  );
-}
 
 function QuestionPhase({
   onSubmit,
@@ -228,14 +66,19 @@ function QuestionPhase({
 
   return (
     <div className="flex flex-col gap-6 w-full max-w-md mx-auto">
-      <motion.p
+      <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        className="text-sm text-white/60 italic font-serif text-center leading-relaxed"
+        className="space-y-3 text-center"
       >
-        {INITIATION_QUESTION_PROMPT}
-      </motion.p>
+        <p className="text-sm leading-relaxed" style={{ color: "var(--ink-soft)" }}>
+          {INITIATION_INTRO}
+        </p>
+        <p className="text-base italic font-serif leading-relaxed" style={{ color: "var(--ink)" }}>
+          {INITIATION_QUESTION_PROMPT}
+        </p>
+      </motion.div>
 
       <motion.div
         initial={{ opacity: 0, y: 12 }}
@@ -344,41 +187,33 @@ function GeneratingPhase({
   );
 }
 
+// Never hold the first reading hostage to a slow or failed painter.
+const ART_WAIT_CAP_MS = 45_000; // a 3-card batch usually lands in 15-20s
+
 function RevealPhase({
-  artStyleName,
+  deckId,
   deckTitle,
-  showStylePicker,
-  onTogglePicker,
-  onSelectStyle,
   onBeginReading,
-  voiceEnabled = false,
-  voiceIdle = true,
 }: {
-  artStyleName: PresetArtStyleName;
+  deckId: string;
   deckTitle: string;
-  showStylePicker: boolean;
-  onTogglePicker: () => void;
-  onSelectStyle: (name: PresetArtStyleName) => void;
   onBeginReading: () => void;
-  voiceEnabled?: boolean;
-  voiceIdle?: boolean;
 }) {
-  const [narrationDone, setNarrationDone] = useState(false);
-  const [timedOut, setTimedOut] = useState(false);
-  const revealMessage = buildArtStyleRevealMessage(artStyleName);
-
-  // Safety timeout: force-show button if TTS stays busy >5s after narration completes
+  // The reading opens once the art is on the cards. Opening it straight away
+  // meant every first reading was dealt as blank placeholders and the art
+  // arrived after it was over.
+  const { status, isComplete } = useImageGenerationProgress(deckId);
+  const [capped, setCapped] = useState(false);
   useEffect(() => {
-    if (!narrationDone || !voiceEnabled || voiceIdle) return;
-    const timer = setTimeout(() => setTimedOut(true), 5000);
-    return () => clearTimeout(timer);
-  }, [narrationDone, voiceEnabled, voiceIdle]);
-
-  const showButton = narrationDone && (!voiceEnabled || voiceIdle || timedOut);
+    const t = setTimeout(() => setCapped(true), ART_WAIT_CAP_MS);
+    return () => clearTimeout(t);
+  }, []);
+  const ready = isComplete || capped;
+  const painted = status ? status.completed : 0;
+  const total = status?.total ?? 3;
 
   return (
     <div className="flex flex-col items-center gap-6 text-center max-w-sm mx-auto">
-      {/* Deck title */}
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -386,72 +221,26 @@ function RevealPhase({
         className="bg-white/[0.03] backdrop-blur-sm border border-white/[0.06] rounded-2xl px-6 py-5"
       >
         <p className="text-xs text-gold/70 uppercase tracking-widest mb-1.5">Your first deck</p>
-        <p className="text-lg font-medium text-white/90">{deckTitle}</p>
+        <p className="text-lg font-medium" style={{ color: "var(--ink)" }}>{deckTitle}</p>
       </motion.div>
 
-      {/* Art style reveal */}
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ type: "spring", stiffness: 300, damping: 30, delay: 0.2 }}
-        className="space-y-1"
-      >
-        <LyraNarration
-          text={revealMessage}
-          speed={35}
-          onComplete={() => setNarrationDone(true)}
-        />
+      <p className="text-sm italic font-serif" style={{ color: "var(--ink-soft)" }} aria-live="polite">
+        {ready
+          ? "Your cards are painted."
+          : `Painting your cards\u2026 ${painted} of ${total}`}
+      </p>
 
-        <button
-          onClick={onTogglePicker}
-          className="text-xs text-white/40 hover:text-white/60 transition-colors underline underline-offset-2"
-        >
-          change this
-        </button>
-      </motion.div>
-
-      {/* Style picker */}
-      <AnimatePresence>
-        {showStylePicker && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="w-full overflow-hidden"
-          >
-            <div className="bg-white/5 border border-white/10 rounded-xl p-3 space-y-1">
-              {PRESET_ART_STYLE_NAMES.map((name) => (
-                <button
-                  key={name}
-                  onClick={() => onSelectStyle(name)}
-                  className={cn(
-                    "w-full text-left px-3 py-2 rounded-lg text-sm transition-colors",
-                    name === artStyleName
-                      ? "bg-gold/20 text-gold"
-                      : "text-white/60 hover:bg-white/5 hover:text-white/80"
-                  )}
-                >
-                  {name}
-                </button>
-              ))}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Begin reading CTA */}
       <motion.button
         initial={{ opacity: 0 }}
-        animate={{ opacity: showButton ? 1 : 0 }}
-        transition={{ duration: 0.5, delay: 0.3 }}
+        animate={{ opacity: ready ? 1 : 0 }}
+        transition={{ type: "spring", stiffness: 300, damping: 30 }}
         onClick={onBeginReading}
-        disabled={!showButton}
+        disabled={!ready}
         className={cn(
           "w-full py-3 rounded-xl font-medium text-sm transition-all",
           "bg-[var(--ink)] text-[var(--paper)]",
           "shadow-lg shadow-gold/20 hover:shadow-xl hover:shadow-gold/30",
-          !showButton && "opacity-0"
+          !ready && "pointer-events-none"
         )}
       >
         {GUIDED_READING_ENTER_CTA.replace("your sanctuary", "your first reading")}
@@ -463,8 +252,6 @@ function RevealPhase({
 // ── Phase sigil states ────────────────────────────────────────────────────
 
 const LYRA_SIGIL_STATES: Record<Phase, SigilStateProp> = {
-  voice_consent: "speaking",
-  welcome: "speaking",
   question: "attentive",
   generating: "thinking",
   reveal: "attentive",
@@ -473,78 +260,32 @@ const LYRA_SIGIL_STATES: Record<Phase, SigilStateProp> = {
 // ── Main shell ────────────────────────────────────────────────────────────
 
 interface InitiationShellProps {
-  initialPhase?: Phase;
+  initialPhase?: "welcome" | "reveal";
   existingDeckId?: string;
   existingDeckTitle?: string;
-  existingArtStyleName?: PresetArtStyleName;
 }
 
 export function InitiationShell({
   initialPhase = "welcome",
   existingDeckId,
   existingDeckTitle,
-  existingArtStyleName,
 }: InitiationShellProps) {
   const router = useRouter();
   const { generate, isGenerating, error, stage } = useInitiationGeneration();
-  const tts = useTextToSpeech();
-  const { update: updateVoicePrefs } = useVoicePreferences();
-
-  // If resuming at reveal, skip voice_consent. Otherwise start there.
-  const startPhase: Phase = initialPhase === "reveal" ? "reveal" : "voice_consent";
 
   const [state, dispatch] = useReducer(initiationReducer, {
-    phase: startPhase,
-    welcomeStep: 0,
-    selectedArtStyleName: existingArtStyleName ?? null,
-    selectedArtStyleId: null,
+    phase: initialPhase === "reveal" && existingDeckId ? "reveal" : "question",
     deckId: existingDeckId ?? null,
     deckTitle: existingDeckTitle ?? null,
-    showStylePicker: false,
-    voiceEnabled: false,
   });
 
   const userInputRef = useRef<string>("");
   const submittingRef = useRef(false);
 
-  // Auto-speak welcome messages when voice is enabled
-  useEffect(() => {
-    if (!state.voiceEnabled) return;
-    if (state.phase !== "welcome") return;
-    const text = INITIATION_WELCOME_STEPS[state.welcomeStep].text;
-    tts.speak(text);
-    return () => { tts.stop(); };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.phase, state.welcomeStep, state.voiceEnabled]);
-
-  // Stop TTS when leaving welcome phase
-  useEffect(() => {
-    if (state.phase !== "welcome") tts.stop();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.phase]);
-
-  // Speak reveal message when phase becomes reveal
-  useEffect(() => {
-    if (!state.voiceEnabled || state.phase !== "reveal" || !state.selectedArtStyleName) return;
-    const msg = buildArtStyleRevealMessage(state.selectedArtStyleName);
-    tts.speak(msg);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.phase, state.voiceEnabled]);
-
-  const handleVoiceAccept = useCallback(async () => {
-    dispatch({ type: "ENABLE_VOICE" });
-    await updateVoicePrefs({ enabled: true });
-  }, [updateVoicePrefs]);
-
-  const handleVoiceDecline = useCallback(() => {
-    dispatch({ type: "SKIP_VOICE" });
-  }, []);
-
   const handleSkip = useCallback(async () => {
-    tts.stop();
     await fetch("/api/onboarding/complete", { method: "POST" });
     router.push("/today");
-  }, [router, tts]);
+  }, [router]);
 
   const handleQuestionSubmit = useCallback(async (input: string) => {
     if (submittingRef.current) return; // double-submit guard
@@ -555,13 +296,7 @@ export function InitiationShell({
     try {
       const result = await generate(input);
       if (result) {
-        dispatch({
-          type: "REVEAL",
-          artStyleName: result.selectedArtStyleName,
-          artStyleId: result.selectedArtStyleId,
-          deckId: result.deckId,
-          deckTitle: result.deckTitle,
-        });
+        dispatch({ type: "REVEAL", deckId: result.deckId, deckTitle: result.deckTitle });
       }
       // Error is shown in generating phase via the error prop
     } finally {
@@ -576,45 +311,15 @@ export function InitiationShell({
 
   const handleBeginReading = useCallback(() => {
     if (!state.deckId) return;
-    tts.stop();
     router.push(`/readings/new?guided=true&deckId=${state.deckId}`);
-  }, [state.deckId, router, tts]);
+  }, [state.deckId, router]);
 
-  const handleSelectStyle = useCallback((styleName: PresetArtStyleName) => {
-    dispatch({ type: "SELECT_STYLE", styleName });
-
-    // Persist to DB and re-trigger image generation
-    if (state.deckId) {
-      fetch("/api/onboarding/change-art-style", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ deckId: state.deckId, artStyleName: styleName }),
-      })
-        .then((res) => {
-          if (res.ok) {
-            // Fire-and-forget image regeneration
-            fetch("/api/ai/generate-images-batch", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ deckId: state.deckId }),
-            });
-          }
-        })
-        .catch(() => {
-          // Silent catch — local state still updated
-        });
-    }
-  }, [state.deckId]);
-
-  const voiceIdle = tts.state === "idle";
   const [skipConfirming, setSkipConfirming] = useState(false);
 
   // Reset skip confirmation on phase change
   useEffect(() => {
     setSkipConfirming(false);
   }, [state.phase]);
-
-  const displayArtStyleName = state.selectedArtStyleName;
 
   return (
     <div className="h-[100dvh] flex flex-col overflow-hidden bg-transparent pb-20">
@@ -634,19 +339,6 @@ export function InitiationShell({
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
             className="w-full flex justify-center"
           >
-            {state.phase === "voice_consent" && (
-              <VoiceConsentPhase onAccept={handleVoiceAccept} onDecline={handleVoiceDecline} />
-            )}
-
-            {state.phase === "welcome" && (
-              <WelcomePhase
-                step={state.welcomeStep}
-                onNext={() => dispatch({ type: "NEXT_WELCOME_STEP" })}
-                voiceEnabled={state.voiceEnabled}
-                voiceIdle={voiceIdle}
-              />
-            )}
-
             {state.phase === "question" && (
               <QuestionPhase onSubmit={handleQuestionSubmit} initialValue={userInputRef.current} />
             )}
@@ -655,16 +347,11 @@ export function InitiationShell({
               <GeneratingPhase error={isGenerating ? null : (error ?? null)} onRetry={handleRetry} stage={stage} />
             )}
 
-            {state.phase === "reveal" && displayArtStyleName && state.deckTitle && (
+            {state.phase === "reveal" && state.deckId && state.deckTitle && (
               <RevealPhase
-                artStyleName={displayArtStyleName}
+                deckId={state.deckId}
                 deckTitle={state.deckTitle}
-                showStylePicker={state.showStylePicker}
-                onTogglePicker={() => dispatch({ type: "TOGGLE_STYLE_PICKER" })}
-                onSelectStyle={handleSelectStyle}
                 onBeginReading={handleBeginReading}
-                voiceEnabled={state.voiceEnabled}
-                voiceIdle={voiceIdle}
               />
             )}
           </motion.div>
