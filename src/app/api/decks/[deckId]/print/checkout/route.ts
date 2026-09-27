@@ -23,6 +23,7 @@ import {
   PRINT_DECK_PRICE_CENTS,
   SHIPPING_RATE_IDS,
 } from "@/lib/print/pricing";
+import { APP_URL } from "@/lib/app-url";
 
 export async function POST(
   _request: Request,
@@ -108,7 +109,7 @@ export async function POST(
     })
     .returning();
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const appUrl = APP_URL;
 
   const shippingRateIds = ALLOWED_COUNTRIES.map((c) => SHIPPING_RATE_IDS[c]).filter(
     (id): id is string => Boolean(id)

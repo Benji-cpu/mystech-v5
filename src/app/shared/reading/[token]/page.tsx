@@ -16,9 +16,15 @@ const SPREAD_LABELS: Record<SpreadType, string> = {
   quick: "Quick Draw",
 };
 
+/** Escape first: this is model output shown to strangers, then **bold**. */
 function renderBoldMarkdown(text: string) {
-  // Simple bold markdown rendering for server component
-  return text.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+  const escaped = text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+  return escaped.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
 }
 
 export async function generateMetadata({
@@ -161,17 +167,20 @@ export default async function SharedReadingPage({
         </div>
       )}
 
-      {reading.artStyleName && (
-        <div className="mt-12 text-center">
-          <Link
-            href={isLoggedIn ? "/decks/new" : "/api/auth/signin"}
-            className="inline-flex items-center gap-2 rounded-full border px-5 py-2.5 text-sm transition-colors hover:border-[var(--ink)]"
-            style={{ borderColor: "var(--line)", color: "var(--ink-soft)" }}
-          >
-            Create your own deck with this style →
-          </Link>
-        </div>
-      )}
+      {/* The pitch a stranger needs: these cards were not from a tarot deck. */}
+      <div className="mx-auto mt-12 max-w-xl text-center">
+        <p className="whisper text-base leading-relaxed" style={{ color: "var(--ink-soft)" }}>
+          These cards weren&rsquo;t taken from a tarot deck. They were made from one
+          person&rsquo;s own words, then read against the question they brought.
+        </p>
+        <Link
+          href={isLoggedIn ? "/decks/new" : "/login?next=/onboarding"}
+          className="mt-6 inline-flex min-h-11 items-center gap-2 rounded-full px-6 py-3 text-sm font-medium transition-opacity hover:opacity-90"
+          style={{ background: "var(--ink)", color: "var(--paper)" }}
+        >
+          Make a deck from your own words →
+        </Link>
+      </div>
     </div>
   );
 }

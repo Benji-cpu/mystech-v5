@@ -4,7 +4,7 @@ import { getCurrentUser } from "@/lib/auth/helpers";
 import { getUserPlan } from "@/lib/db/queries";
 import { EditorialShell, EditorialHeader } from "@/components/editorial";
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://mystech-v5.vercel.app";
+import { APP_URL } from "@/lib/app-url";
 
 export const metadata: Metadata = {
   title: "Pricing — MysTech",

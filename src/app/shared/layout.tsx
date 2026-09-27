@@ -25,7 +25,7 @@ export default function SharedLayout({
             MysTech
           </Link>
           <Link
-            href="/login"
+            href="/login?next=/onboarding"
             className="rounded-full border px-4 py-2 text-sm transition-colors hover:border-[var(--ink)]"
             style={{ borderColor: "var(--line)", color: "var(--ink-soft)" }}
           >
@@ -46,7 +46,7 @@ export default function SharedLayout({
             Want to create your own oracle card deck?
           </p>
           <Link
-            href="/login"
+            href="/login?next=/onboarding"
             className="inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-medium transition-opacity hover:opacity-90"
             style={{ background: "var(--ink)", color: "var(--paper)" }}
           >

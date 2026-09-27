@@ -5,6 +5,7 @@ import { getCurrentUser } from "@/lib/auth/helpers";
 import { eq } from "drizzle-orm";
 import { generateShareToken } from "@/lib/utils";
 import type { ApiResponse } from "@/types";
+import { APP_URL } from "@/lib/app-url";
 
 export async function POST(
   _request: NextRequest,
@@ -50,7 +51,7 @@ export async function POST(
       .where(eq(artStyles.id, styleId));
   }
 
-  const shareUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/shared/art-styles/${token}`;
+  const shareUrl = `${APP_URL}/shared/art-styles/${token}`;
 
   return NextResponse.json<ApiResponse<{ shareToken: string; shareUrl: string }>>(
     {

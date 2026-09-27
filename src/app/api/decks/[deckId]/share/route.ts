@@ -6,6 +6,7 @@ import { getDeckByIdForUser } from "@/lib/db/queries";
 import { eq } from "drizzle-orm";
 import { generateShareToken } from "@/lib/utils";
 import type { ApiResponse } from "@/types";
+import { APP_URL } from "@/lib/app-url";
 
 export async function POST(
   _request: NextRequest,
@@ -46,7 +47,7 @@ export async function POST(
       .where(eq(decks.id, deckId));
   }
 
-  const shareUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/shared/deck/${token}`;
+  const shareUrl = `${APP_URL}/shared/deck/${token}`;
 
   return NextResponse.json<ApiResponse<{ shareToken: string; shareUrl: string }>>(
     {

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { LyraSigil } from "@/components/guide/lyra-sigil";
 import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
 import { EmailSignInForm } from "@/components/auth/email-sign-in-form";
+import { safeCallbackUrl } from "@/lib/auth/callback-url";
 
 const errorMessages: Record<string, string> = {
   AccessDenied: "Access was denied. You may have cancelled the sign-in.",
@@ -13,23 +14,17 @@ const errorMessages: Record<string, string> = {
 
 const emailAuthEnabled = Boolean(process.env.RESEND_API_KEY);
 
-// Only allow internal paths to prevent open-redirect via ?next=
-function safeCallbackUrl(next: string | undefined): string {
-  if (!next) return "/today";
-  if (!next.startsWith("/") || next.startsWith("//")) return "/today";
-  return next;
-}
 
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; next?: string }>;
+  searchParams: Promise<{ error?: string; next?: string; callbackUrl?: string }>;
 }) {
-  const { error, next } = await searchParams;
+  const { error, next, callbackUrl: bouncedFrom } = await searchParams;
   const errorMessage = error
     ? errorMessages[error] ?? "An unexpected error occurred. Please try again."
     : null;
-  const callbackUrl = safeCallbackUrl(next);
+  const callbackUrl = safeCallbackUrl(next, bouncedFrom);
 
   return (
     <div className="w-full max-w-sm space-y-10 text-center">
@@ -45,13 +40,13 @@ export default async function LoginPage({
           className="display mt-3 text-[clamp(2.5rem,10vw,3.5rem)] leading-[0.95]"
           style={{ color: "var(--ink)" }}
         >
-          Welcome back.
+          Welcome.
         </h1>
         <p
           className="whisper mt-4 text-base leading-relaxed"
           style={{ color: "var(--ink-soft)" }}
         >
-          Sign in to continue your practice.
+          Sign in to make your deck, or to come back to it.
         </p>
       </div>
 

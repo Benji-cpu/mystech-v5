@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth/helpers";
 import { getUserSubscription } from "@/lib/db/queries";
 import { stripe } from "@/lib/stripe/client";
+import { APP_URL } from "@/lib/app-url";
 
 export async function POST() {
   const user = await getCurrentUser();
@@ -20,7 +21,7 @@ export async function POST() {
     );
   }
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const appUrl = APP_URL;
 
   const session = await stripe.billingPortal.sessions.create({
     customer: sub.stripeCustomerId,

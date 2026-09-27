@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useSyncExternalStore } from "react";
 
 interface ResponsiveCardSize {
   cardWidth: number;
@@ -10,19 +10,23 @@ interface ResponsiveCardSize {
   isTablet: boolean;
 }
 
+function subscribeToResize(onChange: () => void) {
+  window.addEventListener("resize", onChange);
+  return () => window.removeEventListener("resize", onChange);
+}
+const getViewportWidth = () => window.innerWidth;
+const getServerViewportWidth = () => 1024;
+
 export function useResponsiveCardSize(
   cardCount: number,
   compact: boolean = false
 ): ResponsiveCardSize {
-  const [viewportWidth, setViewportWidth] = useState(
-    typeof window !== "undefined" ? window.innerWidth : 1024
-  );
-
-  useEffect(() => {
-    const handleResize = () => setViewportWidth(window.innerWidth);
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
+  // The server renders at 1024 and the client re-renders at its real width.
+  // Reading window.innerWidth in a useState initialiser made the first client
+  // render disagree with the server's; React keeps the server's inline sizes on
+  // a hydration mismatch, so a shared reading on a phone laid three
+  // desktop-sized cards across a 390px screen.
+  const viewportWidth = useSyncExternalStore(subscribeToResize, getViewportWidth, getServerViewportWidth);
 
   const isMobile = viewportWidth < 640;
   const isTablet = viewportWidth >= 640 && viewportWidth < 1024;

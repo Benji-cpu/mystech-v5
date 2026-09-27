@@ -6,6 +6,7 @@ import { getUserSubscription } from "@/lib/db/queries";
 import { stripe } from "@/lib/stripe/client";
 import { requireStripePriceId } from "@/lib/stripe/plans";
 import { captureServer, ANALYTICS_EVENTS } from "@/lib/analytics";
+import { APP_URL } from "@/lib/app-url";
 
 export async function POST() {
   const user = await getCurrentUser();
@@ -40,7 +41,7 @@ export async function POST() {
     sub = created;
   }
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const appUrl = APP_URL;
 
   // If already pro, send them to the billing portal instead of erroring out.
   // Avoids confusing toasts when a user with two tabs clicks "Upgrade" on a stale page.

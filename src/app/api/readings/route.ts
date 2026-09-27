@@ -24,6 +24,7 @@ import { buildChroniclePositionPrompt } from "@/lib/ai/prompts/chronicle";
 import { eq, and } from "drizzle-orm";
 import { completeMilestone } from "@/lib/onboarding/milestones";
 import type { ApiResponse, SpreadType } from "@/types";
+import { APP_URL } from "@/lib/app-url";
 
 const VALID_SPREAD_TYPES: SpreadType[] = [
   "single",
@@ -438,7 +439,7 @@ export async function POST(request: NextRequest) {
           .from(users)
           .where(eq(users.id, user.id));
         if (userRow?.email) {
-          const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://mystech.app";
+          const appUrl = APP_URL;
           const spreadLabel = typedSpread.replace("_", " ");
           sendFirstReadingReflection({
             to: userRow.email,

@@ -27,7 +27,7 @@ export function EmailSignInForm({ callbackUrl = "/today" }: EmailSignInFormProps
         callbackUrl,
       });
       if (result?.error) {
-        toast.error("Couldn't send the link. Check the address and try again.");
+        toast.error("Couldn't send the link just now. Sign in with Google instead, or try again later.");
       } else {
         setSent(true);
       }

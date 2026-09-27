@@ -5,7 +5,7 @@ import { ArtStyleMarquee } from "@/components/marketing/art-style-marquee";
 import { HowItWorks } from "@/components/marketing/how-it-works";
 import { CtaSection } from "./cta-section";
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://mystech-v5.vercel.app";
+import { APP_URL } from "@/lib/app-url";
 
 export const metadata: Metadata = {
   title: "MysTech — Personalized Oracle Card Readings",
