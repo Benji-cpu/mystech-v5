@@ -1,6 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // Mock dependencies before importing the route
+vi.mock("next/server", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("next/server")>()),
+  after: vi.fn(),
+}));
+
 vi.mock("@/lib/auth/helpers", () => ({
   getCurrentUser: vi.fn(),
 }));
@@ -75,12 +80,24 @@ vi.mock("@/lib/ai/logging", () => ({
   logGeneration: vi.fn(() => Promise.resolve()),
 }));
 
+// A fresh one-shot stream per call, like the real (single-use) textStream.
 const mockStreamResult = {
-  toTextStreamResponse: vi.fn(() => new Response("streamed", { status: 200 })),
+  get textStream() {
+    return new ReadableStream<string>({
+      start(c) {
+        c.enqueue("streamed");
+        c.close();
+      },
+    });
+  },
 };
 
 vi.mock("ai", () => ({
   streamObject: vi.fn(() => mockStreamResult),
+  createTextStreamResponse: vi.fn(
+    ({ textStream }: { textStream: ReadableStream<string> }) =>
+      new Response(textStream.pipeThrough(new TextEncoderStream()), { status: 200 })
+  ),
 }));
 
 import { POST } from "./route";
@@ -255,7 +272,7 @@ describe("POST /api/ai/reading", () => {
 
     expect(response.status).toBe(200);
     expect(streamObject).toHaveBeenCalledOnce();
-    expect(mockStreamResult.toTextStreamResponse).toHaveBeenCalledOnce();
+    expect(await response.text()).toBe("streamed");
   });
 
   it("passes correct params to streamObject", async () => {
@@ -318,5 +335,19 @@ describe("POST /api/ai/reading", () => {
     await expect(
       onFinish({ object: undefined })
     ).resolves.not.toThrow();
+    // ...and must not store an empty interpretation as if it had succeeded
+    const { db } = await import("@/lib/db");
+    expect(vi.mocked(db.update)).not.toHaveBeenCalled();
+  });
+
+  it("keeps generating after the response is sent, so a closed tab still saves", async () => {
+    vi.mocked(getCurrentUser).mockResolvedValue(mockUser);
+    vi.mocked(getReadingByIdForUser).mockResolvedValue(mockReading);
+    vi.mocked(getReadingCardsWithData).mockResolvedValue(mockCardsWithData);
+    const { after } = await import("next/server");
+
+    await POST(makeRequest({ readingId: "r1" }));
+
+    expect(vi.mocked(after)).toHaveBeenCalledTimes(1);
   });
 });

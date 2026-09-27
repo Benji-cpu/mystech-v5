@@ -1,5 +1,5 @@
-import { NextRequest } from "next/server";
-import { streamObject } from "ai";
+import { NextRequest, after } from "next/server";
+import { streamObject, createTextStreamResponse } from "ai";
 import { db } from "@/lib/db";
 import { readings } from "@/lib/db/schema";
 import { getCurrentUser } from "@/lib/auth/helpers";
@@ -118,8 +118,11 @@ export async function POST(request: NextRequest) {
     system: readingSystemPrompt,
     prompt,
     maxOutputTokens: maxTokens,
-    onFinish: async ({ object }) => {
+    onFinish: async ({ object, error: finishError }) => {
       try {
+        // A reply that failed the schema arrives with no object. Writing ""
+        // for it read as "interpreted" to nothing and hid the failure.
+        if (!object) throw finishError ?? new Error("No interpretation object");
         // Reconstruct plain text for DB storage (backward-compatible)
         const sections = object?.cardSections?.map((s) => s.text) ?? [];
         const fullText = [
@@ -181,5 +184,28 @@ export async function POST(request: NextRequest) {
     },
   });
 
-  return result.toTextStreamResponse();
+  // Finish the interpretation even if the browser goes away mid-stream (a
+  // closed tab, a locked phone). The text stream is split in two: one branch
+  // goes to the browser, the other is drained here after the response. When
+  // the browser's branch is cancelled, this one keeps the model call running
+  // to onFinish, which is what saves the reading. Without it a reading the
+  // user walked away from was left with no interpretation at all.
+  // (streamObject's streams are single-use; read textStream exactly once.)
+  // The drain starts now, not inside after(): a browser that leaves before
+  // this handler has even returned would otherwise never start it. after()
+  // only keeps the function alive until it is done.
+  const [toBrowser, toServer] = result.textStream.tee();
+  const drained = (async () => {
+    try {
+      const reader = toServer.getReader();
+      while (!(await reader.read()).done) {
+        // drain
+      }
+    } catch {
+      // onError has already logged it
+    }
+  })();
+  after(() => drained);
+
+  return createTextStreamResponse({ textStream: toBrowser });
 }
