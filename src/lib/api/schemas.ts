@@ -116,7 +116,9 @@ export const GenerateDeckSchema = z
     vision: promptTextField.optional(),
     cardCount: cardCountField.optional(),
     artStyleId: idField.optional(),
-    mode: z.enum(["simple", "journey"]).optional(),
+    /** "onboarding" is the initiation's first deck and runs the simple path.
+     *  Leaving it out of this enum 400'd every new account's first deck. */
+    mode: z.enum(["simple", "journey", "onboarding"]).optional(),
     deckId: idField.optional(),
   });
 
