@@ -101,9 +101,9 @@ export function DailyCardEmail({
           <Hr style={hr} />
 
           <Text style={footer}>
-            You&rsquo;re receiving this daily reminder by choice.{" "}
+            The daily card is on for your account.{" "}
             <Link href={`${appUrl}/settings/daily-card`} style={footerLink}>
-              Manage
+              Change the time or turn it off
             </Link>
             {" · "}
             <Link href={appUrl} style={footerLink}>

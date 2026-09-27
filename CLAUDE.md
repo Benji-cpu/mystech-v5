@@ -80,6 +80,10 @@ Both stages are direct-to-main — no PRs anywhere. Route + agent file:
 
 The route still gates on `Authorization: Bearer ${CRON_SECRET}`. Vercel cron sets that header automatically; manual invocations need `-H "Authorization: Bearer $CRON_SECRET"`. The `?commit=true` query enables the GitHub commit step (gated additionally on `GITHUB_TOKEN` env being set — the route gracefully no-ops without it).
 
+### Daily card (`/api/cron/daily-card`)
+
+Driven by `.github/workflows/daily-card-tick.yml` (hourly schedule; GitHub actually fires it 5–7 times a day). A user is **due from their chosen local hour until the end of their local day** (`dailyCardDue()`), never on an exact-hour match. Every account is a candidate, profile row or not (defaults on / 08:00 / UTC); `@example.com` is skipped. A `daily_card_delivery` row is written **only after Resend returns a message id**, so a refused send is retried by the next tick (a Resend idempotency key stops doubles). Deck users' email links `/daily?on=<date>`, which turns that delivery into a single-card `quick` reading on first open (`src/lib/daily-card/open.ts`); Chronicle users go to `/today`. The first deck adopts the caller's `x-vercel-ip-timezone`.
+
 ## Trigger Maintenance
 
 The remote trigger is editable from this CLI — `claude.ai/code/scheduled` is **not** the only path.
@@ -178,6 +182,8 @@ Stability returns a ~3.5MB PNG per card. Serving that raw broke things: Next's i
 - Plan detection: `const plan = user.plan ?? "free"` — check limits via `src/lib/usage/plans.ts`
 - Google OAuth redirect URIs registered for `localhost:3000` only; use `/api/auth/test-login` on other ports
 - Middleware sets `x-pathname` header for layout routing
+- **Signed-out redirects live in `src/middleware.ts`**, which sends the visitor to `/login?next=<path+query>`. The `authorized` callback's `false` is ignored because `auth()` is given a function; a new protected route needs adding to the matcher, not to `authorized`. `/login` honours `next` and NextAuth's absolute `callbackUrl` via `safeCallbackUrl()` (`src/lib/auth/callback-url.ts`)
+- **Public origin**: import `APP_URL` from `@/lib/app-url` (trimmed, no trailing slash). Never read `NEXT_PUBLIC_APP_URL` directly; the production value once ended in a newline and broke every share link
 
 ### API Response Pattern
 - Return `ApiResponse<T>` from `@/types` with appropriate status codes
