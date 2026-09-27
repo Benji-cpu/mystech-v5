@@ -27,36 +27,4 @@ export default {
     signIn: "/login",
     error: "/login",
   },
-  callbacks: {
-    authorized({ auth, request: { nextUrl } }) {
-      const isLoggedIn = !!auth?.user;
-      const isOnApp = nextUrl.pathname.startsWith("/today") ||
-        nextUrl.pathname.startsWith("/story") ||
-        nextUrl.pathname.startsWith("/profile") ||
-        nextUrl.pathname.startsWith("/decks") ||
-        nextUrl.pathname.startsWith("/readings") ||
-        nextUrl.pathname.startsWith("/studio") ||
-        nextUrl.pathname.startsWith("/chronicle") ||
-        nextUrl.pathname.startsWith("/settings") ||
-        nextUrl.pathname.startsWith("/onboarding");
-      const isOnAdmin = nextUrl.pathname.startsWith("/admin");
-      const isOnLogin = nextUrl.pathname === "/login";
-
-      if (isOnAdmin) {
-        if (isLoggedIn) return true;
-        return false;
-      }
-
-      if (isOnApp) {
-        if (isLoggedIn) return true;
-        return false; // Redirect to /login
-      }
-
-      if (isOnLogin && isLoggedIn) {
-        return Response.redirect(new URL("/today", nextUrl));
-      }
-
-      return true;
-    },
-  },
 } satisfies NextAuthConfig;

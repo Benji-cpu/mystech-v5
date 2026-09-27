@@ -1,17 +1,27 @@
-import NextAuth from "next-auth";
-import authConfig from "./auth.config";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const { auth } = NextAuth(authConfig);
+/**
+ * Auth.js session cookies: `__Secure-` over https, bare on http (dev), and
+ * split into `.0`, `.1`… when the JWT is large.
+ */
+const SESSION_COOKIE_PREFIXES = ["__Secure-authjs.session-token", "authjs.session-token"];
 
-export default auth((req: NextRequest & { auth: unknown }) => {
-  // Every matched path but /login needs a session. This has to live here:
-  // once auth() is given a function, NextAuth ignores a `false` from the
-  // `authorized` callback, so signed-out visitors fell through to the page's
-  // own redirect("/login") and lost where they were going — the daily-card
-  // email's link landed on /today after sign-in instead of on the card.
-  if (!req.auth && req.nextUrl.pathname !== "/login") {
+export default function middleware(req: NextRequest) {
+  // Every matched path but /login needs a session, and a visitor without one
+  // goes to /login carrying where they were going — the daily-card email's
+  // link must land on the card after sign-in, not on /today.
+  //
+  // This checks for the session cookie rather than decoding it. Running
+  // NextAuth here meant running its config without the database adapter, and
+  // the Resend magic-link provider refuses that ("MissingAdapter"): every
+  // request errored, `req.auth` came back as the error object, and nobody was
+  // ever redirected with `next`. A stale or forged cookie still reaches the
+  // page, whose own requireAuth() sends it to /login.
+  const hasSession = req.cookies
+    .getAll()
+    .some((c) => SESSION_COOKIE_PREFIXES.some((prefix) => c.name.startsWith(prefix)));
+  if (!hasSession && req.nextUrl.pathname !== "/login") {
     const login = req.nextUrl.clone();
     login.pathname = "/login";
     login.search = `?next=${encodeURIComponent(req.nextUrl.pathname + req.nextUrl.search)}`;
@@ -25,7 +35,7 @@ export default auth((req: NextRequest & { auth: unknown }) => {
   return NextResponse.next({
     request: { headers: requestHeaders },
   });
-});
+}
 
 export const config = {
   matcher: [

@@ -197,7 +197,7 @@ Stability returns a ~3.5MB PNG per card. Serving that raw broke things: Next's i
 - Plan detection: `const plan = user.plan ?? "free"` — check limits via `src/lib/usage/plans.ts`
 - Google OAuth redirect URIs registered for `localhost:3000` only; use `/api/auth/test-login` on other ports
 - Middleware sets `x-pathname` header for layout routing
-- **Signed-out redirects live in `src/middleware.ts`**, which sends the visitor to `/login?next=<path+query>`. The `authorized` callback's `false` is ignored because `auth()` is given a function; a new protected route needs adding to the matcher, not to `authorized`. `/login` honours `next` and NextAuth's absolute `callbackUrl` via `safeCallbackUrl()` (`src/lib/auth/callback-url.ts`)
+- **Signed-out redirects live in `src/middleware.ts`**, which sends a visitor with no Auth.js session cookie to `/login?next=<path+query>`. It checks for the cookie and does not run NextAuth: the edge config has no database adapter, and the Resend provider throws `MissingAdapter` without one, which silently disabled the redirect in production. A new protected route needs adding to the matcher. `/login` honours `next` and NextAuth's absolute `callbackUrl` via `safeCallbackUrl()` (`src/lib/auth/callback-url.ts`)
 - **Public origin**: import `APP_URL` from `@/lib/app-url` (trimmed, no trailing slash). Never read `NEXT_PUBLIC_APP_URL` directly; the production value once ended in a newline and broke every share link
 
 ### API Response Pattern
