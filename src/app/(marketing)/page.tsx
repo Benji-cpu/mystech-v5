@@ -4,7 +4,6 @@ import { FeatureGrid } from "@/components/marketing/feature-grid";
 import { ArtStyleMarquee } from "@/components/marketing/art-style-marquee";
 import { HowItWorks } from "@/components/marketing/how-it-works";
 import { CtaSection } from "./cta-section";
-import { SocialProof } from "@/components/marketing/social-proof";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://mystech-v5.vercel.app";
 
@@ -73,7 +72,6 @@ export default function HomePage() {
       <ArtStyleMarquee />
       <HowItWorks />
       <CtaSection />
-      <SocialProof />
     </>
   );
 }
