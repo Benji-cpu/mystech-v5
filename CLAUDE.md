@@ -78,7 +78,7 @@ The nightly routine runs in **two stages** with `git` as the message bus. This i
 
 | Stage | Driver | Schedule (UTC) | Actual (UTC) | Effect |
 |-------|--------|----------------|--------------|--------|
-| 1. Data gather | Vercel cron (`vercel.json`) | `15 19 * * *` | ~20:10 | Drizzle queries → JSON → Resend email → commits `digests/<UTC date>.json` to `main` via GitHub Contents API |
+| 1. Data gather | Vercel cron (`vercel.json`) | `15 19 * * *` | ~20:10 | Drizzle queries → JSON → commits `digests/<UTC date>.json` to `main` via GitHub Contents API |
 | 2. Synthesis | Claude Code remote trigger `trig_01TKZ5AcWYUjmXPffoRd1qaz` | `0 21 * * *` | 21:00 (05:00 WITA) | Reads the **newest** JSON on disk, writes `digests/<that date>.md`, commits to `main` |
 
 **Stage 2 must never build the filename from today's date.** Stage 1 stamps the UTC
@@ -119,7 +119,7 @@ Trigger prompt body should stay a thin shim: "read `.claude/agents/nightly-routi
 
 ### Failure runbook
 
-- **No JSON committed today** → Vercel cron skipped/failed. Check Vercel project → Logs for `/api/cron/nightly-routine`. Manually fire: `curl -sf -H "Authorization: Bearer $CRON_SECRET" "https://mystech-v5.vercel.app/api/cron/nightly-routine?digest=true&commit=true"` (route is idempotent — re-running updates the existing day's JSON via SHA).
+- **No JSON committed today** → Vercel cron skipped/failed. Check Vercel project → Logs for `/api/cron/nightly-routine`. Manually fire: `curl -sf -H "Authorization: Bearer $CRON_SECRET" "https://mystech-v5.vercel.app/api/cron/nightly-routine?commit=true"` (route is idempotent — re-running updates the existing day's JSON via SHA).
 - **JSON exists, no markdown** → agent didn't run, or ran and skipped per empty-day rule. Check trigger run history at https://claude.ai/code/scheduled.
 - **`(NO DATA)` stub markdown** → JSON wasn't there when the agent ran. Either Vercel cron lagged, or the route errored before commit. Vercel logs first.
 - **401 from GitHub commit** (route logs `github commit: 401`) → `GITHUB_TOKEN` expired or scope drift. Regenerate a fine-grained PAT scoped to `Benji-cpu/mystech-v5` with `Contents: read/write`, update Vercel env.
@@ -267,7 +267,7 @@ This is non-negotiable — never claim a UI change is done without visual verifi
 **Required (Stripe):** `STRIPE_SECRET_KEY`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `STRIPE_PRO_PRICE_ID`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PORTAL_CONFIG_ID`
 **Required (Storage):** `BLOB_READ_WRITE_TOKEN`
 **Required (Cron):** `CRON_SECRET` (also set the same value as a GitHub repo secret), `GITHUB_TOKEN` (fine-grained PAT scoped to `Benji-cpu/mystech-v5` with `Contents: read/write` — used by `/api/cron/nightly-routine?commit=true` to write `digests/YYYY-MM-DD.json` via the GitHub Contents API)
-**Required (Email):** `RESEND_API_KEY`, `ADMIN_EMAIL` (digest destination)
+**Required (Email):** `RESEND_API_KEY` (welcome, first-reading and daily-card emails to users; the nightly digest email was removed 2026-10-06)
 **Optional:** `NEXT_PUBLIC_APP_URL`, `EMAIL_FROM`, `GOOGLE_CLOUD_TTS_API_KEY` (reading read-aloud; billing is off on that Cloud project, so the route 403s and the client stops asking after the first failure), `ELEVENLABS_API_KEY`, `VERCEL_TOKEN` (deployment-event ingest in the nightly route)
 
 ---
