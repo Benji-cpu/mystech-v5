@@ -1,0 +1,47 @@
+{
+  "project": "mystech-v5",
+  "startedAt": "2026-11-20T19:51:30.060Z",
+  "finishedAt": "2026-11-20T19:51:31.152Z",
+  "feedback": {
+    "byStatus": {
+      "actioned": 6,
+      "reviewed": 22,
+      "dismissed": 9
+    },
+    "newLast24h": 0,
+    "rows": []
+  },
+  "health": {
+    "stuckReadings": 0,
+    "stuckReadingRows": [],
+    "failedGenerationsLast24h": 0,
+    "failedImageGensLast24h": 0,
+    "idleSharedDecks": 0
+  },
+  "env": {
+    "stabilityKey": true,
+    "geminiKey": true,
+    "blobToken": true
+  },
+  "pipeline": {
+    "fetched": 1,
+    "inserted": 1,
+    "skipped": 0,
+    "wrongAuthorCount": 1,
+    "wrongAuthors": [
+      "hello@mystech.app"
+    ],
+    "buildErrorCount": 0,
+    "recent": [
+      {
+        "vercelDeploymentId": "dpl_6hkp9ah86PHSXsD53RFG9AiTKHTY",
+        "state": "BLOCKED",
+        "errorCode": null,
+        "commitAuthorEmail": "hello@mystech.app",
+        "commitMessage": "digest(json): 2026-11-19",
+        "createdAt": "2026-11-19T19:51:36.129Z"
+      }
+    ]
+  },
+  "errors": []
+}
