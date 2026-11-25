@@ -1,0 +1,55 @@
+{
+  "project": "mystech-v5",
+  "startedAt": "2026-11-25T19:51:30.150Z",
+  "finishedAt": "2026-11-25T19:51:31.292Z",
+  "feedback": {
+    "byStatus": {
+      "actioned": 6,
+      "reviewed": 22,
+      "dismissed": 9
+    },
+    "newLast24h": 0,
+    "rows": []
+  },
+  "health": {
+    "stuckReadings": 0,
+    "stuckReadingRows": [],
+    "failedGenerationsLast24h": 0,
+    "failedImageGensLast24h": 0,
+    "idleSharedDecks": 0
+  },
+  "env": {
+    "stabilityKey": true,
+    "geminiKey": true,
+    "blobToken": true
+  },
+  "pipeline": {
+    "fetched": 2,
+    "inserted": 1,
+    "skipped": 1,
+    "wrongAuthorCount": 2,
+    "wrongAuthors": [
+      "hello@mystech.app"
+    ],
+    "buildErrorCount": 0,
+    "recent": [
+      {
+        "vercelDeploymentId": "dpl_7XyrtkhTbNYTkUVkGWxneTnHo9Yt",
+        "state": "BLOCKED",
+        "errorCode": null,
+        "commitAuthorEmail": "hello@mystech.app",
+        "commitMessage": "digest(json): 2026-11-24",
+        "createdAt": "2026-11-24T19:51:34.408Z"
+      },
+      {
+        "vercelDeploymentId": "dpl_F4bKfZfyUrdZmLsndtfXyLKJBcTr",
+        "state": "BLOCKED",
+        "errorCode": null,
+        "commitAuthorEmail": "hello@mystech.app",
+        "commitMessage": "digest(json): 2026-11-23",
+        "createdAt": "2026-11-23T19:51:34.603Z"
+      }
+    ]
+  },
+  "errors": []
+}
